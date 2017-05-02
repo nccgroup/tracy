@@ -1,0 +1,26 @@
+{
+  "name": "Page Redder",
+  "description": "Make the current page red",
+  "version": "2.0",
+  "permissions": [
+    "activeTab"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "externally_connectable": {
+    "matches": ["http://localhost:8000/*"]
+  },
+  "content_scripts": [
+    {
+        "matches": ["http://localhost:8000/*"],
+        "js": ["xxterminator.js"],
+        "run_at": "document_start"
+    }
+  ],
+  "browser_action": {
+    "default_title": "xxterminator"
+  },
+  "manifest_version": 2
+}
