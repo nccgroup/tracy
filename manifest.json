@@ -10,11 +10,11 @@
     "persistent": true
   },
   "externally_connectable": {
-    "matches": ["http://localhost:8000/*"]
+    "matches": ["http://localhost:8000/*","http://voting.na.nccgroup.com:8000/*"]
   },
   "content_scripts": [
     {
-        "matches": ["http://localhost:8000/*"],
+        "matches": ["http://localhost:8000/*","http://voting.na.nccgroup.com:8000/*"],
         "js": ["xxterminator.js"],
         "run_at": "document_start"
     }

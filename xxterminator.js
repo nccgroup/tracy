@@ -4,10 +4,8 @@
     mutations.forEach(function(mutation) {
       mutation.addedNodes.forEach(function(node){
           if(node.nodeType == 1){
-            console.log(node.outerHTML);
             chrome.runtime.sendMessage({'type': 'dom', 'msg': node.outerHTML}, null);// For now we don't want to use the calback handler
           } else if (node.nodeType == 3) {
-            console.log(node.wholeText);
             chrome.runtime.sendMessage({'type': 'text', 'msg': node.wholeText}, null);// For now we don't want to use the calback handler
           }
       });
@@ -31,7 +29,6 @@ var script = `
   XMLHttpRequest.prototype.open = function() {
     console.log('request started!');
     this.addEventListener('load', function() {
-        console.log(this.responseText);
         var editorExtensionId = "djdklnljiogflcponpaggloglcmgbicl";
 
         chrome.runtime.sendMessage(editorExtensionId, {'type': 'responseText', 'msg': this.responseText},

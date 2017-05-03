@@ -1,4 +1,4 @@
-var xss = ["XSS", "Waldo"]
+var xss = ["OQ1Cd2", "Waldo"]
 
 chrome.runtime.onMessageExternal.addListener(requestHandler);
 chrome.runtime.onMessage.addListener(requestHandler);
