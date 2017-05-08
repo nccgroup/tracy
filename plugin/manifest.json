@@ -1,9 +1,10 @@
 {
-  "name": "Page Redder",
-  "description": "Make the current page red",
+  "name": "xxterminator",
+  "description": "Find XSS or die trying",
   "version": "2.0",
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "http://localhost:8081/*"
   ],
   "background": {
     "scripts": ["background.js"],

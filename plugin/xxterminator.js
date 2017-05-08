@@ -24,17 +24,16 @@
 //hook the request method so that we an get the responseText
 //Note: for now you will have to add the id in by hand
 //I really need a way to load this from a file to. This way sucks to change
+
+// We really need to hook stuff like eval. In case our stuff is never writen to the dom
 var script = `
   var origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function() {
     console.log('request started!');
     this.addEventListener('load', function() {
-        var editorExtensionId = "djdklnljiogflcponpaggloglcmgbicl";
+        var editorExtensionId = "ojmgbefckkpldnjldfpodkaklommpgfe";
 
-        chrome.runtime.sendMessage(editorExtensionId, {'type': 'responseText', 'msg': this.responseText},
-          function(response) {
-            console.log("worked")
-        });
+        chrome.runtime.sendMessage(editorExtensionId, {'type': 'responseText', 'msg': this.responseText},null);
     });
     origOpen.apply(this, arguments);
 };
