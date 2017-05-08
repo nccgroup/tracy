@@ -1,0 +1,12 @@
+ok lets think about his
+
+We just need to do one thing
+
+Fist we need to scan over any request going to the server and from the server
+
+When going to the server we want to look for are keyword and use this to generate
+are payload to send to the server. We then need to add this to some kind of
+registry to be used by the other webserver.
+
+This other webserver will just be used by the web browser to gain information
+about what has been registered so that it can look for responses
