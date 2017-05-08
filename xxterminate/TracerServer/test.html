@@ -9,13 +9,31 @@
   <input type="submit" value="Submit">
   </form>
 
+  <textarea id="logs" rows="40" cols="50">
+  </textarea>
+
   <script>
   var exampleSocket = new WebSocket("ws://localhost:8081/realtime");
-
+    var lastWrite = ""
   exampleSocket.onmessage = function (event) {
   console.log(JSON.parse(event.data));
   var test = JSON.parse(event.data)
-  document.body.insertAdjacentHTML("beforeend", test.Data);
+  var offset = 0
+  var logbox = document.getElementById("logs");
+  while(true) {
+      var location = test.Data.indexOf(test.ID, offset)
+      if (location == -1){
+        break
+      }
+
+      var temp = test.Data.slice(test.Data.lastIndexOf("\n", location),test.Data.indexOf("\n", location))
+      if (temp != lastWrite){
+        var textnode = document.createTextNode(temp);
+        logbox.appendChild(textnode);
+      }
+      offset = location + 5
+      lastWrite = temp
+    }
   }
 
 
