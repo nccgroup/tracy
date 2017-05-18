@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"TracerServer/store"
 )
 
 //Note there is no CSRF protection
@@ -22,7 +23,11 @@ func addTracer(w http.ResponseWriter, r *http.Request) {
 func deleteTracer(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	id := r.Form.Get("id")
-	delete(TracerDB.Tracers, id)
+	//delete(TracerDB.Tracers, id)
+	err := store.DeleteTracer(id)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 }
 
@@ -39,13 +44,17 @@ func tracerHit(w http.ResponseWriter, r *http.Request) {
 }
 
 func listTracer(w http.ResponseWriter, r *http.Request) {
-	keys := make([]string, 0, len(TracerDB.Tracers))
+	//keys := make([]string, 0, len(TracerDB.Tracers))
 
-	for k := range TracerDB.Tracers {
-		keys = append(keys, k)
+	//for k := range TracerDB.Tracers {
+	//	keys = append(keys, k)
+	//}
+
+	//tracerInfo, _ := json.Marshal(keys) //Added error handling here
+	tracerInfo, err := store.GetTracers() //Added error handling here
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	tracerInfo, _ := json.Marshal(keys) //Added error handling here
 
 	w.Write(tracerInfo)
 }
@@ -55,8 +64,8 @@ func getTracer(w http.ResponseWriter, r *http.Request) {
 	id := r.Form.Get("id")
 	fmt.Println(id)
 	fmt.Println(TracerDB)
-	traceInfo, _ := json.Marshal(TracerDB.Tracers[id])
-
+	//traceInfo, _ := json.Marshal(TracerDB.Tracers[id])
+	traceInfo, err := store.GetTracer(id)
 	w.Write(traceInfo)
 }
 
@@ -72,7 +81,7 @@ func testPage(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-type tracer struct {
+type Tracer struct {
 	ID     string
 	URL    string
 	Method string
@@ -88,12 +97,17 @@ type tracerEvent struct {
 
 //I don't want to make a full DB at this time so where going to cheat and just make
 // a inmemory DB
-type tracerDB struct {
-	Tracers map[string]tracer
-}
+//type tracerDB struct {
+//	Tracers map[string]Tracer
+//}
 
-var TracerDB tracerDB
+//var TracerDB tracerDB
+var TracerDB *sql.DB
 var realTime chan tracerEvent
+
+/* Database configuration strings. Make these configurable. */
+var driver string = "go-sqlite3"
+var creds string = ""
 
 func main() {
 	http.HandleFunc("/tracer/add", addTracer)
@@ -112,23 +126,36 @@ func main() {
 
 func init() {
 	realTime = make(chan tracerEvent, 10)
-	TracerDB = tracerDB{}
-	TracerDB.Tracers = make(map[string]tracer)
+	//TracerDB = tracerDB{}
+	//TracerDB.Tracers = make(map[string]Tracer)
+	TracerDB, err = store.Open("go-sqlite3", creds)
+	if err != nil {
+		/* Can't really recover here. We need the database. */
+		log.Fatal(err)
+	}
 
-	TracerDB.createTracer("EM64q9", tracer{ID: "EM64q9", URL: "example.com", Method: "GET", Hits: make(map[string]tracerEvent)})
-	TracerDB.Tracers["EM64q9"].logEvent(tracerEvent{ID: "EM64q9", Data: "hello", Location: "example.com/test", EventType: "DOM"})
-	fmt.Println(TracerDB)
+	TracerDB.createTracer("EM64q9", Tracer{ID: "EM64q9", URL: "example.com", Method: "GET", Hits: make(map[string]tracerEvent)})
+	store.GetTracer(TracerDB, "EM64q9").logEvent(tracerEvent{ID: "EM64q9", Data: "hello", Location: "example.com/test", EventType: "DOM"})
+	//TracerDB.Tracers["EM64q9"].logEvent(tracerEvent{ID: "EM64q9", Data: "hello", Location: "example.com/test", EventType: "DOM"})
+	//fmt.Println(TracerDB)
 }
 
 //Does this really need to be a func
-func (db tracerDB) createTracer(id string, t tracer) {
-	t.Hits = make(map[string]tracerEvent)
-	db.Tracers[id] = t
-	fmt.Println(db)
+func (db tracerDB) createTracer(id string, t Tracer) {
+	//t.Hits = make(map[string]tracerEvent)
+	//db.Tracers[id] = t
+	//fmt.Println(db)
+
+	/* Replacing this functionality with a database call. */
+	err := store.AddTracer(t)
+	if err != nil {
+		log.Fata(err)
+	}
+
 }
 
 ///There is a huge problem here of overwriting meaniful trace data. we should change this to be a hash of the data plus a function of the location or something like that
-func (tr tracer) logEvent(te tracerEvent) {
+func (t Tracer) logEvent(te tracerEvent) {
 	tr.Hits[te.Location+te.EventType] = te
 }
 
