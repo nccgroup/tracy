@@ -9,6 +9,9 @@ import (
 	"xxterminator-plugin/xxterminate/TracerServer/store"
 	"xxterminator-plugin/xxterminate/TracerServer/tracer"
 	"database/sql"
+	"runtime"
+	"path"
+	"path/filepath"
 )
 
 //Note there is no CSRF protection
@@ -106,7 +109,8 @@ var realTime chan tracer.TracerEvent
 
 /* Database configuration strings. Make these configurable. */
 var driver string = "sqlite3"
-var db_loc string = "../store/tracer-db.db"
+/* Configured by the init function. */
+var db_loc string
 
 func main() {
 	http.HandleFunc("/tracer/add", addTracer)
@@ -121,9 +125,18 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
+
 }
 
 func init() {
+	/* Find the path of this package. */
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	/* Should be something like $GOPATH/src/xxterminator-plugin/xxtermiate/TracerServer/store/tracer-db.db */
+	db_loc = path.Dir(filename) + string(filepath.Separator) + "store" + string(filepath.Separator) + "tracer-db.db"
+
 	realTime = make(chan tracer.TracerEvent, 10)
 	//TracerDB = tracerDB{}
 	//TracerDB.Tracers = make(map[string]Tracer)

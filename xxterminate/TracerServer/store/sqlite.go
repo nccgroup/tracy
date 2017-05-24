@@ -8,14 +8,26 @@ import (
 	"xxterminator-plugin/xxterminate/TracerServer/tracer"
 	"log"
 	"fmt"
+	"os"
 )
 
 /* Open the database and create the tables if they aren't already created. 
  * Errors indicate something incorrectly happened while
  * connecting. Don't forget to close this DB when finished using it. */
-func Open(driver, access string) (*sql.DB, error) {
+func Open(driver, path string) (*sql.DB, error) {
+	/* Create the file if it doesn't exist. */
+	var _, err = os.Stat(path)
+
+	if os.IsNotExist(err) {
+		var file, err = os.Create(path)
+		if err != nil {
+			return nil, err
+		}
+		/* No need to defer. Close it right away. */
+		file.Close()
+	}
 	/* Open the database. */
-	db, err := sql.Open(driver, access)
+	db, err := sql.Open(driver, path)
 
 	/* Check if there are no errors. */
 	if err != nil {
