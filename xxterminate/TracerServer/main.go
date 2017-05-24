@@ -3,7 +3,6 @@ package main
 import (
 	"Windy/websocket"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -77,13 +76,12 @@ func listTracer(w http.ResponseWriter, r *http.Request) {
 func getTracer(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	id := r.Form.Get("id")
-	fmt.Println(id)
-	fmt.Println(TracerDB)
 	//traceInfo, _ := json.Marshal(TracerDB.Tracers[id])
+	t, err := store.GetTracer(TracerDB, id)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tracerInfo, err := json.Marshal(tracer)
+	tracerInfo, err := json.Marshal(t)
 	if err != nil {
 		log.Fatal(err)
 	}
