@@ -5,12 +5,11 @@ type Tracer struct {
 	TracerString string
 	URL    string
 	Method string
-	Hits   map[string]TracerEvent
+	Hits   []TracerEvent
 }
 
 type TracerEvent struct {
-	ID        int //ok This is silly to add this here we should know the id but for now I am adding it because it makes it easy to	
-	TracerString string
+	ID        int
 	Data      string
 	Location  string
 	EventType string

@@ -52,7 +52,7 @@ func tracerHit(w http.ResponseWriter, r *http.Request) {
 	//GetTracer(TracerDB, temp.Url)
 }
 
-func listTracer(w http.ResponseWriter, r *http.Request) {
+func getTracers(w http.ResponseWriter, r *http.Request) {
 	//keys := make([]string, 0, len(TracerDB.Tracers))
 
 	//for k := range TracerDB.Tracers {
@@ -60,9 +60,6 @@ func listTracer(w http.ResponseWriter, r *http.Request) {
 	//}
 
 	//tracerInfo, _ := json.Marshal(keys) //Added error handling here
-	if TracerDB == nil {
-		log.Fatal("AH")
-	}
 	tracers, err := store.GetTracers(TracerDB)
 	if err != nil {
 		log.Fatal(err)
@@ -116,7 +113,7 @@ func main() {
 	http.HandleFunc("/tracer/add", addTracer)
 	http.HandleFunc("/tracer/delete", deleteTracer)
 	http.HandleFunc("/tracer/hit", tracerHit)
-	http.HandleFunc("/tracer/list", listTracer)
+	http.HandleFunc("/tracer/list", getTracers)
 	http.HandleFunc("/tracer", getTracer)
 	http.HandleFunc("/test", testPage)
 	http.Handle("/realtime", websocket.Handler(realTimeServer))
@@ -132,7 +129,7 @@ func init() {
 	/* Find the path of this package. */
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
-		panic("No caller information")
+		log.Fatal("No caller information, therefore, can't find the database.")
 	}
 	/* Should be something like $GOPATH/src/xxterminator-plugin/xxtermiate/TracerServer/store/tracer-db.db */
 	db_loc = path.Dir(filename) + string(filepath.Separator) + "store" + string(filepath.Separator) + "tracer-db.db"
@@ -150,7 +147,7 @@ func init() {
 	//TracerDB.createTracer("EM64q9", Tracer{ID: "EM64q9", URL: "example.com", Method: "GET", Hits: make(map[string]tracerEvent)})
 	err = store.AddTracer(
 		TracerDB,
-		tracer.Tracer{ID: 1, TracerString: "EM64q9", URL: "example.com", Method: "GET", Hits: make(map[string]tracer.TracerEvent)})
+		tracer.Tracer{ID: 1, TracerString: "EM64q9", URL: "example.com", Method: "GET", Hits: make([]tracer.TracerEvent, 0)})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,7 +155,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	t.LogEvent(tracer.TracerEvent{ID: 1, TracerString: "EM64q9", Data: "hello", Location: "example.com/test", EventType: "DOM"})
+	t.LogEvent(tracer.TracerEvent{ID: 1, Data: "hello", Location: "example.com/test", EventType: "DOM"})
 	//TracerDB.Tracers["EM64q9"].logEvent(tracerEvent{ID: "EM64q9", Data: "hello", Location: "example.com/test", EventType: "DOM"})
 	//fmt.Println(TracerDB)
 }

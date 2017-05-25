@@ -10,6 +10,22 @@ import (
 	"fmt"
 	"os"
 )
+/* Table names. */
+const TRACERS_TABLE string = "tracers"
+const EVENTS_TABLE string = "events"
+const TRACERS_EVENTS_TABLE string = "tracers_events"
+
+/* Table columns. */
+const TRACERS_TRACER_STRING_COLUMN string = "tracer_string"
+const TRACERS_URL_COLUMN string = "url"
+const TRACERS_METHOD_COLUMN string = "method"
+
+const EVENTS_DATA_COLUMN string = "data"
+const EVENTS_LOCATION_COLUMN string = "location"
+const EVENTS_EVENT_TYPE_COLUMN string = "event_type"
+
+const TRACERS_EVENTS_EVENT_ID string = "event_id"
+const TRACERS_EVENTS_TRACER_ID string = "tracer_id"
 
 /* Open the database and create the tables if they aren't already created. 
  * Errors indicate something incorrectly happened while
@@ -44,33 +60,34 @@ func Open(driver, path string) (*sql.DB, error) {
 
 	/* Build the tables. */
 	tracers_table := make(map[string]string)
-	tracers_table["tracer_string"] = "TEXT"
-	tracers_table["url"] = "TEXT"
-	tracers_table["method"] = "TEXT"
+	tracers_table[TRACERS_TRACER_STRING_COLUMN] = "TEXT"
+	tracers_table[TRACERS_URL_COLUMN] = "TEXT"
+	tracers_table[TRACERS_METHOD_COLUMN] = "TEXT"
 
-	/* TODO: not actually sure what needs to go into this table. */
 	events_table := make(map[string]string)
-	events_table["event_data"] = "TEXT"
+	events_table[EVENTS_DATA_COLUMN] = "TEXT"
+	events_table[EVENTS_LOCATION_COLUMN] = "TEXT"
+	events_table[EVENTS_EVENT_TYPE_COLUMN] = "TEXT"
 
 	/* Simple ID-to-ID mapping between the two tables above. */
 	tracers_events_table := make(map[string]string)
-	tracers_events_table["tracer_id"] = "Integer"
-	tracers_events_table["event_id"] = "Integer"
+	tracers_events_table[TRACERS_EVENTS_TRACER_ID] = "Integer"
+	tracers_events_table[TRACERS_EVENTS_EVENT_ID] = "Integer"
 
 	/* Create table does not overwrite existing data, so perform this call every time
 	 * we open the database. */
-	createTable(db, "tracers", tracers_table)
-	createTable(db, "events", events_table)
-	createTable(db, "tracers_events", tracers_events_table)
+	createTable(db, TRACERS_TABLE, tracers_table)
+	createTable(db, EVENTS_TABLE, events_table)
+	createTable(db, TRACERS_EVENTS_TABLE, tracers_events_table)
 
 	/* Return the database and nil, indicating we made a sound connection. */
 	return db, nil
 }
 
 /* Create the tracer database. */
-func createTable(db *sql.DB, tableName string, columns map[string]string) error {
+func createTable(db *sql.DB, table_name string, columns map[string]string) error {
 	/* Create the front part of the query. */
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY", tableName)
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY", table_name)
 	for key, val := range columns {
 		query = fmt.Sprintf("%s,", query)
 		query = fmt.Sprintf("%s %s %s", query, key, val)
@@ -104,18 +121,18 @@ func createTable(db *sql.DB, tableName string, columns map[string]string) error 
 	if err != nil {
 		return err
 	}
-	log.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", tableName, lastId, rowCnt)
+	log.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", table_name, lastId, rowCnt)
 	return nil
 }
 
 /* Prepared statement for adding a tracer. */
 func AddTracer(db *sql.DB, t tracer.Tracer) error {
 	/* Using prepared statements. */
-	stmt, err := db.Prepare(`
-	INSERT INTO tracers 
+	stmt, err := db.Prepare(fmt.Sprintf(`
+	INSERT INTO %s 
 		(tracer_string, url, method)
 	VALUES
-		(?, ?, ?);`)
+		(?, ?, ?);`, TRACERS_TABLE))
 
 	if err != nil {
 		return err
@@ -148,9 +165,9 @@ func AddTracer(db *sql.DB, t tracer.Tracer) error {
 
 /* Prepared statement for getting a tracer. */
 func GetTracer(db *sql.DB, traver_string string) (tracer.Tracer, error) {
-	stmt, err := db.Prepare(`
-	SELECT * FROM tracers 
-	WHERE tracer_string = ?;`)
+	stmt, err := db.Prepare(fmt.Sprintf(`
+	SELECT * FROM %s 
+	WHERE tracer_string = ?;`, TRACERS_TABLE))
 	if err != nil {
 		return tracer.Tracer{}, err
 	}
@@ -188,7 +205,7 @@ func GetTracer(db *sql.DB, traver_string string) (tracer.Tracer, error) {
 
 /* Prepared statement for getting all the tracers. */
 func GetTracers(db *sql.DB) ([]tracer.Tracer, error) {
-	stmt, err := db.Prepare(`SELECT * FROM tracers;`)
+	stmt, err := db.Prepare(fmt.Sprintf(`SELECT * FROM %s;`, TRACERS_TABLE))
 	if err != nil {
 		return nil, err
 	}
@@ -244,9 +261,9 @@ func GetTracers(db *sql.DB) ([]tracer.Tracer, error) {
 /* Prepated statement for deleting a specific tracer. */
 func DeleteTracer(db *sql.DB, tracerString string) error {
 /* Using prepared statements. */
-	stmt, err := db.Prepare(`
-	DELETE from tracers 
-	WHERE tracer_string = ?;`)
+	stmt, err := db.Prepare(fmt.Sprintf(`
+	DELETE from %s 
+	WHERE tracer_string = ?;`, TRACERS_TABLE))
 
 	if err != nil {
 		return err
