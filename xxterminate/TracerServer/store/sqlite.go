@@ -10,22 +10,26 @@ import (
 	"fmt"
 	"os"
 )
+
 /* Table names. */
 const TRACERS_TABLE string = "tracers"
 const EVENTS_TABLE string = "events"
 const TRACERS_EVENTS_TABLE string = "tracers_events"
 
 /* Table columns. */
+const TRACERS_ID_COLUMN string = "id"
 const TRACERS_TRACER_STRING_COLUMN string = "tracer_string"
 const TRACERS_URL_COLUMN string = "url"
 const TRACERS_METHOD_COLUMN string = "method"
 
+const EVENTS_ID_COLUMN string = "id"
 const EVENTS_DATA_COLUMN string = "data"
 const EVENTS_LOCATION_COLUMN string = "location"
 const EVENTS_EVENT_TYPE_COLUMN string = "event_type"
 
-const TRACERS_EVENTS_EVENT_ID string = "event_id"
-const TRACERS_EVENTS_TRACER_ID string = "tracer_id"
+const TRACERS_EVENTS_ID_COLUMN string = "event_id"
+const TRACERS_EVENTS_TRACER_ID_COLUMN string = "tracer_id"
+const TRACERS_EVENTS_EVENT_ID_COLUMN string = "event_id"
 
 /* Open the database and create the tables if they aren't already created. 
  * Errors indicate something incorrectly happened while
@@ -122,174 +126,5 @@ func createTable(db *sql.DB, table_name string, columns map[string]string) error
 		return err
 	}
 	log.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", table_name, lastId, rowCnt)
-	return nil
-}
-
-/* Prepared statement for adding a tracer. */
-func AddTracer(db *sql.DB, t tracer.Tracer) error {
-	/* Using prepared statements. */
-	stmt, err := db.Prepare(fmt.Sprintf(`
-	INSERT INTO %s 
-		(tracer_string, url, method)
-	VALUES
-		(?, ?, ?);`, TRACERS_TABLE))
-
-	if err != nil {
-		return err
-	}
-	/* Don't forget to close the prepared statement when this function is completed. */
-	defer stmt.Close()
-
-	/* Execute the query. */
-	res, err := stmt.Exec(t.TracerString, t.URL, t.Method)
-	if err != nil {
-		return err
-	}
-	
-	/* Check the response. */
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	/* Make sure one row was inserted. */
-	rowCnt, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	log.Printf("AddTracer: ID = %d, affected = %d\n", lastId, rowCnt)
-
-	/* Otherwise, return nil to indicate everything went okay. */
-	return nil
-}
-
-/* Prepared statement for getting a tracer. */
-func GetTracer(db *sql.DB, traver_string string) (tracer.Tracer, error) {
-	stmt, err := db.Prepare(fmt.Sprintf(`
-	SELECT * FROM %s 
-	WHERE tracer_string = ?;`, TRACERS_TABLE))
-	if err != nil {
-		return tracer.Tracer{}, err
-	}
-
-	/* Query the database for the tracer. */
-	var (
-		id int
-		tracerStr string
-		url string
-		method string
-	)
-
-	/* Should only return one row, so this becomes a one-liner. */
-	rows, err := stmt.Query(traver_string)
-	if err != nil {
-		return tracer.Tracer{}, err
-	}
-	defer rows.Close()
-	
-	/* This loop should only happen once. */
-	for rows.Next() {
-		rows.Scan(&id, &tracerStr, &url, &method)
-	}
-
-	/* Build a tracer struct from the data. */
-	t := tracer.Tracer{
-		ID: id,
-		TracerString: tracerStr, 
-		URL: url, 
-		Method: method}
-
-	/* Return the tracer and nil to indicate everything went okay. */
-	return t, nil
-}
-
-/* Prepared statement for getting all the tracers. */
-func GetTracers(db *sql.DB) ([]tracer.Tracer, error) {
-	stmt, err := db.Prepare(fmt.Sprintf(`SELECT * FROM %s;`, TRACERS_TABLE))
-	if err != nil {
-		return nil, err
-	}
-
-	/* Query the database for the tracer. */
-	rows, err := stmt.Query()
-	if err != nil {
-		return nil, err
-	}
-	/* Make sure to close the database connection. */
-	defer rows.Close()
-
-	/* Not sure why I can't get the number of rows from a Rows type. Kind of annoying. */
-	tracers := make([]tracer.Tracer, 0)
-	for rows.Next() {
-		var (
-			id int
-			tracerStr string
-			url string
-			method string
-		)
-
-		/* Scan the row. */
-		err = rows.Scan(&id, &tracerStr, &url, &method)
-		if err != nil {
-			/* Fail fast if this messes up. */
-			return nil, err
-		}
-
-		/* Build a tracer struct from the data. */
-		tracer := tracer.Tracer{
-			ID: id,
-			TracerString: tracerStr, 
-			URL: url, 
-			Method: method}
-
-		/* Add the tracer to the slice. */
-		tracers = append(tracers, tracer)
-	}
-	/* Not sure why we need to check for errors again, but this was from the 
-	 * Golang examples. Checking for errors during iteration.*/
-	 err = rows.Err()
-	 if err != nil {
-	 	return nil, err
-	 }
-
-
-
-	/* Return the tracer and nil to indicate everything went okay. */
-	return tracers, nil
-}
-
-/* Prepated statement for deleting a specific tracer. */
-func DeleteTracer(db *sql.DB, tracerString string) error {
-/* Using prepared statements. */
-	stmt, err := db.Prepare(fmt.Sprintf(`
-	DELETE from %s 
-	WHERE tracer_string = ?;`, TRACERS_TABLE))
-
-	if err != nil {
-		return err
-	}
-	/* Don't forget to close the prepared statement when this function is completed. */
-	defer stmt.Close()
-
-	/* Execute the query. */
-	res, err := stmt.Exec(tracerString)
-	if err != nil {
-		return err
-	}
-	
-	/* Check the response. */
-	lastId, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	/* Make sure one row was inserted. */
-	rowCnt, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	log.Printf("DeleteTracer: ID = %d, affected = %d\n", lastId, rowCnt)
-
-	/* Otherwise, return nil to indicate everything went okay. */
 	return nil
 }
