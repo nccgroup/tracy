@@ -5,7 +5,6 @@ import (
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
 	_ "github.com/mattn/go-sqlite3"
-	"xxterminator-plugin/xxterminate/TracerServer/tracer"
 	"log"
 	"fmt"
 	"os"
@@ -46,6 +45,9 @@ func Open(driver, path string) (*sql.DB, error) {
 		/* No need to defer. Close it right away. */
 		file.Close()
 	}
+
+	log.Printf("Opening this database file: %s\n", path)
+
 	/* Open the database. */
 	db, err := sql.Open(driver, path)
 
@@ -75,8 +77,8 @@ func Open(driver, path string) (*sql.DB, error) {
 
 	/* Simple ID-to-ID mapping between the two tables above. */
 	tracers_events_table := make(map[string]string)
-	tracers_events_table[TRACERS_EVENTS_TRACER_ID] = "Integer"
-	tracers_events_table[TRACERS_EVENTS_EVENT_ID] = "Integer"
+	tracers_events_table[TRACERS_EVENTS_TRACER_ID_COLUMN] = "Integer"
+	tracers_events_table[TRACERS_EVENTS_EVENT_ID_COLUMN] = "Integer"
 
 	/* Create table does not overwrite existing data, so perform this call every time
 	 * we open the database. */

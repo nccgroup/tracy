@@ -147,15 +147,31 @@ func init() {
 	//TracerDB.createTracer("EM64q9", Tracer{ID: "EM64q9", URL: "example.com", Method: "GET", Hits: make(map[string]tracerEvent)})
 	err = store.AddTracer(
 		TracerDB,
-		tracer.Tracer{ID: 1, TracerString: "EM64q9", URL: "example.com", Method: "GET", Hits: make([]tracer.TracerEvent, 0)})
+		tracer.Tracer{
+			ID: 1, 
+			TracerString: "EM64q9", 
+			URL: "example.com", 
+			Method: "GET", 
+			Hits: make([]tracer.TracerEvent, 0)})
 	if err != nil {
 		log.Fatal(err)
 	}
+	
+	store.AddTracerEvent(
+		TracerDB, 
+		tracer.TracerEvent{
+			ID: 1, 
+			Data: "hello", 
+			Location: "example.com/test", 
+			EventType: "DOM"},
+		[]string{"EM64q9"})
+
+	
 	t, err := store.GetTracer(TracerDB, "EM64q9")
 	if err != nil {
 		log.Fatal(err)
 	}
-	t.LogEvent(tracer.TracerEvent{ID: 1, Data: "hello", Location: "example.com/test", EventType: "DOM"})
+	log.Printf("Tracer just inserted: %+v\n", t)
 	//TracerDB.Tracers["EM64q9"].logEvent(tracerEvent{ID: "EM64q9", Data: "hello", Location: "example.com/test", EventType: "DOM"})
 	//fmt.Println(TracerDB)
 }
