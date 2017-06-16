@@ -1,16 +1,18 @@
 package tracer
 
+import "database/sql"
+
 type Tracer struct {
 	ID     int
 	TracerString string
-	URL    string
-	Method string
+	URL    sql.NullString
+	Method sql.NullString
 	Hits   []TracerEvent
 }
 
 type TracerEvent struct {
-	ID        int
-	Data      string
-	Location  string
-	EventType string
+	ID        sql.NullInt64
+	Data      sql.NullString
+	Location  sql.NullString
+	EventType sql.NullString
 }

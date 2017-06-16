@@ -232,13 +232,13 @@ func GetTracer(db *sql.DB, tracer_string string) (tracer.Tracer, error) {
 	for rows.Next() {
 		var (
 			tracer_id int
-			event_id int
+			event_id sql.NullInt64
 			tracer_str string
-			url string
-			method string
-			data string
-			location string
-			etype string
+			url sql.NullString
+			method sql.NullString
+			data sql.NullString
+			location sql.NullString
+			etype sql.NullString
 		)
 
 		/* Scan the row. */
@@ -249,22 +249,26 @@ func GetTracer(db *sql.DB, tracer_string string) (tracer.Tracer, error) {
 		}
 
 		/* Check if the tracer hasn't been initialized. */
-		if trcr.Method == "" {
+		if trcr.Method.String == "" {
 			/* Build a tracer struct from the data. */
 			trcr = tracer.Tracer{
 				ID: tracer_id,
 				TracerString: tracer_str, 
-				URL: url, 
+				URL: url,
 				Method: method,
 				Hits: make([]tracer.TracerEvent, 0)}
 		}
 
 		/* Build a TracerEvent struct from the data. */
-		tracer_event := tracer.TracerEvent{
-			ID: event_id,
-			Data: data,
-			Location: location,
-			EventType: etype,
+		tracer_event := tracer.TracerEvent{}
+		if event_id.Int64 != 0 {
+			log.Printf("Event ID: %d\n", event_id)
+			tracer_event = tracer.TracerEvent{
+				ID: event_id,
+				Data: data,
+				Location: location,
+				EventType: etype,
+			}
 		}
 
 		/* Add the tracer_event to the tracer. */
@@ -324,13 +328,13 @@ func GetTracers(db *sql.DB) (map[int]tracer.Tracer, error) {
 	for rows.Next() {
 		var (
 			tracer_id int
-			event_id int
+			event_id sql.NullInt64
 			tracer_str string
-			url string
-			method string
-			data string
-			location string
-			etype string
+			url sql.NullString
+			method sql.NullString
+			data sql.NullString
+			location sql.NullString
+			etype sql.NullString
 		)
 
 		/* Scan the row. */
@@ -340,7 +344,7 @@ func GetTracers(db *sql.DB) (map[int]tracer.Tracer, error) {
 			return nil, err
 		}
 
-		/* Check if the tacer is already in the map. */
+		/* Check if the tracer is already in the map. */
 		var trcr tracer.Tracer
 		if val, ok := tracers[tracer_id]; ok {
 			/* Get the tracer from the map. */
@@ -350,17 +354,20 @@ func GetTracers(db *sql.DB) (map[int]tracer.Tracer, error) {
 			trcr = tracer.Tracer{
 				ID: tracer_id,
 				TracerString: tracer_str, 
-				URL: url, 
+				URL: url,
 				Method: method,
 				Hits: make([]tracer.TracerEvent, 0)}
 		}
 
 		/* Build a TracerEvent struct from the data. */
-		tracer_event := tracer.TracerEvent{
-			ID: event_id,
-			Data: data,
-			Location: location,
-			EventType: etype,
+		tracer_event := tracer.TracerEvent{}
+		if event_id.Int64 != 0 {
+			tracer_event = tracer.TracerEvent{
+				ID: event_id,
+				Data: data,
+				Location: location,
+				EventType: etype,
+			}
 		}
 
 		/* Add the tracer_event to the tracer. */
@@ -375,7 +382,6 @@ func GetTracers(db *sql.DB) (map[int]tracer.Tracer, error) {
 	 if err != nil {
 	 	return nil, err
 	 }
-
 	/* Return the tracer and nil to indicate everything went okay. */
 	return tracers, nil
 }
