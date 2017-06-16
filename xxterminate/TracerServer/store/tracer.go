@@ -88,11 +88,15 @@ func AddTracerEvent(db *sql.DB, te tracer.TracerEvent, ts []string) error {
 	/* Then, for each tracer string, add an associate to the tracers events table. */
 	for _, val := range ts {
 		/* Get the tracer associated with that key string. */
-		trcr, err := GetTracer(db, val)
-		if err != nil && trcr.ID != 0 {
+		id, err := GetTracerIdByName(db, val)
+		if err != nil {
 			return err
 		}
-		err = AddTracersEvents(db, trcr.ID, int(lastId))
+		/* We start at 1, so this shouldn't happen. */
+		if id == 0 {
+			return fmt.Errorf("Could not find a tracer with tracer string %s\n", val)
+		}
+		err = AddTracersEvents(db, int(lastId), id)
 		if err != nil {
 			return err
 		}
@@ -104,7 +108,7 @@ func AddTracerEvent(db *sql.DB, te tracer.TracerEvent, ts []string) error {
 }
 
 /* Prepared statement for adding to the tracers events table. */
-func AddTracersEvents(db *sql.DB, ti, tei int) error {
+func AddTracersEvents(db *sql.DB, tei, ti int) error {
 	/* Using prepared statements. */
 	query := fmt.Sprintf(`
 	INSERT INTO %s 
@@ -143,28 +147,69 @@ func AddTracersEvents(db *sql.DB, ti, tei int) error {
 	return nil
 }
 
+/* Prepared statement for getting a tracer by their tracer name. This will exclude
+ * any joins with other tables. */
+func GetTracerIdByName(db *sql.DB, tracer_string string) (int, error) {
+	query := fmt.Sprintf(
+		`SELECT %s.%s
+		FROM %s
+		WHERE %s.%s = ?;`,
+		TRACERS_TABLE, TRACERS_ID_COLUMN,
+		TRACERS_TABLE,
+		TRACERS_TABLE, TRACERS_TRACER_STRING_COLUMN)
+	log.Printf("Built this query for getting a tracer id by name: %s\n", query)
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return 0, err
+	}
+
+	/* Query the database for the tracer. */
+	rows, err := stmt.Query(tracer_string)
+	if err != nil {
+		return 0, err
+	}
+	/* Make sure to close the database connection. */
+	defer rows.Close()
+
+	var (
+		tracer_id int
+	)
+	for rows.Next() {
+
+		/* Scan the row. */
+		err = rows.Scan(&tracer_id)
+		if err != nil {
+			/* Fail fast if this messes up. */
+			return 0, err
+		}
+	}
+
+	return tracer_id, nil
+}
+
 /* Prepared statement for getting a tracer. */
 func GetTracer(db *sql.DB, tracer_string string) (tracer.Tracer, error) {
 	//tracers.id, tracers.method, tracers.tracer_string, tracers.url, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
-		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
+		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
 		 FROM %s
-		 INNER JOIN %s ON %s.%s = %s.%s
-		 INNER JOIN %s ON %s.%s = %s.%s
+		 LEFT JOIN %s ON %s.%s = %s.%s
+		 LEFT JOIN %s ON %s.%s = %s.%s
 		 WHERE %s.%s = ?;`, 
 		 /* Select values. */
 		 TRACERS_TABLE, TRACERS_ID_COLUMN,
 		 TRACERS_TABLE, TRACERS_METHOD_COLUMN,
 		 TRACERS_TABLE, TRACERS_TRACER_STRING_COLUMN,
+		 EVENTS_TABLE, EVENTS_ID_COLUMN,
 		 TRACERS_TABLE, TRACERS_URL_COLUMN,
 		 EVENTS_TABLE, EVENTS_DATA_COLUMN,
 		 EVENTS_TABLE, EVENTS_LOCATION_COLUMN,
 		 EVENTS_TABLE, EVENTS_EVENT_TYPE_COLUMN,
 		 /* From this table. */
 		 TRACERS_TABLE,
-		 /* Inner join this table where the tracer IDs match. */
+		 /* Join this table where the tracer IDs match. */
 		 TRACERS_EVENTS_TABLE, TRACERS_TABLE, TRACERS_ID_COLUMN, TRACERS_EVENTS_TABLE, TRACERS_EVENTS_TRACER_ID_COLUMN,
-		 /* Inner join again against the events table where the event IDs match. */
+		 /* Join again against the events table where the event IDs match. */
 		 EVENTS_TABLE, TRACERS_EVENTS_TABLE, TRACERS_EVENTS_EVENT_ID_COLUMN, EVENTS_TABLE, EVENTS_ID_COLUMN,
 		 /* Where clause. */
 		 TRACERS_TABLE, TRACERS_TRACER_STRING_COLUMN)
@@ -203,7 +248,7 @@ func GetTracer(db *sql.DB, tracer_string string) (tracer.Tracer, error) {
 			return tracer.Tracer{}, err
 		}
 
-		/* Check if the tacer hasn't been initialized. */
+		/* Check if the tracer hasn't been initialized. */
 		if trcr.Method == "" {
 			/* Build a tracer struct from the data. */
 			trcr = tracer.Tracer{
@@ -241,23 +286,24 @@ func GetTracer(db *sql.DB, tracer_string string) (tracer.Tracer, error) {
 func GetTracers(db *sql.DB) (map[int]tracer.Tracer, error) {
 	//tracers.id, tracers.method, tracers.tracer_string, tracers.url, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
-		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
+		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
 		 FROM %s
-		 INNER JOIN %s ON %s.%s = %s.%s
-		 INNER JOIN %s ON %s.%s = %s.%s;`, 
+		 LEFT JOIN %s ON %s.%s = %s.%s
+		 LEFT JOIN %s ON %s.%s = %s.%s;`, 
 		 /* Select values. */
 		 TRACERS_TABLE, TRACERS_ID_COLUMN,
 		 TRACERS_TABLE, TRACERS_METHOD_COLUMN,
 		 TRACERS_TABLE, TRACERS_TRACER_STRING_COLUMN,
+		 EVENTS_TABLE, EVENTS_ID_COLUMN,
 		 TRACERS_TABLE, TRACERS_URL_COLUMN,
 		 EVENTS_TABLE, EVENTS_DATA_COLUMN,
 		 EVENTS_TABLE, EVENTS_LOCATION_COLUMN,
 		 EVENTS_TABLE, EVENTS_EVENT_TYPE_COLUMN,
 		 /* From this table. */
 		 TRACERS_TABLE,
-		 /* Inner join this table where the tracer IDs match. */
+		 /*Join this table where the tracer IDs match. */
 		 TRACERS_EVENTS_TABLE, TRACERS_TABLE, TRACERS_ID_COLUMN, TRACERS_EVENTS_TABLE, TRACERS_EVENTS_TRACER_ID_COLUMN,
-		 /* Inner join again against the events table where the event IDs match. */
+		 /* Join again against the events table where the event IDs match. */
 		 EVENTS_TABLE, TRACERS_EVENTS_TABLE, TRACERS_EVENTS_EVENT_ID_COLUMN, EVENTS_TABLE, EVENTS_ID_COLUMN)
 	log.Printf("Built this query for getting tracers: %s\n", query)
 	stmt, err := db.Prepare(query)

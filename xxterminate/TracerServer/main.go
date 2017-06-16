@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"runtime"
 	"path"
+	"strings"
 	"path/filepath"
 )
 
@@ -21,20 +22,22 @@ func addTracer(w http.ResponseWriter, r *http.Request) {
 	temp := tracer.Tracer{}
 	json.NewDecoder(r.Body).Decode(&temp)
 
-	/*TracerDB.createTracer(temp.ID, temp)*/
 	err := store.AddTracer(TracerDB, temp)
 	if err != nil {
-		log.Fatal(err)
+		if strings.Contains(err.Error(), "UNIQUE") {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
 func deleteTracer(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	id := r.Form.Get("id")
-	//delete(TracerDB.Tracers, id)
 	err := store.DeleteTracer(TracerDB, id)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 }
@@ -48,26 +51,22 @@ func tracerHit(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	//TracerDB.Tracers[temp.ID].logEvent(temp)
-	//GetTracer(TracerDB, temp.Url)
+	/* TODO: as of right now, this doesn't make sense. Need a way for this request to
+     * know what event this triggered for. */
+	store.AddTracerEvent(TracerDB, temp, []string{})
 }
 
 func getTracers(w http.ResponseWriter, r *http.Request) {
-	//keys := make([]string, 0, len(TracerDB.Tracers))
-
-	//for k := range TracerDB.Tracers {
-	//	keys = append(keys, k)
-	//}
-
-	//tracerInfo, _ := json.Marshal(keys) //Added error handling here
 	tracers, err := store.GetTracers(TracerDB)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	tracerInfo, err := json.Marshal(tracers) //Added error handling here
 
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	w.Write(tracerInfo)
@@ -76,14 +75,15 @@ func getTracers(w http.ResponseWriter, r *http.Request) {
 func getTracer(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	id := r.Form.Get("id")
-	//traceInfo, _ := json.Marshal(TracerDB.Tracers[id])
 	t, err := store.GetTracer(TracerDB, id)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	tracerInfo, err := json.Marshal(t)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.Write(tracerInfo)
 }
@@ -100,7 +100,6 @@ func testPage(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-//var TracerDB tracerDB
 var TracerDB *sql.DB
 var realTime chan tracer.TracerEvent
 
@@ -126,6 +125,7 @@ func main() {
 }
 
 func init() {
+	/* TODO: make this configurable. */
 	/* Find the path of this package. */
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
@@ -135,45 +135,14 @@ func init() {
 	db_loc = path.Dir(filename) + string(filepath.Separator) + "store" + string(filepath.Separator) + "tracer-db.db"
 
 	realTime = make(chan tracer.TracerEvent, 10)
-	//TracerDB = tracerDB{}
-	//TracerDB.Tracers = make(map[string]Tracer)
+
+	/* Open the database file. */
 	var err error
 	TracerDB, err = store.Open(driver, db_loc)
 	if err != nil {
 		/* Can't really recover here. We need the database. */
 		log.Fatal(err)
 	}
-
-	//TracerDB.createTracer("EM64q9", Tracer{ID: "EM64q9", URL: "example.com", Method: "GET", Hits: make(map[string]tracerEvent)})
-	err = store.AddTracer(
-		TracerDB,
-		tracer.Tracer{
-			ID: 1, 
-			TracerString: "EM64q9", 
-			URL: "example.com", 
-			Method: "GET", 
-			Hits: make([]tracer.TracerEvent, 0)})
-	if err != nil {
-		log.Fatal(err)
-	}
-	
-	store.AddTracerEvent(
-		TracerDB, 
-		tracer.TracerEvent{
-			ID: 1, 
-			Data: "hello", 
-			Location: "example.com/test", 
-			EventType: "DOM"},
-		[]string{"EM64q9"})
-
-	
-	t, err := store.GetTracer(TracerDB, "EM64q9")
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Tracer just inserted: %+v\n", t)
-	//TracerDB.Tracers["EM64q9"].logEvent(tracerEvent{ID: "EM64q9", Data: "hello", Location: "example.com/test", EventType: "DOM"})
-	//fmt.Println(TracerDB)
 }
 
 

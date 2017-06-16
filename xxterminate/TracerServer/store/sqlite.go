@@ -66,9 +66,9 @@ func Open(driver, path string) (*sql.DB, error) {
 
 	/* Build the tables. */
 	tracers_table := make(map[string]string)
-	tracers_table[TRACERS_TRACER_STRING_COLUMN] = "TEXT"
-	tracers_table[TRACERS_URL_COLUMN] = "TEXT"
-	tracers_table[TRACERS_METHOD_COLUMN] = "TEXT"
+	tracers_table[TRACERS_TRACER_STRING_COLUMN] = "TEXT NOT NULL UNIQUE"
+	tracers_table[TRACERS_URL_COLUMN] = "TEXT NOT NULL"
+	tracers_table[TRACERS_METHOD_COLUMN] = "TEXT NOT NULL"
 
 	events_table := make(map[string]string)
 	events_table[EVENTS_DATA_COLUMN] = "TEXT"
