@@ -3,31 +3,47 @@ package main
 import (
 	"Windy/websocket"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"xxterminator-plugin/xxterminate/TracerServer/store"
+	"xxterminator-plugin/xxterminate/TracerServer/tracer"
+	"database/sql"
+	"runtime"
+	"path"
+	"strings"
+	"path/filepath"
 )
 
 //Note there is no CSRF protection
 //Really everything can be get or post for now
 
 func addTracer(w http.ResponseWriter, r *http.Request) {
-	temp := tracer{}
+	temp := tracer.Tracer{}
 	json.NewDecoder(r.Body).Decode(&temp)
 
-	TracerDB.createTracer(temp.ID, temp)
+	err := store.AddTracer(TracerDB, temp)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE") {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
 }
 
 func deleteTracer(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	id := r.Form.Get("id")
-	delete(TracerDB.Tracers, id)
+	err := store.DeleteTracer(TracerDB, id)
+	if err != nil {
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 }
 
 func tracerHit(w http.ResponseWriter, r *http.Request) {
-	temp := tracerEvent{}
+	temp := tracer.TracerEvent{}
 	json.NewDecoder(r.Body).Decode(&temp)
 
 	select {
@@ -35,17 +51,23 @@ func tracerHit(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	TracerDB.Tracers[temp.ID].logEvent(temp)
+	/* TODO: as of right now, this doesn't make sense. Need a way for this request to
+     * know what event this triggered for. */
+	store.AddTracerEvent(TracerDB, temp, []string{})
 }
 
-func listTracer(w http.ResponseWriter, r *http.Request) {
-	keys := make([]string, 0, len(TracerDB.Tracers))
-
-	for k := range TracerDB.Tracers {
-		keys = append(keys, k)
+func getTracers(w http.ResponseWriter, r *http.Request) {
+	tracers, err := store.GetTracers(TracerDB)
+	if err != nil {
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	tracerInfo, err := json.Marshal(tracers) //Added error handling here
 
-	tracerInfo, _ := json.Marshal(keys) //Added error handling here
+	if err != nil {
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 	w.Write(tracerInfo)
 }
@@ -53,11 +75,17 @@ func listTracer(w http.ResponseWriter, r *http.Request) {
 func getTracer(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	id := r.Form.Get("id")
-	fmt.Println(id)
-	fmt.Println(TracerDB)
-	traceInfo, _ := json.Marshal(TracerDB.Tracers[id])
-
-	w.Write(traceInfo)
+	t, err := store.GetTracer(TracerDB, id)
+	if err != nil {
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	tracerInfo, err := json.Marshal(t)
+	if err != nil {
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.Write(tracerInfo)
 }
 
 func realTimeServer(ws *websocket.Conn) {
@@ -72,34 +100,19 @@ func testPage(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-type tracer struct {
-	ID     string
-	URL    string
-	Method string
-	Hits   map[string]tracerEvent
-}
+var TracerDB *sql.DB
+var realTime chan tracer.TracerEvent
 
-type tracerEvent struct {
-	ID        string //ok This is silly to add this here we should know the id but for now I am adding it because it makes it easy to
-	Data      string
-	Location  string
-	EventType string
-}
-
-//I don't want to make a full DB at this time so where going to cheat and just make
-// a inmemory DB
-type tracerDB struct {
-	Tracers map[string]tracer
-}
-
-var TracerDB tracerDB
-var realTime chan tracerEvent
+/* Database configuration strings. Make these configurable. */
+var driver string = "sqlite3"
+/* Configured by the init function. */
+var db_loc string
 
 func main() {
 	http.HandleFunc("/tracer/add", addTracer)
 	http.HandleFunc("/tracer/delete", deleteTracer)
 	http.HandleFunc("/tracer/hit", tracerHit)
-	http.HandleFunc("/tracer/list", listTracer)
+	http.HandleFunc("/tracer/list", getTracers)
 	http.HandleFunc("/tracer", getTracer)
 	http.HandleFunc("/test", testPage)
 	http.Handle("/realtime", websocket.Handler(realTimeServer))
@@ -108,29 +121,31 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
+
 }
 
 func init() {
-	realTime = make(chan tracerEvent, 10)
-	TracerDB = tracerDB{}
-	TracerDB.Tracers = make(map[string]tracer)
+	/* TODO: make this configurable. */
+	/* Find the path of this package. */
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		log.Fatal("No caller information, therefore, can't find the database.")
+	}
+	/* Should be something like $GOPATH/src/xxterminator-plugin/xxtermiate/TracerServer/store/tracer-db.db */
+	db_loc = path.Dir(filename) + string(filepath.Separator) + "store" + string(filepath.Separator) + "tracer-db.db"
 
-	TracerDB.createTracer("EM64q9", tracer{ID: "EM64q9", URL: "example.com", Method: "GET", Hits: make(map[string]tracerEvent)})
-	TracerDB.Tracers["EM64q9"].logEvent(tracerEvent{ID: "EM64q9", Data: "hello", Location: "example.com/test", EventType: "DOM"})
-	fmt.Println(TracerDB)
+	realTime = make(chan tracer.TracerEvent, 10)
+
+	/* Open the database file. */
+	var err error
+	TracerDB, err = store.Open(driver, db_loc)
+	if err != nil {
+		/* Can't really recover here. We need the database. */
+		log.Fatal(err)
+	}
 }
 
-//Does this really need to be a func
-func (db tracerDB) createTracer(id string, t tracer) {
-	t.Hits = make(map[string]tracerEvent)
-	db.Tracers[id] = t
-	fmt.Println(db)
-}
 
-///There is a huge problem here of overwriting meaniful trace data. we should change this to be a hash of the data plus a function of the location or something like that
-func (tr tracer) logEvent(te tracerEvent) {
-	tr.Hits[te.Location+te.EventType] = te
-}
 
 // {
 //    "Tracers":{
