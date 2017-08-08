@@ -44,7 +44,6 @@ func AddTracer(db *sql.DB, t tracer.Tracer) (tracer.Tracer, error) {
 	}
 	log.Printf("AddTracer: ID = %d, affected = %d\n", lastId, rowCnt)
 
-	/* Otherwise, return nil to indicate everything went okay. */
 	trcr, err := GetTracerById(db, int(lastId))
 	if err != nil {
 		return tracer.Tracer{}, err
@@ -194,7 +193,7 @@ func GetTracerIdByName(db *sql.DB, tracer_string string) (int, error) {
 }
 
 /* Prepared statement for getting a tracer by the tracer string. */
-func GetTracer(db *sql.DB, tracer_string string) (tracer.Tracer, error) {
+func GetTracerByTracerString(db *sql.DB, tracer_string string) (tracer.Tracer, error) {
 	//tracers.id, tracers.method, tracers.tracer_string, tracers.url, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
 		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
@@ -491,9 +490,9 @@ func GetTracers(db *sql.DB) (map[int]tracer.Tracer, error) {
 	return tracers, nil
 }
 
-/* Prepated statement for deleting a specific tracer. */
+/* Prepared statement for deleting a specific tracer. */
 func DeleteTracer(db *sql.DB, id int) error {
-/* Using prepared statements. */
+	/* Using prepared statements. */
 	query := fmt.Sprintf(`
 		DELETE from %s 
 		WHERE %s = ?;`, TRACERS_TABLE, TRACERS_ID_COLUMN)
@@ -527,4 +526,58 @@ func DeleteTracer(db *sql.DB, id int) error {
 
 	/* Otherwise, return nil to indicate everything went okay. */
 	return nil
+}
+
+/* Prepared statement for editing a specific tracer. */
+func EditTracer(db *sql.DB, id int, trcr tracer.Tracer) (tracer.Tracer, error) {
+	/* Using prepared statements. */
+	query := fmt.Sprintf(`
+		UPDATE %s 
+		SET 
+			%s = ?,
+			%s = ?,
+			%s = ?
+		WHERE
+			%s = ?`, 
+		TRACERS_TABLE,
+		TRACERS_TRACER_STRING_COLUMN,
+		TRACERS_METHOD_COLUMN,
+		TRACERS_URL_COLUMN,
+		TRACERS_ID_COLUMN)
+
+	log.Printf("Built this query for deleting a tracer: %s\n", query)
+	stmt, err := db.Prepare(query)
+
+	if err != nil {
+		return tracer.Tracer{}, err
+	}
+	/* Don't forget to close the prepared statement when this function is completed. */
+	defer stmt.Close()
+
+	/* Execute the query. */
+	res, err := stmt.Exec(trcr.TracerString, trcr.Method, trcr.URL, id)
+	if err != nil {
+		return tracer.Tracer{}, err
+	}
+	
+	/* Check the response. */
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return tracer.Tracer{}, err
+	}
+
+	/* Make sure one row was inserted. */
+	rowCnt, err := res.RowsAffected()
+	if err != nil {
+		return tracer.Tracer{}, err
+	}
+	log.Printf("EditTracer: ID = %d, affected = %d\n", lastId, rowCnt)
+
+	updated, err := GetTracerById(db, int(lastId))
+	if err != nil {
+		return tracer.Tracer{}, err
+	}
+
+	/* Return the inserted tracer and nil to indicate no problems. */
+	return updated, nil
 }

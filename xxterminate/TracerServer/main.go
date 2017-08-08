@@ -72,17 +72,28 @@ func editTracer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	if trcr_id, ok := vars["tracer_id"]; ok {
 		log.Printf("Editing the following tracer: %d\n", trcr_id)
-		temp := tracer.TracerEvent{}
-		json.NewDecoder(r.Body).Decode(&temp)
-
-		select {
-		case realTime <- temp: //This is so it does not block Note: only one person will get this for now
-
+		id, err := strconv.ParseInt(trcr_id, 10, 32)
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		tmp := tracer.Tracer{}
+		json.NewDecoder(r.Body).Decode(&tmp)
+		trcr, err := store.EditTracer(TracerDB, int(id), tmp)
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
-		/* TODO: as of right now, this doesn't make sense. Need a way for this request to
-		 * know what event this triggered for. */
-		store.AddTracerEvent(TracerDB, temp, []string{})
+		trcr_str, err := json.Marshal(trcr)
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(trcr_str)
 	} //TODO: websocket code can go here
 }
 

@@ -209,7 +209,7 @@ func TestEditTracer(t *testing.T) {
 
 	/* GETTING A TRACER */
 	/////////////////////
-	get_req, err := http.NewRequest("PUT", put_url, bytes.NewBuffer([]byte(put_str)))
+	get_req, err := http.NewRequest("GET", put_url, bytes.NewBuffer([]byte(put_str)))
 	if err != nil {
 		t.Fatalf("Tried to build an HTTP request, but got the following error: %+v\n", err)
 	}
@@ -248,6 +248,7 @@ func TestEditTracer(t *testing.T) {
 	tests[0] = add_req_test
 	tests[1] = put_req_test
 	tests[2] = get_req_test
+	serverTestHelper(tests, t)
 }
 
 /* Delete any existing database */
