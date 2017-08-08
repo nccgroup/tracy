@@ -138,7 +138,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 }
 
 /* Configuration for all application routes. */
-func configureServer() *http.Server {
+func configureServer() (*http.Server, *mux.Router) {
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
 	r := mux.NewRouter()
 	r.Methods("POST").Path("/tracers").HandlerFunc(addTracer)
@@ -157,21 +157,23 @@ func configureServer() *http.Server {
 	//r.Methods("GET").Path("/tracers/ws").HandlerFunc(websocket.Handler(realTimeServer))
 
 	/* Create the server. */
-	return &http.Server{
+	srv := &http.Server{
 		Handler: r,
 		Addr:    "127.0.0.1:8081",
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+	/* Return the server and the router. The router is mainly used for testing. */
+	return srv, r
 }
 
 var TracerDB *sql.DB
 var realTime chan tracer.TracerEvent
 
 func main() {
-	/* Configure the server. */
-	srv := configureServer()
+	/* Configure the server, but we won't need the router. */
+	srv, _ := configureServer()
 
 	/* Serve it. */
 	log.Fatal(srv.ListenAndServe())
