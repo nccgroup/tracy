@@ -146,6 +146,110 @@ func TestDeleteTracer(t *testing.T) {
 	serverTestHelper(tests, t)
 }
 
+/* Testing editTracer. PUT /tracers/<tracer_id>/ */
+func TestEditTracer(t *testing.T) {
+	/* ADDING A TRACER */
+	/////////////////////
+	var (
+		trcr_str= "blahblah"
+		trcr_str_change = "zahzahzah"
+		url = "http://example.com"
+		url_change = "https://example.com"
+		method  = "GET"
+		method_change = "PUT"
+		put_url = "http://127.0.0.1:8081/tracers/1"
+		add_url = "http://127.0.0.1:8081/tracers"
+		json_str= fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`,
+			trcr_str, url, method)
+		put_str = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`,
+			trcr_str_change, url_change, method_change)
+	)
+
+	t.Logf("Sending the following data: %s\n", json_str)
+	add_req, err := http.NewRequest("POST", add_url, bytes.NewBuffer([]byte(json_str)))
+	if err != nil {
+		t.Fatalf("Tried to build an HTTP request, but got the following error: %+v\n", err)
+	}
+	/* ADDING A TRACER */
+	/////////////////////
+
+	/* PUTTING A TRACER */
+	/////////////////////
+	put_req, err := http.NewRequest("PUT", put_url, bytes.NewBuffer([]byte(put_str)))
+	if err != nil {
+		t.Fatalf("Tried to build an HTTP request, but got the following error: %+v\n", err)
+	}
+
+	put_test := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		if status := rr.Code; status != http.StatusCreated {
+			return fmt.Errorf("EditTracer returned the wrong status code. Got %v, but wanted %v\n", status, http.StatusCreated)
+		}
+
+		/* Validate the server did not leak any data. */
+		got := tracer.Tracer{}
+		json.Unmarshal([]byte(rr.Body.String()), &got)
+		if got.ID != 1 {
+			return fmt.Errorf("EditTracer returned the wrong body ID. Got %+v, but expected %+v\n", got.ID, 1)
+		}
+		if got.URL.String != url_change {
+			return fmt.Errorf("EditTracer returned the wrong body URL. Got %+v, but expected %+v\n", got.URL.String, put_url)
+		}
+		if got.Method.String != method_change {
+			return fmt.Errorf("EditTracer returned the wrong body Method. Got %+v, but expected %+v\n", got.Method.String, method_change)
+		}
+		if got.TracerString != trcr_str_change {
+			return fmt.Errorf("EditTracer returned the wrong body TracerString. Got %+v\n, but expected %+v\n", got.TracerString, trcr_str_change)
+		}
+
+		/* Return nil to indicate the test passed. */
+		return nil
+	}
+	/* PUTTING A TRACER */
+	/////////////////////	
+
+	/* GETTING A TRACER */
+	/////////////////////
+	get_req, err := http.NewRequest("PUT", put_url, bytes.NewBuffer([]byte(put_str)))
+	if err != nil {
+		t.Fatalf("Tried to build an HTTP request, but got the following error: %+v\n", err)
+	}
+
+	get_test := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		if status := rr.Code; status != http.StatusOK {
+			return fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v\n", status, http.StatusNoContent)
+		} else {
+			t.Logf("Status good. Got : %+v, Body: %s\n", status, rr.Body.String())
+		}
+
+		/* Validate the tracer was the first tracer inserted. */
+		got := tracer.Tracer{}
+		json.Unmarshal([]byte(rr.Body.String()), &got)
+
+		if got.Method.String != method_change {
+			return fmt.Errorf("EditTracer returned the wrong body Method. Got %+v, but expected %+v\n", got.Method.String, method_change)
+		}
+		if got.URL.String != url_change {
+			return fmt.Errorf("EditTracer returned the wrong body URL. Got %+v, but expected %+v\n", got.URL.String, put_url)
+		}
+		if got.TracerString != trcr_str_change {
+			return fmt.Errorf("EditTracer returned the wrong body TracerString. Got %+v\n, but expected %+v\n", got.TracerString, trcr_str_change)
+		}
+
+		/* Return nil to indicate the test passed. */
+		return nil
+	}
+	/* GETTING A TRACER */
+	/////////////////////
+
+	tests := make([]RequestTestPair, 3)
+	add_req_test := RequestTestPair{add_req, addTest}
+	put_req_test := RequestTestPair{put_req, put_test}
+	get_req_test := RequestTestPair{get_req, get_test}
+	tests[0] = add_req_test
+	tests[1] = put_req_test
+	tests[2] = get_req_test
+}
+
 /* Delete any existing database */
 func deleteDatabase(t *testing.T) {
 	/* Find the path of this package. */
