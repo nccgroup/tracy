@@ -15,20 +15,14 @@ import (
 	"time"
 	"xxterminator-plugin/xxterminate/TracerServer/store"
 	"xxterminator-plugin/xxterminate/TracerServer/tracer"
-	"io"
+	"fmt"
+	"strconv"
 )
 
 /* Add a new tracer to the database. */
 func addTracer(w http.ResponseWriter, r *http.Request) {
 	temp := tracer.Tracer{}
 	json.NewDecoder(r.Body).Decode(&temp)
-/*	body_bytes, err := ioutil.ReadAll(r.Body)
-	body_str := string(body_bytes)
-	log.Printf("%s\n", body_str)
-	err = json.Unmarshal([]byte(body_str), &temp)
-	if err != nil {
-		log.Fatal(err)
-	}*/
 	log.Printf("Adding a tracer: %+v\n", temp)
 
 	trcr, err := store.AddTracer(TracerDB, temp)
@@ -45,6 +39,8 @@ func addTracer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(trcr_str)
 }
 
@@ -53,13 +49,22 @@ func deleteTracer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	if trcr_id, ok := vars["tracer_id"]; ok {
 		log.Printf("Deleting the following tracer: %d\n", trcr_id)
-		err := store.DeleteTracer(TracerDB, trcr_id)
+		id, err := strconv.ParseInt(trcr_id, 10, 32)
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	} //TODO: websocket code can go here
+		err = store.DeleteTracer(TracerDB, int(id))
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 
+		/* Delete was successful. Return a 202 and the ID that was deleted. */
+		w.WriteHeader(http.StatusAccepted)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(fmt.Sprintf(`{"id": "%s", "status": "deleted"}`, trcr_id)))
+	} 
 }
 
 /* Alter an existing tracer using the ID in the URL. */
@@ -103,7 +108,12 @@ func getTracer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	if trcr_id, ok := vars["tracer_id"]; ok {
 		log.Printf("Adding the following tracer: %s\n", trcr_id)
-		trcr, err := store.GetTracer(TracerDB, trcr_id)
+		id, err := strconv.ParseInt(trcr_id, 10, 32)
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		trcr, err := store.GetTracerById(TracerDB, int(id))
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -113,6 +123,13 @@ func getTracer(w http.ResponseWriter, r *http.Request) {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
+		/* If we got no users, make the response code 204. */
+		if trcr.ID == 0 {
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+		w.Header().Set("Content-Type", "application/json")
 		w.Write(tracerInfo)
 	} //TODO: websocket code can go here
 }
@@ -130,25 +147,15 @@ func root(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-/* A handler function. */
-func echo(w http.ResponseWriter, r *http.Request) {
-	buf := make([]byte, 1000)
-	io.ReadFull(r.Body, buf)
-	w.Write(buf)
-}
-
 /* Configuration for all application routes. */
 func configureServer() (*http.Server, *mux.Router) {
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
 	r := mux.NewRouter()
 	r.Methods("POST").Path("/tracers").HandlerFunc(addTracer)
-	r.Methods("DELTE").Path("/tracers/{tracer_id}").HandlerFunc(deleteTracer)
+	r.Methods("DELETE").Path("/tracers/{tracer_id}").HandlerFunc(deleteTracer)
 	r.Methods("PUT").Path("/tracers/{tracer_id}").HandlerFunc(editTracer)
 	r.Methods("GET").Path("/tracers/{tracer_id}").HandlerFunc(getTracer)
 	r.Methods("GET").Path("/tracers").HandlerFunc(getTracers)
-
-	/* For debugging. */
-	r.Methods("POST").Path("/echo").HandlerFunc(echo)
 
 	/* The base application page. */
 	r.Methods("GET").Path("/").HandlerFunc(root)
@@ -202,27 +209,4 @@ func openDatabase() {
 
 func init() {
 	openDatabase()
-
-	/*trcr_str := "blahbdasdflah"
-	url := "http://example.com"
-	method := "GET"
-	json_str := fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, 
-		trcr_str, url, method)
-	tmp := tracer.Tracer{}
-	fmt.Printf("Using this json_str: %s\n", json_str)
-	err = json.Unmarshal([]byte(json_str), &tmp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Tracer: %+v\n", tmp)
-	trcr, err := store.AddTracer(TracerDB, tmp)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	trcr_rsp, err := json.Marshal(trcr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Returned: %s\n", trcr_rsp)*/
 }

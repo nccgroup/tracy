@@ -492,11 +492,11 @@ func GetTracers(db *sql.DB) (map[int]tracer.Tracer, error) {
 }
 
 /* Prepated statement for deleting a specific tracer. */
-func DeleteTracer(db *sql.DB, tracerString string) error {
+func DeleteTracer(db *sql.DB, id int) error {
 /* Using prepared statements. */
 	query := fmt.Sprintf(`
 		DELETE from %s 
-		WHERE %s = ?;`, TRACERS_TABLE, TRACERS_TRACER_STRING_COLUMN)
+		WHERE %s = ?;`, TRACERS_TABLE, TRACERS_ID_COLUMN)
 	log.Printf("Built this query for deleting a tracer: %s\n", query)
 	stmt, err := db.Prepare(query)
 
@@ -507,7 +507,7 @@ func DeleteTracer(db *sql.DB, tracerString string) error {
 	defer stmt.Close()
 
 	/* Execute the query. */
-	res, err := stmt.Exec(tracerString)
+	res, err := stmt.Exec(id)
 	if err != nil {
 		return err
 	}
