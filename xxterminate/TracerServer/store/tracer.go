@@ -10,6 +10,7 @@ import (
 	"fmt"
 )
 
+
 /* Prepared statement for adding a tracer. */
 func AddTracer(db *sql.DB, t tracer.Tracer) (tracer.Tracer, error) {
 	/* Using prepared statements. */
@@ -53,9 +54,62 @@ func AddTracer(db *sql.DB, t tracer.Tracer) (tracer.Tracer, error) {
 	return trcr, nil
 }
 
+/* Prepared statement for getting a tracer event for a particular tracer. */
+func GetTracerEvents(db *sql.DB, tid int) ([]tracer.TracerEvent, error) {
+	query := fmt.Sprintf(
+		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
+		FROM %s
+		LEFT JOIN %s ON %s.%s = %s.%s
+		WHERE %s.%s = ?;`,
+		EVENTS_TABLE, EVENTS_ID_COLUMN,
+		EVENTS_TABLE, EVENTS_DATA_COLUMN,
+		EVENTS_TABLE, EVENTS_LOCATION_COLUMN,
+		EVENTS_TABLE, EVENTS_EVENT_TYPE_COLUMN,
+		TRACERS_EVENTS_TABLE,
+		EVENTS_TABLE,
+		TRACERS_EVENTS_TABLE, TRACERS_EVENTS_EVENT_ID_COLUMN, 
+		EVENTS_TABLE, EVENTS_ID_COLUMN,
+		TRACERS_EVENTS_TABLE, TRACERS_EVENTS_TRACER_ID_COLUMN)
+	log.Printf("Built this query for getting a tracer id by name: %s\n", query)
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	/* Query the database for the tracer. */
+	rows, err := stmt.Query(tid)
+	if err != nil {
+		return nil, err
+	}
+	/* Make sure to close the database connection. */
+	defer rows.Close()
+
+	var (
+		id tracer.JsonNullInt64
+		data tracer.JsonNullString
+		location tracer.JsonNullString
+		etype tracer.JsonNullString
+	)
+
+	events := make([]tracer.TracerEvent, 0)
+	for rows.Next() {
+		/* Scan the row. */
+		err = rows.Scan(&id, data, location, etype)
+		if err != nil {
+			/* Fail fast if this messes up. */
+			return nil, err
+		}
+
+		/* Append the TracerEvent object to the list of events. */
+		events = append(events, tracer.TracerEvent{id, data, location, etype})
+	}
+
+	return events, nil
+}
+
 /* Prepared statement for adding an event to a slice of tracers specified by the
  * the tracer string. */
-func AddTracerEvent(db *sql.DB, te tracer.TracerEvent, ts []string) error {
+func AddTracerEvent(db *sql.DB, te tracer.TracerEvent, ts []string) (tracer.TracerEvent, error) {
 	/* Using prepared statements. */
 	query := fmt.Sprintf(`
 	INSERT INTO %s 
@@ -66,7 +120,7 @@ func AddTracerEvent(db *sql.DB, te tracer.TracerEvent, ts []string) error {
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
-		return err
+		return tracer.TracerEvent{}, err
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
 	defer stmt.Close()
@@ -74,19 +128,19 @@ func AddTracerEvent(db *sql.DB, te tracer.TracerEvent, ts []string) error {
 	/* Execute the query. */
 	res, err := stmt.Exec(te.Data, te.Location, te.EventType)
 	if err != nil {
-		return err
+		return tracer.TracerEvent{}, err
 	}
 	
 	/* Check the response. */
 	lastId, err := res.LastInsertId()
 	if err != nil {
-		return err
+		return tracer.TracerEvent{}, err
 	}
 
 	/* Make sure one row was inserted. */
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return tracer.TracerEvent{}, err
 	}
 	log.Printf("AddTracerEvent: ID = %d, affected = %d\n", lastId, rowCnt)
 
@@ -95,21 +149,97 @@ func AddTracerEvent(db *sql.DB, te tracer.TracerEvent, ts []string) error {
 		/* Get the tracer associated with that key string. */
 		id, err := GetTracerIdByName(db, val)
 		if err != nil {
-			return err
+			return tracer.TracerEvent{}, err
 		}
 		/* We start at 1, so this shouldn't happen. */
 		if id == 0 {
-			return fmt.Errorf("Could not find a tracer with tracer string %s\n", val)
+			return tracer.TracerEvent{}, fmt.Errorf("Could not find a tracer with tracer string %s\n", val)
 		}
 		err = AddTracersEvents(db, int(lastId), id)
 		if err != nil {
-			return err
+			return tracer.TracerEvent{}, err
 		}
 
 	}
 
+	trcr_evnt, err := GetTracerEventById(db, int(lastId))
+	if err != nil {
+		return tracer.TracerEvent{}, err
+	}
+
 	/* Otherwise, return nil to indicate everything went okay. */
-	return nil
+	return trcr_evnt, nil
+}
+
+/* Prepared state for getting a tracer event by the tracer event ID. */
+func GetTracerEventById(db *sql.DB, tei int) (tracer.TracerEvent, error) {
+	query := fmt.Sprintf(
+		`SELECT %s %s %s %s
+		 FROM %s
+		 WHERE %s = ?;`,
+		 EVENTS_ID_COLUMN,
+		 EVENTS_DATA_COLUMN,
+		 EVENTS_LOCATION_COLUMN,
+		 EVENTS_EVENT_TYPE_COLUMN,
+		 EVENTS_TABLE,
+		 EVENTS_ID_COLUMN)
+	log.Printf("Built this query for getting a tracer: %s\n", query)
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return tracer.TracerEvent{}, err
+	}
+
+	/* Query the database for the tracer. */
+	rows, err := stmt.Query(tei)
+	if err != nil {
+		return tracer.TracerEvent{}, err
+	}
+	/* Make sure to close the database connection. */
+	defer rows.Close()
+
+	/* Not sure why I can't get the number of rows from a Rows type. Kind of annoying. */
+	trcr_evnt := tracer.TracerEvent{}
+	for rows.Next() {
+		var (
+			event_id tracer.JsonNullInt64
+			data tracer.JsonNullString
+			location tracer.JsonNullString
+			etype tracer.JsonNullString
+		)
+
+		/* Scan the row. */
+		err = rows.Scan(&event_id, &data, &location, &etype)
+		if err != nil {
+			/* Fail fast if this messes up. */
+			return tracer.TracerEvent{}, err
+		}
+
+		if event_id.Int64 != 0 && data != (tracer.JsonNullString{}) {
+			log.Printf("Event ID: %d\n", event_id)
+			trcr_evnt = tracer.TracerEvent{
+				ID: event_id,
+				Data: data,
+				Location: location,
+				EventType: etype,
+			}
+		}
+	}
+
+	/* Not sure why we need to check for errors again, but this was from the 
+	 * Golang examples. Checking for errors during iteration.*/
+	 err = rows.Err()
+	 if err != nil {
+	 	return tracer.TracerEvent{}, err
+	 }
+
+	/* Validate we have an event. */
+	if trcr_evnt.ID.Int64 != int64(tei) {
+		log.Printf("No tracer event with ID %d\n", tei)
+		return tracer.TracerEvent{}, nil
+	}
+
+	/* Return the tracer event and nil to indicate everything went okay. */
+	return trcr_evnt, nil
 }
 
 /* Prepared statement for adding to the tracers events table. */
