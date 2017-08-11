@@ -20,17 +20,17 @@ import (
 
 /* Add a new tracer to the database. */
 func addTracer(w http.ResponseWriter, r *http.Request) {
-	temp := tracer.Tracer{}
-	json.NewDecoder(r.Body).Decode(&temp)
-	log.Printf("Adding a tracer: %+v\n", temp)
+	in := tracer.Tracer{}
+	json.NewDecoder(r.Body).Decode(&in)
+	log.Printf("Adding a tracer: %+v\n", in)
 
-	trcr, err := store.AddTracer(TracerDB, temp)
+	trcr, err := store.AddTracer(tracerDB, in)
 	if err != nil {
 		log.Printf(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	trcr_str, err := json.Marshal(trcr)
+	trcrStr, err := json.Marshal(trcr)
 	if err != nil {
 		log.Printf(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -38,20 +38,20 @@ func addTracer(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(trcr_str)
+	w.Write(trcrStr)
 }
 
 /* Delete an existing tracer using the ID in the URL. */
 func deleteTracer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	if trcr_id, ok := vars["tracer_id"]; ok {
-		log.Printf("Deleting the following tracer: %d\n", trcr_id)
-		id, err := strconv.ParseInt(trcr_id, 10, 32)
+	if trcrID, ok := vars["tracerId"]; ok {
+		log.Printf("Deleting the following tracer: %d\n", trcrID)
+		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		err = store.DeleteTracer(TracerDB, int(id))
+		err = store.DeleteTracer(tracerDB, int(id))
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -60,29 +60,29 @@ func deleteTracer(w http.ResponseWriter, r *http.Request) {
 		/* Delete was successful. Return a 202 and the ID that was deleted. */
 		w.WriteHeader(http.StatusAccepted)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(fmt.Sprintf(`{"id": "%s", "status": "deleted"}`, trcr_id)))
+		w.Write([]byte(fmt.Sprintf(`{"id": "%s", "status": "deleted"}`, trcrID)))
 	}
 }
 
 /* Alter an existing tracer using the ID in the URL. */
 func editTracer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	if trcr_id, ok := vars["tracer_id"]; ok {
-		log.Printf("Editing the following tracer: %d\n", trcr_id)
-		id, err := strconv.ParseInt(trcr_id, 10, 32)
+	if trcrID, ok := vars["tracerId"]; ok {
+		log.Printf("Editing the following tracer: %d\n", trcrID)
+		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		tmp := tracer.Tracer{}
 		json.NewDecoder(r.Body).Decode(&tmp)
-		trcr, err := store.EditTracer(TracerDB, int(id), tmp)
+		trcr, err := store.EditTracer(tracerDB, int(id), tmp)
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
-		trcr_str, err := json.Marshal(trcr)
+		trcrStr, err := json.Marshal(trcr)
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -90,13 +90,13 @@ func editTracer(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(trcr_str)
+		w.Write(trcrStr)
 	} //TODO: websocket code can go here
 }
 
 /* Get all the tracer data structures. */
 func getTracers(w http.ResponseWriter, r *http.Request) {
-	tracers, err := store.GetTracers(TracerDB)
+	tracers, err := store.GetTracers(tracerDB)
 	if err != nil {
 		log.Printf(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -116,14 +116,14 @@ func getTracers(w http.ResponseWriter, r *http.Request) {
 /* Get the tracer data structure belonging to the ID in the URL. */
 func getTracer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	if trcr_id, ok := vars["tracer_id"]; ok {
-		log.Printf("Getting the following tracer: %s\n", trcr_id)
-		id, err := strconv.ParseInt(trcr_id, 10, 32)
+	if trcrID, ok := vars["tracerId"]; ok {
+		log.Printf("Getting the following tracer: %s\n", trcrID)
+		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		trcr, err := store.GetTracerById(TracerDB, int(id))
+		trcr, err := store.GetTracerById(tracerDB, int(id))
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -147,7 +147,7 @@ func getTracer(w http.ResponseWriter, r *http.Request) {
 /* Add a tracer event to the tracer specified in the URL. */
 func addEvent(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	if trcr_id, ok := vars["tracer_id"]; ok {
+	if trcrID, ok := vars["tracerId"]; ok {
 		tmp := tracer.TracerEvent{}
 		json.NewDecoder(r.Body).Decode(&tmp)
 		/* Validate the event before uploading it to the database. */
@@ -168,37 +168,37 @@ func addEvent(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("Adding a tracer event: %+v\n", tmp)
-		id, err := strconv.ParseInt(trcr_id, 10, 32)
+		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		/* Look up the tracer based on the provided ID. */
-		trcr, err := store.GetTracerById(TracerDB, int(id))
+		trcr, err := store.GetTracerById(tracerDB, int(id))
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		/* Make sure the ID of the tracer exists. */
 		if trcr.ID == 0 {
-			err := fmt.Sprintf("The tracer ID %s doesn't exist", trcr_id)
+			err := fmt.Sprintf("The tracer ID %s doesn't exist", trcrID)
 			http.Error(w, err, http.StatusNotFound)
-		} 
+		}
 
 		/* If it is a valid tracer event and the tracer exists, then add it to the database. */
-		trcr_evnt, err := store.AddTracerEvent(TracerDB, tmp, []string{trcr.TracerString})
+		event, err := store.AddTracerEvent(tracerDB, tmp, []string{trcr.TracerString})
 		if err != nil {
 			log.Printf(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		event_str, err := json.Marshal(trcr_evnt)
+		eventStr, err := json.Marshal(event)
 		if err != nil {
 			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)	
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(event_str)
+		w.Write(eventStr)
 	}
 }
 
@@ -220,14 +220,14 @@ func configureServer() (*http.Server, *mux.Router) {
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
 	r := mux.NewRouter()
 	r.Methods("POST").Path("/tracers").HandlerFunc(addTracer)
-	r.Methods("DELETE").Path("/tracers/{tracer_id}").HandlerFunc(deleteTracer)
-	r.Methods("PUT").Path("/tracers/{tracer_id}").HandlerFunc(editTracer)
-	r.Methods("GET").Path("/tracers/{tracer_id}").HandlerFunc(getTracer)
+	r.Methods("DELETE").Path("/tracers/{tracerId}").HandlerFunc(deleteTracer)
+	r.Methods("PUT").Path("/tracers/{tracerId}").HandlerFunc(editTracer)
+	r.Methods("GET").Path("/tracers/{tracerId}").HandlerFunc(getTracer)
 	r.Methods("GET").Path("/tracers").HandlerFunc(getTracers)
 
-	/* Define our RESTful routes for tracer events. Tracer events are indexed by their 
+	/* Define our RESTful routes for tracer events. Tracer events are indexed by their
 	 * corresponding tracer ID. */
-	r.Methods("POST").Path("/tracers/{tracer_id}/events").HandlerFunc(addEvent)
+	r.Methods("POST").Path("/tracers/{tracerId}/events").HandlerFunc(addEvent)
 
 	/* The base application page. */
 	r.Methods("GET").Path("/").HandlerFunc(root)
@@ -247,7 +247,7 @@ func configureServer() (*http.Server, *mux.Router) {
 	return srv, r
 }
 
-var TracerDB *sql.DB
+var tracerDB *sql.DB
 var realTime chan tracer.TracerEvent
 
 func main() {
@@ -266,13 +266,13 @@ func openDatabase() {
 		log.Fatal("No caller information, therefore, can't find the database.")
 	}
 	/* Should be something like $GOPATH/src/xxterminator-plugin/xxtermiate/TracerServer/store/tracer-db.db */
-	db_loc := path.Dir(filename) + string(filepath.Separator) + "store" + string(filepath.Separator) + "tracer-db.db"
+	db := path.Dir(filename) + string(filepath.Separator) + "store" + string(filepath.Separator) + "tracer-db.db"
 
 	realTime = make(chan tracer.TracerEvent, 10)
 
 	/* Open the database file. */
 	var err error
-	TracerDB, err = store.Open("sqlite3", db_loc)
+	tracerDB, err = store.Open("sqlite3", db)
 	if err != nil {
 		/* Can't really recover here. We need the database. */
 		log.Fatal(err)
