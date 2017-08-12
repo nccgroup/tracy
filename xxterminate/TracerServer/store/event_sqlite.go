@@ -2,9 +2,9 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"xxterminator-plugin/xxterminate/TracerServer/types"

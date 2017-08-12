@@ -5,134 +5,140 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
-	"xxterminator-plugin/xxterminate/TracerServer/store"
+	"xxterminator-plugin/xxterminate/TracerServer/common"
 	"xxterminator-plugin/xxterminate/TracerServer/types"
 )
 
-/*AddTracer Add a new tracer to the database. */
+/*AddTracer decodes an HTTP request to add a new tracer to the database. */
 func AddTracer(w http.ResponseWriter, r *http.Request) {
+	ret := []byte("{}")
+	status := http.StatusInternalServerError
 	in := types.Tracer{}
 	json.NewDecoder(r.Body).Decode(&in)
-	log.Printf("Adding a tracer: %+v\n", in)
 
-	trcr, err := store.DBAddTracer(store.TracerDB, in)
+	trcrStr, err := common.AddTracer(in)
 	if err != nil {
-		log.Printf(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ret = serverError(err)
+	} else {
+		/* Final success case. */
+		status = http.StatusOK
+		ret = trcrStr
 	}
 
-	trcrStr, err := json.Marshal(trcr)
-	if err != nil {
-		log.Printf(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(trcrStr)
+	w.Write(ret)
 }
 
-/*DeleteTracer Delete an existing tracer using the ID in the URL. */
+/*DeleteTracer decodes an HTTP request to delete an existing tracer using the ID in the URL. */
 func DeleteTracer(w http.ResponseWriter, r *http.Request) {
+	ret := []byte("{}")
+	status := http.StatusInternalServerError
+
 	vars := mux.Vars(r)
 	if trcrID, ok := vars["tracerId"]; ok {
-		log.Printf("Deleting the following tracer: %d\n", trcrID)
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
-			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ret = serverError(err)
+		} else {
+			trcrStatus, err := common.DeleteTracer(int(id))
+			if err != nil {
+				ret = serverError(err)
+			} else {
+				/* Final success case. */
+				status = http.StatusAccepted
+				ret = trcrStatus
+			}
 		}
-		err = store.DBDeleteTracer(store.TracerDB, int(id))
-		if err != nil {
-			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
-		/* Delete was successful. Return a 202 and the ID that was deleted. */
-		w.WriteHeader(http.StatusAccepted)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(fmt.Sprintf(`{"id": "%s", "status": "deleted"}`, trcrID)))
 	}
+
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(ret)
 }
 
-/*EditTracer Alter an existing tracer using the ID in the URL. */
+/*EditTracer decodes an HTTP request to alter an existing tracer using the ID in the URL. */
 func EditTracer(w http.ResponseWriter, r *http.Request) {
+	ret := []byte("{}")
+	status := http.StatusInternalServerError
+
 	vars := mux.Vars(r)
 	if trcrID, ok := vars["tracerId"]; ok {
-		log.Printf("Editing the following tracer: %d\n", trcrID)
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
-			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		tmp := types.Tracer{}
-		json.NewDecoder(r.Body).Decode(&tmp)
-		trcr, err := store.DBEditTracer(store.TracerDB, int(id), tmp)
-		if err != nil {
-			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+			ret = serverError(err)
+		} else {
+			trcr := types.Tracer{}
+			json.NewDecoder(r.Body).Decode(&trcr)
 
-		trcrStr, err := json.Marshal(trcr)
-		if err != nil {
-			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			trcrStr, err := common.EditTracer(int(id), trcr)
+			if err != nil {
+				ret = serverError(err)
+			} else {
+				/* Final success case. */
+				status = http.StatusCreated
+				ret = trcrStr
+			}
 		}
+	}
 
-		w.WriteHeader(http.StatusCreated)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(trcrStr)
-	} //TODO: websocket code can go here
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(ret)
 }
 
 /*GetTracers Get all the tracer data structures. */
 func GetTracers(w http.ResponseWriter, r *http.Request) {
-	tracers, err := store.DBGetTracers(store.TracerDB)
-	if err != nil {
-		log.Printf(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	tracerInfo, err := json.Marshal(tracers)
+	ret := []byte("{}")
+	status := http.StatusInternalServerError
 
+	trcrsStr, err := common.GetTracers()
 	if err != nil {
-		log.Printf(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ret = serverError(err)
+	} else {
+		/* Final success case. */
+		status = http.StatusOK
+		ret = trcrsStr
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(tracerInfo)
+	w.Write(ret)
 }
 
 /*GetTracer Get the tracer data structure belonging to the ID in the URL. */
 func GetTracer(w http.ResponseWriter, r *http.Request) {
+	ret := []byte("{}")
+	status := http.StatusInternalServerError
+
 	vars := mux.Vars(r)
 	if trcrID, ok := vars["tracerId"]; ok {
-		log.Printf("Getting the following tracer: %s\n", trcrID)
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
-			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		trcr, err := store.DBGetTracerByID(store.TracerDB, int(id))
-		if err != nil {
-			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		tracerInfo, err := json.Marshal(trcr)
-		if err != nil {
-			log.Printf(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		/* If we got no users, make the response code 204. */
-		if trcr.ID == 0 {
-			w.WriteHeader(http.StatusNoContent)
+			ret = serverError(err)
 		} else {
-			w.WriteHeader(http.StatusOK)
+			trcrStr, err := common.GetTracer(int(id))
+			if err != nil {
+				ret = serverError(err)
+			} else {
+				status = http.StatusOK
+				ret = trcrStr
+			}
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(tracerInfo)
-	} //TODO: websocket code can go here
+	}
+
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(ret)
+}
+
+/* Common function for logging an internal server error and serving back something generic. */
+func serverError(err error) []byte {
+	ref := rand.Intn(10000000000000)
+	log.Println("Reference %d: %s", ref, err.Error())
+
+	return []byte(fmt.Sprintf(`{"Message":"Internal Server Error", "Reference":"%d"}`, ref))
 }

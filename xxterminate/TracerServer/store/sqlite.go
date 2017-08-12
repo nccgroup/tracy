@@ -2,9 +2,9 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
@@ -62,9 +62,8 @@ var TracerDB *sql.DB
  * connecting. Don't forget to close this DB when finished using it. */
 func Open(driver, path string) (*sql.DB, error) {
 	/* Create the file if it doesn't exist. */
-	var _, err = os.Stat(path)
-
-	if os.IsNotExist(err) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Println("Creating a database file. Couldn't find it.")
 		var file, err = os.Create(path)
 		if err != nil {
 			return nil, err

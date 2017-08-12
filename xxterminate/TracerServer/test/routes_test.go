@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
 	"path/filepath"
-	"runtime"
 	"testing"
+	"xxterminator-plugin/xxterminate/TracerServer/configure"
 	"xxterminator-plugin/xxterminate/TracerServer/types"
 )
 
@@ -118,8 +117,8 @@ func TestDeleteTracer(t *testing.T) {
 		var err error
 
 		/* Validate we are getting the status we were expecting. */
-		if status := rr.Code; status != http.StatusNoContent {
-			err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusNoContent)
+		if status := rr.Code; status != http.StatusOK {
+			err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusOK)
 		} else {
 			/* Validate the server did not leak any data. */
 			got := types.Tracer{}
@@ -222,7 +221,7 @@ func TestEditTracer(t *testing.T) {
 
 		/* Validate we got the status we were expecting */
 		if status := rr.Code; status != http.StatusOK {
-			err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusNoContent)
+			err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusOK)
 		} else {
 			/* Validate the tracer was the first tracer inserted. */
 			got := types.Tracer{}
@@ -367,24 +366,6 @@ func TestAddEvent(t *testing.T) {
 	serverTestHelper(tests, t)
 }
 
-/* Delete any existing database */
-func deleteDatabase(t *testing.T) {
-	/* Find the path of this package. */
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Errorf("no caller information, therefore, can't find the database.")
-	}
-	/* Should be something like $GOPATH/src/xxterminator-plugin/xxtermiate/TracerServer/store/tracer-db.db */
-	db := path.Dir(filename) + string(filepath.Separator) + "store" + string(filepath.Separator) + "tracer-db.db"
-	/* If the database exists, remove it. It will affect the test. */
-	if _, err := os.Stat(db); !os.IsNotExist(err) {
-		err := os.Remove(db)
-		if err != nil {
-			t.Errorf("wasn't able to delete the database at: %s", db)
-		}
-	}
-}
-
 /* A function that takes a slice of RequestTestPairs. Each pair has a request and a
  * test function. Each request is submitted and the corresponding test is run on the
  * response. Tests are run sequence and each test is used to validate the response.
@@ -393,12 +374,18 @@ func deleteDatabase(t *testing.T) {
  * of a chain of requests will break since it is likely the following tests will also
  * break. */
 func serverTestHelper(tests []RequestTestPair, t *testing.T) {
+	/* Indicate that this is the prod database and not the test. */
+	dbDir := filepath.Join(os.TempDir(), "test")
+	/* Create the directory if it doesn't exist. */
+	if _, err := os.Stat(dbDir); os.IsNotExist(err) {
+		os.Mkdir(dbDir, 0755)
+	}
+	db := filepath.Join(dbDir, "tracer-db.db")
 	/* Delete any existing database entries */
-	/* TODO: make a testing database. So that we don't delete a bunch of data when we run tests. */
-	deleteDatabase(t)
+	configure.DeleteDatabase(db)
 	/* Open the database because the init method from main.go won't trigger. */
-	openDatabase()
-	_, handler := configureServer()
+	configure.Database(db)
+	_, handler := configure.Server()
 
 	for _, pair := range tests {
 		/* For each request/test combo:
@@ -422,7 +409,7 @@ func getTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 	var err error
 
 	if status := rr.Code; status != http.StatusOK {
-		err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusNoContent)
+		err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusOK)
 	} else {
 		/* Validate the tracer was the first tracer inserted. */
 		got := types.Tracer{}
