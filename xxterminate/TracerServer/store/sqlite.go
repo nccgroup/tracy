@@ -4,33 +4,60 @@ import (
 	"database/sql"
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
-	"fmt"
 	"os"
 )
 
-/* Table names. */
-const TRACERS_TABLE string = "tracers"
-const EVENTS_TABLE string = "events"
-const TRACERS_EVENTS_TABLE string = "tracers_events"
+/*TracersTable is the database table name for tracers. */
+const TracersTable string = "tracers"
 
-/* Table columns. */
-const TRACERS_ID_COLUMN string = "id"
-const TRACERS_TRACER_STRING_COLUMN string = "tracer_string"
-const TRACERS_URL_COLUMN string = "url"
-const TRACERS_METHOD_COLUMN string = "method"
+/*EventsTable is the database table name for tracer events. */
+const EventsTable string = "events"
 
-const EVENTS_ID_COLUMN string = "id"
-const EVENTS_DATA_COLUMN string = "data"
-const EVENTS_LOCATION_COLUMN string = "location"
-const EVENTS_EVENT_TYPE_COLUMN string = "event_type"
+/*TracersEventsTable is the database table name for the mapping of tracers to events. */
+const TracersEventsTable string = "tracers_events"
 
-const TRACERS_EVENTS_ID_COLUMN string = "event_id"
-const TRACERS_EVENTS_TRACER_ID_COLUMN string = "tracer_id"
-const TRACERS_EVENTS_EVENT_ID_COLUMN string = "event_id"
+/*TracersIDColumn is the column name for the tracers ID. */
+const TracersIDColumn string = "id"
 
-/* Open the database and create the tables if they aren't already created. 
+/*TracersTracerStringColumn is the column name for the tracers tracer string. */
+const TracersTracerStringColumn string = "tracer_string"
+
+/*TracersURLColumn is the column name for the tracers URL. */
+const TracersURLColumn string = "url"
+
+/*TracersMethodColumn is the column name for the tracers method. */
+const TracersMethodColumn string = "method"
+
+/*EventsIDColumn is the column name for the tracer method. */
+const EventsIDColumn string = "id"
+
+/*EventsDataColumn is the column name for the tracer method. */
+const EventsDataColumn string = "data"
+
+/*EventsLocationColumn is the column name for the tracer method. */
+const EventsLocationColumn string = "location"
+
+/*EventsEventTypeColumn is the column name for the tracer method. */
+const EventsEventTypeColumn string = "event_type"
+
+/*TracersEventsIDColumn is the column name for the tracers events ID. */
+const TracersEventsIDColumn string = "id"
+
+/*TracersEventsTracerIDColumn is the column name for the tracers events tracer ID. */
+const TracersEventsTracerIDColumn string = "tracer_id"
+
+/*TracersEventsEventIDColumn is the column name for the tracers events event ID. */
+const TracersEventsEventIDColumn string = "event_id"
+
+/*TracerDB is the one global used to gain access to the database from this package.
+ * Other packages, like testing, might choose to not use this database and instead
+ * will supply their own. */
+var TracerDB *sql.DB
+
+/*Open the database and create the tables if they aren't already created.
  * Errors indicate something incorrectly happened while
  * connecting. Don't forget to close this DB when finished using it. */
 func Open(driver, path string) (*sql.DB, error) {
@@ -65,35 +92,36 @@ func Open(driver, path string) (*sql.DB, error) {
 	}
 
 	/* Build the tables. */
-	tracers_table := make(map[string]string)
-	tracers_table[TRACERS_TRACER_STRING_COLUMN] = "TEXT NOT NULL UNIQUE"
-	tracers_table[TRACERS_URL_COLUMN] = "TEXT NOT NULL"
-	tracers_table[TRACERS_METHOD_COLUMN] = "TEXT NOT NULL"
+	tracersTable := make(map[string]string)
+	tracersTable[TracersTracerStringColumn] = "TEXT NOT NULL UNIQUE"
+	tracersTable[TracersURLColumn] = "TEXT NOT NULL"
+	tracersTable[TracersMethodColumn] = "TEXT NOT NULL"
 
-	events_table := make(map[string]string)
-	events_table[EVENTS_DATA_COLUMN] = "TEXT"
-	events_table[EVENTS_LOCATION_COLUMN] = "TEXT"
-	events_table[EVENTS_EVENT_TYPE_COLUMN] = "TEXT"
+	eventsTable := make(map[string]string)
+	eventsTable[EventsDataColumn] = "TEXT"
+	eventsTable[EventsLocationColumn] = "TEXT"
+	eventsTable[EventsEventTypeColumn] = "TEXT"
 
 	/* Simple ID-to-ID mapping between the two tables above. */
-	tracers_events_table := make(map[string]string)
-	tracers_events_table[TRACERS_EVENTS_TRACER_ID_COLUMN] = "Integer"
-	tracers_events_table[TRACERS_EVENTS_EVENT_ID_COLUMN] = "Integer"
+	tracersEventsTable := make(map[string]string)
+	tracersEventsTable[TracersEventsTracerIDColumn] = "Integer"
+	tracersEventsTable[TracersEventsEventIDColumn] = "Integer"
 
 	/* Create table does not overwrite existing data, so perform this call every time
 	 * we open the database. */
-	createTable(db, TRACERS_TABLE, tracers_table)
-	createTable(db, EVENTS_TABLE, events_table)
-	createTable(db, TRACERS_EVENTS_TABLE, tracers_events_table)
+	createTable(db, TracersTable, tracersTable)
+	createTable(db, EventsTable, eventsTable)
+	createTable(db, TracersEventsTable, tracersEventsTable)
 
 	/* Return the database and nil, indicating we made a sound connection. */
+	TracerDB = db
 	return db, nil
 }
 
 /* Create the tracer database. */
-func createTable(db *sql.DB, table_name string, columns map[string]string) error {
+func createTable(db *sql.DB, tableName string, columns map[string]string) error {
 	/* Create the front part of the query. */
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY", table_name)
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY", tableName)
 	for key, val := range columns {
 		query = fmt.Sprintf("%s,", query)
 		query = fmt.Sprintf("%s %s %s", query, key, val)
@@ -109,7 +137,7 @@ func createTable(db *sql.DB, table_name string, columns map[string]string) error
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
 	defer stmt.Close()
-	
+
 	/* Check the table was created.*/
 	res, err := stmt.Exec()
 	if err != nil {
@@ -117,7 +145,7 @@ func createTable(db *sql.DB, table_name string, columns map[string]string) error
 	}
 
 	/* Check the response. */
-	lastId, err := res.LastInsertId()
+	lastID, err := res.LastInsertId()
 	if err != nil {
 		return err
 	}
@@ -127,6 +155,6 @@ func createTable(db *sql.DB, table_name string, columns map[string]string) error
 	if err != nil {
 		return err
 	}
-	log.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", table_name, lastId, rowCnt)
+	log.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", tableName, lastID, rowCnt)
 	return nil
 }

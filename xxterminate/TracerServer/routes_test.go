@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-	"xxterminator-plugin/xxterminate/TracerServer/tracer"
+	"xxterminator-plugin/xxterminate/TracerServer/types"
 )
 
 /* Used to order request and their corresponding tests. */
@@ -31,8 +31,7 @@ func TestAddTracer(t *testing.T) {
 		addURL  = "http://127.0.0.1:8081/tracers"
 		getURL  = "http://127.0.0.1:8081/tracers/1"
 	)
-	jsonStr := fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`,
-		trcrStr, URL, method)
+	jsonStr := fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
 
 	/* Make the POST request. */
 	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(jsonStr)))
@@ -70,11 +69,9 @@ func TestDeleteTracer(t *testing.T) {
 		method  = "GET"
 		delURL  = "http://127.0.0.1:8081/tracers/1"
 		addURL  = "http://127.0.0.1:8081/tracers"
-		jsonStr = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`,
-			trcrStr, URL, method)
+		jsonStr = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
 	)
 
-	t.Logf("sending the following data: %s", jsonStr)
 	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(jsonStr)))
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request but got the following error: %+v", err)
@@ -125,12 +122,12 @@ func TestDeleteTracer(t *testing.T) {
 			err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusNoContent)
 		} else {
 			/* Validate the server did not leak any data. */
-			got := tracer.Tracer{}
+			got := types.Tracer{}
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
 			/* Test to make sure that after we delete the tracer, we can't query for it again. */
 			if got.ID != 0 {
-				err = fmt.Errorf("getTracer returned the wrong body in the response. Got %+v, but expected %+v", got, tracer.Tracer{})
+				err = fmt.Errorf("getTracer returned the wrong body in the response. Got %+v, but expected %+v", got, types.Tracer{})
 			}
 		}
 
@@ -160,17 +157,16 @@ func TestEditTracer(t *testing.T) {
 		trcrStr    = "blahblah"
 		trcrStrChg = "zahzahzah"
 		URL        = "http://example.com"
-		urlChg     = "https://example.com"
+		URLChg     = "https://example.com"
 		method     = "GET"
 		methodChg  = "PUT"
 		putURL     = "http://127.0.0.1:8081/tracers/1"
 		addURL     = "http://127.0.0.1:8081/tracers"
-		jsonStr    = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
-		putStr     = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStrChg, urlChg, methodChg)
+		addStr     = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
+		putStr     = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStrChg, URLChg, methodChg)
 	)
 
-	t.Logf("sending the following data: %s", jsonStr)
-	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(jsonStr)))
+	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(addStr)))
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
@@ -190,17 +186,17 @@ func TestEditTracer(t *testing.T) {
 
 		/* Make sure the status is what we were expecting. */
 		if status := rr.Code; status != http.StatusCreated {
-			err = fmt.Errorf("EditTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusCreated)
+			err = fmt.Errorf("editTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusCreated)
 		} else {
 			/* Validate the server did not leak any data. */
-			got := tracer.Tracer{}
+			got := types.Tracer{}
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
 			/* Test to make sure the server responds with our updated changes. */
 			if got.ID != 1 {
 				err = fmt.Errorf("editTracer returned the wrong body ID. Got %+v, but expected %+v", got.ID, 1)
-			} else if got.URL.String != urlChg {
-				err = fmt.Errorf("editTracer returned the wrong body URL. Got %+v, but expected %+v", got.URL.String, putURL)
+			} else if got.URL.String != URLChg {
+				err = fmt.Errorf("editTracer returned the wrong body URL. Got %+v, but expected %+v", got.URL.String, URLChg)
 			} else if got.Method.String != methodChg {
 				err = fmt.Errorf("editTracer returned the wrong body Method. Got %+v, but expected %+v", got.Method.String, methodChg)
 			} else if got.TracerString != trcrStrChg {
@@ -229,14 +225,14 @@ func TestEditTracer(t *testing.T) {
 			err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusNoContent)
 		} else {
 			/* Validate the tracer was the first tracer inserted. */
-			got := tracer.Tracer{}
+			got := types.Tracer{}
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
 			/* Make sure the retrieved tracer has the updated contents. */
 			if got.Method.String != methodChg {
 				err = fmt.Errorf("editTracer returned the wrong body Method. Got %+v, but expected %+v", got.Method.String, methodChg)
-			} else if got.URL.String != urlChg {
-				err = fmt.Errorf("editTracer returned the wrong body URL. Got %+v, but expected %+v", got.URL.String, putURL)
+			} else if got.URL.String != URLChg {
+				err = fmt.Errorf("editTracer returned the wrong body URL. Got %+v, but expected %+v", got.URL.String, URLChg)
 			} else if got.TracerString != trcrStrChg {
 				err = fmt.Errorf("editTracer returned the wrong body TracerString. Got %+v, but expected %+v", got.TracerString, trcrStrChg)
 			}
@@ -258,7 +254,7 @@ func TestEditTracer(t *testing.T) {
 }
 
 /* Testing editTracer. PUT /tracers/<tracer_id>/ */
-func TestAddEvnt(t *testing.T) {
+func TestAddEvent(t *testing.T) {
 	/* ADDING A TRACER */
 	/////////////////////
 	var (
@@ -270,10 +266,8 @@ func TestAddEvnt(t *testing.T) {
 		evntType   = "datevnttype"
 		addEvntURL = "http://127.0.0.1:8081/tracers/1"
 		addURL     = "http://127.0.0.1:8081/tracers"
-		jsonStr    = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`,
-			trcrStr, URL, method)
-		evntStr = fmt.Sprintf(`{"Data": "%s", "Location": "%s", "EventType": "%s"}`,
-			data, location, evntType)
+		jsonStr    = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
+		evntStr    = fmt.Sprintf(`{"Data": "%s", "Location": "%s", "EventType": "%s"}`, data, location, evntType)
 	)
 
 	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(jsonStr)))
@@ -299,7 +293,7 @@ func TestAddEvnt(t *testing.T) {
 			err = fmt.Errorf("addTracerEvent returned the wrong status code. Got %+v, but expected %+v", status, http.StatusOK)
 		} else {
 			/* Validate the tracer was the first tracer inserted. */
-			got := tracer.TracerEvent{}
+			got := types.TracerEvent{}
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
 			/* Validate the response gave us back the event we added. */
@@ -335,7 +329,7 @@ func TestAddEvnt(t *testing.T) {
 			err = fmt.Errorf("getTracerEvent returned the wrong status code. Got %+v, but expected %+v", status, http.StatusOK)
 		} else {
 			/* Validate the tracer was the first tracer inserted. */
-			got := tracer.Tracer{}
+			got := types.Tracer{}
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
 			/* Make sure we have enough Hits. */
@@ -430,7 +424,7 @@ func getTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 		err = fmt.Errorf("GetTracer returned the wrong status code. Got %v, but wanted %v", status, http.StatusNoContent)
 	} else {
 		/* Validate the tracer was the first tracer inserted. */
-		got := tracer.Tracer{}
+		got := types.Tracer{}
 		json.Unmarshal([]byte(rr.Body.String()), &got)
 
 		/* This test only looks for the tracer just added. The ID should be 1. */
@@ -453,7 +447,7 @@ func addTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 		err = fmt.Errorf("AddTracer returned the wrong status code: got %v, but wanted %v", status, http.StatusOK)
 	} else {
 		/* Make sure the body is a valid JSON object. */
-		got := tracer.Tracer{}
+		got := types.Tracer{}
 		json.Unmarshal([]byte(rr.Body.String()), &got)
 
 		/* Sanity checks to make sure the added tracer wasn't empty. */
