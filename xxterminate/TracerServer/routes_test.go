@@ -22,19 +22,19 @@ type RequestTestPair struct {
 
 /* Testing addTracer with httptest. POST /tracers */
 func TestAddTracer(t *testing.T) {
+	var (
+		trcrStr    = "blahblah"
+		URL        = "http://example.com"
+		method     = "GET"
+		addURL     = "http://127.0.0.1:8081/tracers"
+		getURL     = "http://127.0.0.1:8081/tracers/1"
+		addTrcrStr = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
+	)
+
 	/* ADDING A TRACER */
 	/////////////////////
-	var (
-		trcrStr = "blahblah"
-		URL     = "http://example.com"
-		method  = "GET"
-		addURL  = "http://127.0.0.1:8081/tracers"
-		getURL  = "http://127.0.0.1:8081/tracers/1"
-	)
-	jsonStr := fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
-
 	/* Make the POST request. */
-	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(jsonStr)))
+	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(addTrcrStr)))
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
@@ -61,18 +61,18 @@ func TestAddTracer(t *testing.T) {
 
 /* Testing deleteTracer. DELETE /tracers/<tracer_id> */
 func TestDeleteTracer(t *testing.T) {
-	/* ADDING A TRACER */
-	/////////////////////
 	var (
-		trcrStr = "blahblah"
-		URL     = "http://example.com"
-		method  = "GET"
-		delURL  = "http://127.0.0.1:8081/tracers/1"
-		addURL  = "http://127.0.0.1:8081/tracers"
-		jsonStr = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
+		trcrStr    = "blahblah"
+		URL        = "http://example.com"
+		method     = "GET"
+		delURL     = "http://127.0.0.1:8081/tracers/1"
+		addURL     = "http://127.0.0.1:8081/tracers"
+		addTrcrStr = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
 	)
 
-	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(jsonStr)))
+	/* ADDING A TRACER */
+	/////////////////////
+	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(addTrcrStr)))
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request but got the following error: %+v", err)
 	}
@@ -151,8 +151,6 @@ func TestDeleteTracer(t *testing.T) {
 
 /* Testing editTracer. PUT /tracers/<tracer_id>/ */
 func TestEditTracer(t *testing.T) {
-	/* ADDING A TRACER */
-	/////////////////////
 	var (
 		trcrStr    = "blahblah"
 		trcrStrChg = "zahzahzah"
@@ -166,6 +164,8 @@ func TestEditTracer(t *testing.T) {
 		putStr     = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStrChg, URLChg, methodChg)
 	)
 
+	/* ADDING A TRACER */
+	/////////////////////
 	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(addStr)))
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
@@ -255,8 +255,6 @@ func TestEditTracer(t *testing.T) {
 
 /* Testing editTracer. PUT /tracers/<tracer_id>/ */
 func TestAddEvent(t *testing.T) {
-	/* ADDING A TRACER */
-	/////////////////////
 	var (
 		trcrStr    = "blahblah"
 		data       = "dahdata"
@@ -264,13 +262,15 @@ func TestAddEvent(t *testing.T) {
 		location   = "dahlocation"
 		method     = "GET"
 		evntType   = "datevnttype"
-		addEvntURL = "http://127.0.0.1:8081/tracers/1"
-		addURL     = "http://127.0.0.1:8081/tracers"
-		jsonStr    = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
+		addEvntURL = "http://127.0.0.1:8081/tracers/1/events"
+		addTrcrURL = "http://127.0.0.1:8081/tracers"
+		addTrcrStr = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
 		evntStr    = fmt.Sprintf(`{"Data": "%s", "Location": "%s", "EventType": "%s"}`, data, location, evntType)
 	)
 
-	addReq, err := http.NewRequest("POST", addURL, bytes.NewBuffer([]byte(jsonStr)))
+	/* ADDING A TRACER */
+	/////////////////////
+	addReq, err := http.NewRequest("POST", addTrcrURL, bytes.NewBuffer([]byte(addTrcrStr)))
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
@@ -315,7 +315,7 @@ func TestAddEvent(t *testing.T) {
 
 	/* GETTING AN EVENT */
 	/////////////////////
-	getEvntReq, err := http.NewRequest("GET", addEvntURL, nil)
+	getEvntReq, err := http.NewRequest("GET", fmt.Sprintf("%s/1", addTrcrURL), nil)
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
@@ -364,6 +364,7 @@ func TestAddEvent(t *testing.T) {
 	tests[0] = addReqTest
 	tests[1] = addEvntReqTest
 	tests[2] = getEvntReqTest
+	serverTestHelper(tests, t)
 }
 
 /* Delete any existing database */
@@ -409,7 +410,7 @@ func serverTestHelper(tests []RequestTestPair, t *testing.T) {
 		handler.ServeHTTP(rr, pair.Request)
 		err := pair.Test(rr, t)
 		if err != nil {
-			t.Errorf("the following request, %+v, did not pass it's test: %+v", pair.Request, err)
+			t.Errorf("the following request, %+v, did not pass it's test: %+v. Request body: %s", pair.Request, err, rr.Body.String())
 			break
 		}
 	}

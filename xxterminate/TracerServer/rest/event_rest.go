@@ -18,17 +18,17 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 		tmp := types.TracerEvent{}
 		json.NewDecoder(r.Body).Decode(&tmp)
 		/* Validate the event before uploading it to the database. */
-		if tmp.Data.String != "" {
+		if tmp.Data.String == "" {
 			err := "The data field for the event was empty"
 			log.Printf(err)
 			http.Error(w, err, http.StatusInternalServerError)
 		}
-		if tmp.Location.String != "" {
+		if tmp.Location.String == "" {
 			err := "The location field for the event was empty"
 			log.Printf(err)
 			http.Error(w, err, http.StatusInternalServerError)
 		}
-		if tmp.EventType.String != "" {
+		if tmp.EventType.String == "" {
 			err := "The event type field for the event was empty"
 			log.Printf(err)
 			http.Error(w, err, http.StatusInternalServerError)

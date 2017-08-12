@@ -130,7 +130,7 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 /*DBGetTracerEventByID gets a tracer event by the tracer event ID. */
 func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 	query := fmt.Sprintf(
-		`SELECT %s %s %s %s
+		`SELECT %s, %s, %s, %s
 		 FROM %s
 		 WHERE %s = ?;`,
 		EventsIDColumn,
@@ -171,7 +171,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 		}
 
 		if eventID.Int64 != 0 && data != (types.JSONNullString{}) {
-			log.Printf("Event ID: %d", eventID)
+			log.Printf("Event ID: %d", eventID.Int64)
 			trcrEvnt = types.TracerEvent{
 				ID:        eventID,
 				Data:      data,
