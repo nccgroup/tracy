@@ -8,16 +8,27 @@
     "storage"
   ],
   "background": {
-    "scripts": ["scripts/background.js"],
+    "scripts": [
+      "scripts/background.js"
+    ],
     "persistent": true
   },
   "externally_connectable": {
-    "matches": ["http://localhost:8000/*","http://voting.na.nccgroup.com:8000/*"]
+    "matches": [
+      "http://localhost:8000/*",
+      "http://voting.na.nccgroup.com:8000/*"
+    ]
   },
   "content_scripts": [
     {
-        "matches": ["http://localhost:8000/*","http://voting.na.nccgroup.com:8000/*"],
-        "js": ["scripts/xxterminator.js"],
+        "matches": [
+          "http://localhost:8000/*",
+          "http://voting.na.nccgroup.com:8000/*"
+        ],
+        "js": [
+          "scripts/dom-mutations.js",
+          "scripts/dom-injections.js"
+        ],
         "run_at": "document_start"
     }
   ],
@@ -25,9 +36,9 @@
     "default_title": "xxterminator"
   },
   "web_accessible_resources" : [
-    "scripts/injected-page.js",
-    "styles/injected-page.css"
+    "scripts/click-to-fill.js",
+    "styles/click-to-fill.css"
   ],
   "manifest_version": 2,
-  "options_page": "options.html"
+  "options_page": "html/options.html"
 }

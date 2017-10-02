@@ -1,26 +1,5 @@
+/* Code used to inject JavaScript and CSS into the page. */
 (function() {
-
-  var observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-      mutation.addedNodes.forEach(function(node){
-          if(node.nodeType == 1){
-            chrome.runtime.sendMessage({'type': 'dom', 'msg': node.outerHTML}, null);// For now we don't want to use the callback handler
-          } else if (node.nodeType == 3) {
-            chrome.runtime.sendMessage({'type': 'text', 'msg': node.wholeText}, null);// For now we don't want to use the callback handler
-          }
-      });
-    });
-  });
-
-  var observerConfig = {
-    attributes: true,
-    childList: true,
-    characterData: true,
-    subtree: true
-  };
-
-  observer.observe(document.documentElement, observerConfig);
-
     /* Use the chrome.runtime API to generate a string the looks like a JavaScript variable containing the extension ID. */
     function createChromeExtensionVariable() {
         return "var chromeExtensionId = \"" + chrome.runtime.id + "\"";
@@ -59,8 +38,8 @@
 
     /* Add a global variable with the chrome extension ID. */
     addScriptTagToDom(createChromeExtensionVariable(), null);
-    addScriptTagToDom(null, chrome.runtime.getURL("/scripts/injected-page.js"));
+    addScriptTagToDom(null, chrome.runtime.getURL("/scripts/click-to-fill.js"));
 
     /* Add our styles to the DOM. */
-    addStyleTagToDom(null, chrome.runtime.getURL("/styles/injected-page.css"))
+    addStyleTagToDom(null, chrome.runtime.getURL("/styles/click-to-fill.css"))
 })();
