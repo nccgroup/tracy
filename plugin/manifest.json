@@ -4,10 +4,11 @@
   "version": "2.0",
   "permissions": [
     "activeTab",
-    "http://localhost:8081/*"
+    "http://localhost:8081/*",
+    "storage"
   ],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": ["scripts/background.js"],
     "persistent": true
   },
   "externally_connectable": {
@@ -16,12 +17,17 @@
   "content_scripts": [
     {
         "matches": ["http://localhost:8000/*","http://voting.na.nccgroup.com:8000/*"],
-        "js": ["xxterminator.js"],
+        "js": ["scripts/xxterminator.js"],
         "run_at": "document_start"
     }
   ],
   "browser_action": {
     "default_title": "xxterminator"
   },
-  "manifest_version": 2
+  "web_accessible_resources" : [
+    "scripts/injected-page.js",
+    "styles/injected-page.css"
+  ],
+  "manifest_version": 2,
+  "options_page": "options.html"
 }
