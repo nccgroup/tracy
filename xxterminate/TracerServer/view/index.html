@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Tracer API Server</title>
+        <script type="text/javascript">
+            function getTracers() {
+                function requestHandler() {
+                    if (req.readyState == 4 && req.status == 200) {
+                        console.log("Tracer list:");
+                        console.log(this.responseText);
+                    }
+                }
+
+                var req = new XMLHttpRequest();
+                req.open("GET", "/tracers", true);
+                req.onreadystatechange = requestHandler;
+                req.send();
+            }
+
+            getTracers();
+        </script>
+    </head>
+    <body>
+        <div id="results">
+            <details class="stderr">
+                <summary></summary>
+                <div>%s</div>
+            </details>
+        </div>
+
+    </body>
+</html>

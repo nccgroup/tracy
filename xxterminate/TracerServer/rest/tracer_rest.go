@@ -138,7 +138,7 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 /* Common function for logging an internal server error and serving back something generic. */
 func serverError(err error) []byte {
 	ref := rand.Intn(10000000000000)
-	log.Println("Reference %d: %s", ref, err.Error())
+	log.Printf("Reference %d: %s", ref, err.Error())
 
 	return []byte(fmt.Sprintf(`{"Message":"Internal Server Error", "Reference":"%d"}`, ref))
 }

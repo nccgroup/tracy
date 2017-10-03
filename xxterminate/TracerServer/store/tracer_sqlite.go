@@ -76,11 +76,11 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 		/* From this table. */
 		TracersTable,
 		/*Join this table where the tracer IDs match. */
-		EventsTable, TracersTable, TracersIDColumn,
-		EventsTable, TracersEventsTracerIDColumn,
+		TracersEventsTable, TracersEventsTable, TracersEventsTracerIDColumn,
+		TracersTable, TracersIDColumn,
 		/* Join again against the events table where the event IDs match. */
-		EventsTable, EventsTable, TracersEventsEventIDColumn,
-		EventsTable, EventsIDColumn)
+		EventsTable, EventsTable, EventsIDColumn,
+		TracersEventsTable, TracersEventsEventIDColumn)
 	log.Printf("Built this query for getting trcrs: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -96,7 +96,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 	defer rows.Close()
 
 	/* Not sure why I can't get the number of rows from a Rows type. Kind of annoying. */
-	trcrs := make(map[int]types.Tracer, 0)
+	trcrs := make(map[int]types.Tracer)
 	for rows.Next() {
 		var (
 			trcrID   int

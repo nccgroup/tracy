@@ -4,6 +4,7 @@ import (
 	"log"
 	"path/filepath"
 	"xxterminator-plugin/xxterminate/TracerServer/configure"
+	"os"
 )
 
 func main() {
