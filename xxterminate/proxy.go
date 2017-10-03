@@ -78,6 +78,7 @@ func handleConnection(clientConn net.Conn, cer tls.Certificate) {
 		return
 	}
 
+	go proccessResponseTracers(*resp)
 	resp.Write(clientConn)
 
 	if resp.StatusCode == 101 {

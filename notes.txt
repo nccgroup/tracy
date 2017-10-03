@@ -1,0 +1,53 @@
+What is the point?
+  The point is to easy find XSS and help find XSS that would go unnoticed because
+  of current testing methods. Currenly, we just put XSS payloads somewhere and
+  hope that we can see the ouput to know if there is XSS. This way hopefuly we
+  make us smarter by allowing use to identify the flow of user input
+How does it work?
+  It works by monitoring different aspects of the website for tracers. It will
+  then log these events so that I detailed map of the user's inputs and output
+  can be created. This should allow a tester to be able to identify all the location
+  that XSS could be from user input. This could also identify what type of encoding
+  that the server is doing to help speed up the proccess by telling the tester
+  what to try.
+What makes this diffrent from BURP scanner?
+  Well the point is not to be a scanner more of a new sense for the tester. It
+  should allow the tester to have Xarray version into the DOM and understand the
+  flow of user input. The way that BURP works is be just looking at response data
+  or doing dynamic analysis of the javascript. While this works kind of, it misses
+  out on the fact that JS templeting is a huge part of the web. This means that
+  the data coming back from the server and the data writen to the DOM might
+  be diffrent. This can lead to both false possitive and nagatives. With this
+  tool it will only look at data writen to the dom to find out what is going on.
+  In theory this should make it more accurate. This should alos greatly speedup
+  blackbox testing.
+
+Plugin:
+  Hook other userful stuff like eval
+  Make request async in backgroup.js
+  We need some kind of UI for the plugin. It should show some info about the state
+    that the plugin is in and also some general info
+  If there is ever an error with adding a tracerEvent just reload the list
+  We need to better way to reload the list over all. right now it is kind of manual wich is not ideal. It could be with every request
+  Find a better way to insert the hooking code. Currenly it is just a string. This makes it really hard to edit.
+  I don't know about the hardcoded host paths. There needs to be a way to configure these.
+  Exstention ID is hardcoded for the hooking code to send info. This need to change as a user had to manualy update it now.
+  Could we hook javascript load?
+  We shold log as much info as we can get. Right now logging is at a all time min.
+
+Server:
+  We need to have some kind of UI to display the info
+  We need a websocket server to display the findings
+  We need to be able to only show the lines that the tracers are on
+  We also need to be able to tell the differnse in request. Right now we just modify the old one.
+  We should mkae a realy DB
+  Added security
+  Make it more rest like
+  Added a way to only see events for an ID
+  Write better code
+
+Proxy:
+  Add tracer logging on the response
+  Add better error handling
+  Write cleaner code
+  Move over to burp? I am kind worried with using my proxy server. Don't know how bullet proof it is.

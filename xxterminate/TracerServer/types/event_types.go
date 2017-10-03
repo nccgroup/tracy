@@ -89,3 +89,15 @@ func (v *JSONNullString) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+//StringToJSONNullString is a helper to convert a string into a JSONNullString
+func StringToJSONNullString(str string) JSONNullString {
+	//Should we do a check here for a null string?
+	return JSONNullString{sql.NullString{String: str, Valid: true}}
+}
+
+//StringToJSONNullInt64 is a helper to convert a string into a JSONNullInt64
+func Int64ToJSONNullInt64(i int64) JSONNullInt64 {
+	//Should we do a check here for a null int?
+	return JSONNullInt64{sql.NullInt64{Int64: i, Valid: true}}
+}
