@@ -3,7 +3,6 @@ var tracerList = ["OQ1Cd2", "Waldo"]
 chrome.runtime.onMessageExternal.addListener(requestHandler);
 chrome.runtime.onMessage.addListener(requestHandler);
 
-
 function requestHandler(request, sender, sendResponse) {
   tracerList.forEach(function(tracer){
     if(request.msg.indexOf(tracer)!=-1){ // This only find the first case. Is that good enough.

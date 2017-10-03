@@ -1,8 +1,31 @@
 <html>
-<head>
-</head>
-<body>
-<div id="urlParameterJavaScriptXSS"></div>
-<script src="tester.js"></script>
-</body>
+    <head>
+        <!--<script src="tester.js"></script>-->
+    </head>
+    <body>
+        <form>
+            <input type="text" placeholder="text input"/>
+            <input type="password" placeholder="password input"/>
+            <input type="radio" placeholder="radio input"/>
+            <input type="checkbox" placeholder="checkbox input"/>
+            <input type="url" placeholder="url input"/>
+            <input type="week" placeholder="week input"/>
+            <input type="time" placeholder="time input"/>
+            <input type="tel" placeholder="telephone input"/>
+            <input type="search" placeholder="search input"/>
+            <input type="range" min="0" max="10" placeholder="range input"/>
+            <input type="number" min="0" max="100" step="10" value="30">
+            <input type="month" placeholder="month input">
+            <input type="email" placeholder="email input">
+            <input type="datetime-local" placeholder="datetime input">
+            <input type="date" placeholder="date input">
+            <input type="color" placeholder="color input">
+
+            <input type="hidden" placeholder="hidden input"/>
+
+            <input type="reset" placeholder="reset input"/>
+            <input type="submit" placeholder="submit input"/>
+
+        </form>
+    </body>
 </html>
