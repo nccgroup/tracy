@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"xxterminator-plugin/xxterminate/TracerServer/rest"
-	"xxterminator-plugin/xxterminate/TracerServer/store"
+	"xxterminator-plugin/tracer/rest"
+	"xxterminator-plugin/tracer/store"
 )
 
 /*Server configures all the HTTP routes and their corresponding handler. */
@@ -43,7 +43,7 @@ func Server() (*http.Server, *mux.Router) {
 
 /* The base route for the application. */
 func root(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadFile("./view/index.html")
+	body, err := ioutil.ReadFile("./tracer/view/index.html")
 	if err != nil {
 		log.Fatal(err)
 	}

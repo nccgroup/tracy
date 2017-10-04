@@ -9,8 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"xxterminator-plugin/xxterminate/TracerServer/configure"
-	"xxterminator-plugin/xxterminate/TracerServer/types"
+	"xxterminator-plugin/tracer/configure"
+	"xxterminator-plugin/tracer/types"
 )
 
 /* Used to order request and their corresponding tests. */

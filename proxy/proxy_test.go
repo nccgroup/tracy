@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"xxterminator-plugin/xxterminate/TracerServer/types"
+	"xxterminator-plugin/tracer/types"
 )
 
 var requestDataNoTags = `GET /api/v1/action/ HTTP/1.1

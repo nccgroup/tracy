@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"xxterminator-plugin/xxterminate/TracerServer/store"
-	"xxterminator-plugin/xxterminate/TracerServer/types"
+	"xxterminator-plugin/tracer/store"
+	"xxterminator-plugin/tracer/types"
 )
 
 /*AddTracer is the common functionality to add a tracer to the database. This function

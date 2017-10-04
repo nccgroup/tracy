@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"xxterminator-plugin/xxterminate/TracerServer/common"
-	"xxterminator-plugin/xxterminate/TracerServer/types"
+	"xxterminator-plugin/tracer/common"
+	"xxterminator-plugin/tracer/types"
 )
 
 /*AddTracer decodes an HTTP request to add a new tracer to the database. */

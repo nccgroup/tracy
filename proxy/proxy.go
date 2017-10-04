@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"bufio"
@@ -9,6 +9,23 @@ import (
 	"net/http/httputil"
 	"strings"
 )
+
+/*ListenAndServe waits and listens for TCP connections and proxies them. */
+func ListenAndServe(ln net.Listener, cert tls.Certificate) {
+	/* Never stop listening for TCP connections. */
+	for {
+		/* Block until a TCP connection comes in. */
+		conn, err := ln.Accept()
+
+		if err == nil {
+			/* Pass case. Proxy the connection on a separate goroutine and go back to listening. */
+			go handleConnection(conn, cert)
+		}
+
+		/* Log the current status and any errors. Errors don't fail fast. Errors happen and can be recovered from. */
+		log.Printf("Handled connection %+v. Error: %+v", conn, err)
+	}
+}
 
 func handleConnection(clientConn net.Conn, cer tls.Certificate) {
 	defer clientConn.Close()
@@ -78,7 +95,16 @@ func handleConnection(clientConn net.Conn, cer tls.Certificate) {
 		return
 	}
 
-	go proccessResponseTracers(*resp)
+	responseRawBytes, err := httputil.DumpResponse(resp, true)
+	if err != nil {
+		log.Printf("Got an error dumping the response: %s", err.Error())
+	}
+	go func() {
+		err := proccessResponseTracers(responseRawBytes, request.RequestURI);
+		if err != nil {
+			log.Printf("Error while processing the response: %s", err.Error())
+		}
+	}()
 	resp.Write(clientConn)
 
 	if resp.StatusCode == 101 {

@@ -7,7 +7,7 @@ import (
 	 * sql interface. */
 	_ "github.com/mattn/go-sqlite3"
 	"log"
-	"xxterminator-plugin/xxterminate/TracerServer/types"
+	"xxterminator-plugin/tracer/types"
 )
 
 /*DBAddTracer adds a new tracer. */

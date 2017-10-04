@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"bytes"
@@ -7,10 +7,10 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"net/http/httputil"
 	"strings"
 	"time"
-	"xxterminator-plugin/xxterminate/TracerServer/types"
+	"xxterminator-plugin/tracer/types"
+	"fmt"
 )
 
 //{"TracerString": "%s", "URL": "%s", "Method": "%s"}
@@ -18,7 +18,7 @@ import (
 //TODO: These should be in a config file
 
 //TAG used to insert tracers
-const TAG = "{{XSS}}"
+var TAG = []string{"{{XSS}}", "%7B%7BXSS%7D%7D"}
 
 //TRACERSERVER is location of the tracer server
 const TRACERSERVER = "http://localhost:8081"
@@ -39,6 +39,7 @@ func addTracers(req *http.Request) error {
 
 	//do request body
 	requestData, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
 	if err != nil {
 		return err
 	}
@@ -61,22 +62,24 @@ func addTracers(req *http.Request) error {
 func addTracersBody(requestData []byte) ([]byte, []string, error) {
 	var addedTracers []string
 
-	splitRequestData := bytes.Split(requestData, []byte(TAG))
+	newRequest := requestData
+	for _, tag := range TAG {
+		splitRequestData := bytes.Split(newRequest, []byte(tag))
 
-	if len(splitRequestData) == 1 {
-		return requestData, nil, nil
-	}
+		if len(splitRequestData) == 1 {
+			continue
+		}
 
-	newRequest := make([]byte, 0)
-	newRequest = append(newRequest, splitRequestData[0]...)
+		newRequest = append(newRequest, splitRequestData[0]...)
 
-	for i := 1; i < len(splitRequestData); i++ {
-		randID := RandStringBytes(5)
+		for i := 1; i < len(splitRequestData); i++ {
+			randID := RandStringBytes(5)
 
-		newRequest = append(newRequest, randID...)
-		newRequest = append(newRequest, splitRequestData[i]...)
+			newRequest = append(newRequest, randID...)
+			newRequest = append(newRequest, splitRequestData[i]...)
 
-		addedTracers = append(addedTracers, string(randID))
+			addedTracers = append(addedTracers, string(randID))
+		}
 	}
 
 	return newRequest, addedTracers, nil
@@ -85,22 +88,23 @@ func addTracersBody(requestData []byte) ([]byte, []string, error) {
 //TODO: This function does not return a error so we really don't need it
 func addTracersQuery(rawQuary string) (string, []string, error) {
 	var addedTracers []string
-	reqSplitQuery := strings.Split(rawQuary, TAG)
+	query := rawQuary
+	for _, tag := range TAG {
+		reqSplitQuery := strings.Split(query, tag)
 
-	if len(reqSplitQuery) != 1 {
-		newQuery := reqSplitQuery[0]
+		if len(reqSplitQuery) != 1 {
+			newQuery := reqSplitQuery[0]
 
-		for i := 1; i < len(reqSplitQuery); i++ {
-			randID := getRandomID()
-			newQuery += string(randID) + reqSplitQuery[i]
-			addedTracers = append(addedTracers, string(rawQuary))
+			for i := 1; i < len(reqSplitQuery); i++ {
+				randID := getRandomID()
+				newQuery += string(randID) + reqSplitQuery[i]
+				addedTracers = append(addedTracers, string(query))
+			}
 		}
-
-		return rawQuary, addedTracers, nil
 	}
 
 	//There is no tracers to add
-	return rawQuary, nil, nil
+	return query, addedTracers, nil
 
 }
 
@@ -109,21 +113,23 @@ func getRandomID() []byte {
 }
 
 func sendTracersToServer(tracers []types.Tracer) error {
+	log.Println("Sending tracers to the server.")
 	//TODO: Add more error handling here for invalid server request
 	for _, tracer := range tracers {
 		tracerJSON, err := json.Marshal(tracer) //
+		log.Printf("tracer JSON: %s", string(tracerJSON))
 		if err != nil {
 			log.Println("Failed to Marshal tracer")
 			return err
 		}
 
-		http.Post(TRACERSERVER+"/tracer", "application/json; charset=UTF-8", bytes.NewBuffer(tracerJSON))
+		http.Post(TRACERSERVER+"/tracers", "application/json; charset=UTF-8", bytes.NewBuffer(tracerJSON))
 	}
 
 	return nil
 }
 
-func getTracerList() (map[int]types.Tracer, error) {
+func getTracerList() (map[string]types.Tracer, error) {
 	tracerListResp, err := http.Get(TRACERSERVER + "/tracers")
 	if err != nil {
 		log.Printf("Unable to get list of tracers")
@@ -137,19 +143,20 @@ func getTracerList() (map[int]types.Tracer, error) {
 		return nil, err
 	}
 
-	tracers := make(map[int]types.Tracer) // This is a real waste of space as we only need the IDS but oh well maybe later
+	tracers := make(map[string]types.Tracer) // This is a real waste of space as we only need the IDS but oh well maybe later
 
-	err = json.Unmarshal(tracerListbody, tracers)
+	err = json.Unmarshal(tracerListbody, &tracers)
+	log.Printf("tracerListBody: %s", string(tracerListbody))
 	if err != nil {
-		log.Fatal("failed to unmarshal request")
+		log.Println("Failed to unmarshal request")
 		return nil, err
 	}
 
 	return tracers, nil
 }
 
-func sendTracerEventsToServer(tracerEvents map[string]types.TracerEvent) error {
-	for tracerString, tracerEvent := range tracerEvents {
+func sendTracerEventsToServer(tracerEvents map[int]types.TracerEvent) error {
+	for tracerID, tracerEvent := range tracerEvents {
 
 		eventData, err := json.Marshal(tracerEvent)
 		if err != nil {
@@ -158,7 +165,7 @@ func sendTracerEventsToServer(tracerEvents map[string]types.TracerEvent) error {
 		}
 
 		//TODO: Add error handling for invalid request
-		_, err = http.Post(TRACERSERVER+"/tracers/"+tracerString+"/events", "application/json; charset=UTF-8", bytes.NewBuffer(eventData))
+		_, err = http.Post(fmt.Sprintf("%s/tracers/%d/events", TRACERSERVER, tracerID), "application/json; charset=UTF-8", bytes.NewBuffer(eventData))
 		if err != nil {
 			log.Println("failed trying to build an HTTP request")
 			return err
@@ -167,13 +174,7 @@ func sendTracerEventsToServer(tracerEvents map[string]types.TracerEvent) error {
 	return nil
 }
 
-func proccessResponseTracers(resp http.Response) error {
-
-	responseRawBytes, err := httputil.DumpResponse(&resp, true)
-	if err != nil {
-		log.Fatal("unable to get Raw response for proccessResponse")
-		return err
-	}
+func proccessResponseTracers(responseRawBytes []byte, requestUri string) error {
 	responseString := string(responseRawBytes)
 
 	tracers, err := getTracerList()
@@ -182,14 +183,12 @@ func proccessResponseTracers(resp http.Response) error {
 	}
 
 	foundTracers := findTracers(responseString, tracers)
-
-	location, _ := resp.Location()
-	tracerEvents := make(map[string]types.TracerEvent)
+	tracerEvents := make(map[int]types.TracerEvent)
 
 	for _, foundTracer := range foundTracers {
 		event := types.TracerEvent{ID: types.Int64ToJSONNullInt64(int64(foundTracer.ID)), Data: types.StringToJSONNullString(responseString),
-			Location: types.StringToJSONNullString(location.String()), EventType: types.StringToJSONNullString("Response")}
-		tracerEvents[foundTracer.TracerString] = event
+			Location: types.StringToJSONNullString(requestUri), EventType: types.StringToJSONNullString("Response")}
+		tracerEvents[foundTracer.ID] = event
 	}
 
 	sendTracerEventsToServer(tracerEvents)
@@ -197,12 +196,13 @@ func proccessResponseTracers(resp http.Response) error {
 	return nil
 }
 
-func findTracers(responseString string, tracers map[int]types.Tracer) []types.Tracer {
+func findTracers(responseString string, tracers map[string]types.Tracer) []types.Tracer {
 	var tracersFound []types.Tracer
 	for _, tracer := range tracers {
 		index := strings.Index(responseString, tracer.TracerString)
 
 		if index > -1 {
+			log.Printf("Found a tracer! %s", tracer.TracerString)
 			tracersFound = append(tracersFound, tracer)
 		}
 	}

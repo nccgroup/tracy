@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"bufio"
@@ -18,19 +18,23 @@ import (
 	"time"
 )
 
+/* Upgrade a TLS connection if the proxy receives a 'CONNECT' action from the connection. */
 func upgradeConnectionTLS(conn net.Conn, cert tls.Certificate, host string) (net.Conn, string, error) {
-
+	/* Respond to the client with 200 to inform them that a TLS connection is possible. */
 	resp := http.Response{Status: "Connection established", Proto: "HTTP/1.0", ProtoMajor: 1, StatusCode: 200}
 	resp.Write(conn)
 
+	/* Read the incoming connection. */
 	connBuff := newBufferedConn(conn)
 
-	get, err := connBuff.Peek(1)
+	/* Peek at the first byte of the HTTP string. */
+	get, err := connBuff.Peek(3)
 	if err != nil {
 		return nil, "", err
 	}
 
-	if string(get) == "G" {
+	/* If the first three bytes are 'GET', the request is using a GET verb and the protocol can be guessed to be HTTP. */
+	if string(get) == "GET" {
 		return connBuff, "http", nil
 	}
 

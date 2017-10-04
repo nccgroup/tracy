@@ -51,19 +51,6 @@ windows:
 	GOOS=windows GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-windows-${GOARCH}.exe . ; \
 	cd - >/dev/null
 
-# Need to redo these.
-#test:
-#	if ! hash go2xunit 2>/dev/null; then go install github.com/tebeka/go2xunit; fi
-#	cd ${BUILD_DIR}; \
-#	godep go test -v ./... 2>&1 | go2xunit -output ${TEST_REPORT} ; \
-#	cd - >/dev/null
-
-# Need to redo these.
-#vet:
-#	-cd ${BUILD_DIR}; \
-#	godep go vet ./... > ${VET_REPORT} 2>&1 ; \
-#	cd - >/dev/null
-
 fmt:
 	cd ${BUILD_DIR}; \
 	go fmt $$(go list ./... | grep -v /vendor/) ; \
@@ -81,8 +68,6 @@ deps:
 	go get -u github.com/golang/lint/golint;
 
 clean:
-#	-rm -f ${TEST_REPORT}
-#	-rm -f ${VET_REPORT}
 	-rm -f ${BINARY}-*
 
 .PHONY: link linux darwin windows test vet fmt clean deps

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"xxterminator-plugin/xxterminate/TracerServer/store"
-	"xxterminator-plugin/xxterminate/TracerServer/types"
+	"xxterminator-plugin/tracer/store"
+	"xxterminator-plugin/tracer/types"
 )
 
 /*AddEvent is the common functionality to add an event to the database. This function

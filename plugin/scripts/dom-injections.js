@@ -36,6 +36,8 @@
             document.documentElement.appendChild(tag);
     }
 
+
+
     /* Add a global variable with the chrome extension ID. */
     addScriptTagToDom(createChromeExtensionVariable(), null);
     addScriptTagToDom(null, chrome.runtime.getURL("/scripts/click-to-fill.js"));

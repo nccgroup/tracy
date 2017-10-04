@@ -4,7 +4,7 @@
   "version": "2.0",
   "permissions": [
     "activeTab",
-    "http://localhost:8081/*",
+    "<all_urls>",
     "storage"
   ],
   "background": {
@@ -13,24 +13,16 @@
     ],
     "persistent": true
   },
-  "externally_connectable": {
-    "matches": [
-      "http://localhost:8000/*",
-      "http://voting.na.nccgroup.com:8000/*"
-    ]
-  },
   "content_scripts": [
-    {
-        "matches": [
-          "http://localhost:8000/*",
-          "http://voting.na.nccgroup.com:8000/*"
-        ],
-        "js": [
-          "scripts/dom-mutations.js",
-          "scripts/dom-injections.js"
-        ],
-        "run_at": "document_start"
-    }
+      {
+          "matches": [
+            "<all_urls>"
+          ],
+          "js": [
+            "scripts/dom-injections.js"
+          ],
+          "run_at": "document_idle"
+      }
   ],
   "browser_action": {
     "default_title": "xxterminator"

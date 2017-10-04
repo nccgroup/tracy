@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"xxterminator-plugin/xxterminate/TracerServer/common"
-	"xxterminator-plugin/xxterminate/TracerServer/types"
+	"xxterminator-plugin/tracer/common"
+	"xxterminator-plugin/tracer/types"
 )
 
 /*AddEvent adds a tracer event to the tracer specified in the URL. */
