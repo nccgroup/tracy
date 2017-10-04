@@ -47,7 +47,7 @@ func handleConnection(clientConn net.Conn, cer tls.Certificate) {
 
 	}
 
-	addTracer(request) //add error handling here
+	addTracers(request) //add error handling here
 
 	var conn net.Conn
 	var errConnect error

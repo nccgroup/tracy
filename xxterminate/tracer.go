@@ -137,7 +137,7 @@ func getTracerList() (map[int]types.Tracer, error) {
 		return nil, err
 	}
 
-	var tracers map[int]types.Tracer // This is a real waste of space as we only need the IDS but oh well maybe later
+	tracers := make(map[int]types.Tracer) // This is a real waste of space as we only need the IDS but oh well maybe later
 
 	err = json.Unmarshal(tracerListbody, tracers)
 	if err != nil {
@@ -184,7 +184,7 @@ func proccessResponseTracers(resp http.Response) error {
 	foundTracers := findTracers(responseString, tracers)
 
 	location, _ := resp.Location()
-	var tracerEvents map[string]types.TracerEvent
+	tracerEvents := make(map[string]types.TracerEvent)
 
 	for _, foundTracer := range foundTracers {
 		event := types.TracerEvent{ID: types.Int64ToJSONNullInt64(int64(foundTracer.ID)), Data: types.StringToJSONNullString(responseString),
