@@ -43,7 +43,10 @@ func Server() (*http.Server, *mux.Router) {
 
 /* The base route for the application. */
 func root(w http.ResponseWriter, r *http.Request) {
-	body, _ := ioutil.ReadFile("../index.html")
+	body, err := ioutil.ReadFile("./view/index.html")
+	if err != nil {
+		log.Fatal(err)
+	}
 	w.Write(body)
 }
 

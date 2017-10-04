@@ -69,18 +69,18 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 		TracersTable, TracersMethodColumn,
 		TracersTable, TracersTracerStringColumn,
 		EventsTable, EventsIDColumn,
-		TracersTable, TracersTracerStringColumn,
+		TracersTable, TracersURLColumn,
 		EventsTable, EventsDataColumn,
 		EventsTable, EventsLocationColumn,
 		EventsTable, EventsEventTypeColumn,
 		/* From this table. */
 		TracersTable,
 		/*Join this table where the tracer IDs match. */
-		EventsTable, TracersTable, TracersIDColumn,
-		EventsTable, TracersEventsTracerIDColumn,
+		TracersEventsTable, TracersEventsTable, TracersEventsTracerIDColumn,
+		TracersTable, TracersIDColumn,
 		/* Join again against the events table where the event IDs match. */
-		EventsTable, EventsTable, TracersEventsEventIDColumn,
-		EventsTable, EventsIDColumn)
+		EventsTable, EventsTable, EventsIDColumn,
+		TracersEventsTable, TracersEventsEventIDColumn)
 	log.Printf("Built this query for getting trcrs: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -96,7 +96,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 	defer rows.Close()
 
 	/* Not sure why I can't get the number of rows from a Rows type. Kind of annoying. */
-	trcrs := make(map[int]types.Tracer, 0)
+	trcrs := make(map[int]types.Tracer)
 	for rows.Next() {
 		var (
 			trcrID   int
@@ -133,17 +133,17 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 
 		/* Build a TracerEvent struct from the data. */
 		trcrEvnt := types.TracerEvent{}
-		if evntID.Int64 != 0 {
+		if evntID.Int64 != 0 && data != (types.JSONNullString{}) {
 			trcrEvnt = types.TracerEvent{
 				ID:        evntID,
 				Data:      data,
 				Location:  location,
 				EventType: etype,
 			}
+			/* Add the trcrEvnt to the  */
+			trcr.Hits = append(trcr.Hits, trcrEvnt)
 		}
 
-		/* Add the trcrEvnt to the  */
-		trcr.Hits = append(trcr.Hits, trcrEvnt)
 		/* Replace the tracer in the map. */
 		trcrs[trcrID] = trcr
 	}
@@ -366,7 +366,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 
 		/* Build a TracerEvent struct from the data. */
 		trcrEvnt := types.TracerEvent{}
-		if evntID.Int64 != 0 {
+		if evntID.Int64 != 0 && data != (types.JSONNullString{}) {
 			log.Printf("Event ID: %d\n", evntID)
 			trcrEvnt = types.TracerEvent{
 				ID:        evntID,
@@ -374,10 +374,10 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 				Location:  location,
 				EventType: etype,
 			}
+			/* Add the trcrEvnt to the  */
+			trcr.Hits = append(trcr.Hits, trcrEvnt)
 		}
 
-		/* Add the trcrEvnt to the  */
-		trcr.Hits = append(trcr.Hits, trcrEvnt)
 	}
 
 	/* Not sure why we need to check for errors again, but this was from the

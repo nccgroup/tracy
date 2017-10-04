@@ -76,7 +76,7 @@ func GetTracer(trcrID int) ([]byte, error) {
 	}
 
 	/* Log message to record the tracer added and any errors that might have been triggered. */
-	log.Printf("Adding a tracer event. Ret: %v; Err: %v", string(ret), err)
+	log.Printf("Getting a tracer. Ret: %v; Err: %v", string(ret), err)
 
 	return ret, err
 }
@@ -90,13 +90,13 @@ func GetTracers() ([]byte, error) {
 	tracers, err := store.DBGetTracers(store.TracerDB)
 	if err == nil {
 		tracersStr, err := json.Marshal(tracers)
-		if err != nil {
+		if err == nil {
 			ret = tracersStr
 		}
 	}
 
 	/* Log message to record the tracer added and any errors that might have been triggered. */
-	log.Printf("Adding a tracer event. Ret: %v; Err: %v", string(ret), err)
+	log.Printf("Getting all the tracers. Ret: %v; Err: %v", string(ret), err)
 
 	return ret, err
 }
