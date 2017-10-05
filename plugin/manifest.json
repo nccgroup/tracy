@@ -23,6 +23,10 @@
         "matches": [
           "<all_urls>"
         ],
+        "exclude_matches":[
+          "*://localhost:8081"
+         ],
+         "all_frames": true,
         "js": [
           "scripts/dom-mutations.js"
         ],
