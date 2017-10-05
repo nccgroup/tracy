@@ -13,15 +13,20 @@
     ],
     "persistent": true
   },
+  "externally_connectable": {
+    "matches": [
+      "<all_urls>"
+    ]
+  },
   "content_scripts": [
       {
-          "matches": [
-            "<all_urls>"
-          ],
-          "js": [
-            "scripts/dom-injections.js"
-          ],
-          "run_at": "document_idle"
+        "matches": [
+          "<all_urls>"
+        ],
+        "js": [
+          "scripts/dom-mutations.js"
+        ],
+        "run_at": "document_start"
       }
   ],
   "browser_action": {

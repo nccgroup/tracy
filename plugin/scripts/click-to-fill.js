@@ -63,7 +63,7 @@
                 var rightEdge = this.getBoundingClientRect().right - offset.left;
                 var mouseClickPosition = e.pageX - offset.left;
 
-                if (mouseClickPosition / rightEdge * 100 > 87) {
+                if (mouseClickPosition / rightEdge * 100 > 65) {
                     // The click event is close to the right edge of the input field.
                     var enabled = toggleEnabled(tag);
                     if (enabled) {
@@ -136,15 +136,22 @@
         }
     }
 
-    /* Get all the input fields. We"ll filter them using the functions below. */
-    var inputs = document.getElementsByTagName("input");
+    /* Find all the inputs and style them with the extension. */
+    function clickToFill() {
+        /* Get all the input fields. We"ll filter them using the functions below. */
+        var inputs = document.getElementsByTagName("input");
 
-    /* For all inputs, add a className to style the input. */
-    Array.prototype.forEach.call(inputs, styleInputElement);
+        /* For all inputs, add a className to style the input. */
+        Array.prototype.forEach.call(inputs, styleInputElement);
 
-    /* Register event listeners for all types of elements we"d like to allow for a tracer. */
-    Array.prototype.forEach.call(inputs, registerClickHandler);
+        /* Register event listeners for all types of elements we"d like to allow for a tracer. */
+        Array.prototype.forEach.call(inputs, registerClickHandler);
 
-    /* Make an event handler that checks if the tracer string template is in the textfield. */
-    Array.prototype.forEach.call(inputs, registerChangeHandler);
+        /* Make an event handler that checks if the tracer string template is in the textfield. */
+        Array.prototype.forEach.call(inputs, registerChangeHandler);
+    }
+
+    setTimeout(function() {
+        clickToFill()
+    }, 5000);
 })();

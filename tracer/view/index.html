@@ -40,7 +40,10 @@
                 for (var locationKey in locations) {
                     var div = document.createElement("div");
                     div.className = "location";
-                    div.innerText = JSON.stringify(locations[locationKey])
+
+                    var loc = JSON.stringify(locations[locationKey]);
+                    var text = loc["Location"] + "," + loc["Data"];
+                    div.innerText = text;
                     details.appendChild(div);
                 }
 
@@ -90,10 +93,6 @@
 
             /* Get all the tracers from the API server and add them to the DOM every once and a while. */
             getTracers(addTracersToDom);
-            setInterval(function() {
-                getTracers(addTracersToDom);
-                clearPage();
-            }, 10000);
         </script>
     </head>
     <body>
