@@ -3,7 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/store"
 	"xxterminator-plugin/tracer/types"
 )
@@ -20,7 +20,7 @@ func AddTracer(add types.Tracer) ([]byte, error) {
 	}
 
 	/* Log message to record the tracer added and any errors that might have been triggered. */
-	log.Printf("Adding a tracer event. Ret: %v; Err: %v", string(ret), err)
+	log.Trace.Printf("Adding a tracer event. Ret: %v; Err: %v", string(ret), err)
 
 	return ret, err
 }
@@ -36,7 +36,7 @@ func DeleteTracer(trcrID int) ([]byte, error) {
 	}
 
 	/* Log message to record the tracer deleted and any errors that might have been triggered. */
-	log.Printf("Deleting a tracer event. Ret: %v; Err: %v", string(ret), err)
+	log.Trace.Printf("Deleting a tracer event. Ret: %v; Err: %v", string(ret), err)
 
 	return ret, err
 }
@@ -56,7 +56,7 @@ func EditTracer(trcrID int, trcr types.Tracer) ([]byte, error) {
 	}
 
 	/* Log message to record the tracer edited and any errors that might have been triggered. */
-	log.Printf("Editing a tracer event. Ret: %v; Err: %v", string(ret), err)
+	log.Trace.Printf("Editing a tracer event. Ret: %v; Err: %v", string(ret), err)
 
 	return ret, err
 }
@@ -76,7 +76,7 @@ func GetTracer(trcrID int) ([]byte, error) {
 	}
 
 	/* Log message to record the tracer added and any errors that might have been triggered. */
-	log.Printf("Getting a tracer. Ret: %v; Err: %v", string(ret), err)
+	log.Trace.Printf("Getting a tracer. Ret: %v; Err: %v", string(ret), err)
 
 	return ret, err
 }
@@ -96,7 +96,7 @@ func GetTracers() ([]byte, error) {
 	}
 
 	/* Log message to record the tracer added and any errors that might have been triggered. */
-	log.Printf("Getting all the tracers. Ret: %v; Err: %v", string(ret), err)
+	log.Trace.Printf("Getting all the tracers. Ret: %v; Err: %v", string(ret), err)
 
 	return ret, err
 }

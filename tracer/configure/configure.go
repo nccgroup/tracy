@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io/ioutil"
-	"log"
+	"xxterminator-plugin/log"
 	"net/http"
 	"os"
 	"time"
@@ -45,7 +45,7 @@ func Server() (*http.Server, *mux.Router) {
 func root(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadFile("./tracer/view/index.html")
 	if err != nil {
-		log.Fatal(err)
+		log.Error.Fatal(err)
 	}
 	w.Write(body)
 }
@@ -57,7 +57,7 @@ func Database(db string) {
 	_, err := store.Open("sqlite3", db)
 	if err != nil {
 		/* Can't really recover here. We need the database. */
-		log.Fatal(err)
+		log.Error.Fatal(err)
 	}
 }
 

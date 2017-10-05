@@ -3,7 +3,7 @@ package proxy
 import (
 	"bufio"
 	"crypto/tls"
-	"log"
+	"xxterminator-plugin/log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -23,7 +23,7 @@ func ListenAndServe(ln net.Listener, cert tls.Certificate) {
 		}
 
 		/* Log the current status and any errors. Errors don't fail fast. Errors happen and can be recovered from. */
-		log.Printf("Handled connection %+v. Error: %+v", conn, err)
+		log.Trace.Printf("Handled connection %+v. Error: %+v", conn, err)
 	}
 }
 
@@ -31,7 +31,7 @@ func handleConnection(clientConn net.Conn, cer tls.Certificate) {
 	defer clientConn.Close()
 	request, err := http.ReadRequest(bufio.NewReader(clientConn))
 	if err != nil {
-		log.Println(err)
+		log.Error.Println(err)
 		return
 	}
 
@@ -39,28 +39,28 @@ func handleConnection(clientConn net.Conn, cer tls.Certificate) {
 	scheme := "http"
 
 	dump, _ := httputil.DumpRequest(request, true)
-	log.Println(string(dump))
+	log.Trace.Println(string(dump))
 
 	if request.Method == "CONNECT" {
 		clientConn, scheme, err = upgradeConnectionTLS(clientConn, cer, host)
 		if err != nil {
-			log.Println(err)
+			log.Error.Println(err)
 			return
 		}
 
 		request, err = http.ReadRequest(bufio.NewReader(clientConn))
 		if err != nil {
-			log.Println(err)
+			log.Error.Println(err)
 			return
 		}
 
 		dump, err = httputil.DumpRequest(request, true)
 		if err != nil {
-			log.Println(err)
+			log.Error.Println(err)
 			return
 		}
 
-		log.Println(string(dump))
+		log.Trace.Println(string(dump))
 
 	}
 
@@ -83,7 +83,7 @@ func handleConnection(clientConn net.Conn, cer tls.Certificate) {
 	}
 
 	if errConnect != nil {
-		log.Println(errConnect)
+		log.Error.Println(errConnect)
 		return
 	}
 	defer conn.Close()
@@ -91,18 +91,18 @@ func handleConnection(clientConn net.Conn, cer tls.Certificate) {
 	request.Write(conn)
 	resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
 	if err != nil {
-		log.Println(err)
+		log.Error.Println(err)
 		return
 	}
 
 	responseRawBytes, err := httputil.DumpResponse(resp, true)
 	if err != nil {
-		log.Printf("Got an error dumping the response: %s", err.Error())
+		log.Error.Printf("Got an error dumping the response: %s", err.Error())
 	}
 	go func() {
 		err := proccessResponseTracers(responseRawBytes, request.RequestURI);
 		if err != nil {
-			log.Printf("Error while processing the response: %s", err.Error())
+			log.Error.Printf("Error while processing the response: %s", err.Error())
 		}
 	}()
 	resp.Write(clientConn)

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
 	"xxterminator-plugin/tracer/types"
+	"xxterminator-plugin/log"
 	"fmt"
 )
 
@@ -41,6 +41,7 @@ func addTracers(req *http.Request) error {
 	requestData, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 	if err != nil {
+		log.Error.Println(err)
 		return err
 	}
 
@@ -113,13 +114,13 @@ func getRandomID() []byte {
 }
 
 func sendTracersToServer(tracers []types.Tracer) error {
-	log.Println("Sending tracers to the server.")
+	log.Trace.Println("Sending tracers to the server.")
 	//TODO: Add more error handling here for invalid server request
 	for _, tracer := range tracers {
 		tracerJSON, err := json.Marshal(tracer) //
-		log.Printf("tracer JSON: %s", string(tracerJSON))
+		log.Trace.Println("tracer JSON: %s", string(tracerJSON))
 		if err != nil {
-			log.Println("Failed to Marshal tracer")
+			log.Trace.Println("Failed to Marshal tracer")
 			return err
 		}
 
@@ -132,23 +133,23 @@ func sendTracersToServer(tracers []types.Tracer) error {
 func getTracerList() (map[string]types.Tracer, error) {
 	tracerListResp, err := http.Get(TRACERSERVER + "/tracers")
 	if err != nil {
-		log.Printf("Unable to get list of tracers")
+		log.Error.Println("Unable to get list of tracers")
 		return nil, err
 	}
 	defer tracerListResp.Body.Close()
 
 	tracerListbody, err := ioutil.ReadAll(tracerListResp.Body)
 	if err != nil {
-		log.Println("Unable to get Tracer List Body")
+		log.Error.Println("Unable to get Tracer List Body")
 		return nil, err
 	}
 
 	tracers := make(map[string]types.Tracer) // This is a real waste of space as we only need the IDS but oh well maybe later
 
 	err = json.Unmarshal(tracerListbody, &tracers)
-	log.Printf("tracerListBody: %s", string(tracerListbody))
+	log.Trace.Println("tracerListBody: %s", string(tracerListbody))
 	if err != nil {
-		log.Println("Failed to unmarshal request")
+		log.Error.Println("Failed to unmarshal request")
 		return nil, err
 	}
 
@@ -160,14 +161,14 @@ func sendTracerEventsToServer(tracerEvents map[int]types.TracerEvent) error {
 
 		eventData, err := json.Marshal(tracerEvent)
 		if err != nil {
-			log.Println("failed to marshel Event")
+			log.Error.Println("failed to marshel Event")
 			return err
 		}
 
 		//TODO: Add error handling for invalid request
 		_, err = http.Post(fmt.Sprintf("%s/tracers/%d/events", TRACERSERVER, tracerID), "application/json; charset=UTF-8", bytes.NewBuffer(eventData))
 		if err != nil {
-			log.Println("failed trying to build an HTTP request")
+			log.Error.Println("failed trying to build an HTTP request")
 			return err
 		}
 	}
@@ -202,7 +203,7 @@ func findTracers(responseString string, tracers map[string]types.Tracer) []types
 		index := strings.Index(responseString, tracer.TracerString)
 
 		if index > -1 {
-			log.Printf("Found a tracer! %s", tracer.TracerString)
+			log.Trace.Printf("Found a tracer! %s", tracer.TracerString)
 			tracersFound = append(tracersFound, tracer)
 		}
 	}

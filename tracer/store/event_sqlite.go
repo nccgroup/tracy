@@ -6,7 +6,7 @@ import (
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
 	_ "github.com/mattn/go-sqlite3"
-	"log"
+	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/types"
 )
 
@@ -26,7 +26,7 @@ func DBGetTracerEvents(db *sql.DB, tid int) ([]types.TracerEvent, error) {
 		EventsTable, TracersEventsEventIDColumn,
 		EventsTable, EventsIDColumn,
 		EventsTable, TracersEventsTracerIDColumn)
-	log.Printf("Built this query for getting a tracer id by name: %s", query)
+	log.Trace.Printf("Built this query for getting a tracer id by name: %s", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	VALUES
 		(?, ?, ?);`, EventsTable, EventsDataColumn,
 		EventsLocationColumn, EventsEventTypeColumn)
-	log.Printf("Built this query for adding a tracer event: %s", query)
+	log.Trace.Printf("Built this query for adding a tracer event: %s", query)
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
@@ -98,7 +98,7 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	if err != nil {
 		return types.TracerEvent{}, err
 	}
-	log.Printf("AddTracerEvent: ID = %d, affected = %d", lastID, rowCnt)
+	log.Trace.Printf("AddTracerEvent: ID = %d, affected = %d", lastID, rowCnt)
 
 	/* Then, for each tracer string, add an associate to the tracers events table. */
 	for _, val := range ts {
@@ -139,7 +139,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 		EventsEventTypeColumn,
 		EventsTable,
 		EventsIDColumn)
-	log.Printf("Built this query for getting a tracer: %s", query)
+	log.Trace.Printf("Built this query for getting a tracer: %s", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return types.TracerEvent{}, err
@@ -171,7 +171,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 		}
 
 		if eventID.Int64 != 0 && data != (types.JSONNullString{}) {
-			log.Printf("Event ID: %d", eventID.Int64)
+			log.Trace.Printf("Event ID: %d", eventID.Int64)
 			trcrEvnt = types.TracerEvent{
 				ID:        eventID,
 				Data:      data,
@@ -190,7 +190,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 
 	/* Validate we have an event. */
 	if trcrEvnt.ID.Int64 != int64(tei) {
-		log.Printf("No tracer event with ID %d", tei)
+		log.Error.Printf("No tracer event with ID %d", tei)
 		return types.TracerEvent{}, nil
 	}
 
@@ -207,7 +207,7 @@ func DBAddTracersEvents(db *sql.DB, tei, ti int) error {
 	VALUES
 		(?, ?);`, TracersEventsTable, TracersEventsTracerIDColumn,
 		TracersEventsEventIDColumn)
-	log.Printf("Built this query for adding a tracers events row (%d,%d): %s", ti, tei, query)
+	log.Trace.Printf("Built this query for adding a tracers events row (%d,%d): %s", ti, tei, query)
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
@@ -233,7 +233,7 @@ func DBAddTracersEvents(db *sql.DB, tei, ti int) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("AddTracersEvents: ID = %d, affected = %d", lastID, rowCnt)
+	log.Trace.Printf("AddTracersEvents: ID = %d, affected = %d", lastID, rowCnt)
 
 	/* Otherwise, return nil to indicate everything went okay. */
 	return nil

@@ -6,7 +6,7 @@ import (
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
 	_ "github.com/mattn/go-sqlite3"
-	"log"
+	"xxterminator-plugin/log"
 	"os"
 )
 
@@ -63,7 +63,7 @@ var TracerDB *sql.DB
 func Open(driver, path string) (*sql.DB, error) {
 	/* Create the file if it doesn't exist. */
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Println("Creating a database file. Couldn't find it.")
+		log.Trace.Println("Creating a database file. Couldn't find it.")
 		var file, err = os.Create(path)
 		if err != nil {
 			return nil, err
@@ -72,7 +72,7 @@ func Open(driver, path string) (*sql.DB, error) {
 		file.Close()
 	}
 
-	log.Printf("Opening this database file: %s\n", path)
+	log.Trace.Printf("Opening this database file: %s\n", path)
 
 	/* Open the database. */
 	db, err := sql.Open(driver, path)
@@ -127,7 +127,7 @@ func createTable(db *sql.DB, tableName string, columns map[string]string) error 
 	}
 	/* Close it up. */
 	query = fmt.Sprintf("%s);", query)
-	log.Printf("Built this query for creating tables: %s\n", query)
+	log.Trace.Printf("Built this query for creating tables: %s\n", query)
 
 	/* Using prepared statements. */
 	stmt, err := db.Prepare(query)
@@ -154,6 +154,6 @@ func createTable(db *sql.DB, tableName string, columns map[string]string) error 
 	if err != nil {
 		return err
 	}
-	log.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", tableName, lastID, rowCnt)
+	log.Trace.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", tableName, lastID, rowCnt)
 	return nil
 }

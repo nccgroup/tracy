@@ -6,7 +6,7 @@ import (
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
 	_ "github.com/mattn/go-sqlite3"
-	"log"
+	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/types"
 )
 
@@ -44,7 +44,7 @@ func DBAddTracer(db *sql.DB, t types.Tracer) (types.Tracer, error) {
 	if err != nil {
 		return types.Tracer{}, err
 	}
-	log.Printf("AddTracer: ID = %d, affected = %d\n", lastID, rowCnt)
+	log.Trace.Printf("AddTracer: ID = %d, affected = %d\n", lastID, rowCnt)
 
 	/* Pull the record that was just added and return it. */
 	trcr, err := DBGetTracerByID(db, int(lastID))
@@ -81,7 +81,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 		/* Join again against the events table where the event IDs match. */
 		EventsTable, EventsTable, EventsIDColumn,
 		TracersEventsTable, TracersEventsEventIDColumn)
-	log.Printf("Built this query for getting trcrs: %s\n", query)
+	log.Trace.Printf("Built this query for getting trcrs: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func DBDeleteTracer(db *sql.DB, id int) error {
 	query := fmt.Sprintf(`
 		DELETE from %s 
 		WHERE %s = ?;`, TracersTable, TracersIDColumn)
-	log.Printf("Built this query for deleting a tracer: %s\n", query)
+	log.Trace.Printf("Built this query for deleting a tracer: %s\n", query)
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
@@ -190,7 +190,7 @@ func DBDeleteTracer(db *sql.DB, id int) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("DeleteTracer: ID = %d, affected = %d\n", lastID, rowCnt)
+	log.Trace.Printf("DeleteTracer: ID = %d, affected = %d\n", lastID, rowCnt)
 
 	/* Otherwise, return nil to indicate everything went okay. */
 	return nil
@@ -213,7 +213,7 @@ func DBEditTracer(db *sql.DB, id int, trcr types.Tracer) (types.Tracer, error) {
 		TracersURLColumn,
 		TracersIDColumn)
 
-	log.Printf("Built this query for deleting a tracer: %s\n", query)
+	log.Trace.Printf("Built this query for deleting a tracer: %s\n", query)
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
@@ -239,7 +239,7 @@ func DBEditTracer(db *sql.DB, id int, trcr types.Tracer) (types.Tracer, error) {
 	if err != nil {
 		return types.Tracer{}, err
 	}
-	log.Printf("EditTracer: ID = %d, affected = %d\n", lastID, rowCnt)
+	log.Trace.Printf("EditTracer: ID = %d, affected = %d\n", lastID, rowCnt)
 
 	updated, err := DBGetTracerByID(db, int(lastID))
 	if err != nil {
@@ -260,7 +260,7 @@ func DBGetTracerIDByName(db *sql.DB, trcrStr string) (int, error) {
 		TracersTable, TracersIDColumn,
 		TracersTable,
 		TracersTable, TracersTracerStringColumn)
-	log.Printf("Built this query for getting a tracer id by name: %s\n", query)
+	log.Trace.Printf("Built this query for getting a tracer id by name: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return 0, err
@@ -318,7 +318,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 		EventsTable, EventsIDColumn,
 		/* Where clause. */
 		TracersTable, TracersTracerStringColumn)
-	log.Printf("Built this query for getting a tracer: %s\n", query)
+	log.Trace.Printf("Built this query for getting a tracer: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return types.Tracer{}, err
@@ -367,7 +367,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 		/* Build a TracerEvent struct from the data. */
 		trcrEvnt := types.TracerEvent{}
 		if evntID.Int64 != 0 && data != (types.JSONNullString{}) {
-			log.Printf("Event ID: %d\n", evntID)
+			log.Trace.Printf("Event ID: %d\n", evntID)
 			trcrEvnt = types.TracerEvent{
 				ID:        evntID,
 				Data:      data,
@@ -417,7 +417,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 		EventsTable, TracersEventsTable, TracersEventsEventIDColumn, EventsTable, EventsIDColumn,
 		/* Where clause. */
 		TracersTable, TracersIDColumn)
-	log.Printf("Built this query for getting a tracer: %s\n", query)
+	log.Trace.Printf("Built this query for getting a tracer: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return types.Tracer{}, err
@@ -466,7 +466,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 		if evntID.Int64 != 0 && data != (types.JSONNullString{}) {
 			/* Build a TracerEvent struct from the data. */
 			trcrEvnt := types.TracerEvent{}
-			log.Printf("Event ID: %d\n", evntID)
+			log.Trace.Printf("Event ID: %d\n", evntID)
 			trcrEvnt = types.TracerEvent{
 				ID:        evntID,
 				Data:      data,

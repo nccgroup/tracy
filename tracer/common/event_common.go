@@ -3,7 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/store"
 	"xxterminator-plugin/tracer/types"
 )
@@ -29,7 +29,7 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 		}
 	}
 	/* Log message to record the tracer added and any errors that might have been triggered. */
-	log.Printf("Adding a tracer event. Ret: %v; Err: %v", string(ret), err)
+	log.Trace.Printf("Adding a tracer event. Ret: %v; Err: %v", string(ret), err)
 
 	return ret, err
 }

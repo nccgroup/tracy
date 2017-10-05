@@ -10,7 +10,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"log"
+	"xxterminator-plugin/log"
 	"math/big"
 	"net"
 	"net/http"
@@ -105,7 +105,7 @@ func certCache(host string) (tls.Certificate, error) {
 	}
 
 	if cert, exist := cache[host]; exist {
-		log.Println("Cache hit!")
+		log.Trace.Println("Cache hit!")
 		return cert, nil
 	}
 

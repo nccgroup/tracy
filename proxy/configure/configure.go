@@ -2,7 +2,7 @@ package configure
 
 import (
 	"net"
-	"log"
+	"xxterminator-plugin/log"
 	"crypto/tls"
 )
 
@@ -18,7 +18,7 @@ func ProxyServer() net.Listener {
 	ret, err := net.Listen("tcp", addr)
 	if err != nil {
 		/* Cannot continue if the application doesn't have TCP listener. Fail fast. */
-		log.Fatalf("Cannot listen on %s: %s", addr, err.Error())
+		log.Error.Fatalf("Cannot listen on %s: %s", addr, err.Error())
 	}
 
 	return ret
@@ -29,7 +29,7 @@ func Certificates() tls.Certificate {
 	cer, err := tls.LoadX509KeyPair(publicKey, privateKey)
 	if err != nil {
 		/* Cannot continue if the application doesn't have a valid certificate for TLS connections. Fail fast. */
-		log.Fatalf("Failed to parse certificate: %s", err.Error())
+		log.Error.Fatalf("Failed to parse certificate: %s", err.Error())
 	}
 
 	return cer

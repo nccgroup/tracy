@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"log"
+	"xxterminator-plugin/log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -138,7 +138,7 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 /* Common function for logging an internal server error and serving back something generic. */
 func serverError(err error) []byte {
 	ref := rand.Intn(10000000000000)
-	log.Printf("Reference %d: %s", ref, err.Error())
+	log.Error.Printf("Reference %d: %s", ref, err.Error())
 
 	return []byte(fmt.Sprintf(`{"Message":"Internal Server Error", "Reference":"%d"}`, ref))
 }
