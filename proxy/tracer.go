@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"bytes"
-	"encoding/json"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -10,218 +9,157 @@ import (
 	"time"
 	"xxterminator-plugin/tracer/types"
 	"xxterminator-plugin/log"
-	"fmt"
 )
+/*tag is a slice of strings that represent the character sequencies in requests that need to be replaced with random tracer strings. */
+var tags = []string{"{{XSS}}", "%7B%7BXSS%7D%7D"}
+const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-//{"TracerString": "%s", "URL": "%s", "Method": "%s"}
+/* Helper function for searching for tracer tags in query parameters and body and replacing them with randomly generated
+ * tracer string. Also, it submits the generated tracers to the API. This should be moved out, though. */
+func replaceTracers(req *http.Request) ([]types.Tracer, error) {
+	/* Search the query string for any tags that need to be replaced with tracer strings and replace them. */
+	replacedQueryString, replacedTracerStrings := replaceTagsInQueryParameters(req.URL.RawQuery)
+	/* Write the new query string to the request. */
+	req.URL.RawQuery = replacedQueryString
+	var ret []types.Tracer
 
-//TODO: These should be in a config file
+	/* Read the HTTP request body. */
+	requestData, err := ioutil.ReadAll(req.Body)
+	if err == nil {
+		defer req.Body.Close()
 
-//TAG used to insert tracers
-var TAG = []string{"{{XSS}}", "%7B%7BXSS%7D%7D"}
+		/* Search the body for any tags that need to be replaced with tracer strings and replace them. */
+		replacedBody, replacedTracerStringsInBody := replaceTagsInBody(requestData)
 
-//TRACERSERVER is location of the tracer server
-const TRACERSERVER = "http://localhost:8081"
+		/* Combine the two slices of new tracer strings. */
+		replacedTracerStrings = append(replacedTracerStrings, replacedTracerStringsInBody...)
+		/* Create tracer structs out of the generated tracer strings. */
+		addedTracers:= make([]types.Tracer, len(replacedTracerStrings))
+		for i := 0; i < len(replacedTracerStrings); i++ {
+			addedTracers[i] = types.Tracer{TracerString: replacedTracerStrings[i], URL: types.StringToJSONNullString(req.URL.EscapedPath()), Method: types.StringToJSONNullString(req.Method)}
+		}
 
-//by passing by star I think it is no longer a copy. These means  Idon't have to return it?
-//Also is it silly to do it this way. I feel like it would be easer to do it once by just getting the byte array of the request and just sending that
-func addTracers(req *http.Request) error {
-	//do get parms
-	var addedTracers []types.Tracer
-
-	newQuary, tracersQuary, _ := addTracersQuery(req.URL.RawQuery)
-	req.URL.RawQuery = newQuary
-
-	for _, tracerString := range tracersQuary {
-		tracer := types.Tracer{TracerString: tracerString, URL: types.StringToJSONNullString(req.URL.EscapedPath()), Method: types.StringToJSONNullString(req.Method)}
-		addedTracers = append(addedTracers, tracer)
+		/* Write the new body to the request. */
+		req.Body = ioutil.NopCloser(bytes.NewReader(replacedBody))
+		/* Update the size of the request based on the replaced body. */
+		req.ContentLength = int64(len(replacedBody))
+		ret = addedTracers
 	}
 
-	//do request body
-	requestData, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
+	/* If an error dropped here, log it. */
 	if err != nil {
 		log.Error.Println(err)
-		return err
 	}
 
-	newRequest, tracersBody, _ := addTracersBody(requestData)
-
-	for _, tracerString := range tracersBody {
-		tracer := types.Tracer{TracerString: tracerString, URL: types.StringToJSONNullString(req.URL.EscapedPath()), Method: types.StringToJSONNullString(req.Method)}
-		addedTracers = append(addedTracers, tracer)
-	}
-
-	req.Body = ioutil.NopCloser(bytes.NewReader(newRequest))
-	req.ContentLength = int64(len(newRequest)) //Update the size of the request or it will not work
-
-	go sendTracersToServer(addedTracers)
-
-	return nil
+	return ret, err
 }
 
-func addTracersBody(requestData []byte) ([]byte, []string, error) {
-	var addedTracers []string
+/* Helper function to replace any tracer tags in request body parameters with tracer strings. Returns the replaced body
+ * along with a list of randomly generated tracer strings. */
+func replaceTagsInBody(body []byte) ([]byte, []string) {
+	var replacedTracerStrings []string
+	replacedBody := make([]byte,0)
 
-	newRequest := requestData
-	for _, tag := range TAG {
-		splitRequestData := bytes.Split(newRequest, []byte(tag))
+	/* For each of the configured tags, look for a tag in the body and swap it out for a random tracer string. */
+	for _, tag := range tags {
+		splitBodyOnTag := bytes.Split(body, []byte(tag))
 
-		if len(splitRequestData) == 1 {
-			continue
-		}
+		/* If the split returns 1 string, there were no tags in the query. Continue. */
+		if len(splitBodyOnTag) != 1 {
+			/* Base case. Add the left side of the tag back to the replaced body. */
+			replacedBody = append(replacedBody, splitBodyOnTag[0]...)
 
-		newRequest = append(newRequest, splitRequestData[0]...)
+			for i := 1; i < len(splitBodyOnTag); i++ {
+				/* Generate a random tracer string. */
+				randID := generateRandomTracerString()
+				/* Append the generated tracer string to the new body. */
+				replacedBody = append(replacedBody, randID...)
+				/* Append the right side of the tracer tag to the right side of the tracer string. */
+				replacedBody = append(replacedBody, splitBodyOnTag[i]...)
 
-		for i := 1; i < len(splitRequestData); i++ {
-			randID := RandStringBytes(5)
-
-			newRequest = append(newRequest, randID...)
-			newRequest = append(newRequest, splitRequestData[i]...)
-
-			addedTracers = append(addedTracers, string(randID))
-		}
-	}
-
-	return newRequest, addedTracers, nil
-}
-
-//TODO: This function does not return a error so we really don't need it
-func addTracersQuery(rawQuary string) (string, []string, error) {
-	var addedTracers []string
-	query := rawQuary
-	for _, tag := range TAG {
-		reqSplitQuery := strings.Split(query, tag)
-
-		if len(reqSplitQuery) != 1 {
-			newQuery := reqSplitQuery[0]
-
-			for i := 1; i < len(reqSplitQuery); i++ {
-				randID := getRandomID()
-				newQuery += string(randID) + reqSplitQuery[i]
-				addedTracers = append(addedTracers, string(query))
+				/* Record the generated tracer string. */
+				replacedTracerStrings = append(replacedTracerStrings, string(randID))
 			}
 		}
 	}
 
-	//There is no tracers to add
-	return query, addedTracers, nil
-
+	return replacedBody, replacedTracerStrings
 }
 
-func getRandomID() []byte {
-	return RandStringBytes(5)
-}
+/* Helper function to replace any tracer tags in request query parameters with tracer strings. Returns the replaced query
+ * along with a list of the randomly generated tracer strings. */
+func replaceTagsInQueryParameters(rawQuery string) (string, []string) {
+	var replacedTracerStrings []string
+	replacedQuery := ""
 
-func sendTracersToServer(tracers []types.Tracer) error {
-	log.Trace.Println("Sending tracers to the server.")
-	//TODO: Add more error handling here for invalid server request
-	for _, tracer := range tracers {
-		tracerJSON, err := json.Marshal(tracer) //
-		log.Trace.Println("tracer JSON: %s", string(tracerJSON))
-		if err != nil {
-			log.Trace.Println("Failed to Marshal tracer")
-			return err
-		}
+	/* For each of the configured tags, look for the tag in the query and swap it out for a random tracer string. */
+	for _, tag := range tags {
+		splitQueryOnTag := strings.Split(rawQuery, tag)
 
-		http.Post(TRACERSERVER+"/tracers", "application/json; charset=UTF-8", bytes.NewBuffer(tracerJSON))
-	}
+		/* If the split returns 1 string, there were no tags in the query. Continue. */
+		if len(splitQueryOnTag) != 1 {
+			/* Base case. Add the left side of a tag back to the replaced query string. */
+			replacedQuery += splitQueryOnTag[0]
 
-	return nil
-}
-
-func getTracerList() (map[string]types.Tracer, error) {
-	tracerListResp, err := http.Get(TRACERSERVER + "/tracers")
-	if err != nil {
-		log.Error.Println("Unable to get list of tracers")
-		return nil, err
-	}
-	defer tracerListResp.Body.Close()
-
-	tracerListbody, err := ioutil.ReadAll(tracerListResp.Body)
-	if err != nil {
-		log.Error.Println("Unable to get Tracer List Body")
-		return nil, err
-	}
-
-	tracers := make(map[string]types.Tracer) // This is a real waste of space as we only need the IDS but oh well maybe later
-
-	err = json.Unmarshal(tracerListbody, &tracers)
-	log.Trace.Println("tracerListBody: %s", string(tracerListbody))
-	if err != nil {
-		log.Error.Println("Failed to unmarshal request")
-		return nil, err
-	}
-
-	return tracers, nil
-}
-
-func sendTracerEventsToServer(tracerEvents map[int]types.TracerEvent) error {
-	for tracerID, tracerEvent := range tracerEvents {
-
-		eventData, err := json.Marshal(tracerEvent)
-		if err != nil {
-			log.Error.Println("failed to marshel Event")
-			return err
-		}
-
-		//TODO: Add error handling for invalid request
-		_, err = http.Post(fmt.Sprintf("%s/tracers/%d/events", TRACERSERVER, tracerID), "application/json; charset=UTF-8", bytes.NewBuffer(eventData))
-		if err != nil {
-			log.Error.Println("failed trying to build an HTTP request")
-			return err
+			for i := 1; i < len(splitQueryOnTag); i++ {
+				/* Generate a random tracer string. */
+				randID := generateRandomTracerString()
+				/* Append the new tracer string along with the right side of the tag that was split on. */
+				replacedQuery += string(randID) + splitQueryOnTag[i]
+				/* Record the tracer that was generated. */
+				replacedTracerStrings = append(replacedTracerStrings, string(randID))
+			}
 		}
 	}
-	return nil
+
+	return replacedQuery, replacedTracerStrings
 }
 
-func proccessResponseTracers(responseRawBytes []byte, requestUri string) error {
-	responseString := string(responseRawBytes)
-
-	tracers, err := getTracerList()
-	if err != nil {
-		return err
-	}
-
-	foundTracers := findTracers(responseString, tracers)
-	tracerEvents := make(map[int]types.TracerEvent)
-
-	for _, foundTracer := range foundTracers {
-		event := types.TracerEvent{ID: types.Int64ToJSONNullInt64(int64(foundTracer.ID)), Data: types.StringToJSONNullString(responseString),
-			Location: types.StringToJSONNullString(requestUri), EventType: types.StringToJSONNullString("Response")}
-		tracerEvents[foundTracer.ID] = event
-	}
-
-	sendTracerEventsToServer(tracerEvents)
-
-	return nil
-}
-
-func findTracers(responseString string, tracers map[string]types.Tracer) []types.Tracer {
+/* Helper function for finding tracer strings in the response body of an HTTP request. */
+func findTracersInResponseBody(response string, requestURI string, tracers map[string]types.Tracer) map[string]types.TracerEvent {
 	var tracersFound []types.Tracer
-	for _, tracer := range tracers {
-		index := strings.Index(responseString, tracer.TracerString)
+	ret := make(map[string]types.TracerEvent)
 
+	/* For each of the tracers, look for the tracer's tracer string in the response. */
+	for _, tracer := range tracers {
+		index := strings.Index(response, tracer.TracerString)
+
+		/* Negative indicates no match. Continue. */
 		if index > -1 {
 			log.Trace.Printf("Found a tracer! %s", tracer.TracerString)
 			tracersFound = append(tracersFound, tracer)
 		}
 	}
-	return tracersFound
 
+
+	/* Create tracer event structs from the tracers that were found. */
+	for _, foundTracer := range tracersFound {
+		event := types.TracerEvent{
+			ID: types.Int64ToJSONNullInt64(int64(foundTracer.ID)),
+			Data: types.StringToJSONNullString(response),
+			Location: types.StringToJSONNullString(requestURI),
+			EventType: types.StringToJSONNullString("Response")}
+		ret[string(foundTracer.ID)] = event
+	}
+
+	return ret
 }
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
 func init() {
+	/* When the package is loaded, seed the random number generator. */
 	rand.Seed(time.Now().UnixNano())
 }
 
-//RandStringBytes returns random string bytes based on size
+/* Helper function for generating random tracer strings. */
+func generateRandomTracerString() []byte {
+	return RandStringBytes(10)
+}
+
+/*RandStringBytes returns random string bytes based on size. */
 func RandStringBytes(n int) []byte {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b[i] = alphabet[rand.Intn(len(alphabet))]
 	}
 	return b
 }

@@ -31,6 +31,7 @@ func DBGetTracerEvents(db *sql.DB, tid int) ([]types.TracerEvent, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	/* Query the database for the types. */
 	rows, err := stmt.Query(tid)
@@ -144,6 +145,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 	if err != nil {
 		return types.TracerEvent{}, err
 	}
+	defer stmt.Close()
 
 	/* Query the database for the types. */
 	rows, err := stmt.Query(tei)

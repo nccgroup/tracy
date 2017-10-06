@@ -10,9 +10,23 @@ import (
 	"xxterminator-plugin/log"
 	l "log"
 	"io/ioutil"
+	"runtime/pprof"
+	"os/signal"
+	"fmt"
 )
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
+	fmt.Printf("Starting...")
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			l.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+	}
+
 	/* Start the proxy. */
 	go func() {
 		/* Open a TCP listener. */
@@ -24,12 +38,30 @@ func main() {
 		/* Serve it. This will block until the user closes the program. */
 		proxy.ListenAndServe(ln, cert)
 	}()
-
-	/* Configure and start the server, but we won't need the router. */
-	srv, _ := tc.Server()
+	fmt.Printf("proxy,")
 
 	/* Serve it. Block here so the program doesn't close. */
-	log.Error.Fatal(srv.ListenAndServe())
+	go func() {
+		/* Configure and start the server, but we won't need the router. */
+		srv, _ := tc.Server()
+		log.Error.Fatal(srv.ListenAndServe())
+	}()
+	fmt.Printf("tracer server. done!\n")
+
+	/* Waiting for the user to close the program. */
+	signalChan := make(chan os.Signal, 1)
+	cleanupDone := make(chan bool)
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		for _ = range signalChan {
+			fmt.Println("Received an interrupt, stopping services...")
+			if *cpuprofile != "" {
+				pprof.StopCPUProfile()
+			}
+			cleanupDone <- true
+		}
+	}()
+	<-cleanupDone
 }
 
 func init() {

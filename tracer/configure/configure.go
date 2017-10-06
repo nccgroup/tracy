@@ -12,6 +12,9 @@ import (
 	"xxterminator-plugin/tracer/store"
 )
 
+/* TODO: make configurable. */
+var TracerServer = "127.0.0.1:8081"
+
 /*Server configures all the HTTP routes and their corresponding handler. */
 func Server() (*http.Server, *mux.Router) {
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
@@ -25,6 +28,7 @@ func Server() (*http.Server, *mux.Router) {
 	/* Define our RESTful routes for tracer events. Tracer events are indexed by their
 	 * corresponding tracer ID. */
 	r.Methods("POST").Path("/tracers/{tracerId}/events").HandlerFunc(rest.AddEvent)
+	r.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(rest.AddEvents)
 
 	/* The base application page. */
 	r.Methods("GET").Path("/").HandlerFunc(root)
@@ -32,7 +36,7 @@ func Server() (*http.Server, *mux.Router) {
 	/* Create the server. */
 	srv := &http.Server{
 		Handler: r,
-		Addr:    "127.0.0.1:8081",
+		Addr:    TracerServer,
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
