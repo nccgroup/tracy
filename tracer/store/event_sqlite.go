@@ -104,7 +104,7 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	/* Then, for each tracer string, add an associate to the tracers events table. */
 	for _, val := range ts {
 		/* Get the tracer associated with that key string. */
-		id, err := DBGetTracerIDByName(db, val)
+		id, err := DBGetTracerIDByTracerString(db, val)
 		if err != nil {
 			return types.TracerEvent{}, err
 		}

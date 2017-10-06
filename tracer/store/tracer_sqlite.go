@@ -253,7 +253,7 @@ func DBEditTracer(db *sql.DB, id int, trcr types.Tracer) (types.Tracer, error) {
 
 /*DBGetTracerIDByName gets a tracer by their tracer name. This will exclude
  * any joins with other tables. */
-func DBGetTracerIDByName(db *sql.DB, trcrStr string) (int, error) {
+func DBGetTracerIDByTracerString(db *sql.DB, trcrStr string) (int, error) {
 	query := fmt.Sprintf(
 		`SELECT %s.%s
 		FROM %s

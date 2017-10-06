@@ -9,43 +9,35 @@ import (
 	"xxterminator-plugin/tracer/common"
 	"xxterminator-plugin/tracer/types"
 	"fmt"
+	"xxterminator-plugin/tracer/store"
 )
 
 /* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.
  * Returns the HTTP status and the return value. */
-func addEventHelper(vars map[string]string, trcrEvnt types.TracerEvent) (int, []byte) {
+func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
 
-	if trcrID, ok := vars["tracerId"]; ok {
-		id, err := strconv.ParseInt(trcrID, 10, 32)
+	/* Validate the event before uploading it to the database. */
+	if trcrEvnt.Data.String == "" {
+		ret = []byte("The data field for the event was empty")
+		log.Error.Println(ret)
+	} else if trcrEvnt.Location.String == "" {
+		ret = []byte("The location field for the event was empty")
+		log.Error.Println(ret)
+	} else if trcrEvnt.EventType.String == "" {
+		ret = []byte("The event type field for the event was empty")
+		log.Error.Println(ret)
+	} else {
+		evntStr, err := common.AddEvent(int(trcrID), trcrEvnt)
 		if err != nil {
-			ret = []byte("The tracer ID was not a valid integer")
+			ret = []byte("There was an error adding the event.")
 			log.Error.Println(err)
 		} else {
-			/* Validate the event before uploading it to the database. */
-			if trcrEvnt.Data.String == "" {
-				ret = []byte("The data field for the event was empty")
-				log.Error.Println(ret)
-			} else if trcrEvnt.Location.String == "" {
-				ret = []byte("The location field for the event was empty")
-				log.Error.Println(ret)
-			} else if trcrEvnt.EventType.String == "" {
-				ret = []byte("The event type field for the event was empty")
-				log.Error.Println(ret)
-			} else {
-				evntStr, err := common.AddEvent(int(id), trcrEvnt)
-				if err != nil {
-					ret = []byte("There was an error adding the event.")
-					log.Error.Println(err)
-				} else {
-					/* Final success case. */
-					status = http.StatusOK
-					ret = evntStr
-				}
-			}
+			/* Final success case. */
+			status = http.StatusOK
+			ret = evntStr
 		}
-
 	}
 
 	return status, ret
@@ -58,7 +50,11 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&trcrEvnt)
 
 	/* Add the tracer event. */
-	status, ret := addEventHelper(vars, trcrEvnt)
+	trcrID, err := strconv.ParseInt(vars["tracerID"], 10, 32)
+	if err != nil {
+		log.Error.Println(err)
+	}
+	status, ret := addEventHelper(int(trcrID), trcrEvnt)
 
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
@@ -68,28 +64,41 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 /*AddEvents adds multiple tracer events to the tracer specified in the URL. */
 func AddEvents(w http.ResponseWriter, r *http.Request) {
 	finalStatus := http.StatusOK
-	finalRet := []byte(fmt.Sprintf(`{"Status":"Success", "Count":"%d"}`, 0))
-	vars := mux.Vars(r)
-	trcrEvnts := make([]types.TracerEvent, 0)
-	json.NewDecoder(r.Body).Decode(&trcrEvnts)
+	finalRet := make([]byte, 0)
+	trcrEvntsBulk := make([]types.TracerEventBulk, 0)
+	json.NewDecoder(r.Body).Decode(&trcrEvntsBulk)
 
-	log.Trace.Printf("Decoded the following tracer events: %+v", trcrEvnts)
+	log.Trace.Printf("Decoded the following bulk tracer events: %+v", trcrEvntsBulk)
 
 	/* Count the number of successful events that were added. */
 	count := 0
 
-	for _, v := range trcrEvnts {
-		/* Add the tracer event. */
-		status, ret := addEventHelper(vars, v)
+	for _, trcrEvnt := range trcrEvntsBulk {
+		/* For each of the tracer strings that were found in the DOM event, find the tracer they are associated with
+		 * and add an event to it. */
+		for _, trcrStr := range trcrEvnt.TracerStrings {
+			trcrID, err := store.DBGetTracerIDByTracerString(store.TracerDB, trcrStr)
+			if err != nil {
+				/* If there was an error getting the tracer, fail fast and continue to the next one. */
+				log.Error.Println(err)
+				continue
+			}
+			/* Add the tracer event. */
+			status, ret := addEventHelper(trcrID, trcrEvnt.TracerEvent)
 
-		/* If any of them fail, the whole request status fails. */
-		if status == http.StatusInternalServerError {
-			finalStatus = http.StatusInternalServerError
-			/* Only returns the error for the last failed event addition. */
-			finalRet = []byte(fmt.Sprintf(`{"Status":"Internal Server Error", "Error":"%s"}`, ret))
-		} else {
-			count++
+			/* If any of them fail, the whole request status fails. */
+			if status == http.StatusInternalServerError {
+				finalStatus = http.StatusInternalServerError
+				/* Only returns the error for the last failed event addition. */
+				finalRet = []byte(fmt.Sprintf(`{"Status":"Internal Server Error", "Error":"%s"}`, ret))
+			} else {
+				count = count + 1
+			}
 		}
+	}
+
+	if len(finalRet) == 0{
+		finalRet = []byte(fmt.Sprintf(`{"Status":"Success", "Count":"%d"}`, count))
 	}
 
 	w.WriteHeader(finalStatus)

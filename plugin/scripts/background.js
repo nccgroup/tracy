@@ -11,7 +11,8 @@ function bulkAddEvents(events) {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "http://127.0.0.1:8081/tracers/events/bulk", true);
     xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-    xhr.send(JSON.stringify(events));
+    var eventsStr = JSON.stringify(events);
+    xhr.send(eventsStr);
 }
 
 /* Handler function for events triggered from the web page. Events should contain a list of DOM events. This handler
@@ -41,14 +42,8 @@ function requestHandler(domEvents) {
                      * Continue to the rest of the recorded. */
                     var tracerLocation = domEvent.msg.indexOf(tracerString);
                     if( tracerLocation != -1 ) {
-                        /* Create a structure for storing the location of the tracer in the DOM event and the tracer string found. */
-                        var tracerHitLocation = {
-                            "Index":        tracerLocation,
-                            "TracerString": tracerString
-                        };
-
                         /* Add this location data to the list of tracers per DOM event. */
-                        tracersPerDomEvent.push(tracerHitLocation);
+                        tracersPerDomEvent.push(tracerString);
                     }
                 }
 
@@ -64,10 +59,12 @@ function requestHandler(domEvents) {
                      * will be submitted in bulk to the event API. */
                     if (tracersPerDomEvent.length > 0) {
                         var event = {
-                            "Data" :        domEvent.msg,
-                            "Location" :    domEvent.location.href,
-                            "EventType" :   domEvent.type,
-                            "Tracers":      tracersPerDomEvent
+                            "Event" : {
+                                "Data" :        domEvent.msg,
+                                "Location" :    domEvent.location.href,
+                                "EventType" :   domEvent.type,
+                            },
+                            "TracerStrings":    tracersPerDomEvent
                         }
                         filteredDomEvents.push(event);
                     }
