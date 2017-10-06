@@ -65,7 +65,7 @@ func testAddTracersBodyHelper(requestDataString string) (int, error) {
 		return 0, err
 	}
 
-	newRequest, addedTracers, _ := addTracersBody(requestData)
+	newRequest, addedTracers, _ := replaceTagsInBody(requestData)
 
 	for _, addedTracer := range addedTracers {
 		i := bytes.Index(newRequest, []byte(addedTracer))
@@ -101,7 +101,7 @@ func testAddTracerQuaryHelper(requestData string) (int, error) {
 		return 0, err
 	}
 
-	newQuary, addedTracers, _ := addTracersQuery(request.URL.RawQuery)
+	newQuary, addedTracers, _ := replaceTagsInQueryParameters(request.URL.RawQuery)
 
 	for _, addedTracer := range addedTracers {
 		i := strings.Index(newQuary, addedTracer)

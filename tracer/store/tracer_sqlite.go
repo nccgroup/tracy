@@ -86,6 +86,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	/* Query the database for the  */
 	rows, err := stmt.Query()
@@ -265,6 +266,7 @@ func DBGetTracerIDByName(db *sql.DB, trcrStr string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer stmt.Close()
 
 	/* Query the database for the  */
 	rows, err := stmt.Query(trcrStr)
@@ -323,6 +325,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 	if err != nil {
 		return types.Tracer{}, err
 	}
+	defer stmt.Close()
 
 	/* Query the database for the  */
 	rows, err := stmt.Query(trcrStr)
@@ -422,6 +425,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 	if err != nil {
 		return types.Tracer{}, err
 	}
+	defer stmt.Close()
 
 	/* Query the database for the  */
 	rows, err := stmt.Query(id)

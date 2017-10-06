@@ -124,6 +124,7 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				ret = serverError(err)
 			} else {
+				/* Final success case. */
 				status = http.StatusOK
 				ret = trcrStr
 			}
