@@ -2,19 +2,20 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
-	"xxterminator-plugin/log"
 	"net/http"
 	"strconv"
+	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/common"
-	"xxterminator-plugin/tracer/types"
-	"fmt"
 	"xxterminator-plugin/tracer/store"
+	"xxterminator-plugin/tracer/types"
 )
 
 /* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.
  * Returns the HTTP status and the return value. */
 func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
+	log.Trace.Printf("Adding a tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
 
@@ -29,11 +30,13 @@ func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
 		ret = []byte("The event type field for the event was empty")
 		log.Error.Println(ret)
 	} else {
+		log.Trace.Printf("The tracer event conforms to the expected.")
 		evntStr, err := common.AddEvent(int(trcrID), trcrEvnt)
 		if err != nil {
 			ret = []byte("There was an error adding the event.")
 			log.Error.Println(err)
 		} else {
+			log.Trace.Printf("Successfully added the tracer event: %v", evntStr)
 			/* Final success case. */
 			status = http.StatusOK
 			ret = evntStr
@@ -66,9 +69,8 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 	finalStatus := http.StatusOK
 	finalRet := make([]byte, 0)
 	trcrEvntsBulk := make([]types.TracerEventBulk, 0)
+	log.Trace.Printf("Adding tracer events: %+v", trcrEvntsBulk)
 	json.NewDecoder(r.Body).Decode(&trcrEvntsBulk)
-
-	log.Trace.Printf("Decoded the following bulk tracer events: %+v", trcrEvntsBulk)
 
 	/* Count the number of successful events that were added. */
 	count := 0
@@ -97,7 +99,7 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if len(finalRet) == 0{
+	if len(finalRet) == 0 {
 		finalRet = []byte(fmt.Sprintf(`{"Status":"Success", "Count":"%d"}`, count))
 	}
 

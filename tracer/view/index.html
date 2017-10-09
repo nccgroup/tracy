@@ -28,27 +28,35 @@
 
             /* Add a tracer element to the DOM. */
             function addTracerToDom(url, locations) {
-                /* The details and summary tab will be used to show the tracer string. */
-                var details = document.createElement("details");
-                var summary = document.createElement("summary");
-                details.className = "tracer";
-                summary.innerText = url;
-                details.appendChild(summary);
-                details.open = true;
-
                 /* Each of the detail elements will be added under the details. */
                 for (var locationKey in locations) {
-                    var div = document.createElement("div");
-                    div.className = "location";
-
-                    var loc = JSON.stringify(locations[locationKey]);
-                    var text = loc["Location"] + "," + loc["Data"];
-                    div.innerText = text;
-                    details.appendChild(div);
+                    /* The details and summary tab will be used to show the tracer string. */
+                    var details = document.createElement("details");
+                    var summary = document.createElement("summary");
+                    details.className = "tracer";
+                    summary.innerText = url + ": (" + locations[locationKey]["TracerString"] + ")";
+                    details.appendChild(summary);
+                    details.open = true;
+                    var used = [];
+                    var events = locations[locationKey]["Events"];
+                    for (var eventKey in events) {
+                        var event = events[eventKey];
+                        var locStr = event["Location"].trim();
+                        if (used.indexOf(locStr) == -1) {
+                            var text = ""
+                            var div = document.createElement("div");
+                            div.className = "location";
+                            text += locStr
+                            used.push(locStr);
+                            div.innerText = text;
+                            details.appendChild(div);
+                        }
+                    }
+                    var results = document.getElementById(appContainer);
+                    results.appendChild(details);
                 }
 
-                var results = document.getElementById(appContainer);
-                results.appendChild(details);
+
             }
 
             /* HTTP Request to get the current list of tracers. */
@@ -56,7 +64,7 @@
                 if (callback) {
                     /* Create the HTTP GET request to the /tracers API endpoint. */
                     var req = new XMLHttpRequest();
-                    req.open("GET", "/tracers", true);
+                    req.open("GET", "/tracers/events", true);
                     req.onreadystatechange = callback;
 
                     /* Send it. */

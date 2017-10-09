@@ -6,8 +6,8 @@ import (
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
 	_ "github.com/mattn/go-sqlite3"
-	"xxterminator-plugin/log"
 	"os"
+	"xxterminator-plugin/log"
 )
 
 /*TracersTable is the database table name for tracers. */
@@ -63,7 +63,7 @@ var TracerDB *sql.DB
 func Open(driver, path string) (*sql.DB, error) {
 	/* Create the file if it doesn't exist. */
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Trace.Println("Creating a database file. Couldn't find it.")
+		log.Trace.Printf("Creating a database file. Couldn't find it.")
 		var file, err = os.Create(path)
 		if err != nil {
 			return nil, err
@@ -72,20 +72,26 @@ func Open(driver, path string) (*sql.DB, error) {
 		file.Close()
 	}
 
-	log.Trace.Printf("Opening this database file: %s\n", path)
 
 	/* Open the database. */
+	log.Trace.Printf("Opening this database file: %s\n", path)
 	db, err := sql.Open(driver, path)
 
 	/* Check if there are no errors. */
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		/* Throw the error up. */
 		return nil, err
 	}
 
+	/* We want to disable the goroutine thread pool that is used by default since this application doesn't need it and will
+	 * cause performance issues. https://stackoverflow.com/questions/35804884/sqlite-concurrent-writing-performance */
+	db.SetMaxOpenConns(1)
+
 	/* Validate the database is available by pinging it. */
 	err = db.Ping()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		/* Throw the error up. */
 		return db, err
 	}
@@ -132,6 +138,7 @@ func createTable(db *sql.DB, tableName string, columns map[string]string) error 
 	/* Using prepared statements. */
 	stmt, err := db.Prepare(query)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
@@ -140,20 +147,38 @@ func createTable(db *sql.DB, tableName string, columns map[string]string) error 
 	/* Check the table was created.*/
 	res, err := stmt.Exec()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 
 	/* Check the response. */
 	lastID, err := res.LastInsertId()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 
 	/* Make sure one row was inserted. */
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 	log.Trace.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", tableName, lastID, rowCnt)
+
+	/* Add the WAL pragma. This configuration helps with performance issues related to concurrent writers. */
+	pragmaStmt, err := db.Prepare("PRAGMA journal_mode=WAL")
+	if err != nil {
+		log.Warning.Printf(err.Error())
+		return err
+	}
+	defer pragmaStmt.Close()
+
+	_, err = pragmaStmt.Exec()
+	if err != nil {
+		log.Warning.Printf(err.Error())
+		return err
+	}
+
 	return nil
 }

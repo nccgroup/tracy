@@ -10,60 +10,6 @@ import (
 	"xxterminator-plugin/tracer/types"
 )
 
-/*DBGetTracerEvents gets a tracer event for a particular types. */
-func DBGetTracerEvents(db *sql.DB, tid int) ([]types.TracerEvent, error) {
-	query := fmt.Sprintf(
-		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
-		FROM %s
-		LEFT JOIN %s ON %s.%s = %s.%s
-		WHERE %s.%s = ?;`,
-		EventsTable, EventsIDColumn,
-		EventsTable, EventsDataColumn,
-		EventsTable, EventsLocationColumn,
-		EventsTable, EventsEventTypeColumn,
-		EventsTable,
-		EventsTable,
-		EventsTable, TracersEventsEventIDColumn,
-		EventsTable, EventsIDColumn,
-		EventsTable, TracersEventsTracerIDColumn)
-	log.Trace.Printf("Built this query for getting a tracer id by name: %s", query)
-	stmt, err := db.Prepare(query)
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-
-	/* Query the database for the types. */
-	rows, err := stmt.Query(tid)
-	if err != nil {
-		return nil, err
-	}
-	/* Make sure to close the database connection. */
-	defer rows.Close()
-
-	var (
-		id       types.JSONNullInt64
-		data     types.JSONNullString
-		location types.JSONNullString
-		etype    types.JSONNullString
-	)
-
-	events := make([]types.TracerEvent, 0)
-	for rows.Next() {
-		/* Scan the row. */
-		err = rows.Scan(&id, data, location, etype)
-		if err != nil {
-			/* Fail fast if this messes up. */
-			return nil, err
-		}
-
-		/* Append the types.TracerEvent object to the list of events. */
-		events = append(events, types.TracerEvent{id, data, location, etype})
-	}
-
-	return events, nil
-}
-
 /*DBAddTracerEvent adds an event to a slice of tracers specified by the the tracer string. */
 func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.TracerEvent, error) {
 	/* Using prepared statements. */
@@ -77,6 +23,7 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
@@ -85,18 +32,21 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	/* Execute the query. */
 	res, err := stmt.Exec(te.Data, te.Location, te.EventType)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
 
 	/* Check the response. */
 	lastID, err := res.LastInsertId()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
 
 	/* Make sure one row was inserted. */
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
 	log.Trace.Printf("AddTracerEvent: ID = %d, affected = %d", lastID, rowCnt)
@@ -121,6 +71,7 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 
 	trcrEvnt, err := DBGetTracerEventByID(db, int(lastID))
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
 
@@ -143,6 +94,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 	log.Trace.Printf("Built this query for getting a tracer: %s", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
 	defer stmt.Close()
@@ -150,6 +102,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 	/* Query the database for the types. */
 	rows, err := stmt.Query(tei)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
 	/* Make sure to close the database connection. */
@@ -168,6 +121,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 		/* Scan the row. */
 		err = rows.Scan(&eventID, &data, &location, &etype)
 		if err != nil {
+			log.Warning.Printf(err.Error())
 			/* Fail fast if this messes up. */
 			return types.TracerEvent{}, err
 		}
@@ -187,12 +141,13 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 	 * Golang examples. Checking for errors during iteration.*/
 	err = rows.Err()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
 
 	/* Validate we have an event. */
 	if trcrEvnt.ID.Int64 != int64(tei) {
-		log.Error.Printf("No tracer event with ID %d", tei)
+		log.Warning.Printf("No tracer event with ID %d", tei)
 		return types.TracerEvent{}, nil
 	}
 
@@ -213,6 +168,7 @@ func DBAddTracersEvents(db *sql.DB, tei, ti int) error {
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
@@ -221,18 +177,21 @@ func DBAddTracersEvents(db *sql.DB, tei, ti int) error {
 	/* Execute the query. */
 	res, err := stmt.Exec(ti, tei)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 
 	/* Check the response. */
 	lastID, err := res.LastInsertId()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 
 	/* Make sure one row was inserted. */
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 	log.Trace.Printf("AddTracersEvents: ID = %d, affected = %d", lastID, rowCnt)

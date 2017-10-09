@@ -6,5 +6,5 @@ type Tracer struct {
 	TracerString string         `json:"TracerString"`
 	URL          JSONNullString `json:"URL"`
 	Method       JSONNullString `json:"Method"`
-	Hits         []TracerEvent  `json:"Events"`
+	Events       []TracerEvent  `json:"Events"`
 }

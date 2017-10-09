@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"xxterminator-plugin/tracer/types"
 	"xxterminator-plugin/log"
+	"xxterminator-plugin/tracer/types"
 )
+
 /*tag is a slice of strings that represent the character sequencies in requests that need to be replaced with random tracer strings. */
 var tags = []string{"{{XSS}}", "%7B%7BXSS%7D%7D"}
+
 const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 /* Helper function for searching for tracer tags in query parameters and body and replacing them with randomly generated
@@ -34,9 +36,9 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 		/* Combine the two slices of new tracer strings. */
 		replacedTracerStrings = append(replacedTracerStrings, replacedTracerStringsInBody...)
 		/* Create tracer structs out of the generated tracer strings. */
-		addedTracers:= make([]types.Tracer, len(replacedTracerStrings))
+		addedTracers := make([]types.Tracer, len(replacedTracerStrings))
 		for i := 0; i < len(replacedTracerStrings); i++ {
-			addedTracers[i] = types.Tracer{TracerString: replacedTracerStrings[i], URL: types.StringToJSONNullString(req.URL.EscapedPath()), Method: types.StringToJSONNullString(req.Method)}
+			addedTracers[i] = types.Tracer{TracerString: replacedTracerStrings[i], URL: types.StringToJSONNullString(req.URL.String()), Method: types.StringToJSONNullString(req.Method)}
 		}
 
 		/* Write the new body to the request. */
@@ -58,7 +60,7 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
  * along with a list of randomly generated tracer strings. */
 func replaceTagsInBody(body []byte) ([]byte, []string) {
 	var replacedTracerStrings []string
-	replacedBody := make([]byte,0)
+	replacedBody := make([]byte, 0)
 
 	/* For each of the configured tags, look for a tag in the body and swap it out for a random tracer string. */
 	for _, tag := range tags {
@@ -131,13 +133,12 @@ func findTracersInResponseBody(response string, requestURI string, tracers map[s
 		}
 	}
 
-
 	/* Create tracer event structs from the tracers that were found. */
 	for _, foundTracer := range tracersFound {
 		event := types.TracerEvent{
-			ID: types.Int64ToJSONNullInt64(int64(foundTracer.ID)),
-			Data: types.StringToJSONNullString(response),
-			Location: types.StringToJSONNullString(requestURI),
+			ID:        types.Int64ToJSONNullInt64(int64(foundTracer.ID)),
+			Data:      types.StringToJSONNullString(response),
+			Location:  types.StringToJSONNullString(requestURI),
 			EventType: types.StringToJSONNullString("Response")}
 		ret[string(foundTracer.ID)] = event
 	}

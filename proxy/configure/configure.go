@@ -1,17 +1,15 @@
 package configure
 
 import (
+	"crypto/tls"
 	"net"
 	"xxterminator-plugin/log"
-	"crypto/tls"
 )
-
 
 /* TODO: need to make a configuration file for these parameters. */
 const addr = "127.0.0.1:7777"
 const publicKey = "cert.pem"
 const privateKey = "key.pem"
-
 
 /*ProxyServer configures the TCP listener based on the user's configuration. */
 func ProxyServer() net.Listener {

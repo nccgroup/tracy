@@ -3,12 +3,12 @@ package proxy
 import (
 	"bufio"
 	"crypto/tls"
-	"xxterminator-plugin/log"
 	"net"
 	"net/http"
 	"net/http/httputil"
-	tracerClient "xxterminator-plugin/tracer/client"
 	"strings"
+	"xxterminator-plugin/log"
+	tracerClient "xxterminator-plugin/tracer/client"
 	"xxterminator-plugin/tracer/configure"
 )
 
@@ -140,7 +140,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	 * server API call because it will trigger a recursion. */
 	if host != configure.TracerServer {
 		/* Search for any known tracers in the response. Since the list of tracers might get large, perform this operation
-	 	 * in a goroutine. The proxy can finish this connection before this finishes. */
+		 * in a goroutine. The proxy can finish this connection before this finishes. */
 		go func() {
 			/* Get a current list of the tracers so they can be searched for. */
 			tracers, err := tracerClient.GetTracers()
@@ -151,7 +151,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 			}
 
 			/* Get the tracer events that correspond to tracers found in the response. */
-			tracerEvents := findTracersInResponseBody(string(responseRawBytes), request.RequestURI, tracers);
+			tracerEvents := findTracersInResponseBody(string(responseRawBytes), request.RequestURI, tracers)
 
 			/* Use the API to add each tracer events to their corresponding tracer. */
 			tracerClient.AddTracerEvents(tracerEvents)

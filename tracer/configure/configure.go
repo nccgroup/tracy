@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io/ioutil"
-	"xxterminator-plugin/log"
 	"net/http"
 	"os"
 	"time"
+	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/rest"
 	"xxterminator-plugin/tracer/store"
 )
@@ -22,6 +22,8 @@ func Server() (*http.Server, *mux.Router) {
 	r.Methods("POST").Path("/tracers").HandlerFunc(rest.AddTracer)
 	r.Methods("DELETE").Path("/tracers/{tracerId}").HandlerFunc(rest.DeleteTracer)
 	r.Methods("PUT").Path("/tracers/{tracerId}").HandlerFunc(rest.EditTracer)
+
+	r.Methods("GET").Path("/tracers/events").HandlerFunc(rest.GetTracersWithEvents)
 	r.Methods("GET").Path("/tracers/{tracerId}").HandlerFunc(rest.GetTracer)
 	r.Methods("GET").Path("/tracers").HandlerFunc(rest.GetTracers)
 

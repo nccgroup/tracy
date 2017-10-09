@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"xxterminator-plugin/log"
 	"math/rand"
 	"net/http"
 	"strconv"
+	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/common"
 	"xxterminator-plugin/tracer/types"
 )
@@ -22,6 +22,7 @@ func AddTracer(w http.ResponseWriter, r *http.Request) {
 	trcrStr, err := common.AddTracer(in)
 	if err != nil {
 		ret = serverError(err)
+		log.Error.Printf(err.Error())
 	} else {
 		/* Final success case. */
 		status = http.StatusOK
@@ -43,10 +44,12 @@ func DeleteTracer(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			ret = serverError(err)
+			log.Error.Printf(err.Error())
 		} else {
 			trcrStatus, err := common.DeleteTracer(int(id))
 			if err != nil {
 				ret = serverError(err)
+				log.Error.Printf(err.Error())
 			} else {
 				/* Final success case. */
 				status = http.StatusAccepted
@@ -70,6 +73,7 @@ func EditTracer(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			ret = serverError(err)
+			log.Error.Printf(err.Error())
 		} else {
 			trcr := types.Tracer{}
 			json.NewDecoder(r.Body).Decode(&trcr)
@@ -77,6 +81,7 @@ func EditTracer(w http.ResponseWriter, r *http.Request) {
 			trcrStr, err := common.EditTracer(int(id), trcr)
 			if err != nil {
 				ret = serverError(err)
+				log.Error.Printf(err.Error())
 			} else {
 				/* Final success case. */
 				status = http.StatusCreated
@@ -98,6 +103,27 @@ func GetTracers(w http.ResponseWriter, r *http.Request) {
 	trcrsStr, err := common.GetTracers()
 	if err != nil {
 		ret = serverError(err)
+		log.Error.Printf(err.Error())
+	} else {
+		/* Final success case. */
+		status = http.StatusOK
+		ret = trcrsStr
+	}
+
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(ret)
+}
+
+/*GetTracers Get all the tracer data structures. */
+func GetTracersWithEvents(w http.ResponseWriter, r *http.Request) {
+	ret := []byte("{}")
+	status := http.StatusInternalServerError
+
+	trcrsStr, err := common.GetTracersWithEvents()
+	if err != nil {
+		ret = serverError(err)
+		log.Error.Printf(err.Error())
 	} else {
 		/* Final success case. */
 		status = http.StatusOK
@@ -119,10 +145,12 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			ret = serverError(err)
+			log.Error.Printf(err.Error())
 		} else {
 			trcrStr, err := common.GetTracer(int(id))
 			if err != nil {
 				ret = serverError(err)
+				log.Error.Printf(err.Error())
 			} else {
 				/* Final success case. */
 				status = http.StatusOK
@@ -138,8 +166,7 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 
 /* Common function for logging an internal server error and serving back something generic. */
 func serverError(err error) []byte {
+	/* TODO: need to do something with this number. */
 	ref := rand.Intn(10000000000000)
-	log.Error.Printf("Reference %d: %s", ref, err.Error())
-
 	return []byte(fmt.Sprintf(`{"Message":"Internal Server Error", "Reference":"%d"}`, ref))
 }

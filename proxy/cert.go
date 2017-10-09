@@ -10,12 +10,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"xxterminator-plugin/log"
 	"math/big"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+	"xxterminator-plugin/log"
 )
 
 /* Upgrade a TLS connection if the proxy receives a 'CONNECT' action from the connection. */

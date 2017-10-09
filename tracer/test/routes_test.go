@@ -332,11 +332,11 @@ func TestAddEvent(t *testing.T) {
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
 			/* Make sure we have enough Hits. */
-			if len(got.Hits) == 0 {
+			if len(got.Events) == 0 {
 				err = fmt.Errorf("addTracerEvent didn't have any events to use. Expected 1")
 			} else {
 				/* Otherwise, grab the event. */
-				gotEvnt := got.Hits[0]
+				gotEvnt := got.Events[0]
 
 				/* Make sure the data we inserted was also the data we received back from the database. */
 				if gotEvnt.ID.Int64 != 1 {

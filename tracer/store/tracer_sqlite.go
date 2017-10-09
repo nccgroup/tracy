@@ -22,6 +22,7 @@ func DBAddTracer(db *sql.DB, t types.Tracer) (types.Tracer, error) {
 		TracersURLColumn, TracersMethodColumn))
 
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
@@ -30,25 +31,29 @@ func DBAddTracer(db *sql.DB, t types.Tracer) (types.Tracer, error) {
 	/* Execute the query. */
 	res, err := stmt.Exec(t.TracerString, t.URL, t.Method)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 
 	/* Check the response. */
 	lastID, err := res.LastInsertId()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 
 	/* Make sure one row was inserted. */
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 	log.Trace.Printf("AddTracer: ID = %d, affected = %d\n", lastID, rowCnt)
 
 	/* Pull the record that was just added and return it. */
-	trcr, err := DBGetTracerByID(db, int(lastID))
+	trcr, err := DBGetTracerWithEventsByID(db, int(lastID))
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 
@@ -57,7 +62,7 @@ func DBAddTracer(db *sql.DB, t types.Tracer) (types.Tracer, error) {
 }
 
 /*DBGetTracers gets all the trcrs. */
-func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
+func DBGetTracersWithEvents(db *sql.DB) (map[int]types.Tracer, error) {
 	//trcrs.id, trcrs.method, trcrs.trcrStr, trcrs.URL, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
 		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
@@ -84,6 +89,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 	log.Trace.Printf("Built this query for getting trcrs: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return nil, err
 	}
 	defer stmt.Close()
@@ -91,6 +97,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 	/* Query the database for the  */
 	rows, err := stmt.Query()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return nil, err
 	}
 	/* Make sure to close the database connection. */
@@ -113,6 +120,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 		/* Scan the row. */
 		err = rows.Scan(&trcrID, &method, &trcrStr, &evntID, &URL, &data, &location, &etype)
 		if err != nil {
+			log.Warning.Printf(err.Error())
 			/* Fail fast if this messes up. */
 			return nil, err
 		}
@@ -129,7 +137,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 				TracerString: trcrStr,
 				URL:          URL,
 				Method:       method,
-				Hits:         make([]types.TracerEvent, 0)}
+				Events:       make([]types.TracerEvent, 0)}
 		}
 
 		/* Build a TracerEvent struct from the data. */
@@ -142,7 +150,7 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 				EventType: etype,
 			}
 			/* Add the trcrEvnt to the  */
-			trcr.Hits = append(trcr.Hits, trcrEvnt)
+			trcr.Events = append(trcr.Events, trcrEvnt)
 		}
 
 		/* Replace the tracer in the map. */
@@ -153,6 +161,77 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 	 * Golang examples. Checking for errors during iteration.*/
 	err = rows.Err()
 	if err != nil {
+		log.Warning.Printf(err.Error())
+		return nil, err
+	}
+	/* Return the tracer and nil to indicate everything went okay. */
+	return trcrs, nil
+}
+
+/*DBGetTracers gets all the trcrs. */
+func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
+	//trcrs.id, trcrs.method, trcrs.trcrStr, trcrs.URL, events.event_data, events.location, events.event_type
+	query := fmt.Sprintf(
+		`SELECT %s.%s, %s.%s, %s.%s, %s.%s
+		 FROM %s`,
+		/* Select values. */
+		TracersTable, TracersIDColumn,
+		TracersTable, TracersMethodColumn,
+		TracersTable, TracersTracerStringColumn,
+		TracersTable, TracersURLColumn,
+		/* From this table. */
+		TracersTable)
+	log.Trace.Printf("Built this query for getting trcrs: %s\n", query)
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		log.Warning.Printf(err.Error())
+		return nil, err
+	}
+	defer stmt.Close()
+
+	/* Query the database for the  */
+	rows, err := stmt.Query()
+	if err != nil {
+		log.Warning.Printf(err.Error())
+		return nil, err
+	}
+	/* Make sure to close the database connection. */
+	defer rows.Close()
+
+	/* Not sure why I can't get the number of rows from a Rows type. Kind of annoying. */
+	trcrs := make(map[int]types.Tracer)
+	for rows.Next() {
+		var (
+			trcrID  int
+			trcrStr string
+			URL     types.JSONNullString
+			method  types.JSONNullString
+		)
+
+		/* Scan the row. */
+		err = rows.Scan(&trcrID, &method, &trcrStr, &URL)
+		if err != nil {
+			log.Warning.Printf(err.Error())
+			/* Fail fast if this messes up. */
+			return nil, err
+		}
+
+		/* Check if the tracer is already in the map. */
+		trcr := types.Tracer{
+			ID:           trcrID,
+			TracerString: trcrStr,
+			URL:          URL,
+			Method:       method}
+
+		/* Replace the tracer in the map. */
+		trcrs[trcrID] = trcr
+	}
+
+	/* Not sure why we need to check for errors again, but this was from the
+	 * Golang examples. Checking for errors during iteration.*/
+	err = rows.Err()
+	if err != nil {
+		log.Warning.Printf(err.Error())
 		return nil, err
 	}
 	/* Return the tracer and nil to indicate everything went okay. */
@@ -169,6 +248,7 @@ func DBDeleteTracer(db *sql.DB, id int) error {
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
@@ -177,18 +257,21 @@ func DBDeleteTracer(db *sql.DB, id int) error {
 	/* Execute the query. */
 	res, err := stmt.Exec(id)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 
 	/* Check the response. */
 	lastID, err := res.LastInsertId()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 
 	/* Make sure one row was inserted. */
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return err
 	}
 	log.Trace.Printf("DeleteTracer: ID = %d, affected = %d\n", lastID, rowCnt)
@@ -218,6 +301,7 @@ func DBEditTracer(db *sql.DB, id int, trcr types.Tracer) (types.Tracer, error) {
 	stmt, err := db.Prepare(query)
 
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
@@ -226,24 +310,28 @@ func DBEditTracer(db *sql.DB, id int, trcr types.Tracer) (types.Tracer, error) {
 	/* Execute the query. */
 	res, err := stmt.Exec(trcr.TracerString, trcr.Method, trcr.URL, id)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 
 	/* Check the response. */
 	lastID, err := res.LastInsertId()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 
 	/* Make sure one row was inserted. */
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 	log.Trace.Printf("EditTracer: ID = %d, affected = %d\n", lastID, rowCnt)
 
-	updated, err := DBGetTracerByID(db, int(lastID))
+	updated, err := DBGetTracerWithEventsByID(db, int(lastID))
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 
@@ -264,6 +352,7 @@ func DBGetTracerIDByTracerString(db *sql.DB, trcrStr string) (int, error) {
 	log.Trace.Printf("Built this query for getting a tracer id by name: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return 0, err
 	}
 	defer stmt.Close()
@@ -271,6 +360,7 @@ func DBGetTracerIDByTracerString(db *sql.DB, trcrStr string) (int, error) {
 	/* Query the database for the  */
 	rows, err := stmt.Query(trcrStr)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return 0, err
 	}
 	/* Make sure to close the database connection. */
@@ -284,6 +374,7 @@ func DBGetTracerIDByTracerString(db *sql.DB, trcrStr string) (int, error) {
 		/* Scan the row. */
 		err = rows.Scan(&trcrID)
 		if err != nil {
+			log.Warning.Printf(err.Error())
 			/* Fail fast if this messes up. */
 			return 0, err
 		}
@@ -293,7 +384,7 @@ func DBGetTracerIDByTracerString(db *sql.DB, trcrStr string) (int, error) {
 }
 
 /*DBGetTracerByTracerString gets a tracer by the tracer string. */
-func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error) {
+func DBGetTracerWithEventsByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error) {
 	//trcrs.id, trcrs.method, trcrs.trcrStr, trcrs.URL, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
 		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
@@ -323,6 +414,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 	log.Trace.Printf("Built this query for getting a tracer: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 	defer stmt.Close()
@@ -330,6 +422,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 	/* Query the database for the  */
 	rows, err := stmt.Query(trcrStr)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 	/* Make sure to close the database connection. */
@@ -352,6 +445,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 		/* Scan the row. */
 		err = rows.Scan(&trcrID, &method, &trcrStr, &evntID, &URL, &data, &location, &etype)
 		if err != nil {
+			log.Warning.Printf(err.Error())
 			/* Fail fast if this messes up. */
 			return types.Tracer{}, err
 		}
@@ -364,7 +458,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 				TracerString: trcrStr,
 				URL:          URL,
 				Method:       method,
-				Hits:         make([]types.TracerEvent, 0)}
+				Events:       make([]types.TracerEvent, 0)}
 		}
 
 		/* Build a TracerEvent struct from the data. */
@@ -378,7 +472,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 				EventType: etype,
 			}
 			/* Add the trcrEvnt to the  */
-			trcr.Hits = append(trcr.Hits, trcrEvnt)
+			trcr.Events = append(trcr.Events, trcrEvnt)
 		}
 
 	}
@@ -387,6 +481,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 	 * Golang examples. Checking for errors during iteration.*/
 	err = rows.Err()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 
@@ -395,7 +490,7 @@ func DBGetTracerByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error)
 }
 
 /*DBGetTracerByID gets a tracer by the tracer ID. */
-func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
+func DBGetTracerWithEventsByID(db *sql.DB, id int) (types.Tracer, error) {
 	//trcrs.id, trcrs.method, trcrs.trcrStr, trcrs.URL, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
 		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
@@ -423,6 +518,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 	log.Trace.Printf("Built this query for getting a tracer: %s\n", query)
 	stmt, err := db.Prepare(query)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 	defer stmt.Close()
@@ -430,6 +526,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 	/* Query the database for the  */
 	rows, err := stmt.Query(id)
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 	/* Make sure to close the database connection. */
@@ -452,6 +549,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 		/* Scan the row. */
 		err = rows.Scan(&trcrID, &method, &trcrStr, &evntID, &URL, &data, &location, &etype)
 		if err != nil {
+			log.Warning.Printf(err.Error())
 			/* Fail fast if this messes up. */
 			return types.Tracer{}, err
 		}
@@ -464,7 +562,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 				TracerString: trcrStr,
 				URL:          URL,
 				Method:       method,
-				Hits:         make([]types.TracerEvent, 0)}
+				Events:       make([]types.TracerEvent, 0)}
 		}
 
 		if evntID.Int64 != 0 && data != (types.JSONNullString{}) {
@@ -478,7 +576,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 				EventType: etype,
 			}
 			/* Add the trcrEvnt to the  */
-			trcr.Hits = append(trcr.Hits, trcrEvnt)
+			trcr.Events = append(trcr.Events, trcrEvnt)
 		}
 
 	}
@@ -487,6 +585,7 @@ func DBGetTracerByID(db *sql.DB, id int) (types.Tracer, error) {
 	 * Golang examples. Checking for errors during iteration.*/
 	err = rows.Err()
 	if err != nil {
+		log.Warning.Printf(err.Error())
 		return types.Tracer{}, err
 	}
 
