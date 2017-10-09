@@ -43,7 +43,7 @@ func AddTracer(tracer types.Tracer) error {
 
 		/* Send the request off to the API. We don't need the response.*/
 		url := fmt.Sprintf("http://%s/tracers", configure.TracerServer)
-		contentType :="application/json; charset=UTF-8"
+		contentType := "application/json; charset=UTF-8"
 		log.Trace.Printf("Sending POST request to %s %s", url, contentType)
 		_, err := http.Post(url, contentType, bytes.NewBuffer(tracerJSON))
 

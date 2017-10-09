@@ -5,10 +5,6 @@ import (
 	"log"
 )
 
-/*Debug holds the logging state of the application. */
-var Debug = false
-var Outfile = ""
-
 var (
 	/*Trace is used for logging trivial things to the command line. Only print in verbose mode. */
 	Trace *log.Logger
@@ -20,6 +16,8 @@ var (
 	Error *log.Logger
 )
 
+/*Init creates the logger structs for this runtime. Users of the program can specify the location of the logs using the command line
+ * or configuration file. */
 func Init(traceHandle io.Writer, infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer) {
 	Trace = log.New(traceHandle,
 		"[TRACE]: ",

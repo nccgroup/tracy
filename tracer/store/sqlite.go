@@ -72,7 +72,6 @@ func Open(driver, path string) (*sql.DB, error) {
 		file.Close()
 	}
 
-
 	/* Open the database. */
 	log.Trace.Printf("Opening this database file: %s\n", path)
 	db, err := sql.Open(driver, path)

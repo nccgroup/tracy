@@ -65,7 +65,7 @@ func testAddTracersBodyHelper(requestDataString string) (int, error) {
 		return 0, err
 	}
 
-	newRequest, addedTracers, _ := replaceTagsInBody(requestData)
+	newRequest, addedTracers := replaceTagsInBody(requestData)
 
 	for _, addedTracer := range addedTracers {
 		i := bytes.Index(newRequest, []byte(addedTracer))
@@ -101,12 +101,12 @@ func testAddTracerQuaryHelper(requestData string) (int, error) {
 		return 0, err
 	}
 
-	newQuary, addedTracers, _ := replaceTagsInQueryParameters(request.URL.RawQuery)
+	newQuary, addedTracers := replaceTagsInQueryParameters(request.URL.RawQuery)
 
 	for _, addedTracer := range addedTracers {
 		i := strings.Index(newQuary, addedTracer)
 		if i == -1 {
-			return 0, fmt.Errorf("No Tracer Found!")
+			return 0, fmt.Errorf("no tracer found")
 		}
 	}
 	return len(addedTracers), nil
@@ -159,7 +159,7 @@ func TestFindNoTracers(t *testing.T) {
 }
 
 func testFindTracersHelper(responseData string, tracers map[int]types.Tracer) (int, error) {
-	foundTracers := findTracers(responseData, tracers)
+	foundTracers := findTracersInResponseBody(responseData, "www.test.com", tracers)
 
 	return len(foundTracers), nil
 }

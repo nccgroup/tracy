@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	l "log"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"xxterminator-plugin/proxy"
 	pc "xxterminator-plugin/proxy/configure"
 	tc "xxterminator-plugin/tracer/configure"
-	"io"
 )
 
 func main() {
@@ -56,35 +56,34 @@ func main() {
 func init() {
 	/* Set up the command line interface. */
 	const (
-		verboseUsage    = "Indicate if you'd like to run this tool with advanced debugging logs."
-		outputFileUsage = "Indicate an external file all logs should be written to."
-		outFileDefault = "empty"
-		databaseFileUsage = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
-		databaseFileDefault = "/prod/tracer-db.db"
-		cpuProfileFileUsage = "Indicate the file to store the CPU profile in."
+		verboseUsage          = "Indicate if you'd like to run this tool with advanced debugging logs."
+		outputFileUsage       = "Indicate an external file all logs should be written to."
+		outFileDefault        = "empty"
+		databaseFileUsage     = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
+		databaseFileDefault   = "/prod/tracer-db.db"
+		cpuProfileFileUsage   = "Indicate the file to store the CPU profile in."
 		cpuProfileFileDefault = "empty"
-
 	)
 
 	/* Verbose mode. Prints more detailed error messages during the program runtime. */
 	var verbose bool
 	flag.BoolVar(&verbose, "verbose", false, verboseUsage)
-	flag.BoolVar(&verbose, "v", false, verboseUsage + "(shorthand)")
+	flag.BoolVar(&verbose, "v", false, verboseUsage+"(shorthand)")
 
 	/* Output file. Moves stdout and stderr to a file on disk. */
 	var outFile string
 	flag.StringVar(&outFile, "outfile", outFileDefault, outputFileUsage)
-	flag.StringVar(&outFile, "o", outFileDefault, outputFileUsage + "(shorthand)")
+	flag.StringVar(&outFile, "o", outFileDefault, outputFileUsage+"(shorthand)")
 
 	/* Database file. Allows the user to change the location of the SQLite database file. */
 	var databaseFile string
-	flag.StringVar(&databaseFile, "database", os.TempDir() + databaseFileDefault, databaseFileUsage)
-	flag.StringVar(&databaseFile, "d", os.TempDir() + databaseFileDefault, databaseFileUsage + "(shorthand)")
+	flag.StringVar(&databaseFile, "database", os.TempDir()+databaseFileDefault, databaseFileUsage)
+	flag.StringVar(&databaseFile, "d", os.TempDir()+databaseFileDefault, databaseFileUsage+"(shorthand)")
 
 	/* CPU profile mode. Runs the CPU profiler during program runtime and writes the output to the file specified. */
 	var cpuprofile string
 	flag.StringVar(&cpuprofile, "cpuprofile", cpuProfileFileDefault, cpuProfileFileUsage)
-	flag.StringVar(&cpuprofile, "c", cpuProfileFileDefault, cpuProfileFileUsage + "(shorthand)")
+	flag.StringVar(&cpuprofile, "c", cpuProfileFileDefault, cpuProfileFileUsage+"(shorthand)")
 
 	// Parse the flags.
 	flag.Parse()

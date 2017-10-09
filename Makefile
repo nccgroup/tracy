@@ -58,7 +58,7 @@ fmt:
 
 lint:
 	cd ${BUILD_DIR} ; \
-	golint ; \
+	golint $$(go list ./... | grep -v /vendor/) ; \
 	cd - >/dev/null
 
 # Install the go dependency management tool
