@@ -11,6 +11,7 @@ import (
 	"testing"
 	"xxterminator-plugin/tracer/configure"
 	"xxterminator-plugin/tracer/types"
+	"xxterminator-plugin/log"
 )
 
 /* Used to order request and their corresponding tests. */
@@ -449,4 +450,12 @@ func addTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 	}
 
 	return err
+}
+
+func init() {
+	traceWriter := os.Stdout
+	infoWriter := os.Stdout
+	warningWriter := os.Stdout
+	errorWriter := os.Stderr
+	log.Init(traceWriter, infoWriter, warningWriter, errorWriter)
 }

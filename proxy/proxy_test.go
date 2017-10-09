@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"xxterminator-plugin/tracer/types"
+	"os"
+	"xxterminator-plugin/log"
 )
 
 var requestDataNoTags = `GET /api/v1/action/ HTTP/1.1
@@ -130,9 +132,9 @@ Connection: close
 
 func TestFindTracers(t *testing.T) {
 	//findTracers(responseString string, tracers map[int]types.Tracer) []types.Tracer {
-	tracers := make(map[int]types.Tracer)
+	tracers := make(map[string]types.Tracer)
 	tracer := types.Tracer{TracerString: "AASDFG"}
-	tracers[0] = tracer
+	tracers["0"] = tracer
 
 	numHits, err := testFindTracersHelper(responseStringTracer, tracers)
 
@@ -145,9 +147,9 @@ func TestFindTracers(t *testing.T) {
 
 func TestFindNoTracers(t *testing.T) {
 	//findTracers(responseString string, tracers map[int]types.Tracer) []types.Tracer {
-	tracers := make(map[int]types.Tracer)
+	tracers := make(map[string]types.Tracer)
 	tracer := types.Tracer{TracerString: "AASDFG"}
-	tracers[0] = tracer
+	tracers["0"] = tracer
 
 	numHits, err := testFindTracersHelper(responseStringNoTracer, tracers)
 
@@ -158,8 +160,16 @@ func TestFindNoTracers(t *testing.T) {
 	}
 }
 
-func testFindTracersHelper(responseData string, tracers map[int]types.Tracer) (int, error) {
+func testFindTracersHelper(responseData string, tracers map[string]types.Tracer) (int, error) {
 	foundTracers := findTracersInResponseBody(responseData, "www.test.com", tracers)
 
 	return len(foundTracers), nil
+}
+
+func init() {
+	traceWriter := os.Stdout
+	infoWriter := os.Stdout
+	warningWriter := os.Stdout
+	errorWriter := os.Stderr
+	log.Init(traceWriter, infoWriter, warningWriter, errorWriter)
 }

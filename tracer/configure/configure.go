@@ -20,16 +20,16 @@ func Server() (*http.Server, *mux.Router) {
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
 	r := mux.NewRouter()
 	r.Methods("POST").Path("/tracers").HandlerFunc(rest.AddTracer)
-	r.Methods("DELETE").Path("/tracers/{tracerId}").HandlerFunc(rest.DeleteTracer)
-	r.Methods("PUT").Path("/tracers/{tracerId}").HandlerFunc(rest.EditTracer)
+	r.Methods("DELETE").Path("/tracers/{tracerID}").HandlerFunc(rest.DeleteTracer)
+	r.Methods("PUT").Path("/tracers/{tracerID}").HandlerFunc(rest.EditTracer)
 
 	r.Methods("GET").Path("/tracers/events").HandlerFunc(rest.GetTracersWithEvents)
-	r.Methods("GET").Path("/tracers/{tracerId}").HandlerFunc(rest.GetTracer)
+	r.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(rest.GetTracer)
 	r.Methods("GET").Path("/tracers").HandlerFunc(rest.GetTracers)
 
 	/* Define our RESTful routes for tracer events. Tracer events are indexed by their
 	 * corresponding tracer ID. */
-	r.Methods("POST").Path("/tracers/{tracerId}/events").HandlerFunc(rest.AddEvent)
+	r.Methods("POST").Path("/tracers/{tracerID}/events").HandlerFunc(rest.AddEvent)
 	r.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(rest.AddEvents)
 
 	/* The base application page. */

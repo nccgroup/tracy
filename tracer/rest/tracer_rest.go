@@ -40,7 +40,7 @@ func DeleteTracer(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusInternalServerError
 
 	vars := mux.Vars(r)
-	if trcrID, ok := vars["tracerId"]; ok {
+	if trcrID, ok := vars["tracerID"]; ok {
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			ret = serverError(err)
@@ -69,7 +69,7 @@ func EditTracer(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusInternalServerError
 
 	vars := mux.Vars(r)
-	if trcrID, ok := vars["tracerId"]; ok {
+	if trcrID, ok := vars["tracerID"]; ok {
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			ret = serverError(err)
@@ -141,7 +141,7 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusInternalServerError
 
 	vars := mux.Vars(r)
-	if trcrID, ok := vars["tracerId"]; ok {
+	if trcrID, ok := vars["tracerID"]; ok {
 		id, err := strconv.ParseInt(trcrID, 10, 32)
 		if err != nil {
 			ret = serverError(err)

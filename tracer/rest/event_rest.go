@@ -31,7 +31,7 @@ func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
 		log.Error.Println(ret)
 	} else {
 		log.Trace.Printf("The tracer event conforms to the expected.")
-		evntStr, err := common.AddEvent(int(trcrID), trcrEvnt)
+		evntStr, err := common.AddEvent(trcrID, trcrEvnt)
 		if err != nil {
 			ret = []byte("There was an error adding the event.")
 			log.Error.Println(err)
@@ -57,6 +57,7 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error.Println(err)
 	}
+	log.Trace.Printf("Parsed the following tracer ID from the route: %d", trcrID)
 	status, ret := addEventHelper(int(trcrID), trcrEvnt)
 
 	w.WriteHeader(status)

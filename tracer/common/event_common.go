@@ -20,7 +20,7 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 	if err == nil {
 		/* Make sure the ID of the tracer exists. */
 		if trcr.ID == 0 {
-			err = fmt.Errorf("The tracer ID %d doesn't exist", trcrID)
+			err = fmt.Errorf("The tracer ID %d doesn't exist: %+v", trcrID, trcr)
 		} else {
 			log.Trace.Printf("Found the tracer in the database: %+v.", trcr)
 			/* If it is a valid tracer event and the tracer exists, then add it to the database. */
