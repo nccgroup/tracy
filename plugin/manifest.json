@@ -15,7 +15,7 @@
   },
   "externally_connectable": {
     "matches": [
-      
+
     ]
   },
   "content_scripts": [
@@ -40,7 +40,8 @@
   "web_accessible_resources" : [
     "scripts/click-to-fill.js",
     "styles/click-to-fill.css",
-    "scripts/method-hooking.js"
+    "scripts/method-hooking.js",
+    "images/laddy.png"
   ],
   "manifest_version": 2,
   "options_page": "html/options.html"
