@@ -118,7 +118,7 @@ func replaceTagsInQueryParameters(rawQuery string) (string, []string) {
 }
 
 /* Helper function for finding tracer strings in the response body of an HTTP request. */
-func findTracersInResponseBody(response string, requestURI string, tracers map[string]types.Tracer) map[string]types.TracerEvent {
+func findTracersInResponseBody(response string, requestURI string, tracers []types.Tracer) map[string]types.TracerEvent {
 	var tracersFound []types.Tracer
 	ret := make(map[string]types.TracerEvent)
 

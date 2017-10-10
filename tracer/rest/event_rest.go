@@ -60,8 +60,9 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	log.Trace.Printf("Parsed the following tracer ID from the route: %d", trcrID)
 	status, ret := addEventHelper(int(trcrID), trcrEvnt)
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(status)
 	w.Write(ret)
 }
 
@@ -104,7 +105,8 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 		finalRet = []byte(fmt.Sprintf(`{"Status":"Success", "Count":"%d"}`, count))
 	}
 
-	w.WriteHeader(finalStatus)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(finalStatus)
 	w.Write(finalRet)
 }

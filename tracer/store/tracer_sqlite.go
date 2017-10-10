@@ -10,6 +10,17 @@ import (
 	"xxterminator-plugin/tracer/types"
 )
 
+func makeSliceFromMap(trcrs map[int]types.Tracer) []types.Tracer {
+	ret := make([]types.Tracer, len(trcrs))
+	i := 0
+	for _, v := range trcrs {
+		ret[i] = v
+		i++
+	}
+
+	return ret
+}
+
 /*DBAddTracer adds a new tracer. */
 func DBAddTracer(db *sql.DB, t types.Tracer) (types.Tracer, error) {
 	/* Using prepared statements. */
@@ -62,7 +73,7 @@ func DBAddTracer(db *sql.DB, t types.Tracer) (types.Tracer, error) {
 }
 
 /*DBGetTracers gets all the trcrs. */
-func DBGetTracersWithEvents(db *sql.DB) (map[int]types.Tracer, error) {
+func DBGetTracersWithEvents(db *sql.DB) ([]types.Tracer, error) {
 	//trcrs.id, trcrs.method, trcrs.trcrStr, trcrs.URL, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
 		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
@@ -165,11 +176,13 @@ func DBGetTracersWithEvents(db *sql.DB) (map[int]types.Tracer, error) {
 		return nil, err
 	}
 	/* Return the tracer and nil to indicate everything went okay. */
-	return trcrs, nil
+	trcrsSlice := makeSliceFromMap(trcrs)
+
+	return trcrsSlice, nil
 }
 
 /*DBGetTracers gets all the trcrs. */
-func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
+func DBGetTracers(db *sql.DB) ([]types.Tracer, error) {
 	//trcrs.id, trcrs.method, trcrs.trcrStr, trcrs.URL, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
 		`SELECT %s.%s, %s.%s, %s.%s, %s.%s
@@ -235,7 +248,9 @@ func DBGetTracers(db *sql.DB) (map[int]types.Tracer, error) {
 		return nil, err
 	}
 	/* Return the tracer and nil to indicate everything went okay. */
-	return trcrs, nil
+	trcrsSlice := makeSliceFromMap(trcrs)
+
+	return trcrsSlice, nil
 }
 
 /*DBDeleteTracer deletes a specific tracer by the ID. */

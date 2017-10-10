@@ -29,8 +29,9 @@ func AddTracer(w http.ResponseWriter, r *http.Request) {
 		ret = trcrStr
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(status)
 	w.Write(ret)
 }
 
@@ -58,8 +59,9 @@ func DeleteTracer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(status)
 	w.Write(ret)
 }
 
@@ -90,8 +92,9 @@ func EditTracer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(status)
 	w.Write(ret)
 }
 
@@ -110,8 +113,9 @@ func GetTracers(w http.ResponseWriter, r *http.Request) {
 		ret = trcrsStr
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(status)
 	w.Write(ret)
 }
 
@@ -130,8 +134,9 @@ func GetTracersWithEvents(w http.ResponseWriter, r *http.Request) {
 		ret = trcrsStr
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(status)
 	w.Write(ret)
 }
 
@@ -159,8 +164,9 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(status)
 	w.Write(ret)
 }
 

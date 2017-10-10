@@ -1,0 +1,46 @@
+.tracer-row{
+  border-left: solid;
+  border-right: solid;
+  border-bottom: solid;
+  border-color: black;
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+.tracer-hits{
+  /*margin: 30px;*/
+}
+
+.tracer-event {
+  border-left: solid;
+  border-bottom: solid;
+  border-right: solid;
+  border-color: green;
+  margin-left: 5%;
+  margin-right: 5%;
+  background-color: antiquewhite;
+}
+
+.tracer-heading {
+  margin-left: 5%;
+  margin-right: 5%;
+  border-bottom: solid;
+}
+
+.tracer-event-header {
+  margin-left: 5%;
+  margin-right: 5%;
+  border-bottom: solid;
+  border-color: purple;
+  background-color: black;
+  /*margin-top: 15px;*/
+  color: white;
+}
+
+.menudown-icon {
+  float:  right;
+}
+
+.highlight {
+  background-color: yellow;
+}

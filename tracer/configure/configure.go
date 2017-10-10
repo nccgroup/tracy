@@ -3,7 +3,6 @@ package configure
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -33,8 +32,7 @@ func Server() (*http.Server, *mux.Router) {
 	r.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(rest.AddEvents)
 
 	/* The base application page. */
-	r.Methods("GET").Path("/").HandlerFunc(root)
-
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./tracer/view/xxterminate/build/")))
 	/* Create the server. */
 	srv := &http.Server{
 		Handler: r,
@@ -45,15 +43,6 @@ func Server() (*http.Server, *mux.Router) {
 	}
 	/* Return the server and the router. The router is mainly used for testing. */
 	return srv, r
-}
-
-/* The base route for the application. */
-func root(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadFile("./tracer/view/index.html")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-	w.Write(body)
 }
 
 /*Database opens the database from the store package. The resultant DB is available

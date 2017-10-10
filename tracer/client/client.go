@@ -60,16 +60,16 @@ func AddTracer(tracer types.Tracer) error {
 }
 
 /*GetTracers gets a list of the current tracers in the database. */
-func GetTracers() (map[string]types.Tracer, error) {
+func GetTracers() ([]types.Tracer, error) {
 	log.Trace.Printf("Getting all the tracers")
-	ret := make(map[string]types.Tracer, 0)
+	ret := make([]types.Tracer, 0)
 
 	/* Make the GET request. */
 	url := fmt.Sprintf("http://%s/tracers", configure.TracerServer)
 	log.Trace.Printf("Sending GET request to %s", url)
 	tracers, err := http.Get(url)
 	if err == nil {
-		log.Trace.Printf("Request submitted successsfully")
+		log.Trace.Printf("Request submitted successfully")
 		tracersBody, err := ioutil.ReadAll(tracers.Body)
 		if err == nil {
 			log.Trace.Printf("Read the following from the request response: %s", tracersBody)
