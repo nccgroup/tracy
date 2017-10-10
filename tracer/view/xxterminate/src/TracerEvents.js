@@ -39,10 +39,9 @@ class TracerEvents extends React.Component {
   	}
 	render() {
 		const header = <Row className="tracer-event-header">
-			<Col xs={1} md={1} onClick={this.sortBy.bind(this,'ID')} className="tracer-event-id">Tracer Event ID</Col>
-			<Col xs={1} md={1} onClick={this.sortBy.bind(this,'EventType')} className="tracer-event-type">Tracer Event Type</Col>
-			<Col xs={4} md={4} onClick={this.sortBy.bind(this,'Location')} className="tracer-event-location">Tracer Event Location</Col>
-			<Col xs={6} md={6} onClick={this.sortBy.bind(this,'Data')} className="tracer-event-data">Tracer Event Data</Col>
+			<Col xs={2} md={2} onClick={this.sortBy.bind(this,'ID')} className="tracer-event-id">Tracer Event ID</Col>
+			<Col xs={2} md={2} onClick={this.sortBy.bind(this,'EventType')} className="tracer-event-type">Tracer Event Type</Col>
+			<Col xs={8} md={8} onClick={this.sortBy.bind(this,'Location')} className="tracer-event-location">Tracer Event Location</Col>
 		</Row>
 		const hits = this.state.events.map((event) =>
 			<TracerEvent key={event.ID} event={event} tracerString={this.props.tracerString} />

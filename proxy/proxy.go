@@ -80,7 +80,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 
 	/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
 	 * server API call because it will trigger a recursion. */
-	if host != configure.TracerServer {
+	if !configure.ServerInWhitelist(host) {
 		/* Search through the request for the tracer keyword. */
 		tracers, err := replaceTracers(request)
 
@@ -138,7 +138,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 
 	/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
 	 * server API call because it will trigger a recursion. */
-	if host != configure.TracerServer {
+	if !configure.ServerInWhitelist(host) {
 		/* Search for any known tracers in the response. Since the list of tracers might get large, perform this operation
 		 * in a goroutine. The proxy can finish this connection before this finishes. */
 		go func() {
@@ -153,6 +153,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 			/* Get the tracer events that correspond to tracers found in the response. */
 			tracerEvents := findTracersInResponseBody(string(responseRawBytes), request.RequestURI, tracers)
 
+			log.Trace.Printf("Found the following tracer events: %+v", tracerEvents)
 			/* Use the API to add each tracer events to their corresponding tracer. */
 			tracerClient.AddTracerEvents(tracerEvents)
 		}()

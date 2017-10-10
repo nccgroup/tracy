@@ -1,6 +1,7 @@
 import React from 'react';
 import Col from 'react-bootstrap/lib/Col';
 import Row from 'react-bootstrap/lib/Row';
+import TracerEventData from './TracerEventData.js'
 
 class TracerEvent extends React.Component {
 	constructor(props){
@@ -14,7 +15,7 @@ class TracerEvent extends React.Component {
 		while(true) {
 			/* Get the reference to the next instance of the tracer string. */
 			var tracerStartNumber = this.state.data.indexOf(this.props.tracerString, currentIndex);
-			if (tracerStartNumber == -1) {
+			if (tracerStartNumber === -1) {
 				break;
 			}
 			
@@ -33,17 +34,11 @@ class TracerEvent extends React.Component {
 		});
 	}
 	render() {
-		const highlights = this.state.slices.map((slice) =>
-			<span><code>{slice}</code><span className="highlight">{this.props.tracerString}</span></span>
-		);
-		return (
-		<Row className="tracer-event">
-			<Col xs={1} md={1} className="tracer-event-id">{this.props.event.ID}</Col>
-			<Col xs={1} md={1} className="tracer-event-data">{this.props.event.EventType}</Col>
-			<Col xs={4} md={4} className="tracer-event-location">{this.props.event.Location}</Col>
-			<Col xs={6} md={6} className="tracer-event-type">
-				{highlights}<code>{this.state.end}</code>
-			</Col>
+		return (<Row className="tracer-event">
+			<Col xs={2} md={2} className="tracer-event-id">{this.props.event.ID}</Col>
+			<Col xs={2} md={2} className="tracer-event-data">{this.props.event.EventType}</Col>
+			<Col xs={8} md={8} className="tracer-event-location">{this.props.event.Location}</Col>
+			<TracerEventData tracerString={this.props.tracerString} slices={this.state.slices} end={this.state.end}/>
 		</Row>);
 	}
 }

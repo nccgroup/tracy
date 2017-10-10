@@ -43,4 +43,16 @@
 
 .highlight {
   background-color: yellow;
+  display: 
+}
+
+code {
+  display: inline;
+  white-space: pre;
+  padding: 0;
+  background-color: antiquewhite;
+}
+
+.tracer-event-data {
+  padding-left: 45px;
 }

@@ -13,6 +13,21 @@ import (
 
 /* TODO: make configurable. */
 var TracerServer = "127.0.0.1:8081"
+var ServerWhitelist = []string{"localhost:8081", "127.0.0.1:8081", "localhost:3000", "127.0.0.1:3000"}
+
+/*ServerInWhitelist returns true if the server is in the whitelist. Used to block the development servers. */
+func ServerInWhitelist(server string) bool {
+	ret := false
+
+	for _, v := range ServerWhitelist {
+		if server == v {
+			ret = true
+			break
+		}
+	}
+
+	return ret
+}
 
 /*Server configures all the HTTP routes and their corresponding handler. */
 func Server() (*http.Server, *mux.Router) {

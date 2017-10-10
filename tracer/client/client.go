@@ -88,7 +88,7 @@ func GetTracers() ([]types.Tracer, error) {
 
 /*AddTracerEvents takes multiple tracer event structs and adds to them to a tracer using the tracer API. This client
  * request can return multiple errors, up to one per tracer sent. */
-func AddTracerEvents(tracerEvents map[string]types.TracerEvent) []error {
+func AddTracerEvents(tracerEvents map[int]types.TracerEvent) []error {
 	log.Trace.Printf("Adding the following tracer events: %+v", tracerEvents)
 	ret := make([]error, 0)
 
@@ -107,7 +107,7 @@ func AddTracerEvents(tracerEvents map[string]types.TracerEvent) []error {
 }
 
 /*AddTracerEvent adds a single tracer event struct to a tracer using the tracer API. */
-func AddTracerEvent(tracerEvent types.TracerEvent, tracerID string) error {
+func AddTracerEvent(tracerEvent types.TracerEvent, tracerID int) error {
 	log.Trace.Printf("Adding the following tracer event: %+v, tracer ID: %s", tracerEvent, tracerID)
 	var ret error
 
