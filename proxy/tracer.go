@@ -99,7 +99,6 @@ func replaceTagsInBody(body []byte) ([]byte, []string) {
 			}
 		}
 
-		log.Trace.Printf("byteValue %s", string(body[i:i+6]))
 		if i+7 < len(body) && bytes.Compare(body[i:i+6], []byte("%7B%7B")) == 0 {
 
 			log.Trace.Printf("Found the  start of a tracer tag")
