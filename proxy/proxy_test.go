@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
-	"xxterminator-plugin/tracer/types"
-	"os"
 	"xxterminator-plugin/log"
+	"xxterminator-plugin/tracer/types"
 )
 
 var requestDataNoTags = `GET /api/v1/action/ HTTP/1.1
@@ -23,20 +23,21 @@ origin: null
 Connection: close
 
 `
+
+//If you update this test don't forgot to update the content link
 var requestDataTags = `POST /test?echo={{XSS}} HTTP/1.1
 Host: test.com
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
 Accept-Language: en-US,en;q=0.5
 Accept-Encoding: gzip, deflate, br
-Content-Length: 12
+Content-Length: 91
 Content-Type: text/plain
 Connection: close
 Pragma: no-cache
 Cache-Control: no-cache
 
-test={{XSS}}
-`
+test={{XSS}}&f={{ffff}&%7B%7BXSS%7D%7D&fff={{PLAIN}}&jjj=%7B%7BX&{{ddd}}&fdfd=%7B%7BX%7D%7D`
 
 func TestAddTracersBodyWithNoTags(t *testing.T) {
 	numTracers, err := testAddTracersBodyHelper(requestDataNoTags)
@@ -51,7 +52,7 @@ func TestAddTracersBodyWithTags(t *testing.T) {
 	numTracers, err := testAddTracersBodyHelper(requestDataTags)
 	if err != nil {
 		t.Fatalf("tried to read parse but got the following error: %+v", err)
-	} else if numTracers != 1 {
+	} else if numTracers != 3 {
 		t.Fatalf("Failed to find tracers")
 	}
 }
