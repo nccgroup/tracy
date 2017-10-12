@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 	"xxterminator-plugin/log"
@@ -15,6 +16,8 @@ import (
 var tags = []string{"{{XSS}}", "%7B%7BXSS%7D%7D"}
 
 const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+const XSS = "\"'><"
 
 /* Helper function for searching for tracer tags in query parameters and body and replacing them with randomly generated
  * tracer string. Also, it submits the generated tracers to the API. This should be moved out, though. */
@@ -59,62 +62,108 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 /* Helper function to replace any tracer tags in request body parameters with tracer strings. Returns the replaced body
  * along with a list of randomly generated tracer strings. */
 func replaceTagsInBody(body []byte) ([]byte, []string) {
+	log.Trace.Printf("body: %s", body)
 	var replacedTracerStrings []string
 	replacedBody := make([]byte, 0)
 
-	/* For each of the configured tags, look for a tag in the body and swap it out for a random tracer string. */
-	for _, tag := range tags {
-		splitBodyOnTag := bytes.Split(body, []byte(tag))
+	for i := 0; i < len(body); i++ {
 
-		/* If the split returns 1 string, there were no tags in the query. Continue. */
-		if len(splitBodyOnTag) != 1 {
-			/* Base case. Add the left side of the tag back to the replaced body. */
-			replacedBody = append(replacedBody, splitBodyOnTag[0]...)
+		if i+2 < len(body) && bytes.Compare(body[i:i+2], []byte("{{")) == 0 {
 
-			for i := 1; i < len(splitBodyOnTag); i++ {
-				/* Generate a random tracer string. */
-				randID := generateRandomTracerString()
-				/* Append the generated tracer string to the new body. */
-				replacedBody = append(replacedBody, randID...)
-				/* Append the right side of the tracer tag to the right side of the tracer string. */
-				replacedBody = append(replacedBody, splitBodyOnTag[i]...)
+			log.Trace.Printf("Found the  start of a tracer tag")
 
-				/* Record the generated tracer string. */
-				replacedTracerStrings = append(replacedTracerStrings, string(randID))
+			tag := []byte{'{', '{'}
+			for j := i + 2; j < len(body) && body[j] != 0x25 && body[j] != 0x7B && body[j] != 0x7D; j++ {
+				tag = append(tag, body[j])
+			}
+
+			if len(tag)+i+1 < len(body) && bytes.Compare(body[len(tag)+i:len(tag)+i+2], []byte("}}")) == 0 {
+				tag = append(tag, byte('}'), byte('}'))
+				tracerString, tracerBytes := generateTracerFromTag(string(tag))
+
+				if tracerString == "" {
+					replacedBody = append(replacedBody, tag...)
+				} else {
+					replacedBody = append(replacedBody, tracerBytes...)
+					log.Trace.Printf("Found a tag with value of: %s", string(tag))
+					replacedTracerStrings = append(replacedTracerStrings, tracerString)
+				}
+
+				i += len(tag) - 1
+				continue
+			} else {
+				log.Trace.Printf("Found a none tag with value of: %s", string(tag))
+				i += len(tag) - 1
+				replacedBody = append(replacedBody, tag...)
+				continue
 			}
 		}
+
+		if i+7 < len(body) && bytes.Compare(body[i:i+6], []byte("%7B%7B")) == 0 {
+
+			log.Trace.Printf("Found the  start of a tracer tag")
+
+			tag := []byte("%7B%7B")
+
+			for j := i + 6; j < len(body) && body[j] != 0x25 && body[j] != 0x7B && body[j] != 0x7D; j++ {
+				tag = append(tag, body[j])
+			}
+
+			log.Trace.Printf("byteValue inner %s %d", body[len(tag)+i:len(tag)+i+6], bytes.Compare(body[len(tag)+i:len(tag)+i+6], []byte("%7D%7D")))
+			if len(tag)+i+5 < len(body) && bytes.Compare(body[len(tag)+i:len(tag)+i+6], []byte("%7D%7D")) == 0 {
+				tag = append(tag, []byte("%7D%7D")...)
+				tracerString, tracerBytes := generateTracerFromTag(string(tag))
+
+				if tracerString == "" {
+					replacedBody = append(replacedBody, tag...)
+				} else {
+					replacedBody = append(replacedBody, tracerBytes...)
+					log.Trace.Printf("Found a tag with value of: %s", string(tag))
+					replacedTracerStrings = append(replacedTracerStrings, tracerString)
+				}
+
+				i += len(tag) - 1
+				continue
+			} else {
+				log.Trace.Printf("Found a none tag with value of: %s", string(tag))
+				i += len(tag) - 1
+				replacedBody = append(replacedBody, tag...)
+				continue
+			}
+
+		}
+
+		//If no tag start of tag is found just append the byte
+		replacedBody = append(replacedBody, body[i])
 	}
 
+	log.Trace.Printf("New Body Value: %s %d", string(replacedBody), len(replacedBody))
+
 	return replacedBody, replacedTracerStrings
+}
+
+func generateTracerFromTag(tag string) (string, []byte) {
+	unescapedTag, _ := url.QueryUnescape(tag) //TODO: should this throw an error
+
+	switch unescapedTag {
+	case "{{XSS}}":
+		randID := generateRandomTracerString()
+		return string(randID), append(randID, []byte(XSS)...)
+	case "{{PLAIN}}":
+		randID := generateRandomTracerString()
+		return string(randID), randID
+	}
+
+	//No tag found
+	return "", []byte(tag)
 }
 
 /* Helper function to replace any tracer tags in request query parameters with tracer strings. Returns the replaced query
  * along with a list of the randomly generated tracer strings. */
 func replaceTagsInQueryParameters(rawQuery string) (string, []string) {
-	var replacedTracerStrings []string
-	replacedQuery := ""
+	replacedQuery, replacedTracerStrings := replaceTagsInBody([]byte(rawQuery))
 
-	/* For each of the configured tags, look for the tag in the query and swap it out for a random tracer string. */
-	for _, tag := range tags {
-		splitQueryOnTag := strings.Split(rawQuery, tag)
-
-		/* If the split returns 1 string, there were no tags in the query. Continue. */
-		if len(splitQueryOnTag) != 1 {
-			/* Base case. Add the left side of a tag back to the replaced query string. */
-			replacedQuery += splitQueryOnTag[0]
-
-			for i := 1; i < len(splitQueryOnTag); i++ {
-				/* Generate a random tracer string. */
-				randID := generateRandomTracerString()
-				/* Append the new tracer string along with the right side of the tag that was split on. */
-				replacedQuery += string(randID) + splitQueryOnTag[i]
-				/* Record the tracer that was generated. */
-				replacedTracerStrings = append(replacedTracerStrings, string(randID))
-			}
-		}
-	}
-
-	return replacedQuery, replacedTracerStrings
+	return string(replacedQuery), replacedTracerStrings
 }
 
 /* Helper function for finding tracer strings in the response body of an HTTP request. */
