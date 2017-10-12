@@ -87,7 +87,6 @@ func init() {
 
 	// Parse the flags.
 	flag.Parse()
-
 	/* Configure the logging settings. */
 	var traceWriter io.Writer
 	var infoWriter io.Writer
@@ -132,7 +131,7 @@ func init() {
 
 	/* Create the directory if it doesn't exist. */
 	if _, err := os.Stat(filepath.Dir(databaseFile)); os.IsNotExist(err) {
-		os.Mkdir(filepath.Dir(databaseFile), 0600)
+		os.Mkdir(filepath.Dir(databaseFile), 0755)
 	}
 	tc.Database(databaseFile)
 
@@ -140,7 +139,7 @@ func init() {
 	if cpuprofile != cpuProfileFileDefault {
 		/* Create the directory if it doesn't exist. */
 		if _, err := os.Stat(filepath.Dir(cpuprofile)); os.IsNotExist(err) {
-			os.Mkdir(filepath.Dir(cpuprofile), 0600)
+			os.Mkdir(filepath.Dir(cpuprofile), 0755)
 		}
 		f, err := os.Create(cpuprofile)
 		if err != nil {
