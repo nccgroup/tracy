@@ -6,7 +6,7 @@ import Col from 'react-bootstrap/lib/Col';
 class TracerRow extends React.Component {
 	constructor(props) {
 		super(props)
-		this.state = { isHidden: true}
+		this.state = { isHidden: false}
 	}
 	toggleEvents() {
 		this.setState({
@@ -25,8 +25,12 @@ class TracerRow extends React.Component {
 	      <Col xs={7} md={7}><div className="tracer-url">{this.props.tracer.URL}</div></Col>
 	      <Col xs={1} md={1}><span onClick={this.toggleEvents.bind(this)} className={this.state.isHidden ? hiddenClass: revealClass}></span></Col>
     	</Row>
-	    {!this.state.isHidden && <TracerEvents tracerString={this.props.tracer.TracerString}
-	    events={this.props.tracer.Events}/>}</div>
+	    {!this.state.isHidden && 
+	    	<TracerEvents 
+	    		addHighlight={this.props.addHighlight}
+	    		tracerString={this.props.tracer.TracerString}
+	    		events={this.props.tracer.Events}/>
+	    }</div>
 	}
 }
 export default TracerRow;

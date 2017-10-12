@@ -1,21 +1,12 @@
 .tracer-row{
-  border-left: solid;
-  border-right: solid;
   border-bottom: solid;
   border-color: black;
   margin-left: 5%;
   margin-right: 5%;
 }
 
-.tracer-hits{
-  /*margin: 30px;*/
-}
-
 .tracer-event {
-  border-left: solid;
   border-bottom: solid;
-  border-right: solid;
-  border-color: green;
   margin-left: 5%;
   margin-right: 5%;
   background-color: antiquewhite;
@@ -33,12 +24,12 @@
   border-bottom: solid;
   border-color: purple;
   background-color: black;
-  /*margin-top: 15px;*/
   color: white;
 }
 
 .menudown-icon {
   float:  right;
+  width: 200px;
 }
 
 .highlight {
@@ -48,11 +39,38 @@
 
 code {
   display: inline;
-  white-space: pre;
+  white-space: pre-wrap;
   padding: 0;
   background-color: antiquewhite;
 }
 
 .tracer-event-data {
   padding-left: 45px;
+}
+
+.hidden {
+  display: none;
+}
+
+.navigation-arrows {
+  margin-left: 2.5%; 
+  top: 500px;
+  position: fixed;
+}
+
+.glyphicon {
+  cursor: pointer;
+}
+
+.blinker {
+   animation: fadeIn 1s ease-in-out 0s;
+}
+
+@keyframes fadeIn {
+  from {
+    background: #f96;
+  }
+  to {
+    background: #fff;
+  }
 }

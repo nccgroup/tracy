@@ -9,7 +9,10 @@ class TracerRows extends React.Component {
   	}
 	render() {
 		const tracers = this.props.tracers.map((tracer) => (
-				<TracerRow key={tracer.ID} tracer={tracer} />
+				<TracerRow 
+					addHighlight={this.props.addHighlight}
+					key={tracer.ID} 
+					tracer={tracer} />
 			))
 
 		return <div>
