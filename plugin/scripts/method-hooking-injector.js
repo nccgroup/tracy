@@ -5,7 +5,7 @@
     if (event.source != window)
         return;
 
-    chrome.runtime.sendMessage({'type': event.data.type, 'msg': event.data.msg,"location": document.location}, null);
+    chrome.runtime.sendMessage({'type': event.data.type, 'msg': event.data.msg,"location": document.location.href}, null);
   });
 
   //Inject our hooks now that we have a global varable we can refer to
