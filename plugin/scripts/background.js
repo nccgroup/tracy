@@ -86,43 +86,26 @@ function requestHandler(domEvents) {
 /* Recursively check if the DOM element's parent is the previous DOM write. If that is
  * the case, remove the parent from the list of events. */
 function deduplicate(events) {
-    function checkIfParent(domEvents) {
-        if (domEvents.length >= 2) {
-            /* Get the last two elements. */
-            var lastElemIndex = domEvents.length - 1;
-            var nextElemIndex = domEvents.length - 2;
-            var lastElem = domEvents[lastElemIndex];
-            var nextElem = domEvents[nextElemIndex];
-            /* If the parent of the last element is the next element, call again. */
-            if (lastElem.parent === nextElem) {
-                /* Get rid of the parent element. */
-                domEvents.splice(lastElemIndex, 1);
-                return checkIfParent(domEvents);
-            } else {
-                /* If the parent of the last element is not the next element, return
-                 * the next element. */
-                 domEvents.splice(lastElemIndex, 1);
-                return domEvents;
-            }
-        } else {
-            return [];
-        }
-    }
 
     var separatedEvents = filterDOMEvents(events);
-    var deduplicatedDomEvents = []
-    var loop = separatedEvents.domEvents;
-    /* Keep the leaf. */
-    while(true) {
-        var leaf = loop[loop.length - 1];
-        deduplicatedDomEvents.push(leaf);
-        /* Return all instances where the next element is not a parent of the leaf. */
-        var nonParentNodes = checkIfParent(loop);
-        if (nonParentNodes.length > 0) {
-            loop = nonParentNodes;
-        } else {
+    deduplicatedDomEvents = separatedEvents.domEvents;
+
+    for(i = deduplicatedDomEvents.length - 1; i > 0 ; i--) {
+      if(i - 1 != -1 && deduplicatedDomEvents[i-1].msg.indexOf(deduplicatedDomEvents[i].msg) != -1){
+        /* Found a parrent remove the rest fo the parents to*/
+        currentParent = deduplicatedDomEvents[i-1];
+        deduplicatedDomEvents.splice(i-1, 1);
+        var j = 0;
+        for(j = i-2; j >= 0; j--){
+          if(deduplicatedDomEvents[j].msg.indexOf(currentParent.msg) != -1) {
+              currentParent = deduplicatedDomEvents[j];
+              deduplicatedDomEvents.splice(j,1);
+          } else {
             break;
+          }
         }
+        i = j + 1;
+      }
     }
 
     /* Add the others back. */
@@ -139,7 +122,7 @@ function filterDOMEvents(events) {
         } else {
             others.push(event);
         }
-    }); 
+    });
 
     /* Return the others with the DOM events, so we can add them back in. */
     return {domEvents: domEvents, others: others};
@@ -172,4 +155,3 @@ setTimeout(processDomEvents, 3000);
 /* Any time the page sends a message to the extension, the above handler should take care of it. */
 chrome.runtime.onMessageExternal.addListener(addJobToQueue);
 chrome.runtime.onMessage.addListener(addJobToQueue);
-
