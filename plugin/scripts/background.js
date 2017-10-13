@@ -26,7 +26,7 @@ function requestHandler(domEvents) {
             var tracerList = JSON.parse(this.responseText);
             /* A filtered list of DOM events based on if the event has a tracer in it. Each DOM event can have multiple tracer
              * strings. */
-            var filteredDomEvents = []
+            var filteredEvents = []
 
             /* For each DOM write, search for all the tracer strings and collect their location. */
             for ( var domEventKey in domEvents ) {
@@ -66,18 +66,83 @@ function requestHandler(domEvents) {
                             },
                             "TracerStrings":    tracersPerDomEvent
                         }
-                        filteredDomEvents.push(event);
+                        filteredEvents.push(event);
                     }
                 }
             }
 
             /* Send the events to the API. */
-            if (filteredDomEvents.length > 0) {
-                bulkAddEvents(filteredDomEvents);
+            if (filteredEvents.length > 0) {
+                /* Try to deduplicate some of the events to make sure we don't have nested
+                 * children representing the same write. */
+                var deduplicatedEvents = deduplicate(filteredEvents);
+                bulkAddEvents(deduplicatedEvents);
             }
         }
 
     });
+}
+
+/* Recursively check if the DOM element's parent is the previous DOM write. If that is
+ * the case, remove the parent from the list of events. */
+function deduplicate(events) {
+    function checkIfParent(domEvents) {
+        if (domEvents.length >= 2) {
+            /* Get the last two elements. */
+            var lastElemIndex = domEvents.length - 1;
+            var nextElemIndex = domEvents.length - 2;
+            var lastElem = domEvents[lastElemIndex];
+            var nextElem = domEvents[nextElemIndex];
+            /* If the parent of the last element is the next element, call again. */
+            if (lastElem.parent === nextElem) {
+                /* Get rid of the parent element. */
+                domEvents.splice(lastElemIndex, 1);
+                return checkIfParent(domEvents);
+            } else {
+                /* If the parent of the last element is not the next element, return
+                 * the next element. */
+                 domEvents.splice(lastElemIndex, 1);
+                return domEvents;
+            }
+        } else {
+            return [];
+        }
+    }
+
+    var separatedEvents = filterDOMEvents(events);
+    var deduplicatedDomEvents = []
+    var loop = separatedEvents.domEvents;
+    /* Keep the leaf. */
+    while(true) {
+        var leaf = loop[loop.length - 1];
+        deduplicatedDomEvents.push(leaf);
+        /* Return all instances where the next element is not a parent of the leaf. */
+        var nonParentNodes = checkIfParent(loop);
+        if (nonParentNodes.length > 0) {
+            loop = nonParentNodes;
+        } else {
+            break;
+        }
+    }
+
+    /* Add the others back. */
+    return deduplicatedDomEvents.concat(separatedEvents.others);
+}
+
+/* Filter out any events that are not DOM events. */
+function filterDOMEvents(events) {
+    var domEvents = [];
+    var others = [];
+    events.forEach(function(event) {
+        if (event.type == "dom") {
+            domEvents.push(event);
+        } else {
+            others.push(event);
+        }
+    }); 
+
+    /* Return the others with the DOM events, so we can add them back in. */
+    return {domEvents: domEvents, others: others};
 }
 
 /* Global list of DOM writes. Periodically, this will be sent to the background thread and cleared. */
