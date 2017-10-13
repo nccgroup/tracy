@@ -24,7 +24,8 @@
           "<all_urls>"
         ],
         "exclude_matches":[
-          "*://localhost/*"
+          "*://localhost/*",
+          "*://127.0.0.1/*"
          ],
          "all_frames": true,
         "js": [
