@@ -55,6 +55,9 @@
       "search"
     ];
 
+    /* Used to keep track of Timer ID */
+    var tagMenuTimer = null;
+
     /* Template for a tracer string. */
     var tracerString = "{{XSS}}";
 
@@ -90,9 +93,36 @@
 
     /* Register a click handler on an input element. */
     function registerClickHandler(tag) {
+
+
       /* If the input element has an input class name, we have already added the event listener. */
       if (tag && !tag.className.includes(inputClass)) {
-          tag.addEventListener("click", function(e) {
+          tag.addEventListener("mousedown", function(e) {
+              var offset = getElementOffset(this);
+              var rightEdge = this.getBoundingClientRect().right - offset.left;
+              var mouseClickPosition = e.pageX - offset.left;
+
+              if (mouseClickPosition / rightEdge * 100 > 65) {
+
+                  /* This timer is used to check for a long press */
+                  tagMenuTimer = window.setTimeout(function(e) {
+                    menuDom = e.insertAdjacentHTML('afterend', `
+                    <div id="tag-menu">
+                      <ul>
+                        <li id="tag-PLAIN">PLAIN</li>
+                        <li id="tag-XSS">XSS</li>
+                      </ul>
+                    </div>`);
+
+                    document.getElementById("tag-PLAIN").addEventListener("mouseup", menuClickHandler)
+                    document.getElementById("tag-XSS").addEventListener("mouseup", menuClickHandler)
+                    // Set timer to null as it has fired once
+                    tagMenuTimer = null;
+                  },200, this);
+               }
+          });
+
+          tag.addEventListener("mouseup", function(e) {
               var offset = getElementOffset(this);
               var rightEdge = this.getBoundingClientRect().right - offset.left;
               var mouseClickPosition = e.pageX - offset.left;
@@ -111,6 +141,45 @@
           });
       }
     }
+
+    /* A click handler to handle clicking of the tag manu */
+    function menuClickHandler(e) {
+      /*Do magic*/
+      inputTag = e.currentTarget.parentNode.parentElement.previousElementSibling;
+      tagString = "";
+
+      /* Check what menu item was clicked */
+      if(e.currentTarget.id == "tag-PLAIN") {
+          tagString = "{{PLAIN}}"
+      } else if (e.currentTarget.id == "tag-XSS") {
+        tagString = "{{XSS}}"
+      }
+
+      var enabled = toggleEnabled(inputTag);
+      if (enabled) {
+          /* Add the tracer string template. */
+          inputTag.value = inputTag.value + tagString;
+      } else {
+          /* Clear out the text. */
+          inputTag.value = "";
+      }
+    }
+
+    /* on mouseUp listerner on whole window to capture all mouse up events */
+    document.addEventListener("mouseup", function(e){
+      menuElement = document.getElementById("tag-menu");
+
+      if(menuElement != null){
+        menuElement.parentNode.removeChild(menuElement);
+      }
+
+      if(tagMenuTimer === null){
+        console.log("Timer already Triggered");
+      } else {
+        clearTimeout(tagMenuTimer);
+      }
+
+    });
 
     /* Register a change handler on an input element. */
     function registerChangeHandler(tag) {
