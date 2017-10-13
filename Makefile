@@ -1,10 +1,4 @@
-# Borrowed from:
-# https://github.com/silven/go-example/blob/master/Makefile
-# https://vic.demuzere.be/articles/golang-makefile-crosscompile/
-
-#BINARY = xxterminate
-#VET_REPORT = vet.report
-#TEST_REPORT = tests.xml
+BINARY = xxterminate
 GOARCH = amd64
 
 VERSION=0
@@ -33,22 +27,40 @@ link:
 		ln -s $${CURRENT_DIR} $${BUILD_DIR}; \
 	fi
 
-linux:
+build-linux:
 	cd ${BUILD_DIR}; \
 	dep ensure; \
 	GOOS=linux GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-linux-${GOARCH} . ; \
 	cd - >/dev/null
 
-darwin:
+build-darwin:
 	cd ${BUILD_DIR}; \
 	dep ensure; \
 	GOOS=darwin GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-darwin-${GOARCH} . ; \
 	cd - >/dev/null
 
-windows:
+build-darwinwindows:
 	cd ${BUILD_DIR}; \
 	dep ensure; \
 	GOOS=windows GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-windows-${GOARCH}.exe . ; \
+	cd - >/dev/null
+
+install-linux:
+	cd ${BUILD_DIR}; \
+	dep ensure; \
+	GOOS=linux GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
+	cd - >/dev/null
+
+install-darwin:
+	cd ${BUILD_DIR}; \
+	dep ensure; \
+	GOOS=darwin GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
+	cd - >/dev/null
+
+install-windows:
+	cd ${BUILD_DIR}; \
+	dep ensure; \
+	GOOS=windows GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
 	cd - >/dev/null
 
 fmt:
