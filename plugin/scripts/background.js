@@ -73,10 +73,7 @@ function requestHandler(domEvents) {
 
             /* Send the events to the API. */
             if (filteredEvents.length > 0) {
-                /* Try to deduplicate some of the events to make sure we don't have nested
-                 * children representing the same write. */
-                var deduplicatedEvents = deduplicate(filteredEvents);
-                bulkAddEvents(deduplicatedEvents);
+                bulkAddEvents(filteredEvents);
             }
         }
 
