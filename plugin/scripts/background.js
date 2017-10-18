@@ -80,51 +80,6 @@ function requestHandler(domEvents) {
     });
 }
 
-/* Check if the DOM element's parent is the previous DOM write. If that is
- * the case, remove the parent from the list of events. */
-function deduplicate(events) {
-
-    var separatedEvents = filterDOMEvents(events);
-    var deduplicatedDomEvents = separatedEvents.domEvents;
-
-    for(i = deduplicatedDomEvents.length - 1; i > 0 ; i--) {
-      if(i - 1 != -1 && deduplicatedDomEvents[i-1].Event.Data.indexOf(deduplicatedDomEvents[i].Event.Data) != -1){
-        /* Found a parrent remove the rest fo the parents to*/
-        currentParent = deduplicatedDomEvents[i-1];
-        deduplicatedDomEvents.splice(i-1, 1);
-        var j = 0;
-        for(j = i-2; j >= 0; j--){
-          if(deduplicatedDomEvents[j].Event.Data.indexOf(currentParent.Event.Data) != -1) {
-              currentParent = deduplicatedDomEvents[j];
-              deduplicatedDomEvents.splice(j,1);
-          } else {
-            break;
-          }
-        }
-        i = j + 1;
-      }
-    }
-
-    /* Add the others back. */
-    return deduplicatedDomEvents.concat(separatedEvents.others);
-}
-
-/* Filter out any events that are not DOM events. */
-function filterDOMEvents(events) {
-    var domEvents = [];
-    var others = [];
-    events.forEach(function(event) {
-        if (event.Event.EventType == "dom") {
-            domEvents.push(event);
-        } else {
-            others.push(event);
-        }
-    });
-
-    /* Return the others with the DOM events, so we can add them back in. */
-    return {domEvents: domEvents, others: others};
-}
-
 /* Global list of DOM writes. Periodically, this will be sent to the background thread and cleared. */
 var jobs = []
 
