@@ -3,27 +3,20 @@
     /* This observer will be used to observe changes in the DOM. It will batches DOM changes and send them to the API
     * server if it finds a tracer string. */
     var observer = new MutationObserver(function(mutations) {
-        var parentNode = null;
 
         mutations.forEach(function(mutation) {
             mutation.addedNodes.forEach(function(node){
-              /* Check to see if a node is a child of the parentNode if so don't add it becasue we already have that data */
-              if (node.nodeType == 3 || parentNode == null || !parentNode.contains(node)){
-
                   /* The only supported DOM types that we care about are `DOM` (1) and `text` (3). */
                   if(node.nodeType == 1){
                       /* In the case of a DOM type, check all the node's children for input fields. Use this as a chance
                        * to restyle new inputs that were not caught earlier. */
-                      parentNode = node;
                       chrome.runtime.sendMessage({'type': 'dom', 'msg': node.outerHTML, "location": document.location});
                       clickToFill(node);
                   } else if (node.nodeType == 3) {
                       chrome.runtime.sendMessage({'type': 'text', 'msg': node.outerHTML ,"location": document.location});
                   }
-              }
-            }, this);
-        }, this);
-        parentNode = null;
+            });
+        });
     });
 
     /* The configuration for the observer. We want to pretty much watch for everything. */
