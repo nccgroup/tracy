@@ -50,7 +50,7 @@ function requestHandler(domEvents) {
                 /* Sanity check the data we are expecting is in the message. */
                 if (!domEvent.msg) {
                     console.error("The DOM event msg field was not set properly.");
-                } else if (!domEvent.location.href) {
+                } else if (!domEvent.location) {
                     console.error("The DOM event location field was not set properly.");
                 } else if (!domEvent.type) {
                     console.error("The DOM event type field was not set properly.");
@@ -61,7 +61,7 @@ function requestHandler(domEvents) {
                         var event = {
                             "Event" : {
                                 "Data" :        domEvent.msg,
-                                "Location" :    domEvent.location.href,
+                                "Location" :    domEvent.location,
                                 "EventType" :   domEvent.type,
                             },
                             "TracerStrings":    tracersPerDomEvent
@@ -105,5 +105,4 @@ function processDomEvents(){
 setTimeout(processDomEvents, 3000);
 
 /* Any time the page sends a message to the extension, the above handler should take care of it. */
-chrome.runtime.onMessageExternal.addListener(addJobToQueue);
 chrome.runtime.onMessage.addListener(addJobToQueue);

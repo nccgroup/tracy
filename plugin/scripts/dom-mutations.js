@@ -10,10 +10,10 @@
                   if(node.nodeType == 1){
                       /* In the case of a DOM type, check all the node's children for input fields. Use this as a chance
                        * to restyle new inputs that were not caught earlier. */
-                      chrome.runtime.sendMessage({'type': 'dom', 'msg': node.outerHTML, "location": document.location});
+                      chrome.runtime.sendMessage({'type': 'dom', 'msg': node.outerHTML, "location": document.location.href});
                       clickToFill(node);
                   } else if (node.nodeType == 3) {
-                      chrome.runtime.sendMessage({'type': 'text', 'msg': node.outerHTML ,"location": document.location});
+                      chrome.runtime.sendMessage({'type': 'text', 'msg': node.textContent ,"location": document.location.href});
                   }
             });
         });

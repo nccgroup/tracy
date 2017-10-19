@@ -13,11 +13,6 @@
     ],
     "persistent": true
   },
-  "externally_connectable": {
-    "matches": [
-
-    ]
-  },
   "content_scripts": [
       {
         "matches": [
