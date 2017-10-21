@@ -32,22 +32,16 @@
     var enabledClass = "enabled-input";
     var disabledClass = "disabled-input";
 
-    /* Inline CSS string. */
-    var inlineCSSEnabled = "background-image: url('"+chrome.runtime.getURL("/images/laddy.png")+"');" +
-          "background-repeat: no-repeat;" +
-          "background-attachment: scroll;" +
-          "background-size: 16px 18px;" +
-          "background-position: 98% 50%;" +
-          "cursor: pointer;" +
-          "border: solid green;";
-
-    var inlineCSSDisabled = "background-image: url('"+chrome.runtime.getURL("/images/laddy.png")+"');" +
-          "background-repeat: no-repeat;" +
-          "background-attachment: scroll;" +
-          "background-size: 16px 18px;" +
-          "background-position: 98% 50%;" +
-          "cursor: pointer;" +
-          "border: solid red;";
+    /* Inline CSS object. */
+    var inlineCSS = {
+      "background-image": "url('" + chrome.runtime.getURL("/images/laddy.png") + "')",
+      "background-repeat": "no-repeat",
+      "background-attachment": "scroll",
+      "background-size": "16px 18px",
+      "background-position": "98% 50%",
+      "cursor": "pointer",
+      "border": "solid red"
+    };
 
     /* Input types we are currently supporting. */
     var supportedInputTypes = [
@@ -62,28 +56,56 @@
     /* Template for a tracer string. */
     var tracerString = "{{XSS}}";
 
+    /* Check if an element is marked as disabled or is hidden. */
+    function isViewable(tag) {
+      var ret = false;
+      if (!tag.disabled && !(tag.style["display"] == "none")) {
+        ret = true;
+      }
+      return ret;
+    }
+
+    /* Add relevant styles to the element. */
+    function addStylesToElement(tag) {
+      for (var styleKey in inlineCSS) {
+        tag.style[styleKey] = inlineCSS[styleKey];
+      }
+    }
+
+    /* Remove relevant styles from the element. */
+    function removeStylesToElement(tag) {
+      /* TODO: its possible this will mess up some page's inline CSS, but in those cases, 
+       * it will probably be messed up anyway. */
+      for (var styleKey in Object.keys(inlineCSS)) {
+        tag.style[styleKey] = "";
+      }
+    }
+
+    /* If an element is in view, style it. */
+    function styleElement(tag) {
+      if (isViewable(tag)) {
+        /* By default, everything is marked "disabled". */
+        tag.className = tag.className + " " + inputClass;
+        tag.className = tag.className + " " + disabledClass;
+        tag.className = tag.className.trim();
+        addStylesToElement(tag);
+      } else {
+        /* If an input is marked as disabled, remove our added inline styles and
+        classes. */
+        removeStylesToElement(tag);
+      }
+    }
+
     /* Add a new class name to each input element so they can be styled by the plugin. */
     function styleInputElement(tag) {
       /* Only highlight elements that are supported. Currently, this is textfields and other text inputs.
        * Nothing fancy like dates or colorpicker .*/
       if (tag && supportedInputTypes.includes(tag.type)) {
-          /* By default, everything is marked "disabled". */
-          tag.className = tag.className + " " + inputClass;
-          tag.className = tag.className + " " + disabledClass;
-          tag.className = tag.className.trim();
-          tag.style = inlineCSSDisabled;
+          styleElement(tag);
       }
     }
 
-    function styleTextAreaElement(tag) {
-      /* By default, everything is marked "disabled". */
-      tag.className = tag.className + " " + inputClass;
-      tag.className = tag.className + " " + disabledClass;
-      tag.className = tag.className.trim();
-      tag.style = inlineCSSDisabled;
-    }
-
-    /* Gets the element offset without jQuery. https://stackoverflow.com/questions/18953144/how-do-i-get-the-offset-top-value-of-an-element-without-using-jquery */
+    /* Gets the element offset without jQuery. https": "//stackoverflow.com/questions/18953144/how-do-i-get-the-offset-top-value-of-an-element-without-using-jquery */
     function getElementOffset(element) {
       var de = document.documentElement;
       var box = element.getBoundingClientRect();
@@ -166,7 +188,7 @@
       }
     }
 
-    /* on mouseUp listerner on whole window to capture all mouse up events */
+    /* on mouseUp listener on whole window to capture all mouse up events */
     document.addEventListener("mouseup", function(e){
       menuElement = document.getElementById("tag-menu");
 
@@ -174,9 +196,7 @@
         menuElement.parentNode.removeChild(menuElement);
       }
 
-      if(tagMenuTimer === null){
-        console.log("Timer already Triggered");
-      } else {
+      if(tagMenuTimer !== null){
         clearTimeout(tagMenuTimer);
       }
 
@@ -184,7 +204,7 @@
 
     /* Register a change handler on an input element. */
     function registerChangeHandler(tag) {
-      if (tag) {
+      if (tag && !tag.disabled) {
           tag.addEventListener("change", function(e) {
               if (this.value.includes(tracerString)) {
                   toggleOn(this);
@@ -197,28 +217,20 @@
 
     /* Toggle an element on. */
     function toggleOn(tag) {
-      if (tag) {
-          if (tag.className.includes(disabledClass)) {
-              /* Remove the disabled class. */
-              tag.className = tag.className.slice(0, tag.className.indexOf(disabledClass)).trim();
-              /* Add the enabled class. */
-              tag.className = tag.className + " " + enabledClass;
-              tag.style = inlineCSSEnabled;
-          }
-      }
+      /* Remove the disabled class. */
+      tag.className = tag.className.slice(0, tag.className.indexOf(disabledClass)).trim();
+      /* Add the enabled class. */
+      tag.className = tag.className + " " + enabledClass;
+      tag.style["border"] = "solid green";
     }
 
     /* Toggle an element off. */
     function toggleOff(tag) {
-      if (tag) {
-          if (tag.className.includes(enabledClass)) {
-              /* Remove the enabled class. */
-              tag.className = tag.className.slice(0, tag.className.indexOf(enabledClass)).trim();
-              /* Add the disabled class. */
-              tag.className = tag.className + " " + disabledClass;
-              tag.style = inlineCSSDisabled;
-          }
-      }
+      /* Remove the enabled class. */
+      tag.className = tag.className.slice(0, tag.className.indexOf(enabledClass)).trim();
+      /* Add the disabled class. */
+      tag.className = tag.className + " " + disabledClass;
+      tag.style["border"] = "solid red";
     }
 
     /* Toggle the disabled and enabled class names on input fields. */
@@ -254,7 +266,7 @@
 
       /* For all inputs and textareas, add a className to style the input. */
       Array.prototype.forEach.call(inputs, styleInputElement);
-      Array.prototype.forEach.call(textareas, styleTextAreaElement);
+      Array.prototype.forEach.call(textareas, styleElement);
 
       /* Make an event handler that checks if the tracer string template is in the textfield. */
       Array.prototype.forEach.call(inputs, registerChangeHandler);
