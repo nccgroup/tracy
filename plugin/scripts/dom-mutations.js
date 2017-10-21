@@ -43,6 +43,12 @@
       "border": "solid red"
     };
 
+    /* Global for the various types of tracer payloads. */
+    var tracerStringTypes = [
+      "{{XSS}}",
+      "{{PLAIN}}"
+    ];
+
     /* Input types we are currently supporting. */
     var supportedInputTypes = [
       "text",
@@ -66,17 +72,17 @@
     }
 
     /* Add relevant styles to the element. */
-    function addStylesToElement(tag) {
-      for (var styleKey in inlineCSS) {
-        tag.style[styleKey] = inlineCSS[styleKey];
+    function addStylesToElement(tag, styles) {
+      for (var styleKey in styles) {
+        tag.style[styleKey] = styles[styleKey];
       }
     }
 
     /* Remove relevant styles from the element. */
-    function removeStylesToElement(tag) {
+    function removeStylesToElement(tag, styles) {
       /* TODO: its possible this will mess up some page's inline CSS, but in those cases, 
        * it will probably be messed up anyway. */
-      for (var styleKey in Object.keys(inlineCSS)) {
+      for (var styleKey in Object.keys(styles)) {
         tag.style[styleKey] = "";
       }
     }
@@ -88,11 +94,11 @@
         tag.className = tag.className + " " + inputClass;
         tag.className = tag.className + " " + disabledClass;
         tag.className = tag.className.trim();
-        addStylesToElement(tag);
+        addStylesToElement(tag, inlineCSS);
       } else {
         /* If an input is marked as disabled, remove our added inline styles and
         classes. */
-        removeStylesToElement(tag);
+        removeStylesToElement(tag, inlineCSS);
       }
     }
 
@@ -114,10 +120,13 @@
       return { top: top, left: left };
     }
 
+    /* Insert the newNode after the referenceNode. */
+    function insertAfter(newNode, referenceNode) {
+      referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+    }
+
     /* Register a click handler on an input element. */
     function registerClickHandler(tag) {
-
-
       /* If the input element has an input class name, we have already added the event listener. */
       if (tag && !tag.className.includes(inputClass)) {
           tag.addEventListener("mousedown", function(e) {
@@ -126,19 +135,39 @@
               var mouseClickPosition = e.pageX - offset.left;
 
               if (mouseClickPosition / rightEdge * 100 > 65) {
-
                   /* This timer is used to check for a long press */
                   tagMenuTimer = window.setTimeout(function(e) {
-                    menuDom = e.insertAdjacentHTML('afterend', `
-                    <div id="tag-menu">
-                      <ul>
-                        <li id="tag-PLAIN">PLAIN</li>
-                        <li id="tag-XSS">XSS</li>
-                      </ul>
-                    </div>`);
+                    var tagMenu = document.createElement("div");
+                    addStylesToElement(tagMenu, {
+                      "position": "absolute",
+                      "border-color": "black",
+                      "border": "solid",
+                      "width": "100%",
+                      "z-index": 1000000000000,
+                      "background-color": "white",
+                      "right": 0,
+                      "max-width": "150px",
+                      "max-height": "50px"
+                    });
+                    tagMenu.id = "tag-menu";
+                    var list = document.createElement("ul");
+                    tagMenu.appendChild(list);
 
-                    document.getElementById("tag-PLAIN").addEventListener("mouseup", menuClickHandler)
-                    document.getElementById("tag-XSS").addEventListener("mouseup", menuClickHandler)
+                    /* Create the list of tracers types they can choose from. Dynamically 
+                     * create them so we can easily add new types of tracer types. */
+                    for (var tracerStringTypeKey in tracerStringTypes) {
+                      var listElement = document.createElement("li");
+                      listElement.addEventListener("mouseup", menuClickHandler)
+                      /* Highlight the element when you mouseover it. */
+                      listElement.addEventListener("mouseover", function(e){ e.srcElement.className = "highlight-on-hover"; });
+                      listElement.addEventListener("mouseout", function(e){ e.srcElement.className = "";});
+                      listElement.innerText = tracerStringTypes[tracerStringTypeKey];
+                      list.appendChild(listElement);
+                    }
+
+                    /* Insert the list right next to the click element. */
+                    insertAfter(tagMenu, e);
+
                     // Set timer to null as it has fired once
                     tagMenuTimer = null;
                   },200, this);
@@ -165,32 +194,24 @@
       }
     }
 
-    /* A click handler to handle clicking of the tag manu */
+    /* A click handler to handle clicking of the tag menu */
     function menuClickHandler(e) {
-      /*Do magic*/
-      inputTag = e.currentTarget.parentNode.parentElement.previousElementSibling;
-      tagString = "";
+      var tag = e.currentTarget.parentNode.parentElement.previousElementSibling;
+      
+      /* Add the tracer string template. */
+      tag.value = tag.value + e.currentTarget.innerText;
 
-      /* Check what menu item was clicked */
-      if(e.currentTarget.id == "tag-PLAIN") {
-          tagString = "{{PLAIN}}"
-      } else if (e.currentTarget.id == "tag-XSS") {
-        tagString = "{{XSS}}"
-      }
-
-      var enabled = toggleEnabled(inputTag);
-      if (enabled) {
-          /* Add the tracer string template. */
-          inputTag.value = inputTag.value + tagString;
-      } else {
-          /* Clear out the text. */
-          inputTag.value = "";
+      /* If the user uses the drop down for the first element, toggle the box on. */
+      if (tag.className.includes(disabledClass)) {
+        toggleOn(tag);
+        /* Clear any whitespace at the end of the class. */
+        tag.className = tag.className.trim();
       }
     }
 
     /* on mouseUp listener on whole window to capture all mouse up events */
     document.addEventListener("mouseup", function(e){
-      menuElement = document.getElementById("tag-menu");
+      var menuElement = document.getElementById("tag-menu");
 
       if(menuElement != null){
         menuElement.parentNode.removeChild(menuElement);

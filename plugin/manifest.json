@@ -27,6 +27,9 @@
           "scripts/dom-mutations.js",
           "scripts/method-hooking-injector.js"
         ],
+        "css": [
+          "css/dropdown.css"
+        ],
         "run_at": "document_start"
       }
   ],
