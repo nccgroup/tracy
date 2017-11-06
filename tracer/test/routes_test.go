@@ -367,6 +367,88 @@ func TestAddEvent(t *testing.T) {
 	serverTestHelper(tests, t)
 }
 
+/* Testing the database does not log duplicate events. */
+func TestDuplicateEvent(t *testing.T) {
+	var (
+		trcrStr    = "blahblah"
+		data       = "dahdata"
+		URL        = "http://example.com"
+		location   = "dahlocation"
+		method     = "GET"
+		evntType   = "datevnttype"
+		addEvntURL = "http://127.0.0.1:8081/tracers/1/events"
+		addTrcrURL = "http://127.0.0.1:8081/tracers"
+		addTrcrStr = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
+		evntStr    = fmt.Sprintf(`{"Data": "%s", "Location": "%s", "EventType": "%s"}`, data, location, evntType)
+	)
+
+	/* ADDING A TRACER */
+	/////////////////////
+	addReq, err := http.NewRequest("POST", addTrcrURL, bytes.NewBuffer([]byte(addTrcrStr)))
+	if err != nil {
+		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
+	}
+	/* ADDING A TRACER */
+	/////////////////////
+
+	/* ADDING AN EVENT */
+	/////////////////////
+	addEvntReq, err := http.NewRequest("POST", addEvntURL, bytes.NewBuffer([]byte(evntStr)))
+	if err != nil {
+		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
+	}
+
+	addFirstEvntTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		/* Return variable. */
+		var err error
+
+		/* Validate we got the status could that was expected. */
+		if status := rr.Code; status != http.StatusOK {
+			err = fmt.Errorf("addTracerEvent returned the wrong status code. Got %+v, but expected %+v", status, http.StatusOK)
+		} else {
+			/* Validate the tracer was the first tracer inserted. */
+			got := types.TracerEvent{}
+			json.Unmarshal([]byte(rr.Body.String()), &got)
+
+			/* Validate the response gave us back the event we added. */
+			if got.ID.Int64 != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
+			} else if got.Data.String != data {
+				err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", got.Data.String, data)
+			} else if got.Location.String != location {
+				err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.Location.String, location)
+			} else if got.EventType.String != evntType {
+				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType.String, evntType)
+			}
+		}
+
+		return err
+	}
+
+	addDupEvntTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		var err error
+
+		if status := rr.Code; status != http.StatusInternalServerError {
+			err = fmt.Errorf("Adding a duplicate event should have returned an internal server error due to the unique constraint set by the database.")
+		}
+
+		fmt.Printf("Duplicate test: %+v\n", rr)
+
+		return err
+	}
+	/* ADDING AN EVENT */
+	/////////////////////
+	
+	tests := make([]RequestTestPair, 3)
+	addReqTest := RequestTestPair{addReq, addTest}
+	addEvntReqTest := RequestTestPair{addEvntReq, addFirstEvntTest}
+	addDupEvntReqTest := RequestTestPair{addEvntReq, addDupEvntTest}
+	tests[0] = addReqTest
+	tests[1] = addEvntReqTest
+	tests[2] = addDupEvntReqTest
+	serverTestHelper(tests, t)
+}
+
 /* A function that takes a slice of RequestTestPairs. Each pair has a request and a
  * test function. Each request is submitted and the corresponding test is run on the
  * response. Tests are run sequence and each test is used to validate the response.

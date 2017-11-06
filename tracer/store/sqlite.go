@@ -43,6 +43,9 @@ const EventsLocationColumn string = "location"
 /*EventsEventTypeColumn is the column name for the tracer method. */
 const EventsEventTypeColumn string = "event_type"
 
+/*EventsDataHashColumn is the column name for the tracer method. */
+const EventsDataHashColumn string = "event_data_hash"
+
 /*TracersEventsIDColumn is the column name for the tracers events ID. */
 const TracersEventsIDColumn string = "id"
 
@@ -101,11 +104,6 @@ func Open(driver, path string) (*sql.DB, error) {
 	tracersTable[TracersURLColumn] = "TEXT NOT NULL"
 	tracersTable[TracersMethodColumn] = "TEXT NOT NULL"
 
-	eventsTable := make(map[string]string)
-	eventsTable[EventsDataColumn] = "TEXT"
-	eventsTable[EventsLocationColumn] = "TEXT"
-	eventsTable[EventsEventTypeColumn] = "TEXT"
-
 	/* Simple ID-to-ID mapping between the two tables above. */
 	tracersEventsTable := make(map[string]string)
 	tracersEventsTable[TracersEventsTracerIDColumn] = "Integer"
@@ -113,13 +111,25 @@ func Open(driver, path string) (*sql.DB, error) {
 
 	/* Create table does not overwrite existing data, so perform this call every time
 	 * we open the database. */
-	createTable(db, TracersTable, tracersTable)
-	createTable(db, EventsTable, eventsTable)
-	createTable(db, TracersEventsTable, tracersEventsTable)
+	err = createTable(db, TracersTable, tracersTable)
+	if err == nil {
+		err = createTable(db, TracersEventsTable, tracersEventsTable)
+		if err == nil {
+			/* Do this one by hand so we can properly do the unique constraints. */
+			err = execAndHandleErrors(db, `
+				CREATE TABLE IF NOT EXISTS events 
+				(id INTEGER PRIMARY KEY, 
+					data TEXT, 
+					event_type TEXT, 
+					event_data_hash TEXT,
+					location TEXT,
+					UNIQUE (event_data_hash, location));`)	
+		}
+	}
 
 	/* Return the database and nil, indicating we made a sound connection. */
 	TracerDB = db
-	return db, nil
+	return db, err
 }
 
 /* Create the tracer database. */
@@ -130,6 +140,11 @@ func createTable(db *sql.DB, tableName string, columns map[string]string) error 
 		query = fmt.Sprintf("%s,", query)
 		query = fmt.Sprintf("%s %s %s", query, key, val)
 	}
+	
+	return execAndHandleErrors(db, query)
+}
+
+func execAndHandleErrors(db *sql.DB, query string) error {
 	/* Close it up. */
 	query = fmt.Sprintf("%s);", query)
 	log.Trace.Printf("Built this query for creating tables: %s\n", query)
@@ -151,19 +166,18 @@ func createTable(db *sql.DB, tableName string, columns map[string]string) error 
 	}
 
 	/* Check the response. */
-	lastID, err := res.LastInsertId()
+	_, err = res.LastInsertId()
 	if err != nil {
 		log.Warning.Printf(err.Error())
 		return err
 	}
 
 	/* Make sure one row was inserted. */
-	rowCnt, err := res.RowsAffected()
+	_, err = res.RowsAffected()
 	if err != nil {
 		log.Warning.Printf(err.Error())
 		return err
 	}
-	log.Trace.Printf("CREATE TABLE %s: ID = %d, affected = %d\n", tableName, lastID, rowCnt)
 
 	/* Add the WAL pragma. This configuration helps with performance issues related to concurrent writers. */
 	pragmaStmt, err := db.Prepare("PRAGMA journal_mode=WAL")

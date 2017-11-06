@@ -8,6 +8,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/types"
+	"crypto/sha1"
+	"encoding/hex"
 )
 
 /*DBAddTracerEvent adds an event to a slice of tracers specified by the the tracer string. */
@@ -15,10 +17,11 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	/* Using prepared statements. */
 	query := fmt.Sprintf(`
 	INSERT INTO %s 
-		(%s, %s, %s)
+		(%s, %s, %s, %s)
 	VALUES
-		(?, ?, ?);`, EventsTable, EventsDataColumn,
-		EventsLocationColumn, EventsEventTypeColumn)
+		(?, ?, ?, ?);`, 
+		EventsTable, 
+		EventsDataColumn, EventsLocationColumn, EventsEventTypeColumn, EventsDataHashColumn)
 	log.Trace.Printf("Built this query for adding a tracer event: %s", query)
 	stmt, err := db.Prepare(query)
 
@@ -29,8 +32,12 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	/* Don't forget to close the prepared statement when this function is completed. */
 	defer stmt.Close()
 
+	/* Commute the hash of the data so we can compare the event to other events. */
+	sum := sha1.Sum([]byte(te.Data.String))
+	sumStr := hex.EncodeToString(sum[:len(sum)])
+	log.Warning.Printf("The SHA1 sum of the data: %s", sumStr)
 	/* Execute the query. */
-	res, err := stmt.Exec(te.Data, te.Location, te.EventType)
+	res, err := stmt.Exec(te.Data, te.Location, te.EventType, sumStr)
 	if err != nil {
 		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
