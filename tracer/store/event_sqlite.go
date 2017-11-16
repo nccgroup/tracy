@@ -5,11 +5,11 @@ import (
 	"fmt"
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
+	"crypto/sha1"
+	"encoding/hex"
 	_ "github.com/mattn/go-sqlite3"
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/types"
-	"crypto/sha1"
-	"encoding/hex"
 )
 
 /*DBAddTracerEvent adds an event to a slice of tracers specified by the the tracer string. */
@@ -19,8 +19,8 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	INSERT INTO %s 
 		(%s, %s, %s, %s)
 	VALUES
-		(?, ?, ?, ?);`, 
-		EventsTable, 
+		(?, ?, ?, ?);`,
+		EventsTable,
 		EventsDataColumn, EventsLocationColumn, EventsEventTypeColumn, EventsDataHashColumn)
 	log.Trace.Printf("Built this query for adding a tracer event: %s", query)
 	stmt, err := db.Prepare(query)
@@ -35,7 +35,6 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	/* Commute the hash of the data so we can compare the event to other events. */
 	sum := sha1.Sum([]byte(te.Data.String))
 	sumStr := hex.EncodeToString(sum[:len(sum)])
-	log.Warning.Printf("The SHA1 sum of the data: %s", sumStr)
 	/* Execute the query. */
 	res, err := stmt.Exec(te.Data, te.Location, te.EventType, sumStr)
 	if err != nil {
@@ -89,16 +88,17 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 /*DBGetTracerEventByID gets a tracer event by the tracer event ID. */
 func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 	query := fmt.Sprintf(
-		`SELECT %s, %s, %s, %s
+		`SELECT %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s, %s.%s
 		 FROM %s
-		 WHERE %s = ?;`,
-		EventsIDColumn,
-		EventsDataColumn,
-		EventsLocationColumn,
-		EventsEventTypeColumn,
-		EventsTable,
-		EventsIDColumn)
-	log.Trace.Printf("Built this query for getting a tracer: %s", query)
+		 LEFT JOIN %s on %s.%s = %s.%s
+		 WHERE %s.%s = ?;`,
+		EventsTable, EventsIDColumn, EventsTable, EventsDataColumn, EventsTable, EventsLocationColumn,
+		EventsTable, EventsEventTypeColumn, EventsContextTable, EventsContextIDColumn,
+		EventsContextTable, EventsContextDataColumn, EventsContextTable, EventsContextLocationTypeColumn,
+		EventsContextTable, EventsContextNodeNameColumn,
+		EventsTable, EventsContextTable, EventsContextTable, EventsContextEventID, EventsTable,
+		EventsIDColumn, EventsTable, EventsIDColumn)
+	log.Trace.Printf("Built this query for getting a tracer: %s, id: %d", query, tei)
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		log.Warning.Printf(err.Error())
@@ -115,38 +115,15 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 	/* Make sure to close the database connection. */
 	defer rows.Close()
 
-	/* Not sure why I can't get the number of rows from a Rows type. Kind of annoying. */
-	trcrEvnt := types.TracerEvent{}
-	for rows.Next() {
-		var (
-			eventID  types.JSONNullInt64
-			data     types.JSONNullString
-			location types.JSONNullString
-			etype    types.JSONNullString
-		)
-
-		/* Scan the row. */
-		err = rows.Scan(&eventID, &data, &location, &etype)
-		if err != nil {
-			log.Warning.Printf(err.Error())
-			/* Fail fast if this messes up. */
-			return types.TracerEvent{}, err
-		}
-
-		if eventID.Int64 != 0 && data != (types.JSONNullString{}) {
-			log.Trace.Printf("Event ID: %d", eventID.Int64)
-			trcrEvnt = types.TracerEvent{
-				ID:        eventID,
-				Data:      data,
-				Location:  location,
-				EventType: etype,
-			}
-		}
-	}
-
 	/* Not sure why we need to check for errors again, but this was from the
 	 * Golang examples. Checking for errors during iteration.*/
 	err = rows.Err()
+	if err != nil {
+		log.Warning.Printf(err.Error())
+		return types.TracerEvent{}, err
+	}
+
+	trcrEvnt, err := parseEventsFromSQLRows(rows)
 	if err != nil {
 		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
@@ -205,4 +182,54 @@ func DBAddTracersEvents(db *sql.DB, tei, ti int) error {
 
 	/* Otherwise, return nil to indicate everything went okay. */
 	return nil
+}
+
+/* Helper function for parsing tracer rows with event data as well. */
+func parseEventsFromSQLRows(rows *sql.Rows) (types.TracerEvent, error) {
+	ret := types.TracerEvent{}
+	for rows.Next() {
+		var (
+			eventID                  types.JSONNullInt64
+			eventData                types.JSONNullString
+			eventLocation            types.JSONNullString
+			eventType                types.JSONNullString
+			eventContextID           types.JSONNullInt64
+			eventContextContext      types.JSONNullString
+			eventContextLocationtype types.JSONNullInt64
+			eventContextNodeName     types.JSONNullString
+		)
+
+		err := rows.Scan(&eventID, &eventData, &eventLocation, &eventType, &eventContextID,
+			&eventContextContext, &eventContextLocationtype, &eventContextNodeName)
+		if err != nil {
+			log.Warning.Printf(err.Error())
+			/* Fail fast if this messes up. */
+			return types.TracerEvent{}, err
+		}
+
+		/* Initial case to fill the event. */
+		if len(ret.Contexts) == 0 {
+			/* Check if the tracer is already in the map. */
+			ret = types.TracerEvent{
+				ID:        eventID,
+				Data:      eventData,
+				Location:  eventLocation,
+				EventType: eventType,
+				Contexts:  make([]types.EventsContext, 0),
+			}
+		}
+
+		if eventContextID.Int64 != 0 && eventContextContext != (types.JSONNullString{}) {
+			/* Build a EventContext struct from the data. */
+			trcrContext := types.EventsContext{
+				ID:           eventContextID,
+				Context:      eventContextContext,
+				LocationType: eventContextLocationtype,
+				NodeName:     eventContextNodeName,
+			}
+			ret.Contexts = append(ret.Contexts, trcrContext)
+		}
+	}
+
+	return ret, nil
 }

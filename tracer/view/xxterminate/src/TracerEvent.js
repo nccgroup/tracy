@@ -33,16 +33,27 @@ class TracerEvent extends React.Component {
 		var newSlices = [];
 		while(true) {
 			/* Get the reference to the next instance of the tracer string. */
-			var tracerStartNumber = this.state.data.indexOf(this.props.tracerString, currentIndex);
-			if (tracerStartNumber === -1) {
-				break;
-			}
-			
-			var slice = this.state.data.substring(currentIndex, tracerStartNumber);
-			newSlices.push(slice);
+			if (this.state.data) {
+				var tracerStartNumber = this.state.data.indexOf(this.props.tracerString, currentIndex);
+				if (tracerStartNumber === -1) {
+					break;
+				}
+				
+				var slice = this.state.data.substring(currentIndex, tracerStartNumber);
+				newSlices.push(slice);
 
-			/* Set the index to the end of the first tracer string we find. */
-			currentIndex = tracerStartNumber + this.props.tracerString.length;
+				/* Set the index to the end of the first tracer string we find. */
+				currentIndex = tracerStartNumber + this.props.tracerString.length;
+			} else {
+				/* Update the state. */
+				this.setState({
+					data: this.props.event.Data,
+					slices: newSlices,
+					end: "",
+					tracerString: this.state.tracerString
+				});
+				return;
+			}
 		}
 
 		/* Update the state. */

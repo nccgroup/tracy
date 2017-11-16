@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/configure"
 	"xxterminator-plugin/tracer/types"
-	"xxterminator-plugin/log"
 )
 
 /* Used to order request and their corresponding tests. */
@@ -257,7 +257,7 @@ func TestEditTracer(t *testing.T) {
 func TestAddEvent(t *testing.T) {
 	var (
 		trcrStr    = "blahblah"
-		data       = "dahdata"
+		data       = "dahdata<a>blahblah</a>"
 		URL        = "http://example.com"
 		location   = "dahlocation"
 		method     = "GET"
@@ -305,6 +305,16 @@ func TestAddEvent(t *testing.T) {
 				err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.Location.String, location)
 			} else if got.EventType.String != evntType {
 				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType.String, evntType)
+			} else if len(got.Contexts) == 0 {
+				err = fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one.")
+			} else if got.Contexts[0].NodeName.String != "a" {
+				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'.", got.Contexts[0].NodeName)
+			} else if int(got.Contexts[0].LocationType.Int64) != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text).", int(got.Contexts[0].LocationType.Int64))
+			} else if got.Contexts[0].Context.String != "blahblah" {
+				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'.", got.Contexts[0].Context.String)
+			} else if int(got.Contexts[0].ID.Int64) != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1.", int(got.Contexts[0].ID.Int64))
 			}
 		}
 
@@ -371,7 +381,7 @@ func TestAddEvent(t *testing.T) {
 func TestDuplicateEvent(t *testing.T) {
 	var (
 		trcrStr    = "blahblah"
-		data       = "dahdata"
+		data       = "dahdata<a>blahblah</a>"
 		URL        = "http://example.com"
 		location   = "dahlocation"
 		method     = "GET"
@@ -419,6 +429,16 @@ func TestDuplicateEvent(t *testing.T) {
 				err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.Location.String, location)
 			} else if got.EventType.String != evntType {
 				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType.String, evntType)
+			} else if len(got.Contexts) == 0 {
+				err = fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one.")
+			} else if got.Contexts[0].NodeName.String != "a" {
+				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'.", got.Contexts[0].NodeName)
+			} else if int(got.Contexts[0].LocationType.Int64) != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text).", int(got.Contexts[0].LocationType.Int64))
+			} else if got.Contexts[0].Context.String != "blahblah" {
+				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'.", got.Contexts[0].Context.String)
+			} else if int(got.Contexts[0].ID.Int64) != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1.", int(got.Contexts[0].ID.Int64))
 			}
 		}
 
@@ -432,13 +452,11 @@ func TestDuplicateEvent(t *testing.T) {
 			err = fmt.Errorf("Adding a duplicate event should have returned an internal server error due to the unique constraint set by the database.")
 		}
 
-		fmt.Printf("Duplicate test: %+v\n", rr)
-
 		return err
 	}
 	/* ADDING AN EVENT */
 	/////////////////////
-	
+
 	tests := make([]RequestTestPair, 3)
 	addReqTest := RequestTestPair{addReq, addTest}
 	addEvntReqTest := RequestTestPair{addEvntReq, addFirstEvntTest}

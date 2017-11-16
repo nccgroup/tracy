@@ -19,6 +19,9 @@ const EventsTable string = "events"
 /*TracersEventsTable is the database table name for the mapping of tracers to events. */
 const TracersEventsTable string = "tracers_events"
 
+/*EventsContextTable is the database table that contains the context information for a particular event. */
+const EventsContextTable string = "events_context"
+
 /*TracersIDColumn is the column name for the tracers ID. */
 const TracersIDColumn string = "id"
 
@@ -54,6 +57,21 @@ const TracersEventsTracerIDColumn string = "tracer_id"
 
 /*TracersEventsEventIDColumn is the column name for the tracers events event ID. */
 const TracersEventsEventIDColumn string = "event_id"
+
+/*EventsContextIDColumn is the column for the ID field of the events context ID. */
+const EventsContextIDColumn string = "id"
+
+/*EventsContextDataColumn is the column for the data fields of the events context. */
+const EventsContextDataColumn string = "events_context_data"
+
+/*EventsContextLocationTypeColumn is the column for the location fields of the events context. */
+const EventsContextLocationTypeColumn string = "events_context_location"
+
+/*EventsContextNodeNameColumn is the column for the node name fields of the events context. */
+const EventsContextNodeNameColumn string = "events_context_node_name"
+
+/*EventsContextEventID is the column for the event ID which links the table with the events table. */
+const EventsContextEventID string = "events_context_event_id"
 
 /*TracerDB is the one global used to gain access to the database from this package.
  * Other packages, like testing, might choose to not use this database and instead
@@ -109,6 +127,13 @@ func Open(driver, path string) (*sql.DB, error) {
 	tracersEventsTable[TracersEventsTracerIDColumn] = "Integer"
 	tracersEventsTable[TracersEventsEventIDColumn] = "Integer"
 
+	/* Mapping of an event to the numerous contexts it can have per URL. */
+	eventsContextTable := make(map[string]string)
+	eventsContextTable[EventsContextDataColumn] = "TEXT NOT NULL"
+	eventsContextTable[EventsContextLocationTypeColumn] = "Integer"
+	eventsContextTable[EventsContextNodeNameColumn] = "TEXT NOT NULL"
+	eventsContextTable[EventsContextEventID] = "Integer"
+
 	/* Create table does not overwrite existing data, so perform this call every time
 	 * we open the database. */
 	err = createTable(db, TracersTable, tracersTable)
@@ -123,7 +148,11 @@ func Open(driver, path string) (*sql.DB, error) {
 					event_type TEXT, 
 					event_data_hash TEXT,
 					location TEXT,
-					UNIQUE (event_data_hash, location));`)	
+					UNIQUE (event_data_hash, location));`)
+
+			if err == nil {
+				createTable(db, EventsContextTable, eventsContextTable)
+			}
 		}
 	}
 
@@ -140,7 +169,7 @@ func createTable(db *sql.DB, tableName string, columns map[string]string) error 
 		query = fmt.Sprintf("%s,", query)
 		query = fmt.Sprintf("%s %s %s", query, key, val)
 	}
-	
+
 	return execAndHandleErrors(db, query)
 }
 

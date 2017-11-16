@@ -21,14 +21,14 @@ func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
 
 	/* Validate the event before uploading it to the database. */
 	if trcrEvnt.Data.String == "" {
-		ret = []byte("The data field for the event was empty")
-		log.Error.Println(ret)
+		ret = []byte("The data field for the event was empty.")
+		log.Error.Println(string(ret))
 	} else if trcrEvnt.Location.String == "" {
-		ret = []byte("The location field for the event was empty")
-		log.Error.Println(ret)
+		ret = []byte("The location field for the event was empty.")
+		log.Error.Println(string(ret))
 	} else if trcrEvnt.EventType.String == "" {
-		ret = []byte("The event type field for the event was empty")
-		log.Error.Println(ret)
+		ret = []byte("The event type field for the event was empty.")
+		log.Error.Println(string(ret))
 	} else {
 		log.Trace.Printf("The tracer event conforms to the expected.")
 		evntStr, err := common.AddEvent(trcrID, trcrEvnt)
@@ -36,7 +36,7 @@ func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
 			ret = []byte("There was an error adding the event.")
 			log.Error.Println(err)
 		} else {
-			log.Trace.Printf("Successfully added the tracer event: %v", evntStr)
+			log.Trace.Printf("Successfully added the tracer event: %v", string(evntStr))
 			/* Final success case. */
 			status = http.StatusOK
 			ret = evntStr
