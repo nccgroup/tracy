@@ -54,7 +54,6 @@ class App extends Component {
         /* For each of the tracers returned, add it to the DOM. */
         try {
           var data = JSON.parse(req.target.responseText);
-          console.log(data);
           this.setState({
             tracers: data
           });
