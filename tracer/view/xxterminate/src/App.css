@@ -73,3 +73,17 @@ code {
     background: #fff;
   }
 }
+
+.event-context-data {
+  border-bottom: solid;
+  border-color: black;
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+.event-context {
+  border-bottom: solid;
+  border-color: black;
+  margin-left: 5%;
+  margin-right: 5%;
+}

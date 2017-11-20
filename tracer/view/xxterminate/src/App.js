@@ -2,6 +2,10 @@ import React, { Component } from 'react';
 import './App.css';
 import TracerRows from './TracerRows.js'
 import TracerNavigation from './TracerNavigation.js'
+import { BootstrapTable, TableHeaderColumn, BSTable } from 'react-bootstrap-table';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'react-bootstrap-table/dist/react-bootstrap-table.min.css'
+import 'bootstrap/dist/css/bootstrap-theme.min.css';
 
 class App extends Component {
   constructor(props) {
@@ -137,7 +141,7 @@ class App extends Component {
     }    
   }
 
-  render() {
+  /*render() {
     return (
       <div className="App">
           <TracerRows 
@@ -149,6 +153,41 @@ class App extends Component {
             goToPreviousReference={this.goToPreviousReference} />
       </div>
     );
+  }*/
+  isExpandableRow(row) {
+    return true;
+  }
+
+  expandComponent(row) {
+    return (
+      <BootstrapTable 
+        data={row.Contexts} 
+        striped={true} 
+        hover={true}>
+        <TableHeaderColumn dataField="ID" isKey={true} dataAlign="center" dataSort={true}>ID</TableHeaderColumn>
+        <TableHeaderColumn dataField="ContextData" dataSort={true}>Context Data</TableHeaderColumn>
+        <TableHeaderColumn dataField="ContextLocationType" dataSort={true}>Location Type</TableHeaderColumn>
+        <TableHeaderColumn dataField="NodeType" dataSort={true}>Node Type</TableHeaderColumn>
+      </BootstrapTable>
+    );
+  }
+  render() {
+    return (
+      <BootstrapTable 
+        data={this.props.data} 
+        striped={true} 
+        hover={true}
+        options={ this.props.options }
+        expandableRow={ this.isExpandableRow }
+        expandComponent={ this.expandComponent }>
+        <TableHeaderColumn dataField="ID" isKey={true} dataAlign="center" dataSort={true}>ID</TableHeaderColumn>
+        <TableHeaderColumn dataField="TracerString" dataSort={true}>TracerString</TableHeaderColumn>
+        <TableHeaderColumn dataField="Method" dataSort={true}>HTTP Method</TableHeaderColumn>
+        <TableHeaderColumn dataField="Host" dataSort={true}>Host</TableHeaderColumn>
+        <TableHeaderColumn dataField="Path" dataSort={true}>Path</TableHeaderColumn>
+        <TableHeaderColumn dataField="Params" dataSort={true}>Query Parameters</TableHeaderColumn>
+        <TableHeaderColumn dataField="TracerEventType" dataSort={true}>Event Type</TableHeaderColumn>
+      </BootstrapTable>)
   }
 }
 
