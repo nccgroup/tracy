@@ -1,3 +1,26 @@
-li.highlight-on-hover:hover, li.highlight-on-hover {
+div#tag-menu {
+	all: initial;
+	position: absolute;
+	display: inline-block;
+	border-color: black;
+	border: solid;
+	width: 100%;
+	z-index: 1000000000000;
+	background-color: white;
+	width: 150px;
+	height: 50px;
+	max-width: 150px;
+	max-height: 50px;
+}
+
+div#tag-menu * {
+	all: initial
+}
+
+#tag-menu ul li.highlight-on-hover {
+		display: block;
+}
+
+#tag-menu ul li.highlight-on-hover:hover {
 	background-color: yellow;
 }

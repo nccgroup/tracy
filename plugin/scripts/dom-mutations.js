@@ -85,7 +85,7 @@
 
     /* Remove relevant styles from the element. */
     function removeStylesToElement(tag, styles) {
-      /* TODO: its possible this will mess up some page's inline CSS, but in those cases, 
+      /* TODO: its possible this will mess up some page's inline CSS, but in those cases,
        * it will probably be messed up anyway. */
       for (var styleKey in Object.keys(styles)) {
         tag.style[styleKey] = "";
@@ -143,35 +143,29 @@
                   /* This timer is used to check for a long press */
                   tagMenuTimer = window.setTimeout(function(e) {
                     var tagMenu = document.createElement("div");
-                    addStylesToElement(tagMenu, {
-                      "position": "absolute",
-                      "border-color": "black",
-                      "border": "solid",
-                      "width": "100%",
-                      "z-index": 1000000000000,
-                      "background-color": "white",
-                      "right": 0,
-                      "max-width": "150px",
-                      "max-height": "50px"
-                    });
                     tagMenu.id = "tag-menu";
                     var list = document.createElement("ul");
+
                     tagMenu.appendChild(list);
 
-                    /* Create the list of tracers types they can choose from. Dynamically 
+                    /* Create the list of tracers types they can choose from. Dynamically
                      * create them so we can easily add new types of tracer types. */
                     for (var tracerStringTypeKey in tracerStringTypes) {
                       var listElement = document.createElement("li");
                       listElement.addEventListener("mouseup", menuClickHandler)
+                      listElement.className += "highlight-on-hover"
                       /* Highlight the element when you mouseover it. */
-                      listElement.addEventListener("mouseover", function(e){ e.srcElement.className = "highlight-on-hover"; });
-                      listElement.addEventListener("mouseout", function(e){ e.srcElement.className = "";});
+                      //listElement.addEventListener("mouseover", function(e){ e.srcElement.className = "highlight-on-hover"; });
+                      //listElement.addEventListener("mouseout", function(e){ e.srcElement.className = "";});
                       listElement.innerText = tracerStringTypes[tracerStringTypeKey];
                       list.appendChild(listElement);
                     }
 
-                    /* Insert the list right next to the click element. */
+                    /* Insert the list right next to the clicked element. */
                     insertAfter(tagMenu, e);
+
+                    tagMenu.style.left =  tagMenu.offsetLeft - 10 + "px"
+                    tagMenu.style.top  =  tagMenu.offsetTop + 25  + "px"
 
                     // Set timer to null as it has fired once
                     tagMenuTimer = null;
@@ -202,7 +196,7 @@
     /* A click handler to handle clicking of the tag menu */
     function menuClickHandler(e) {
       var tag = e.currentTarget.parentNode.parentElement.previousElementSibling;
-      
+
       /* Add the tracer string template. */
       tag.value = tag.value + e.currentTarget.innerText;
 
