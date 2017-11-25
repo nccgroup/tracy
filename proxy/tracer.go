@@ -41,7 +41,12 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 		/* Create tracer structs out of the generated tracer strings. */
 		addedTracers := make([]types.Tracer, len(replacedTracerStrings))
 		for i := 0; i < len(replacedTracerStrings); i++ {
-			addedTracers[i] = types.Tracer{TracerString: replacedTracerStrings[i], URL: types.StringToJSONNullString(req.URL.String()), Method: types.StringToJSONNullString(req.Method)}
+			fullURL := types.StringToJSONNullString(req.Host + req.RequestURI) //capture host, path, and query params 
+			addedTracers[i] = types.Tracer{
+				TracerString: replacedTracerStrings[i], 
+				URL: fullURL, 
+				Method: types.StringToJSONNullString(req.Method),
+			}
 		}
 
 		/* Write the new body to the request. */
@@ -109,7 +114,6 @@ func replaceTagsInBody(body []byte) ([]byte, []string) {
 				tag = append(tag, body[j])
 			}
 
-			log.Trace.Printf("byteValue inner %s %d", body[len(tag)+i:len(tag)+i+6], bytes.Compare(body[len(tag)+i:len(tag)+i+6], []byte("%7D%7D")))
 			if len(tag)+i+5 < len(body) && bytes.Compare(body[len(tag)+i:len(tag)+i+6], []byte("%7D%7D")) == 0 {
 				tag = append(tag, []byte("%7D%7D")...)
 				tracerString, tracerBytes := generateTracerFromTag(string(tag))
