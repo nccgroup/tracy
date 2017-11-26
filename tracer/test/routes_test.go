@@ -445,13 +445,19 @@ func TestDuplicateEvent(t *testing.T) {
 		return err
 	}
 
+	addEvntReqDup, err := http.NewRequest("POST", addEvntURL, bytes.NewBuffer([]byte(evntStr)))
+	if err != nil {
+		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
+	}
+
 	addDupEvntTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
 		var err error
-
 		if status := rr.Code; status != http.StatusInternalServerError {
 			err = fmt.Errorf("Adding a duplicate event should have returned an internal server error due to the unique constraint set by the database.")
+		} else if rr.Body.String() != "There was an error adding the event." {
+			err = fmt.Errorf("After adding a duplicate event, the server didn't response with the correct response.")
 		}
-
+		
 		return err
 	}
 	/* ADDING AN EVENT */
@@ -460,7 +466,7 @@ func TestDuplicateEvent(t *testing.T) {
 	tests := make([]RequestTestPair, 3)
 	addReqTest := RequestTestPair{addReq, addTest}
 	addEvntReqTest := RequestTestPair{addEvntReq, addFirstEvntTest}
-	addDupEvntReqTest := RequestTestPair{addEvntReq, addDupEvntTest}
+	addDupEvntReqTest := RequestTestPair{addEvntReqDup, addDupEvntTest}
 	tests[0] = addReqTest
 	tests[1] = addEvntReqTest
 	tests[2] = addDupEvntReqTest

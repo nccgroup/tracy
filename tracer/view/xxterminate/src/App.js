@@ -4,26 +4,100 @@ import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-bootstrap-table/dist/react-bootstrap-table.min.css'
 import 'bootstrap/dist/css/bootstrap-theme.min.css';
+import TracerEventDataExpanded from './TracerEventDataExpanded.js'
 
 class App extends Component {
+  constructor(props) {
+    super(props);
+    this.expandTracerRow = this.expandTracerRow.bind(this);
+    this.expandEventRow = this.expandEventRow.bind(this);
+  }
+
   isExpandableRow(row) {
     return true;
   }
 
-  expandComponent(row) {
+  expandEventRow(row) {
+    var rawData;
+    try {
+      rawData = JSON.stringify(JSON.parse(row.RawData), null, 2);;
+    } catch (e) {
+      rawData = row.RawData;
+    }
+    return (
+      <TracerEventDataExpanded
+          data={rawData}
+          tracerString={row.TracerString}/>
+    );
+  }
+
+  expandTracerRow(row) {
+    const options = {
+      expandRowBgColor: 'antiquewhite'
+    };
+
+    // Pass the tracer string to the event context so they know how to highlight. 
+    row.Contexts.map((context) =>
+      context["TracerString"] = row.TracerString);
     return (
       <BootstrapTable 
         data={row.Contexts} 
         striped={true} 
-        hover={true}>
-        <TableHeaderColumn dataField="ID" isKey={true} dataAlign="center" dataSort={true}>ID</TableHeaderColumn>
-        <TableHeaderColumn dataField="ContextData" dataSort={true}>Context Data</TableHeaderColumn>
-        <TableHeaderColumn dataField="ContextLocationType" dataSort={true}>Location Type</TableHeaderColumn>
-        <TableHeaderColumn dataField="NodeType" dataSort={true}>Node Type</TableHeaderColumn>
-        <TableHeaderColumn dataField="Host" dataSort={true}>Host</TableHeaderColumn>
-        <TableHeaderColumn dataField="Path" dataSort={true}>Path</TableHeaderColumn>
-        <TableHeaderColumn dataField="Params" dataSort={true}>Query Params</TableHeaderColumn>
-        <TableHeaderColumn dataField="EventType" dataSort={true}>Event Type</TableHeaderColumn>
+        hover={true}
+        options={options}
+        expandableRow={ this.isExpandableRow }
+        expandComponent={ this.expandEventRow }>
+        <TableHeaderColumn 
+          dataField="ID" 
+          width='5%' 
+          isKey={true} 
+          dataAlign="center"
+          dataSort={true}
+          filter={ { type: 'TextFilter', delay: 250, condition: 'eq' } }>
+            ID
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="Host"
+          width='15%'
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Host
+        </TableHeaderColumn>
+        <TableHeaderColumn
+          dataField="Path" 
+          width='20%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Path
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="Params" 
+          width='20%'  
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Query Params
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="ContextLocationType" 
+          width='10%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Location Type
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="NodeType" 
+          width='10%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Node Type
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="EventType" 
+          width='10%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Event Type
+        </TableHeaderColumn>
       </BootstrapTable>
     );
   }
@@ -35,13 +109,51 @@ class App extends Component {
         hover={true}
         options={ this.props.options }
         expandableRow={ this.isExpandableRow }
-        expandComponent={ this.expandComponent }>
-        <TableHeaderColumn dataField="ID" isKey={true} dataAlign="center" dataSort={true}>ID</TableHeaderColumn>
-        <TableHeaderColumn dataField="TracerString" dataSort={true}>Tracer</TableHeaderColumn>
-        <TableHeaderColumn dataField="Method" dataSort={true}>HTTP Method</TableHeaderColumn>
-        <TableHeaderColumn dataField="Host" dataSort={true}>Host</TableHeaderColumn>
-        <TableHeaderColumn dataField="Path" dataSort={true}>Path</TableHeaderColumn>
-        <TableHeaderColumn dataField="Params" dataSort={true}>Query Parameters</TableHeaderColumn>
+        expandComponent={ this.expandTracerRow }>
+        <TableHeaderColumn 
+          dataField="ID" 
+          width='5%' 
+          isKey={true} 
+          dataAlign="center" 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            ID
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="Method" 
+          width='5%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Method
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="Host" 
+          width='10%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Host
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="Path" 
+          width='25%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Path
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="Params" 
+          width='20%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Query Parameters
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="TracerString" 
+          width='20%' 
+          dataSort={true}
+          filter={ { type: 'RegexFilter', delay: 250 } }>
+            Tracer
+        </TableHeaderColumn>
       </BootstrapTable>)
   }
 }
