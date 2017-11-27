@@ -16,6 +16,14 @@ const locationTypes = {
   3: "attribute value"
 };
 
+/* Enum to human-readable structure to translate the different severity ratings. */
+const severity = {
+  0: "unexploitable",
+  1: "suspicious",
+  2: "probable",
+  3: "exploitable"
+};
+
 /* getTracers makes an XMLHTTPRequest to the tracers/events API to get the latest set of events. */
 function getTracers() {
   /* Create the HTTP GET request to the /tracers API endpoint. */
@@ -31,9 +39,10 @@ function setTracers(req) {
       try {
       	var data = JSON.parse(req.target.responseText)
           .map(formatData) // format the data to fit the table
-          .filter(n => n.Contexts && n.Contexts[0] ); // filter out events that don't have any useful info in it.
+          .filter(n => n.Contexts && n.Contexts[0] ) // filter out events that don't have any useful info in it
+          .map(assignEventsSeverityRating); // assign a severity rating to each of the tracers events
 
-        ReactDOM.render(<App locationTypes={locationTypes} data={data} options={options}/>, document.getElementById('root'));
+        ReactDOM.render(<App severity={severity} locationTypes={locationTypes} data={data} options={options}/>, document.getElementById('root'));
     } catch (e) {
       // Probably an error with parsing the JSON. 
       console.error(e);
@@ -151,6 +160,77 @@ function formatEvent(event) {
   }
 
   return ret;
+}
+
+/* Assigns a severity rating to each of the tracers events. */
+function assignEventsSeverityRating(tracer) {
+  tracer.Contexts = tracer.Contexts.map(assignContextSeverityRating);
+  return tracer;
+}
+
+/* Assign a severity rating to a row. New tests should be added to their corresponding category here. */
+function assignContextSeverityRating(context) {
+  var ret = context;
+
+  // These functions should return a truthy value if the row is known to be exploitable. 
+  const exploitableTests = [
+    isAttributeName,
+    isNodeName
+  ];
+  // These functions should return a truthy value if the row is known to be probable. 
+  const probableTests = [];
+  // These functions should return a truthy value if the row is known to be suspicious. 
+  const suspiciousTests = [
+    isInScriptTag,
+    isInAttributeValue
+  ];
+  // These functions should return a truthy value if the row is known to be unexploitable. 
+  const unexploitableTests = [];
+
+  const tests = [
+    unexploitableTests,
+    suspiciousTests,
+    probableTests, 
+    exploitableTests 
+  ];
+
+  // Execute each of the categories of tests. If any of the tests return true, set the 
+  // severity to that rating. 
+  var testResults = tests.map(function(testSuite, id, array) {
+    if (testSuite
+      .map((test) => test(ret))
+      .some((n) => n))  {
+
+      return id;
+    } else {
+      return 0;
+    }
+  });
+
+  // Get the highest severity passed test and assign the context a severity.
+  ret["Severity"] = Math.max.apply(null, testResults);
+
+  return ret;
+}
+
+/* Test to see if the tracer was made the attribute name. */
+function isAttributeName(context) {
+  return context.ContextLocationType === 0;
+}
+
+/* Test to see if the tracer was made the node name. */
+function isNodeName(context) {
+  return context.ContextLocationType === 2;
+}
+
+/* Test to see if the tracer was found inside a script tag. */
+function isInScriptTag(context) {
+  return context.ContextLocationType === 1 && context.NodeType === "script";
+}
+
+/* Test to see if the tracer was found inside an attribute value. */
+function isInAttributeValue(context) {
+  return context.ContextLocationType === 3;
 }
 
 getTracers();

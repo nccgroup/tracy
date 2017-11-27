@@ -12,7 +12,6 @@ class TracerEventDataExpanded extends React.Component {
 			end: []
 		};
 		this.highlights = [];
-		console.log(this.state.data);
 	}
 	accumulateHighlight(e) {
 		this.highlights.push(e);

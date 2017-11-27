@@ -11,6 +11,7 @@ class App extends Component {
     super(props);
     this.expandTracerRow = this.expandTracerRow.bind(this);
     this.expandEventRow = this.expandEventRow.bind(this);
+    this.rowClassNameFormat = this.rowClassNameFormat.bind(this);
   }
 
   isExpandableRow(row) {
@@ -31,6 +32,10 @@ class App extends Component {
     );
   }
 
+  rowClassNameFormat(row, rowIdx) {
+    return this.props.severity[row.Severity];
+  }
+
   expandTracerRow(row) {
     const options = {
       expandRowBgColor: 'antiquewhite'
@@ -41,12 +46,13 @@ class App extends Component {
       context["TracerString"] = row.TracerString);
     return (
       <BootstrapTable 
-        data={row.Contexts} 
-        striped={true} 
+        data={row.Contexts}
         hover={true}
         options={options}
         expandableRow={ this.isExpandableRow }
-        expandComponent={ this.expandEventRow }>
+        expandComponent={ this.expandEventRow }
+        trClassName={ this.rowClassNameFormat }
+        search>
         <TableHeaderColumn 
           dataField="ID" 
           width='5%' 
@@ -105,11 +111,12 @@ class App extends Component {
     return (
       <BootstrapTable 
         data={this.props.data} 
-        striped={true} 
+        striped
         hover={true}
         options={ this.props.options }
         expandableRow={ this.isExpandableRow }
-        expandComponent={ this.expandTracerRow }>
+        expandComponent={ this.expandTracerRow }
+        search>
         <TableHeaderColumn 
           dataField="ID" 
           width='5%' 

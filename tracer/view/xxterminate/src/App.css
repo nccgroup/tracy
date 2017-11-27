@@ -80,3 +80,18 @@ pre {
   margin-left: 5%;
   margin-right: 5%;
 }
+
+.exploitable {
+  background-color: red;
+}
+
+.unexploitable {
+}
+
+.suspicious {
+  background-color: yellow;
+}
+
+.probable {
+  background-color: orange;
+}
