@@ -104,7 +104,7 @@ function parsePath(url) {
   var host = withoutProtocol.split("?")[0];
   var pathIndex = host.indexOf("/");
   if (pathIndex !== -1) {
-    ret = host.substring(pathIndex, host.length - 1);
+    ret = host.substring(pathIndex, host.length);
   } else {
     ret = "/";
   }
@@ -215,22 +215,22 @@ function assignContextSeverityRating(context) {
 
 /* Test to see if the tracer was made the attribute name. */
 function isAttributeName(context) {
-  return context.ContextLocationType === 0;
+  return context.ContextLocationType === locationTypes[0];
 }
 
 /* Test to see if the tracer was made the node name. */
 function isNodeName(context) {
-  return context.ContextLocationType === 2;
+  return context.ContextLocationType === locationTypes[2];
 }
 
 /* Test to see if the tracer was found inside a script tag. */
 function isInScriptTag(context) {
-  return context.ContextLocationType === 1 && context.NodeType === "script";
+  return context.ContextLocationType === locationTypes[1] && context.NodeType === "script";
 }
 
 /* Test to see if the tracer was found inside an attribute value. */
 function isInAttributeValue(context) {
-  return context.ContextLocationType === 3;
+  return context.ContextLocationType === locationTypes[3];
 }
 
 getTracers();

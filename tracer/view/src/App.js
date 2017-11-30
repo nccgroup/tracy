@@ -7,11 +7,18 @@ import 'bootstrap/dist/css/bootstrap-theme.min.css';
 import TracerEventDataExpanded from './TracerEventDataExpanded.js'
 
 class App extends Component {
+
   constructor(props) {
     super(props);
+    this.selectRow = {      
+      mode: 'checkbox',
+      clickToSelect: true,  // click to select, default is false
+      clickToExpand: true  // click to expand row, default is false
+    };
     this.expandTracerRow = this.expandTracerRow.bind(this);
     this.expandEventRow = this.expandEventRow.bind(this);
-    this.rowClassNameFormat = this.rowClassNameFormat.bind(this);
+    this.formatRowSeverity = this.formatRowSeverity.bind(this);
+    this.onAfterDeleteRow = this.onAfterDeleteRow.bind(this);
   }
 
   isExpandableRow(row) {
@@ -32,13 +39,19 @@ class App extends Component {
     );
   }
 
-  rowClassNameFormat(row, rowIdx) {
+  formatRowSeverity(row, rowIdx) {
     return this.props.severity[row.Severity];
+  }
+
+  onAfterDeleteRow(rowKeys) {
+    //TODO: add to archive so they can be seen again without refreshing
+    //alert(rowKeys);
   }
 
   expandTracerRow(row) {
     const options = {
-      expandRowBgColor: 'antiquewhite'
+      expandRowBgColor: 'antiquewhite',
+      afterDeleteRow: this.onAfterDeleteRow
     };
 
     // Pass the tracer string to the event context so they know how to highlight. 
@@ -48,10 +61,13 @@ class App extends Component {
       <BootstrapTable 
         data={row.Contexts}
         hover={true}
+        cellEdit={{  mode: 'click' }}
         options={options}
         expandableRow={ this.isExpandableRow }
         expandComponent={ this.expandEventRow }
-        trClassName={ this.rowClassNameFormat }
+        trClassName={ this.formatRowSeverity }
+        selectRow={ this.selectRow }
+        deleteRow={ true } 
         search>
         <TableHeaderColumn 
           dataField="ID" 
@@ -59,50 +75,64 @@ class App extends Component {
           isKey={true} 
           dataAlign="center"
           dataSort={true}
-          filter={ { type: 'TextFilter', delay: 250, condition: 'eq' } }>
+          filter={ { type: 'TextFilter', condition: 'eq' } }>
             ID
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Host"
           width='15%'
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          editable={{ readOnly: true }}
+          filter={ { type: 'RegexFilter' } }>
             Host
         </TableHeaderColumn>
         <TableHeaderColumn
           dataField="Path" 
-          width='20%' 
+          width='15%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          editable={{ readOnly: true }}
+          filter={ { type: 'RegexFilter' } }>
             Path
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Params" 
           width='20%'  
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          editable={{ readOnly: true }}
+          filter={ { type: 'RegexFilter' } }>
             Query Params
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="ContextLocationType" 
           width='10%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          editable={{ readOnly: true }}
+          filter={ { type: 'RegexFilter' } }>
             Location Type
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="NodeType" 
           width='10%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          editable={{ readOnly: true }}
+          filter={ { type: 'RegexFilter' } }>
             Node Type
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="EventType" 
           width='10%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          editable={{ readOnly: true }}
+          filter={ { type: 'RegexFilter' } }>
             Event Type
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="Severity" 
+          width='5%' 
+          dataSort={true}
+          editable={ { type: 'textarea' } }
+          filter={ { type: 'RegexFilter' } }>
+            Severity
         </TableHeaderColumn>
       </BootstrapTable>
     );
@@ -116,6 +146,8 @@ class App extends Component {
         options={ this.props.options }
         expandableRow={ this.isExpandableRow }
         expandComponent={ this.expandTracerRow }
+        selectRow={ this.selectRow }
+        deleteRow={ true }
         search>
         <TableHeaderColumn 
           dataField="ID" 
@@ -123,42 +155,42 @@ class App extends Component {
           isKey={true} 
           dataAlign="center" 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          filter={ { type: 'RegexFilter',  } }>
             ID
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Method" 
           width='5%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          filter={ { type: 'RegexFilter',  } }>
             Method
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Host" 
           width='10%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          filter={ { type: 'RegexFilter',  } }>
             Host
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Path" 
           width='25%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          filter={ { type: 'RegexFilter',  } }>
             Path
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Params" 
           width='20%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          filter={ { type: 'RegexFilter',  } }>
             Query Parameters
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="TracerString" 
           width='20%' 
           dataSort={true}
-          filter={ { type: 'RegexFilter', delay: 250 } }>
+          filter={ { type: 'RegexFilter',  } }>
             Tracer
         </TableHeaderColumn>
       </BootstrapTable>)

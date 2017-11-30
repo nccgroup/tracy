@@ -47,7 +47,7 @@ func Server() (*http.Server, *mux.Router) {
 	r.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(rest.AddEvents)
 
 	/* The base application page. */
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./tracer/view/xxterminate/build/")))
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./tracer/view/build/")))
 	/* Create the server. */
 	srv := &http.Server{
 		Handler: r,
