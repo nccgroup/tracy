@@ -5,13 +5,6 @@
   margin-right: 5%;
 }
 
-.tracer-event {
-  border-bottom: solid;
-  margin-left: 5%;
-  margin-right: 5%;
-  background-color: antiquewhite;
-}
-
 .tracer-heading {
   margin-left: 5%;
   margin-right: 5%;
@@ -43,8 +36,8 @@ code {
   background-color: antiquewhite;
 }
 
-.tracer-event-data {
-  padding-left: 45px;
+pre {
+  white-space: pre-wrap;
 }
 
 .hidden {
@@ -72,4 +65,33 @@ code {
   to {
     background: #fff;
   }
+}
+
+.event-context-data {
+  border-bottom: solid;
+  border-color: black;
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+.event-context {
+  border-bottom: solid;
+  border-color: black;
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+.exploitable {
+  background-color: red;
+}
+
+.unexploitable {
+}
+
+.suspicious {
+  background-color: yellow;
+}
+
+.probable {
+  background-color: orange;
 }

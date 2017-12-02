@@ -10,6 +10,7 @@ import (
 	"xxterminator-plugin/log"
 	tracerClient "xxterminator-plugin/tracer/client"
 	"xxterminator-plugin/tracer/configure"
+	"io"
 )
 
 /*ListenAndServe waits and listens for TCP connections and proxies them. */
@@ -153,8 +154,8 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 			/* Get the tracer events that correspond to tracers found in the response. */
 			splits := strings.Split(string(responseRawBytes), "\r\n\r\n")
 			if len(splits) == 2 {
-				//log.Error.Printf("Splits: %s\n %s", splits[0][:15], splits[1][:15])
-				tracerEvents := findTracersInResponseBody(splits[1], request.RequestURI, tracers)
+				url := request.Host + request.RequestURI
+				tracerEvents := findTracersInResponseBody(splits[1], url, tracers)
 
 				log.Trace.Printf("Found the following tracer events: %+v", tracerEvents)
 				/* Use the API to add each tracer events to their corresponding tracer. */
@@ -184,9 +185,11 @@ func bridge(client net.Conn, server net.Conn) {
 		/* Read up to 1024*4 bytes from the client. */
 		nb, err := client.Read(buf)
 		if err != nil {
-			/* If there was an error, fail fast. */
-			log.Error.Println(err)
-			return
+			/* If there was an error, fail fast unless EOF. */
+			if err != io.EOF {
+				log.Error.Println(err)
+				return
+			}				
 		}
 		/* If the number of bytes read is zero, the client is finished. Leave. */
 		if nb == 0 {

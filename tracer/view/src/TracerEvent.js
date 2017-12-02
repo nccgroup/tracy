@@ -1,8 +1,7 @@
 import React from 'react';
 import Col from 'react-bootstrap/lib/Col';
 import Row from 'react-bootstrap/lib/Row';
-import TracerEventDataExpanded from './TracerEventDataExpanded.js'
-import TracerEventDataMinified from './TracerEventDataMinified.js'
+import TracerContext from './TracerContext.js'
 
 class TracerEvent extends React.Component {
 	constructor(props){
@@ -90,6 +89,13 @@ class TracerEvent extends React.Component {
 							</span>
 						</Col>
 					</Row>
+					<TracerContext contexts={this.props.event.Contexts}/>
+				</div>
+				);
+	}
+}
+export default TracerEvent;
+/*					<!--
 					<TracerEventDataMinified
 						addHighlight={this.props.addHighlight}
 						tracerString={this.state.tracerString} 
@@ -101,8 +107,4 @@ class TracerEvent extends React.Component {
 						tracerString={this.state.tracerString} 
 						slices={this.state.slices} 
 						end={this.state.end}
-						hidden={this.state.isMinified}/>
-				</div>);
-	}
-}
-export default TracerEvent;
+						hidden={this.state.isMinified}/>-->*/

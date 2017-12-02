@@ -122,7 +122,7 @@ func DBGetTracerEventByID(db *sql.DB, tei int) (types.TracerEvent, error) {
 		log.Warning.Printf(err.Error())
 		return types.TracerEvent{}, err
 	}
-
+ 
 	trcrEvnt, err := parseEventsFromSQLRows(rows)
 	if err != nil {
 		log.Warning.Printf(err.Error())

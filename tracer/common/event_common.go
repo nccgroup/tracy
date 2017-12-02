@@ -15,10 +15,11 @@ import (
 func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 	log.Trace.Printf("Adding the following tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
 	var ret []byte
-	//var err error
+	var err error
 
 	/* Look up the tracer based on the provided ID. */
-	trcr, err := store.DBGetTracerWithEventsByID(store.TracerDB, trcrID)
+	var trcr types.Tracer
+	trcr, err = store.DBGetTracerWithEventsByID(store.TracerDB, trcrID)
 	if err == nil {
 		/* Make sure the ID of the tracer exists. */
 		if trcr.ID == 0 {
@@ -27,9 +28,9 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 			log.Trace.Printf("Found the tracer in the database: %+v.", trcr)
 
 			/* If it is a valid tracer event and the tracer exists, then add it to the database. */
-			event, err := store.DBAddTracerEvent(store.TracerDB, trcrEvnt, []string{trcr.TracerString})
+			var event types.TracerEvent
+			event, err = store.DBAddTracerEvent(store.TracerDB, trcrEvnt, []string{trcr.TracerString})
 			if err == nil {
-				log.Warning.Printf("%+v", int(event.ID.Int64))
 				if int(event.ID.Int64) != 0 {
 					log.Trace.Printf("Successfully added the tracer event to the database: %+v", event)
 
@@ -40,8 +41,12 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 
 						/* Need to do an additional query here to return the results of adding the contexts. */
 						event, err = store.DBGetTracerEventByID(store.TracerDB, int(event.ID.Int64))
-						log.Trace.Printf("Got the following event just inserted: %+v", event)
-						ret, err = json.Marshal(event)
+
+
+						if err == nil {
+							log.Trace.Printf("Got the following event just inserted: %+v", event)
+							ret, err = json.Marshal(event)
+						}
 					}
 				} else {
 					err = fmt.Errorf("The event added is not the same as the event returned.")
@@ -60,12 +65,15 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 /*addEventContext is the common functionality for adding data to the event context table. */
 func addEventContext(trcrEvnt types.TracerEvent, trcrID int) error {
 	log.Trace.Printf("Adding the event context for %+v", trcrEvnt)
-	doc, err := html.Parse(strings.NewReader(trcrEvnt.Data.String))
+	var err error
+	var doc *html.Node
+	doc, err = html.Parse(strings.NewReader(trcrEvnt.Data.String))
 	if err == nil {
 		var contexts []types.EventsContext
 
 		/* Need to get the tracer string this event is mapped to. */
-		trcr, err := store.DBGetTracerWithEventsByID(store.TracerDB, trcrID)
+		var trcr types.Tracer
+		trcr, err = store.DBGetTracerWithEventsByID(store.TracerDB, trcrID)
 		if err == nil {
 			/* Find all instances of the string string and record their appropriate contexts.*/
 			getTracerLocation(doc, &contexts, trcr.TracerString)
