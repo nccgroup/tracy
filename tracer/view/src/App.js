@@ -18,7 +18,25 @@ class App extends Component {
     this.expandTracerRow = this.expandTracerRow.bind(this);
     this.expandEventRow = this.expandEventRow.bind(this);
     this.formatRowSeverity = this.formatRowSeverity.bind(this);
-    this.onAfterDeleteRow = this.onAfterDeleteRow.bind(this);
+    this.onAfterDeleteContext = this.onAfterDeleteContext.bind(this);
+    this.setTracers = this.setTracers.bind(this);
+    this.getTracers = this.getTracers.bind(this);
+    this.formatEvent = this.formatEvent.bind(this);
+    this.formatData = this.formatData.bind(this);
+    this.formatRowSeverity = this.formatRowSeverity.bind(this);
+    this.parseURLParameters = this.parseURLParameters.bind(this);
+    this.parseHost = this.parseHost.bind(this);
+    this.parsePath = this.parsePath.bind(this);
+    this.assignEventsSeverityRating = this.assignEventsSeverityRating.bind(this);
+    this.assignContextSeverityRating = this.assignContextSeverityRating.bind(this);
+    this.isAttributeName = this.isAttributeName.bind(this);
+    this.isNodeName = this.isNodeName.bind(this);
+    this.isInAttributeValue = this.isInAttributeValue.bind(this);
+    this.isInScriptTag = this.isInScriptTag.bind(this);
+    this.onAfterDeleteTracer = this.onAfterDeleteTracer.bind(this);
+    this.state = {
+      data: []
+    };
   }
 
   isExpandableRow(row) {
@@ -39,19 +57,292 @@ class App extends Component {
     );
   }
 
+  /* getTracers makes an XMLHTTPRequest to the tracers/events API to get the latest set of events. */
+  getTracers() {
+    /* Create the HTTP GET request to the /tracers API endpoint. */
+    var req = new XMLHttpRequest();
+    req.open("GET", "http://localhost:8081/tracers/events", true);
+    req.onreadystatechange = this.setTracers;      
+    req.send();
+  }
+
+  /* setTracers catches the response from the XMLHTTPRequest of getTracers. */
+  setTracers(req) {
+    if (req.target.readyState === 4 && req.target.status === 200 && req.target.responseText !== "") {
+      try {
+        var data = JSON.parse(req.target.responseText)
+          .map(this.formatData) // format the data to fit the table
+          .filter(n => n.Contexts && n.Contexts[0] ) // filter out events that don't have any useful info in it
+          .filter(n => !this.isInLocalStorage("archivedTracers", n.ID)) // filter out archived items
+          .map(this.assignEventsSeverityRating); // assign a severity rating to each of the tracers events
+
+        // If the data looks the same as before, don't change the state.
+        if (this.state.data.length !== data.length || 
+            data.map(function(tracer, id, array) {
+              var stateTracer = this.state.data.filter((n) => n.ID === tracer.ID)[0];
+               return stateTracer.Contexts.length !== tracer.Contexts.length;
+            }.bind(this)).some((n) => n)) 
+        {
+          this.setState({
+            data: data
+          });
+        }
+      } catch (e) {
+        // Probably an error with parsing the JSON. 
+        console.error(e);
+      }
+    }
+  }
+
+  componentDidMount() {
+    this.getTracers();
+    setInterval(this.getTracers, 4000);
+  }
+
+  /* Helper  to return the URL query parameters as a comma-separated list. */
+  parseURLParameters(url) {
+      var ret;
+      var splitOnParam = url.split("?");
+      if (splitOnParam.length > 1) {
+        ret = splitOnParam[1].replace("&", ", ");
+      } else {
+        ret = "";
+      }
+
+      return ret;
+  }
+
+  /* Helper  to return the hostname from a URL string. */
+  parseHost(url) {
+    var ret;
+
+    // In case the url has a protocol, remove it.
+    var protocolSplit = url.split("://");
+    var withoutProtocol;
+    if (protocolSplit.length > 1) {
+      withoutProtocol = protocolSplit[1];
+    } else {
+      withoutProtocol = protocolSplit[0];
+    }
+
+    var host = withoutProtocol.split("?")[0];
+    var pathIndex = host.indexOf("/");
+    
+    if (pathIndex !== -1) {
+      ret = host.substring(0, pathIndex);
+    } else { 
+      ret = host;
+    }
+
+    return ret;
+  }
+
+  /* Helper  to return the path from a URL string. */
+  parsePath(url) {
+    var ret = "";
+
+    // In case the url has a protocol, remove it.
+    var protocolSplit = url.split("://");
+    var withoutProtocol;
+    if (protocolSplit.length > 1) {
+      withoutProtocol = protocolSplit[1];
+    } else {
+      withoutProtocol = protocolSplit[0];
+    }
+
+    var host = withoutProtocol.split("?")[0];
+    var pathIndex = host.indexOf("/");
+    if (pathIndex !== -1) {
+      ret = host.substring(pathIndex, host.length);
+    } else {
+      ret = "/";
+    }
+
+    return ret;
+  }
+
+  /* Helper to see if an element is in localStorage. */
+  isInLocalStorage(key, ID) {
+    var ret;
+    try {
+      ret = JSON.parse(localStorage.getItem(key)).indexOf(ID) > -1
+    } catch (e) {
+      ret = false;
+    }
+    return ret;
+  }
+
+  /* Format all the data events and parse the data into the corresponding columns. */
+  formatData(data) {
+    var ret = {};
+    if (data.Events.length !== 0) {
+      var formattedEvents = data.Events
+        .map(this.formatEvent)
+        .reduce((accum, curr) => accum.concat(curr), [])
+        .filter(n => !this.isInLocalStorage("archivedContexts", n.ID)) // filter out archived items;
+
+      ret = {
+        ID: data.ID,
+        Method: data.Method,
+        TracerString: data.TracerString,
+        Host: this.parseHost(data.URL),
+        Path: this.parsePath(data.URL),
+        Params: this.parseURLParameters(data.URL),
+        Contexts: formattedEvents
+      }
+    }
+
+    return ret;
+  }
+
+  /* Format all the event contexts into their corresponding columns. */
+  formatEvent(event) {
+    var ret = [];
+    if (event.ID) {
+      ret = event.Contexts.map(function(context) {
+        var ret = {}
+        if (context.ID) {
+          ret = {
+            ID: context.ID,
+            ContextLocationType: this.props.locationTypes[context.Location],
+            NodeType: context.NodeName,
+            ContextData: context.Context,
+            RawData: event.Data,
+            EventType: event.EventType,
+            Host: this.parseHost(event.Location),
+            Path: this.parsePath(event.Location),
+            Params: this.parseURLParameters(event.Location)
+          };
+
+        }
+        return ret;
+      }.bind(this));
+    }
+
+    return ret;
+  }
+
+  /* Assigns a severity rating to each of the tracers events. */
+  assignEventsSeverityRating(tracer) {
+    tracer.Contexts = tracer.Contexts.map(this.assignContextSeverityRating);
+    return tracer;
+  }
+
+  /* Assign a severity rating to a row. New tests should be added to their corresponding category here. */
+  assignContextSeverityRating(context) {
+    var ret = context;
+
+    // These s should return a truthy value if the row is known to be exploitable. 
+    const exploitableTests = [
+      this.isAttributeName,
+      this.isNodeName
+    ];
+    // These s should return a truthy value if the row is known to be probable. 
+    const probableTests = [];
+    // These s should return a truthy value if the row is known to be suspicious. 
+    const suspiciousTests = [
+      this.isInScriptTag,
+      this.isInAttributeValue
+    ];
+    // These s should return a truthy value if the row is known to be unexploitable. 
+    const unexploitableTests = [];
+
+    const tests = [
+      unexploitableTests,
+      suspiciousTests,
+      probableTests, 
+      exploitableTests 
+    ];
+
+    // Execute each of the categories of tests. If any of the tests return true, set the 
+    // severity to that rating. 
+    var testResults = tests.map(function(testSuite, id, array) {
+      if (testSuite
+        .map((test) => test(ret))
+        .some((n) => n))  {
+
+        return id;
+      } else {
+        return 0;
+      }
+    });
+
+    // Get the highest severity passed test and assign the context a severity.
+    ret["Severity"] = Math.max.apply(null, testResults);
+
+    return ret;
+  }
+
+  /* Test to see if the tracer was made the attribute name. */
+  isAttributeName(context) {
+    return context.ContextLocationType === this.props.locationTypes[0];
+  }
+
+  /* Test to see if the tracer was made the node name. */
+  isNodeName(context) {
+    return context.ContextLocationType === this.props.locationTypes[2];
+  }
+
+  /* Test to see if the tracer was found inside a script tag. */
+  isInScriptTag(context) {
+    return context.ContextLocationType === this.props.locationTypes[1] && context.NodeType === "script";
+  }
+
+  /* Test to see if the tracer was found inside an attribute value. */
+  isInAttributeValue(context) {
+    return context.ContextLocationType === this.props.locationTypes[3];
+  }
+
   formatRowSeverity(row, rowIdx) {
     return this.props.severity[row.Severity];
   }
 
-  onAfterDeleteRow(rowKeys) {
-    //TODO: add to archive so they can be seen again without refreshing
-    //alert(rowKeys);
+  onAfterDeleteContext(rowKeys) {
+    var value = rowKeys
+    if (!Array.isArray(rowKeys)) {
+      value = [].concat(rowKeys)
+    }
+    const key = "archivedContexts";
+    var old;
+    try {
+      old = JSON.parse(localStorage.getItem(key));
+    } catch (e) {
+      old = [];
+    }
+
+    if (old && Array.isArray(old)) {
+      value = old.concat(value)
+    }
+
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  onAfterDeleteTracer(rowKeys) {
+    var value = rowKeys
+    if (!Array.isArray(rowKeys)) {
+      value = [].concat(rowKeys)
+    }
+    const key = "archivedTracers";
+    var old;
+    try {
+      old = JSON.parse(localStorage.getItem(key));
+    } catch (e) {
+      old = [];
+    }
+
+    if (old && Array.isArray(old)) {
+      value = old.concat(value)
+    }
+    console.log('archiving tracers');
+    localStorage.setItem(key, JSON.stringify(value));
   }
 
   expandTracerRow(row) {
     const options = {
       expandRowBgColor: 'antiquewhite',
-      afterDeleteRow: this.onAfterDeleteRow
+      afterDeleteRow: this.onAfterDeleteContext,
+      defaultSortName: 'ID', 
+      defaultSortOrder: 'desc' 
     };
 
     // Pass the tracer string to the event context so they know how to highlight. 
@@ -138,12 +429,18 @@ class App extends Component {
     );
   }
   render() {
+    const options = {
+      expandRowBgColor: 'rgb(31, 145, 195)',
+      defaultSortName: 'ID', 
+      defaultSortOrder: 'desc',
+      afterDeleteRow: this.onAfterDeleteTracer,  
+    };
     return (
       <BootstrapTable 
-        data={this.props.data} 
+        data={this.state.data} 
         striped
         hover={true}
-        options={ this.props.options }
+        options={ options }
         expandableRow={ this.isExpandableRow }
         expandComponent={ this.expandTracerRow }
         selectRow={ this.selectRow }
@@ -196,6 +493,5 @@ class App extends Component {
       </BootstrapTable>)
   }
 }
-
 
 export default App;

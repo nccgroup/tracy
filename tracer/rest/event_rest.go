@@ -12,11 +12,14 @@ import (
 	"xxterminator-plugin/tracer/types"
 )
 
+const defaultETag = "CACHEME"
+
 /* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.
  * Returns the HTTP status and the return value. */
-func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
+func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, string, []byte) {
 	log.Trace.Printf("Adding a tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
 	ret := []byte("{}")
+	retHash := defaultETag
 	status := http.StatusInternalServerError
 
 	/* Validate the event before uploading it to the database. */
@@ -31,7 +34,9 @@ func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
 		log.Error.Println(string(ret))
 	} else {
 		log.Trace.Printf("The tracer event conforms to the expected.")
-		evntStr, err := common.AddEvent(trcrID, trcrEvnt)
+		var evntStr []byte
+		var err error
+		evntStr, retHash, err = common.AddEvent(trcrID, trcrEvnt)
 		if err != nil {
 			ret = []byte("There was an error adding the event.")
 			log.Error.Println(err)
@@ -43,13 +48,14 @@ func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
 		}
 	}
 
-	return status, ret
+	return status, retHash, ret
 }
 
 /*AddEvent adds a tracer event to the tracer specified in the URL. */
 func AddEvent(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	trcrEvnt := types.TracerEvent{}
+	eTagHash := ""
 	json.NewDecoder(r.Body).Decode(&trcrEvnt)
 
 	/* Add the tracer event. */
@@ -58,10 +64,11 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 		log.Error.Println(err)
 	}
 	log.Trace.Printf("Parsed the following tracer ID from the route: %d", trcrID)
-	status, ret := addEventHelper(int(trcrID), trcrEvnt)
+	status, eTagHash, ret := addEventHelper(int(trcrID), trcrEvnt)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Etag", eTagHash)
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -70,6 +77,7 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 func AddEvents(w http.ResponseWriter, r *http.Request) {
 	finalStatus := http.StatusOK
 	finalRet := make([]byte, 0)
+	eTagHash := ""
 	trcrEvntsBulk := make([]types.TracerEventBulk, 0)
 	log.Trace.Printf("Adding tracer events: %+v", trcrEvntsBulk)
 	json.NewDecoder(r.Body).Decode(&trcrEvntsBulk)
@@ -88,7 +96,9 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			/* Add the tracer event. */
-			status, ret := addEventHelper(trcrID, trcrEvnt.TracerEvent)
+			var status int
+			var ret []byte
+			status, eTagHash, ret = addEventHelper(trcrID, trcrEvnt.TracerEvent)
 
 			/* If any of them fail, the whole request status fails. */
 			if status == http.StatusInternalServerError {
@@ -107,6 +117,7 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Etag", eTagHash)
 	w.WriteHeader(finalStatus)
 	w.Write(finalRet)
 }

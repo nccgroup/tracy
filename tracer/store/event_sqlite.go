@@ -13,7 +13,7 @@ import (
 )
 
 /*DBAddTracerEvent adds an event to a slice of tracers specified by the the tracer string. */
-func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.TracerEvent, error) {
+func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.TracerEvent, string, error) {
 	/* Using prepared statements. */
 	query := fmt.Sprintf(`
 	INSERT INTO %s 
@@ -27,7 +27,7 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 
 	if err != nil {
 		log.Warning.Printf(err.Error())
-		return types.TracerEvent{}, err
+		return types.TracerEvent{}, "", err
 	}
 	/* Don't forget to close the prepared statement when this function is completed. */
 	defer stmt.Close()
@@ -39,21 +39,21 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	res, err := stmt.Exec(te.Data, te.Location, te.EventType, sumStr)
 	if err != nil {
 		log.Warning.Printf(err.Error())
-		return types.TracerEvent{}, err
+		return types.TracerEvent{}, "", err
 	}
 
 	/* Check the response. */
 	lastID, err := res.LastInsertId()
 	if err != nil {
 		log.Warning.Printf(err.Error())
-		return types.TracerEvent{}, err
+		return types.TracerEvent{}, "", err
 	}
 
 	/* Make sure one row was inserted. */
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
 		log.Warning.Printf(err.Error())
-		return types.TracerEvent{}, err
+		return types.TracerEvent{}, "", err
 	}
 	log.Trace.Printf("AddTracerEvent: ID = %d, affected = %d", lastID, rowCnt)
 
@@ -62,15 +62,15 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 		/* Get the tracer associated with that key string. */
 		id, err := DBGetTracerIDByTracerString(db, val)
 		if err != nil {
-			return types.TracerEvent{}, err
+			return types.TracerEvent{}, "", err
 		}
 		/* We start at 1, so this shouldn't happen. */
 		if id == 0 {
-			return types.TracerEvent{}, fmt.Errorf("could not find a tracer with tracer string %s", val)
+			return types.TracerEvent{}, "", fmt.Errorf("could not find a tracer with tracer string %s", val)
 		}
 		err = DBAddTracersEvents(db, int(lastID), id)
 		if err != nil {
-			return types.TracerEvent{}, err
+			return types.TracerEvent{}, "", err
 		}
 
 	}
@@ -78,11 +78,11 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	trcrEvnt, err := DBGetTracerEventByID(db, int(lastID))
 	if err != nil {
 		log.Warning.Printf(err.Error())
-		return types.TracerEvent{}, err
+		return types.TracerEvent{}, "", err
 	}
 
 	/* Otherwise, return nil to indicate everything went okay. */
-	return trcrEvnt, nil
+	return trcrEvnt, sumStr, nil
 }
 
 /*DBGetTracerEventByID gets a tracer event by the tracer event ID. */

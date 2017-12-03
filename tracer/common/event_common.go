@@ -12,10 +12,11 @@ import (
 
 /*AddEvent is the common functionality to add an event to the database. This function
  * has been separated so both HTTP and websocket servers can use it. */
-func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
+func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, string, error) {
 	log.Trace.Printf("Adding the following tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
 	var ret []byte
 	var err error
+	var retHash string
 
 	/* Look up the tracer based on the provided ID. */
 	var trcr types.Tracer
@@ -29,7 +30,7 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 
 			/* If it is a valid tracer event and the tracer exists, then add it to the database. */
 			var event types.TracerEvent
-			event, err = store.DBAddTracerEvent(store.TracerDB, trcrEvnt, []string{trcr.TracerString})
+			event, retHash, err = store.DBAddTracerEvent(store.TracerDB, trcrEvnt, []string{trcr.TracerString})
 			if err == nil {
 				if int(event.ID.Int64) != 0 {
 					log.Trace.Printf("Successfully added the tracer event to the database: %+v", event)
@@ -59,7 +60,7 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 		log.Warning.Printf(err.Error())
 	}
 
-	return ret, err
+	return ret, retHash, err
 }
 
 /*addEventContext is the common functionality for adding data to the event context table. */
