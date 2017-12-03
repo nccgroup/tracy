@@ -15,9 +15,9 @@ import (
 /*tag is a slice of strings that represent the character sequencies in requests that need to be replaced with random tracer strings. */
 var tags = []string{"{{XSS}}", "%7B%7BXSS%7D%7D"}
 
-const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const alphabet = "abcdefghijklmnopqrstuvwxyz" //note: now it will only make strings with low case tags. This might be a problem if there is a lot of random text on the page .
 
-const XSS = "\"'><"
+const XSS = "\"'<"
 
 /* Helper function for searching for tracer tags in query parameters and body and replacing them with randomly generated
  * tracer string. Also, it submits the generated tracers to the API. This should be moved out, though. */
@@ -41,11 +41,11 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 		/* Create tracer structs out of the generated tracer strings. */
 		addedTracers := make([]types.Tracer, len(replacedTracerStrings))
 		for i := 0; i < len(replacedTracerStrings); i++ {
-			fullURL := types.StringToJSONNullString(req.Host + req.RequestURI) //capture host, path, and query params 
+			fullURL := types.StringToJSONNullString(req.Host + req.RequestURI) //capture host, path, and query params
 			addedTracers[i] = types.Tracer{
-				TracerString: replacedTracerStrings[i], 
-				URL: fullURL, 
-				Method: types.StringToJSONNullString(req.Method),
+				TracerString: replacedTracerStrings[i],
+				URL:          fullURL,
+				Method:       types.StringToJSONNullString(req.Method),
 			}
 		}
 
@@ -152,7 +152,9 @@ func generateTracerFromTag(tag string) (string, []byte) {
 	switch unescapedTag {
 	case "{{XSS}}":
 		randID := generateRandomTracerString()
-		return string(randID), append(randID, []byte(XSS)...)
+		payloadBytes := append([]byte(XSS), randID...)
+		payloadBytes = append(payloadBytes, byte('>'))
+		return string(randID), payloadBytes
 	case "{{PLAIN}}":
 		randID := generateRandomTracerString()
 		return string(randID), randID
