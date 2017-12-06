@@ -82,16 +82,16 @@ pre {
 }
 
 .exploitable {
-  background-color: red;
+  background-color: #ff9994;
 }
 
 .unexploitable {
 }
 
 .suspicious {
-  background-color: yellow;
+  background-color: #fdfd96;
 }
 
 .probable {
-  background-color: orange;
+  background-color: #ffb347;
 }

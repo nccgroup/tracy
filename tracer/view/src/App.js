@@ -17,7 +17,6 @@ class App extends Component {
     };
     this.expandTracerRow = this.expandTracerRow.bind(this);
     this.expandEventRow = this.expandEventRow.bind(this);
-    this.formatRowSeverity = this.formatRowSeverity.bind(this);
     this.onAfterDeleteContext = this.onAfterDeleteContext.bind(this);
     this.setTracers = this.setTracers.bind(this);
     this.getTracers = this.getTracers.bind(this);
@@ -179,6 +178,7 @@ class App extends Component {
       var formattedEvents = data.Events
         .map(this.formatEvent)
         .reduce((accum, curr) => accum.concat(curr), [])
+        .filter(n => n.ContextLocationType !== this.props.locationTypes[1]) // we don't really care about text nodes
         .filter(n => !this.isInLocalStorage("archivedContexts", n.ID)) // filter out archived items;
 
       ret = {
@@ -225,6 +225,9 @@ class App extends Component {
   /* Assigns a severity rating to each of the tracers events. */
   assignEventsSeverityRating(tracer) {
     tracer.Contexts = tracer.Contexts.map(this.assignContextSeverityRating);
+    // Also give the tracer a severity rating of the max of all its events, so we you can
+    // see if the tracer is vulnerable without clicking it.
+    tracer["Severity"] = Math.max.apply(null, tracer.Contexts.map(n => n.Severity));
     return tracer;
   }
 
@@ -294,6 +297,7 @@ class App extends Component {
   }
 
   formatRowSeverity(row, rowIdx) {
+    console.log(row);
     return this.props.severity[row.Severity];
   }
 
@@ -333,7 +337,6 @@ class App extends Component {
     if (old && Array.isArray(old)) {
       value = old.concat(value)
     }
-    console.log('archiving tracers');
     localStorage.setItem(key, JSON.stringify(value));
   }
 
@@ -437,11 +440,11 @@ class App extends Component {
     };
     return (
       <BootstrapTable 
-        data={this.state.data} 
-        striped
+        data={this.state.data}
         hover={true}
         options={ options }
         expandableRow={ this.isExpandableRow }
+        trClassName={ this.formatRowSeverity }
         expandComponent={ this.expandTracerRow }
         selectRow={ this.selectRow }
         deleteRow={ true }
