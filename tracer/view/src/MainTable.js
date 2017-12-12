@@ -137,7 +137,7 @@ class MainTable extends Component {
   componentDidMount() {
     this.loadDataCache(this.props.tracerFilters, this.props.contextFilters);
     this.getTracers();
-    setInterval(this.getTracers, 10000);
+    setInterval(this.getTracers, 3000);
   }
 
   /* Helper  to return the URL query parameters as a comma-separated list. */
