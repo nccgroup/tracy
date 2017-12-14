@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"encoding/hex"
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/common"
 	"xxterminator-plugin/tracer/types"
@@ -121,9 +122,9 @@ func GetTracers(w http.ResponseWriter, r *http.Request) {
 
 /*GetTracers Get all the tracer data structures. */
 func GetTracersWithEvents(w http.ResponseWriter, r *http.Request) {
-	ret := []byte("{}")
+	ret := []byte("")
 	status := http.StatusInternalServerError
-
+	
 	trcrsStr, err := common.GetTracersWithEvents()
 	if err != nil {
 		ret = serverError(err)
@@ -131,11 +132,19 @@ func GetTracersWithEvents(w http.ResponseWriter, r *http.Request) {
 	} else {
 		/* Final success case. */
 		status = http.StatusOK
-		ret = trcrsStr
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	// Check if the request is cached
+	eTagHash :=  hex.EncodeToString([]byte(strconv.Itoa(len(trcrsStr))))
+	if eTagHash == r.Header.Get("If-None-Match") {
+		status = http.StatusNotModified 
+	} else {
+		ret = trcrsStr
+		w.Header().Set("Etag", eTagHash)
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
+	}
+
 	w.WriteHeader(status)
 	w.Write(ret)
 }

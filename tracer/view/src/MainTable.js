@@ -105,15 +105,19 @@ class MainTable extends Component {
 
   /* setTracers catches the response from the XMLHTTPRequest of getTracers. */
   setTracers(req) {
+    // For some reason, 304 Not Modified requests still hit this code.
     if (req.target.readyState === 4 && req.target.status === 200 && req.target.responseText !== "") {
       try {
-        const data = this.parseVisibleData(JSON.parse(req.target.responseText), this.props.tracerFilters, this.props.contextFilters);
         var cachedDataString = localStorage.getItem("data");
         if (cachedDataString !== null) {
           // If there was a cache and it looks different, update.
           if (req.target.responseText.length !== cachedDataString.length) {
             // Cache the data in the local storage so filters can be applied right away.
             localStorage.setItem("data", req.target.responseText);
+            const data = this.parseVisibleData(
+              JSON.parse(req.target.responseText), 
+              this.props.tracerFilters, 
+              this.props.contextFilters);
 
             this.setState({
               data: data
@@ -122,6 +126,10 @@ class MainTable extends Component {
         } else {
           // Cache the data in the local storage so filters can be applied right away.
           localStorage.setItem("data", req.target.responseText);
+          const data = this.parseVisibleData(
+            JSON.parse(req.target.responseText), 
+            this.props.tracerFilters, 
+            this.props.contextFilters);
 
           this.setState({
             data: data
