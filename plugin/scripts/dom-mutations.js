@@ -141,7 +141,7 @@
 
               if (mouseClickPosition / rightEdge * 100 > 65) {
                   /* This timer is used to check for a long press */
-                  tagMenuTimer = window.setTimeout(function(e) {
+                  tagMenuTimer = window.setTimeout(function(inp) {
                     var tagMenu = document.createElement("div");
                     tagMenu.id = "tag-menu";
                     var list = document.createElement("ul");
@@ -152,7 +152,24 @@
                      * create them so we can easily add new types of tracer types. */
                     for (var tracerStringTypeKey in tracerStringTypes) {
                       var listElement = document.createElement("li");
-                      listElement.addEventListener("mouseup", menuClickHandler)
+
+
+                      listElement.addEventListener("mouseup", (el) => {
+                        var tag = inp;
+
+                        /* Add the tracer string template. */
+                        tag.value = tag.value + el.currentTarget.innerText;
+
+                        /* If the user uses the drop down for the first element, toggle the box on. */
+                        if (tag.className.includes(disabledClass)) {
+                          toggleOn(tag);
+                          /* Clear any whitespace at the end of the class. */
+                          tag.className = tag.className.trim();
+                        }
+                      })
+
+
+
                       listElement.className += "highlight-on-hover"
                       /* Highlight the element when you mouseover it. */
                       //listElement.addEventListener("mouseover", function(e){ e.srcElement.className = "highlight-on-hover"; });
@@ -161,11 +178,11 @@
                       list.appendChild(listElement);
                     }
 
-                    /* Insert the list right next to the clicked element. */
-                    insertAfter(tagMenu, e);
+                    //insert into root of DOM so nothing can mess it up now
+                    document.documentElement.appendChild(tagMenu);
 
-                    tagMenu.style.left =  tagMenu.offsetLeft - 10 + "px"
-                    tagMenu.style.top  =  tagMenu.offsetTop + 25  + "px"
+                    tagMenu.style.left =  e.pageX + "px"
+                    tagMenu.style.top  =  e.pageY  + "px"
 
                     // Set timer to null as it has fired once
                     tagMenuTimer = null;
@@ -190,21 +207,6 @@
                   }
                }
           });
-      }
-    }
-
-    /* A click handler to handle clicking of the tag menu */
-    function menuClickHandler(e) {
-      var tag = e.currentTarget.parentNode.parentElement.previousElementSibling;
-
-      /* Add the tracer string template. */
-      tag.value = tag.value + e.currentTarget.innerText;
-
-      /* If the user uses the drop down for the first element, toggle the box on. */
-      if (tag.className.includes(disabledClass)) {
-        toggleOn(tag);
-        /* Clear any whitespace at the end of the class. */
-        tag.className = tag.className.trim();
       }
     }
 
