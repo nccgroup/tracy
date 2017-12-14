@@ -1,6 +1,6 @@
 (function() {
 
-  window.addEventListener("message", function(event) {
+  window.addEventListener("message", (event) => {
 
     if (event.source != window)
         return;
