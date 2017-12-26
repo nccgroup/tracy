@@ -3,6 +3,9 @@ import MainTable from './MainTable';
 import FilterColumn from './FilterColumn';
 import Col from 'react-bootstrap/lib/Col';
 import Row from 'react-bootstrap/lib/Row';
+import Nav from 'react-bootstrap/lib/Nav';
+import Navbar from 'react-bootstrap/lib/Navbar';
+import NavItem from 'react-bootstrap/lib/NavItem';
 
 class App extends Component {
 	constructor(props) {
@@ -55,14 +58,30 @@ class App extends Component {
 		}.bind(this));
 
 		return (
+			<div>
+			<Navbar>
+			    <Navbar.Header>
+			      <Navbar.Brand>
+			        <a href="#/">TRACER</a>
+			      </Navbar.Brand>
+			    </Navbar.Header>
+			    <Nav>
+			      <NavItem eventKey={1} href="#/events">EVENTS</NavItem>
+			      <NavItem eventKey={2} href="#/settings">SETTINGS</NavItem>
+			    </Nav>
+			</Navbar>
 			<Row>
 				<Col
-					md={2}>
-					<FilterColumn
-						handleChange={this.handleChange} />
+					md={12}>
+					<div>
+						<FilterColumn
+							handleChange={this.handleChange} />
+					</div>
 				</Col>
+			</Row>
+			<Row>
 				<Col
-					md={10}>
+					md={12}>
 					<MainTable 
 						severity={severity} 
 						locationTypes={locationTypes}
@@ -70,6 +89,7 @@ class App extends Component {
 						tracerFilters={tracerFilters} />
 				</Col>
 			</Row>
+			</div>
 		)
 	}
 }

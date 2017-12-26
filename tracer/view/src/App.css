@@ -95,3 +95,77 @@ pre {
 .probable {
   background-color: #ffb347;
 }
+
+.row{
+    overflow: hidden; 
+}
+
+[class*="col-"]{
+    margin-bottom: -99999px;
+    padding-bottom: 99999px;
+}
+
+.main-table {
+  padding-left: 0px !important;
+  margin-left: 0px !important;
+}
+
+.filter-column {
+  background-color: #b7b7b7ff;
+}
+
+.filter-buttons { 
+  border: solid;
+  background-color: #b6d7a8ff;
+  padding: 3%;/*
+  margin-right: 5%;
+  margin-left: 5%;
+  margin-top: 5%;*/
+}
+
+.filter-button-label {
+  padding-left: 5px;
+}
+
+.filters-title {
+  background-color: #d9d9d9ff;
+  padding-right: 0px !important;
+}
+
+.filters-title-text {
+  line-height: 10vh;
+  text-align: center;
+}
+
+.filter-button {
+  float: left;
+  margin-right: 10px;
+}
+
+.navigation-separator {
+  padding-left: 0px !important;
+  margin-left: 0px !important;
+  height: 10vh;
+  background-color: #ccccccff;
+}
+
+.navigation-separator-bar {
+  height: 8vh;
+}
+
+.navigation-bar {
+  height: 10vh;
+  background-color: #666666ff;
+  color: white;
+  line-height: 10vh;
+  text-align: center;
+}
+
+.text-sz-lg {
+  font-size: 2em;
+  font-weight: bold;
+}
+
+body {
+  overflow: hidden;
+}

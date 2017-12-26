@@ -12,7 +12,6 @@ class MainTable extends Component {
     super(props);
     this.selectRow = {      
       mode: 'checkbox',
-      clickToSelect: true,  // click to select, default is false
       clickToExpand: true  // click to expand row, default is false
     };
     this.expandTracerRow = this.expandTracerRow.bind(this);
@@ -40,7 +39,7 @@ class MainTable extends Component {
   }
 
   isExpandableRow(row) {
-    return true;
+    return row.Contexts && row.Contexts.length > 0
   }
 
   shouldComponentUpdate(nextProps, nextState) {
@@ -389,7 +388,8 @@ class MainTable extends Component {
       expandRowBgColor: 'antiquewhite',
       afterDeleteRow: this.onAfterDeleteContext,
       defaultSortName: 'Severity', 
-      defaultSortOrder: 'desc' 
+      defaultSortOrder: 'desc',
+      expandBy: 'column'
     };
 
     // Pass the tracer string to the event context so they know how to highlight. 
@@ -398,76 +398,81 @@ class MainTable extends Component {
     return (
       <BootstrapTable 
         data={row.Contexts}
-        hover={true}
         cellEdit={{  mode: 'click' }}
         options={options}
-        expandableRow={ this.isExpandableRow }
+        expandableRow={ (n) => true }
         expandComponent={ this.expandEventRow }
+        expandColumnOptions={ { expandColumnVisible: true } }
         trClassName={ this.formatRowSeverity }
         selectRow={ this.selectRow }
         deleteRow={ true } 
         search>
         <TableHeaderColumn 
-          dataField="ID" 
-          width='5%' 
+          dataField="ID"
           isKey={true} 
+          width="4%"
           dataAlign="center"
           dataSort={true}
+          expandable={false}
           filter={ { type: 'TextFilter', condition: 'eq' } }>
             ID
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Host"
-          width='15%'
           dataSort={true}
+          expandable={false}
           editable={{ readOnly: true }}
           filter={ { type: 'RegexFilter' } }>
             Host
         </TableHeaderColumn>
         <TableHeaderColumn
-          dataField="Path" 
-          width='15%' 
+          dataField="Path"
           dataSort={true}
+          expandable= {false}
           editable={{ readOnly: true }}
           filter={ { type: 'RegexFilter' } }>
             Path
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="Params" 
-          width='20%'  
+          dataField="Params"
           dataSort={true}
+          expandable= {false}
           editable={{ readOnly: true }}
           filter={ { type: 'RegexFilter' } }>
             Query Params
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="ContextLocationType" 
-          width='10%' 
+          dataField="ContextLocationType"
           dataSort={true}
+          width="6%"
+          expandable= {false}
           editable={{ readOnly: true }}
           filter={ { type: 'RegexFilter' } }>
             Location Type
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="NodeType" 
-          width='10%' 
+          dataField="NodeType"
           dataSort={true}
+          width="5%"
+          expandable= {false}
           editable={{ readOnly: true }}
           filter={ { type: 'RegexFilter' } }>
             Node Type
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="EventType" 
-          width='10%' 
+          dataField="EventType"
+          width="4%"
           dataSort={true}
+          expandable= {false}
           editable={{ readOnly: true }}
           filter={ { type: 'RegexFilter' } }>
             Event Type
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="Severity" 
-          width='5%' 
+          dataField="Severity"
+          width="4%"
           dataSort={true}
+          expandable={false}
           editable={ { type: 'textarea' } }
           filter={ { type: 'RegexFilter' } }>
             Severity
@@ -477,63 +482,68 @@ class MainTable extends Component {
   }
   render() {
     const options = {
-      expandRowBgColor: 'rgb(31, 145, 195)',
+      expandRowBgColor: "#f8f8f8",
       defaultSortName: 'ID', 
       defaultSortOrder: 'desc',
       afterDeleteRow: this.onAfterDeleteTracer,  
+      expandBy: "column"
     };
     return (
       <BootstrapTable 
         data={this.state.data}
-        hover={true}
         options={ options }
         expandableRow={ this.isExpandableRow }
         trClassName={ this.formatRowSeverity }
         expandComponent={ this.expandTracerRow }
+        expandColumnOptions={ { expandColumnVisible: true } }
         selectRow={ this.selectRow }
+        containerStyle={ { height: "90vh", overflow: "visible" } }
         deleteRow={ true }
         search>
         <TableHeaderColumn 
-          dataField="ID" 
-          width='5%' 
+          dataField="ID"
+          width="4%"
           isKey={true} 
           dataAlign="center" 
           dataSort={true}
+          expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             ID
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Method" 
-          width='5%' 
+          width="4%"
           dataSort={true}
+          expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             Method
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Host" 
-          width='10%' 
           dataSort={true}
+          expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             Host
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Path" 
-          width='25%' 
           dataSort={true}
+          expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             Path
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="Params" 
-          width='20%' 
           dataSort={true}
+          expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             Query Parameters
         </TableHeaderColumn>
         <TableHeaderColumn 
           dataField="TracerString" 
-          width='20%' 
           dataSort={true}
+          width="5%"
+          expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             Tracer
         </TableHeaderColumn>

@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-
 class FilterButton extends Component {
 	constructor(props) {
 		super(props);
@@ -111,18 +110,18 @@ class FilterButton extends Component {
 	}
 
 	render() {
-	    return <div>
-	    	<input
+		const checked = this.state.enabled ? "checked" : ""
+	    return <div
+	    	className="filter-button"><input 
 	    		type="checkbox"
+	        	id={this.props.value}
+	        	value={this.props.value}
 	    		onChange={this.handleChange} 
-	    		value={this.props.value}
-	    		id={this.props.value}
-	    		checked={this.state.enabled}>
-	    	</input>
-	    	<label>
+	        	checked={checked}></input>
+	        <label
+	        	className="filter-button-label">
 	    		{this.props.description}
-	    	</label>
-	    </div>
+	    	</label></div>	    
 	}
 }
 
