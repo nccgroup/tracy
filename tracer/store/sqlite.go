@@ -73,6 +73,11 @@ const EventsContextNodeNameColumn string = "events_context_node_name"
 /*EventsContextEventID is the column for the event ID which links the table with the events table. */
 const EventsContextEventID string = "events_context_event_id"
 
+const LabelsTable string = "labels"
+const LabelsID string = "id"
+const LabelsTracerColumn string = "labels_tracer"
+const LabelsTracerPayloadColumn string = "labels_tracer_payload"
+
 /*TracerDB is the one global used to gain access to the database from this package.
  * Other packages, like testing, might choose to not use this database and instead
  * will supply their own. */
@@ -134,6 +139,10 @@ func Open(driver, path string) (*sql.DB, error) {
 	eventsContextTable[EventsContextNodeNameColumn] = "TEXT NOT NULL"
 	eventsContextTable[EventsContextEventID] = "Integer"
 
+	labelsTable := make(map[string]string)
+	labelsTable[LabelsTracerColumn] = "TEXT NOT NULL UNIQUE"
+	labelsTable[LabelsTracerPayloadColumn] = "TEXT NOT NULL"
+
 	/* Create table does not overwrite existing data, so perform this call every time
 	 * we open the database. */
 	err = createTable(db, TracersTable, tracersTable)
@@ -141,17 +150,22 @@ func Open(driver, path string) (*sql.DB, error) {
 		err = createTable(db, TracersEventsTable, tracersEventsTable)
 		if err == nil {
 			/* Do this one by hand so we can properly do the unique constraints. */
-			err = execAndHandleErrors(db, `
-				CREATE TABLE IF NOT EXISTS events 
+			err = execAndHandleErrors(db, fmt.Sprintf(`
+				CREATE TABLE IF NOT EXISTS %s 
 				(id INTEGER PRIMARY KEY, 
-					data TEXT, 
-					event_type TEXT, 
-					event_data_hash TEXT,
-					location TEXT,
-					UNIQUE (event_data_hash, location));`)
+					%s TEXT, 
+					%s TEXT, 
+					%s TEXT,
+					%s TEXT,
+					UNIQUE (%s, %s));`,
+				EventsTable, EventsDataColumn, EventsEventTypeColumn, EventsDataHashColumn,
+				EventsLocationColumn, EventsDataHashColumn, EventsLocationColumn))
 
 			if err == nil {
-				createTable(db, EventsContextTable, eventsContextTable)
+				err = createTable(db, EventsContextTable, eventsContextTable)
+				if err == nil {
+					err = createTable(db, LabelsTable, labelsTable)
+				}
 			}
 		}
 	}

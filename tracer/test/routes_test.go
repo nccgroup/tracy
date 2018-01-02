@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/user"
 	"path/filepath"
 	"testing"
+	"xxterminator-plugin/configure"
 	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/configure"
 	"xxterminator-plugin/tracer/types"
 )
 
@@ -452,12 +454,10 @@ func TestDuplicateEvent(t *testing.T) {
 
 	addDupEvntTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
 		var err error
-		if status := rr.Code; status != http.StatusInternalServerError {
+		if status := rr.Code; status != http.StatusConflict {
 			err = fmt.Errorf("Adding a duplicate event should have returned an internal server error due to the unique constraint set by the database.")
-		} else if rr.Body.String() != "There was an error adding the event." {
-			err = fmt.Errorf("After adding a duplicate event, the server didn't response with the correct response.")
 		}
-		
+
 		return err
 	}
 	/* ADDING AN EVENT */
@@ -470,6 +470,148 @@ func TestDuplicateEvent(t *testing.T) {
 	tests[0] = addReqTest
 	tests[1] = addEvntReqTest
 	tests[2] = addDupEvntReqTest
+	serverTestHelper(tests, t)
+}
+
+/* Testing addLabel with httptest. POST /labels */
+func TestAddLabel(t *testing.T) {
+	var (
+		trcr      = "{{XSS2}}"
+		trcr2     = "{{XSS3}}"
+		payload   = "blahblahblah"
+		labelURL  = "http://127.0.0.1:8081/labels"
+		getURL    = "http://127.0.0.1:8081/labels/1"
+		addLabel  = fmt.Sprintf(`{"Tracer": "%s", "TracerPayload": "%s"}`, trcr, payload)
+		addLabel2 = fmt.Sprintf(`{"Tracer": "%s", "TracerPayload": "%s"}`, trcr2, payload)
+	)
+
+	/* ADDING A LABEL */
+	/////////////////////
+	/* Make the POST request. */
+	addFirstLabel, err := http.NewRequest("POST", labelURL, bytes.NewBuffer([]byte(addLabel)))
+	if err != nil {
+		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
+	}
+
+	addFirstReqTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		var err error
+		if status := rr.Code; status != http.StatusOK {
+			err = fmt.Errorf("The server returned the wrong HTTP status. Expected http.StatusOK. Got %d", status)
+		}
+
+		/* Validate the tracer was the first tracer inserted. */
+		got := types.Label{}
+		json.Unmarshal([]byte(rr.Body.String()), &got)
+
+		/* Validate the response gave us back the event we added. */
+		if got.ID.Int64 != 1 {
+			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", int(got.ID.Int64), 1)
+		} else if got.Tracer.String != trcr {
+			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.Tracer.String, trcr)
+		} else if got.TracerPayload.String != payload {
+			err = fmt.Errorf("addLabel returned the wrong tracer payload. Got %s, but expected %s", got.TracerPayload.String, payload)
+		}
+
+		return err
+	}
+	/* ADDING A LABEL */
+	/////////////////////
+
+	/* GETING A LABEL */
+	/////////////////////
+	getReq, err := http.NewRequest("GET", getURL, nil)
+	if err != nil {
+		t.Fatalf("tried to build an HTTP request but got the following error: %+v", err)
+	}
+
+	getReqTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		var err error
+		if status := rr.Code; status != http.StatusOK {
+			err = fmt.Errorf("The server returned the wrong HTTP status. Expected http.StatusOK. Got %d", status)
+		}
+
+		/* Validate the tracer was the first tracer inserted. */
+		got := types.Label{}
+		json.Unmarshal([]byte(rr.Body.String()), &got)
+
+		/* Validate the response gave us back the event we added. */
+		if got.ID.Int64 != 1 {
+			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", int(got.ID.Int64), 1)
+		} else if got.Tracer.String != trcr {
+			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.Tracer.String, trcr)
+		} else if got.TracerPayload.String != payload {
+			err = fmt.Errorf("addLabel returned the wrong tracer payload. Got %s, but expected %s", got.TracerPayload.String, payload)
+		}
+
+		return err
+	}
+	/* GETTING A LABEL */
+	/////////////////////
+
+	/* ADDING A LABEL */
+	/////////////////////
+	addSecondReq, err := http.NewRequest("POST", labelURL, bytes.NewBuffer([]byte(addLabel2)))
+	if err != nil {
+		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
+	}
+
+	addSecondReqTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		var err error
+		if status := rr.Code; status != http.StatusOK {
+			err = fmt.Errorf("The server returned the wrong HTTP status. Expected http.StatusOK. Got %d", status)
+		}
+
+		/* Validate the tracer was the first tracer inserted. */
+		got := types.Label{}
+		json.Unmarshal([]byte(rr.Body.String()), &got)
+
+		/* Validate the response gave us back the event we added. */
+		if got.ID.Int64 != 2 {
+			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", int(got.ID.Int64), 2)
+		} else if got.Tracer.String != trcr2 {
+			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.Tracer.String, trcr2)
+		} else if got.TracerPayload.String != payload {
+			err = fmt.Errorf("addLabel returned the wrong tracer payload. Got %s, but expected %s", got.TracerPayload.String, payload)
+		}
+
+		return err
+	}
+	/* ADDING A LABEL */
+	/////////////////////
+
+	/* GETING LABELS */
+	/////////////////////
+	getLabels, err := http.NewRequest("GET", labelURL, nil)
+	if err != nil {
+		t.Fatalf("tried to build an HTTP request but got the following error: %+v", err)
+	}
+
+	getLabelsTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		var err error
+		if status := rr.Code; status != http.StatusOK {
+			err = fmt.Errorf("The server returned the wrong HTTP status. Expected http.StatusOK. Got %d", status)
+		}
+
+		/* Validate the tracer was the first tracer inserted. */
+		got := make([]types.Label, 0)
+		json.Unmarshal([]byte(rr.Body.String()), &got)
+
+		/* Validate the response gave us back the event we added. */
+		if len(got) != 2 {
+			err = fmt.Errorf("addLabel returned the number of labels. Got %d, but expected %d", len(got), 2)
+		}
+
+		return err
+	}
+	/* GETTING LABELS */
+	/////////////////////
+
+	/* Create a mapping of the request/test and use the server helper to execute it. */
+	tests := make([]RequestTestPair, 4)
+	tests[0] = RequestTestPair{addFirstLabel, addFirstReqTest}
+	tests[1] = RequestTestPair{getReq, getReqTest}
+	tests[2] = RequestTestPair{addSecondReq, addSecondReqTest}
+	tests[3] = RequestTestPair{getLabels, getLabelsTest}
 	serverTestHelper(tests, t)
 }
 
@@ -492,6 +634,7 @@ func serverTestHelper(tests []RequestTestPair, t *testing.T) {
 	configure.DeleteDatabase(db)
 	/* Open the database because the init method from main.go won't trigger. */
 	configure.Database(db)
+
 	_, handler := configure.Server()
 
 	for _, pair := range tests {
@@ -564,4 +707,51 @@ func init() {
 	warningWriter := os.Stdout
 	errorWriter := os.Stderr
 	log.Init(traceWriter, infoWriter, warningWriter, errorWriter)
+
+	usr, err := user.Current()
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+
+	tracyPath := filepath.Join(usr.HomeDir, ".tracy")
+	if _, err := os.Stat(tracyPath); os.IsNotExist(err) {
+		os.Mkdir(tracyPath, 0755)
+	}
+
+	/* Write the server certificates. */
+	pubKeyPath := filepath.Join(tracyPath, "cert.pem")
+	if _, err := os.Stat(pubKeyPath); os.IsNotExist(err) {
+		ioutil.WriteFile(pubKeyPath, []byte(configure.PublicKey), 0755)
+	}
+	privKeyPath := filepath.Join(tracyPath, "key.pem")
+	if _, err := os.Stat(privKeyPath); os.IsNotExist(err) {
+		ioutil.WriteFile(privKeyPath, []byte(configure.PrivateKey), 0755)
+	}
+
+	/* Read the configuration. */
+	configPath := filepath.Join(tracyPath, "tracer.json")
+	var content []byte
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		/* Try to recover by writing a new tracer.json file with the default values. */
+		def := fmt.Sprintf(configure.DefaultConfig, pubKeyPath, privKeyPath)
+		ioutil.WriteFile(configPath, []byte(def), 0755)
+		content = []byte(def)
+	} else {
+		content, err = ioutil.ReadFile(configPath)
+		if err != nil {
+			log.Error.Fatal(err)
+		}
+	}
+
+	var configData interface{}
+	err = json.Unmarshal(content, &configData)
+	if err != nil {
+		log.Error.Fatalf("Configuration file has a JSON syntax error: %s", err.Error())
+	}
+
+	/* Create the configuration channel listener to synchronize configuration changes. */
+	configure.AppConfigReadChannel = make(chan *configure.ReadConfigCmd, 10)
+	configure.AppConfigWriteChannel = make(chan *configure.WriteConfigCmd, 10)
+	configure.AppConfigAppendChannel = make(chan *configure.AppendConfigCmd, 10)
+	go configure.ConfigurationListener(configData.(map[string]interface{}))
 }

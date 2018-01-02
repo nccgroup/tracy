@@ -497,7 +497,7 @@ class MainTable extends Component {
         expandComponent={ this.expandTracerRow }
         expandColumnOptions={ { expandColumnVisible: true } }
         selectRow={ this.selectRow }
-        containerStyle={ { height: "90vh", overflow: "visible" } }
+        containerStyle={ { height: "85vh", overflow: "visible" } }
         deleteRow={ true }
         search>
         <TableHeaderColumn 

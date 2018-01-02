@@ -42,7 +42,6 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 						/* Need to do an additional query here to return the results of adding the contexts. */
 						event, err = store.DBGetTracerEventByID(store.TracerDB, int(event.ID.Int64))
 
-
 						if err == nil {
 							log.Trace.Printf("Got the following event just inserted: %+v", event)
 							ret, err = json.Marshal(event)

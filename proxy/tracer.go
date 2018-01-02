@@ -8,16 +8,10 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"xxterminator-plugin/configure"
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/types"
 )
-
-/*tag is a slice of strings that represent the character sequencies in requests that need to be replaced with random tracer strings. */
-var tags = []string{"{{XSS}}", "%7B%7BXSS%7D%7D"}
-
-const alphabet = "abcdefghijklmnopqrstuvwxyz" //note: now it will only make strings with low case tags. This might be a problem if there is a lot of random text on the page .
-
-const XSS = "\"'<"
 
 /* Helper function for searching for tracer tags in query parameters and body and replacing them with randomly generated
  * tracer string. Also, it submits the generated tracers to the API. This should be moved out, though. */
@@ -67,7 +61,6 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 /* Helper function to replace any tracer tags in request body parameters with tracer strings. Returns the replaced body
  * along with a list of randomly generated tracer strings. */
 func replaceTagsInBody(body []byte) ([]byte, []string) {
-	log.Trace.Printf("body: %s", body)
 	var replacedTracerStrings []string
 	replacedBody := make([]byte, 0)
 
@@ -146,22 +139,27 @@ func replaceTagsInBody(body []byte) ([]byte, []string) {
 	return replacedBody, replacedTracerStrings
 }
 
+/* Helper function that returns a random string that is used to track the tracer and the actual payload
+ * as a slice of bytes. */
 func generateTracerFromTag(tag string) (string, []byte) {
-	unescapedTag, _ := url.QueryUnescape(tag) //TODO: should this throw an error
+	idTag := "[[ID]]"
+	unescapedTag, err := url.QueryUnescape(tag)
 
-	switch unescapedTag {
-	case "{{XSS}}":
-		randID := generateRandomTracerString()
-		payloadBytes := append([]byte(XSS), randID...)
-		payloadBytes = append(payloadBytes, byte('>'))
-		return string(randID), payloadBytes
-	case "{{PLAIN}}":
-		randID := generateRandomTracerString()
-		return string(randID), randID
+	if err == nil {
+		labels, err := configure.ReadConfig("tracers")
+		if err == nil {
+			for tracer, payload := range labels.(map[string]interface{}) {
+				log.Warning.Printf("Checking if custom label %s equals %s:%s", unescapedTag, tracer, payload)
+				if unescapedTag == tracer {
+					randID := generateRandomTracerString()
+					return string(randID), []byte(strings.Replace(payload.(string), idTag, string(randID), 1))
+				}
+			}
+		}
 	}
 
 	//No tag found
-	return "", []byte(tag)
+	return "", nil
 }
 
 /* Helper function to replace any tracer tags in request query parameters with tracer strings. Returns the replaced query
@@ -210,6 +208,9 @@ func init() {
 func generateRandomTracerString() []byte {
 	return RandStringBytes(10)
 }
+
+//Note: now it will only make strings with low case tags. This might be a problem if there is a lot of random text on the page .
+const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 /*RandStringBytes returns random string bytes based on size. */
 func RandStringBytes(n int) []byte {

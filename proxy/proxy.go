@@ -3,14 +3,14 @@ package proxy
 import (
 	"bufio"
 	"crypto/tls"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"xxterminator-plugin/configure"
 	"xxterminator-plugin/log"
 	tracerClient "xxterminator-plugin/tracer/client"
-	"xxterminator-plugin/tracer/configure"
-	"io"
 )
 
 /*ListenAndServe waits and listens for TCP connections and proxies them. */
@@ -189,7 +189,7 @@ func bridge(client net.Conn, server net.Conn) {
 			if err != io.EOF {
 				log.Error.Println(err)
 				return
-			}				
+			}
 		}
 		/* If the number of bytes read is zero, the client is finished. Leave. */
 		if nb == 0 {

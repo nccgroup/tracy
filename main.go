@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -8,12 +9,14 @@ import (
 	l "log"
 	"os"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"runtime/pprof"
+	"xxterminator-plugin/configure"
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/proxy"
-	pc "xxterminator-plugin/proxy/configure"
-	tc "xxterminator-plugin/tracer/configure"
+	"xxterminator-plugin/tracer/common"
+	"xxterminator-plugin/tracer/types"
 )
 
 func main() {
@@ -21,10 +24,10 @@ func main() {
 	/* Start the proxy. */
 	go func() {
 		/* Open a TCP listener. */
-		ln := pc.ProxyServer()
+		ln := configure.ProxyServer()
 
 		/* Load the configured certificates. */
-		cert := pc.Certificates()
+		cert := configure.Certificates()
 
 		/* Serve it. This will block until the user closes the program. */
 		proxy.ListenAndServe(ln, cert)
@@ -34,7 +37,7 @@ func main() {
 	/* Serve it. Block here so the program doesn't close. */
 	go func() {
 		/* Configure and start the server, but we won't need the router. */
-		srv, _ := tc.Server()
+		srv, _ := configure.Server()
 		log.Error.Fatal(srv.ListenAndServe())
 	}()
 	fmt.Printf("tracer server. done!\n")
@@ -60,10 +63,20 @@ func init() {
 		outputFileUsage       = "Indicate an external file all logs should be written to."
 		outFileDefault        = "empty"
 		databaseFileUsage     = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
-		databaseFileDefault   = "/prod/tracer-db.db"
+		databaseFileDefault   = "prod-tracer-db.db"
 		cpuProfileFileUsage   = "Indicate the file to store the CPU profile in."
 		cpuProfileFileDefault = "empty"
 	)
+
+	usr, err := user.Current()
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+
+	tracyPath := filepath.Join(usr.HomeDir, ".tracy")
+	if _, err := os.Stat(tracyPath); os.IsNotExist(err) {
+		os.Mkdir(tracyPath, 0755)
+	}
 
 	/* Verbose mode. Prints more detailed error messages during the program runtime. */
 	var verbose bool
@@ -77,8 +90,8 @@ func init() {
 
 	/* Database file. Allows the user to change the location of the SQLite database file. */
 	var databaseFile string
-	flag.StringVar(&databaseFile, "database", os.TempDir()+databaseFileDefault, databaseFileUsage)
-	flag.StringVar(&databaseFile, "d", os.TempDir()+databaseFileDefault, databaseFileUsage+"(shorthand)")
+	flag.StringVar(&databaseFile, "database", filepath.Join(tracyPath, databaseFileDefault), databaseFileUsage)
+	flag.StringVar(&databaseFile, "d", filepath.Join(tracyPath, databaseFileDefault), databaseFileUsage+"(shorthand)")
 
 	/* CPU profile mode. Runs the CPU profiler during program runtime and writes the output to the file specified. */
 	var cpuprofile string
@@ -133,7 +146,7 @@ func init() {
 	if _, err := os.Stat(filepath.Dir(databaseFile)); os.IsNotExist(err) {
 		os.Mkdir(filepath.Dir(databaseFile), 0755)
 	}
-	tc.Database(databaseFile)
+	configure.Database(databaseFile)
 
 	/* Configure the CPU profiler if one was configured. */
 	if cpuprofile != cpuProfileFileDefault {
@@ -147,5 +160,56 @@ func init() {
 		}
 		/* Start profiling. */
 		pprof.StartCPUProfile(f)
+	}
+
+	/* Write the server certificates. */
+	pubKeyPath := filepath.Join(tracyPath, "cert.pem")
+	if _, err := os.Stat(pubKeyPath); os.IsNotExist(err) {
+		ioutil.WriteFile(pubKeyPath, []byte(configure.PublicKey), 0755)
+	}
+	privKeyPath := filepath.Join(tracyPath, "key.pem")
+	if _, err := os.Stat(privKeyPath); os.IsNotExist(err) {
+		ioutil.WriteFile(privKeyPath, []byte(configure.PrivateKey), 0755)
+	}
+
+	/* Read the configuration. */
+	configPath := filepath.Join(tracyPath, "tracer.json")
+	var content []byte
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		/* Try to recover by writing a new tracer.json file with the default values. */
+		def := fmt.Sprintf(configure.DefaultConfig, pubKeyPath, privKeyPath)
+		ioutil.WriteFile(configPath, []byte(def), 0755)
+		content = []byte(def)
+	} else {
+		content, err = ioutil.ReadFile(configPath)
+		if err != nil {
+			log.Error.Fatal(err)
+		}
+	}
+
+	var configData interface{}
+	err = json.Unmarshal(content, &configData)
+	if err != nil {
+		log.Error.Fatalf("Configuration file has a JSON syntax error: %s", err.Error())
+	}
+
+	/* Create the configuration channel listener to synchronize configuration changes. */
+	configure.AppConfigReadChannel = make(chan *configure.ReadConfigCmd, 10)
+	configure.AppConfigWriteChannel = make(chan *configure.WriteConfigCmd, 10)
+	configure.AppConfigAppendChannel = make(chan *configure.AppendConfigCmd, 10)
+	go configure.ConfigurationListener(configData.(map[string]interface{}))
+
+	//TODO: decide if we want to add labels to the database or just keep in them in a configuration file
+	/* Add the configured labels to the database. */
+	tracers, err := configure.ReadConfig("tracers")
+	if err != nil {
+		log.Error.Fatal(err.Error())
+	}
+	for k, v := range tracers.(map[string]interface{}) {
+		label := types.Label{
+			Tracer:        types.StringToJSONNullString(k),
+			TracerPayload: types.StringToJSONNullString(v.(string)),
+		}
+		_, _ = common.AddLabel(label)
 	}
 }

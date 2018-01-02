@@ -1,0 +1,16 @@
+{
+  "tracers": {
+    "{{XSS}}": "\"'<[[ID]]>",
+    "{{PLAIN}}": "[[ID]]"
+   },
+  "default-tracer": "{{PLAIN}}",
+  "server-whitelist": [
+    "localhost:8081", 
+    "127.0.0.1:8081", 
+    "localhost:3000", 
+    "127.0.0.1:3000"
+  ],
+  "tracer-server": "127.0.0.1:8081",
+  "auto-fill": false,
+  "filters": []
+}
