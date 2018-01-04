@@ -178,6 +178,7 @@ func init() {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		/* Try to recover by writing a new tracer.json file with the default values. */
 		def := fmt.Sprintf(configure.DefaultConfig, pubKeyPath, privKeyPath)
+		/* Make sure to escape the path variables in windows paths. */
 		ioutil.WriteFile(configPath, []byte(strings.Replace(def, "\\", "\\\\", -1)), 0755)
 		content = []byte(def)
 	} else {
