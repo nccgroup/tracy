@@ -12,6 +12,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime/pprof"
+	"strings"
 	"xxterminator-plugin/configure"
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/proxy"
