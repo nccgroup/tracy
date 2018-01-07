@@ -1,4 +1,4 @@
-package proxy
+package test
 
 import (
 	"bufio"
@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 	"xxterminator-plugin/log"
+	"xxterminator-plugin/proxy"
 	"xxterminator-plugin/tracer/types"
 )
 
@@ -68,7 +68,7 @@ func testAddTracersBodyHelper(requestDataString string) (int, error) {
 		return 0, err
 	}
 
-	newRequest, addedTracers := replaceTagsInBody(requestData)
+	newRequest, addedTracers := proxy.ReplaceTagsInBody(requestData)
 
 	for _, addedTracer := range addedTracers {
 		i := bytes.Index(newRequest, []byte(addedTracer))
@@ -104,7 +104,7 @@ func testAddTracerQuaryHelper(requestData string) (int, error) {
 		return 0, err
 	}
 
-	newQuary, addedTracers := replaceTagsInQueryParameters(request.URL.RawQuery)
+	newQuary, addedTracers := proxy.ReplaceTagsInQueryParameters(request.URL.RawQuery)
 
 	for _, addedTracer := range addedTracers {
 		i := strings.Index(newQuary, addedTracer)
@@ -162,15 +162,11 @@ func TestFindNoTracers(t *testing.T) {
 }
 
 func testFindTracersHelper(responseData string, tracers []types.Tracer) (int, error) {
-	foundTracers := findTracersInResponseBody(responseData, "www.test.com", tracers)
+	foundTracers := proxy.FindTracersInResponseBody(responseData, "www.test.com", tracers)
 
 	return len(foundTracers), nil
 }
 
 func init() {
-	traceWriter := os.Stdout
-	infoWriter := os.Stdout
-	warningWriter := os.Stdout
-	errorWriter := os.Stderr
-	log.Init(traceWriter, infoWriter, warningWriter, errorWriter)
+	log.Init()
 }

@@ -10,7 +10,7 @@ import (
 	"xxterminator-plugin/tracer/types"
 )
 
-/*AddTracer decodes an HTTP request to add a new tracer to the database. */
+/*AddLabel decodes an HTTP request to add a new label to the database. */
 func AddLabel(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
@@ -33,7 +33,7 @@ func AddLabel(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
-/*GetTracers Get all the tracer data structures. */
+/*GetLabels gets all the label data structures. */
 func GetLabels(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
@@ -54,7 +54,7 @@ func GetLabels(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
-/*GetTracer Get the tracer data structure belonging to the ID in the URL. */
+/*GetLabel gets the label data structure belonging to the ID in the URL. */
 func GetLabel(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError

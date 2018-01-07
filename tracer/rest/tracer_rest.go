@@ -3,9 +3,7 @@ package rest
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"xxterminator-plugin/log"
@@ -120,7 +118,7 @@ func GetTracers(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
-/*GetTracers Get all the tracer data structures. */
+/*GetTracersWithEvents gets all tracer data with their corresponding events. */
 func GetTracersWithEvents(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("")
 	status := http.StatusInternalServerError
@@ -177,11 +175,4 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(status)
 	w.Write(ret)
-}
-
-/* Common function for logging an internal server error and serving back something generic. */
-func ServerError(err error) []byte {
-	/* TODO: need to do something with this number. */
-	ref := rand.Intn(10000000000000)
-	return []byte(fmt.Sprintf(`{"Message":"Internal Server Error", "Reference":"%d"}`, ref))
 }

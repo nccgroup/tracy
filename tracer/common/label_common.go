@@ -20,7 +20,7 @@ func AddLabel(l types.Label) ([]byte, error) {
 
 			ret, err = json.Marshal(label)
 		} else {
-			err = fmt.Errorf("The label added is not the same as the label returned.")
+			err = fmt.Errorf("the label added is not the same as the label returned")
 		}
 	}
 

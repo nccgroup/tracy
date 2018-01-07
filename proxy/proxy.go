@@ -155,7 +155,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 			splits := strings.Split(string(responseRawBytes), "\r\n\r\n")
 			if len(splits) == 2 {
 				url := request.Host + request.RequestURI
-				tracerEvents := findTracersInResponseBody(splits[1], url, tracers)
+				tracerEvents := FindTracersInResponseBody(splits[1], url, tracers)
 
 				log.Trace.Printf("Found the following tracer events: %+v", tracerEvents)
 				/* Use the API to add each tracer events to their corresponding tracer. */

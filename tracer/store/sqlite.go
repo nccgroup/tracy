@@ -73,9 +73,16 @@ const EventsContextNodeNameColumn string = "events_context_node_name"
 /*EventsContextEventID is the column for the event ID which links the table with the events table. */
 const EventsContextEventID string = "events_context_event_id"
 
+/*LabelsTable is the table name for the labels table. */
 const LabelsTable string = "labels"
-const LabelsID string = "id"
+
+/*LabelsIDColumn is the ID column name for the labels table. */
+const LabelsIDColumn string = "id"
+
+/*LabelsTracerColumn is the tracer string column name for the labels table. */
 const LabelsTracerColumn string = "labels_tracer"
+
+/*LabelsTracerPayloadColumn is the payload column name for the labels table. */
 const LabelsTracerPayloadColumn string = "labels_tracer_payload"
 
 /*TracerDB is the one global used to gain access to the database from this package.

@@ -1,8 +1,12 @@
 package log
 
 import (
+	"flag"
 	"io"
+	"io/ioutil"
 	"log"
+	l "log"
+	"os"
 )
 
 var (
@@ -14,24 +18,80 @@ var (
 	Warning *log.Logger
 	/*Error is used for logging program errors that cannot recover. */
 	Error *log.Logger
+	/* Verbose mode. Prints more detailed error messages during the program runtime. */
+	verbose bool
+	/* Output file. Moves stdout and stderr to a file on disk. */
+	outFile         string
+	verboseUsage    = "Indicate if you'd like to run this tool with advanced debugging logs."
+	outputFileUsage = "Indicate an external file all logs should be written to."
+	outFileDefault  = "empty"
 )
 
-/*Init creates the logger structs for this runtime. Users of the program can specify the location of the logs using the command line
- * or configuration file. */
-func Init(traceHandle io.Writer, infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer) {
-	Trace = log.New(traceHandle,
+func init() {
+	//Set up the command line interface.
+	flag.BoolVar(&verbose, "verbose", false, verboseUsage)
+	flag.BoolVar(&verbose, "v", false, verboseUsage+"(shorthand)")
+
+	flag.StringVar(&outFile, "outfile", outFileDefault, outputFileUsage)
+	flag.StringVar(&outFile, "o", outFileDefault, outputFileUsage+"(shorthand)")
+}
+
+/*Init takes the command line options and builds the loggers. */
+func Init() {
+	/* Configure the logging settings. */
+	var traceWriter io.Writer
+	var infoWriter io.Writer
+	var warningWriter io.Writer
+	var errorWriter io.Writer
+	if outFile != outFileDefault {
+		/* If they specified an output file, initialize the loggers to use that file. */
+		file, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+		if err != nil {
+			/* Since we haven't initialized the logger yet, have to use the standard libraries. Fail fast here. */
+			l.Fatal(err)
+		}
+
+		if verbose {
+			/* If they pick verbose mode, redirect all the loggers to the desired output file. */
+			traceWriter = file
+			infoWriter = file
+			warningWriter = file
+			errorWriter = file
+		} else {
+			/* Otherwise, discard the more verbose output. */
+			traceWriter = ioutil.Discard
+			infoWriter = ioutil.Discard
+			warningWriter = ioutil.Discard
+			errorWriter = file
+		}
+	} else {
+		/* Otherwise, initialize the logger to use stdout and stderr. */
+		if verbose {
+			traceWriter = os.Stdout
+			infoWriter = os.Stdout
+			warningWriter = os.Stdout
+			errorWriter = os.Stderr
+		} else {
+			traceWriter = ioutil.Discard
+			infoWriter = ioutil.Discard
+			warningWriter = ioutil.Discard
+			errorWriter = os.Stderr
+		}
+	}
+
+	Trace = log.New(traceWriter,
 		"[TRACE]: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 
-	Info = log.New(infoHandle,
+	Info = log.New(infoWriter,
 		"[INFO]: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 
-	Warning = log.New(warningHandle,
+	Warning = log.New(warningWriter,
 		"[WARNING]: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 
-	Error = log.New(errorHandle,
+	Error = log.New(errorWriter,
 		"[ERROR]: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 }

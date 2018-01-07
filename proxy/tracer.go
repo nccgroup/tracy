@@ -17,7 +17,7 @@ import (
  * tracer string. Also, it submits the generated tracers to the API. This should be moved out, though. */
 func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 	/* Search the query string for any tags that need to be replaced with tracer strings and replace them. */
-	replacedQueryString, replacedTracerStrings := replaceTagsInQueryParameters(req.URL.RawQuery)
+	replacedQueryString, replacedTracerStrings := ReplaceTagsInQueryParameters(req.URL.RawQuery)
 	/* Write the new query string to the request. */
 	req.URL.RawQuery = replacedQueryString
 	var ret []types.Tracer
@@ -28,7 +28,7 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 		defer req.Body.Close()
 
 		/* Search the body for any tags that need to be replaced with tracer strings and replace them. */
-		replacedBody, replacedTracerStringsInBody := replaceTagsInBody(requestData)
+		replacedBody, replacedTracerStringsInBody := ReplaceTagsInBody(requestData)
 
 		/* Combine the two slices of new tracer strings. */
 		replacedTracerStrings = append(replacedTracerStrings, replacedTracerStringsInBody...)
@@ -58,9 +58,10 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 	return ret, err
 }
 
-/* Helper function to replace any tracer tags in request body parameters with tracer strings. Returns the replaced body
- * along with a list of randomly generated tracer strings. */
-func replaceTagsInBody(body []byte) ([]byte, []string) {
+/*ReplaceTagsInBody is a helper function to replace any tracer tags in request body
+ * parameters with tracer strings. Returns the replaced body along with a list of
+ * randomly generated tracer strings. */
+func ReplaceTagsInBody(body []byte) ([]byte, []string) {
 	var replacedTracerStrings []string
 	replacedBody := make([]byte, 0)
 
@@ -149,7 +150,6 @@ func generateTracerFromTag(tag string) (string, []byte) {
 		labels, err := configure.ReadConfig("tracers")
 		if err == nil {
 			for tracer, payload := range labels.(map[string]interface{}) {
-				log.Warning.Printf("Checking if custom label %s equals %s:%s", unescapedTag, tracer, payload)
 				if unescapedTag == tracer {
 					randID := generateRandomTracerString()
 					return string(randID), []byte(strings.Replace(payload.(string), idTag, string(randID), 1))
@@ -162,16 +162,18 @@ func generateTracerFromTag(tag string) (string, []byte) {
 	return "", nil
 }
 
-/* Helper function to replace any tracer tags in request query parameters with tracer strings. Returns the replaced query
+/*ReplaceTagsInQueryParameters is a helper function to replace any tracer tags
+ * in request query parameters with tracer strings. Returns the replaced query
  * along with a list of the randomly generated tracer strings. */
-func replaceTagsInQueryParameters(rawQuery string) (string, []string) {
-	replacedQuery, replacedTracerStrings := replaceTagsInBody([]byte(rawQuery))
+func ReplaceTagsInQueryParameters(rawQuery string) (string, []string) {
+	replacedQuery, replacedTracerStrings := ReplaceTagsInBody([]byte(rawQuery))
 
 	return string(replacedQuery), replacedTracerStrings
 }
 
-/* Helper function for finding tracer strings in the response body of an HTTP request. */
-func findTracersInResponseBody(response string, url string, tracers []types.Tracer) map[int]types.TracerEvent {
+/*FindTracersInResponseBody is a helper function for finding tracer strings in
+ * the response body of an HTTP request. */
+func FindTracersInResponseBody(response string, url string, tracers []types.Tracer) map[int]types.TracerEvent {
 	var tracersFound []types.Tracer
 	ret := make(map[int]types.TracerEvent)
 

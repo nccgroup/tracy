@@ -139,7 +139,7 @@ func AddTracerEvent(tracerEvent types.TracerEvent, tracerID int) error {
 	return err
 }
 
-/*AddLabels adds a single label to the tracer API. */
+/*AddLabel adds a single label to the tracer API. */
 func AddLabel(label types.Label) error {
 	log.Trace.Printf("Adding the following label: %+v", label)
 	var ret error
@@ -195,7 +195,7 @@ func GetLabels() ([]types.Label, error) {
 	return ret, err
 }
 
-/*GetTracer gets the label with the ID in the database. */
+/*GetLabel gets the label with the ID in the database. */
 func GetLabel(ID int) (types.Label, error) {
 	log.Trace.Printf("Getting the label %d", ID)
 	ret := types.Label{}

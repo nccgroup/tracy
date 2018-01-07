@@ -66,11 +66,11 @@ func DBGetLabelByID(db *sql.DB, id int) (types.Label, error) {
 		`SELECT %s.%s, %s.%s, %s.%s
 		 FROM %s
 		 WHERE %s.%s = ?;`,
-		LabelsTable, LabelsID,
+		LabelsTable, LabelsIDColumn,
 		LabelsTable, LabelsTracerColumn,
 		LabelsTable, LabelsTracerPayloadColumn,
 		LabelsTable,
-		LabelsTable, LabelsID)
+		LabelsTable, LabelsIDColumn)
 
 	log.Trace.Printf("Built this query for getting a tracer: %s, id: %d", query, id)
 	stmt, err := db.Prepare(query)
@@ -134,7 +134,7 @@ func DBGetLabels(db *sql.DB) ([]types.Label, error) {
 	query := fmt.Sprintf(
 		`SELECT %s.%s, %s.%s, %s.%s
 		 FROM %s;`,
-		LabelsTable, LabelsID,
+		LabelsTable, LabelsIDColumn,
 		LabelsTable, LabelsTracerColumn,
 		LabelsTable, LabelsTracerPayloadColumn,
 		LabelsTable)

@@ -1,4 +1,4 @@
-BINARY = xxterminate
+BINARY = tracy
 GOARCH = amd64
 
 VERSION=0
@@ -67,6 +67,9 @@ fmt:
 	cd ${BUILD_DIR}; \
 	go fmt $$(go list ./... | grep -v /vendor/) ; \
 	cd - >/dev/null
+
+test:
+	go test ${PROJECT_NAME}/test
 
 lint:
 	cd ${BUILD_DIR} ; \

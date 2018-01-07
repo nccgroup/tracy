@@ -1,5 +1,6 @@
 package configure
 
+/*PublicKey is the default public key used for the server. */
 const PublicKey = `-----BEGIN CERTIFICATE-----
 MIIDAjCCAeqgAwIBAgIQb+C6es8TyPmvKTLscm29ijANBgkqhkiG9w0BAQsFADAS
 MRAwDgYDVQQKEwdBY21lIENvMB4XDTE3MTAwNDE4MDE0MVoXDTE4MTAwNDE4MDE0
@@ -20,6 +21,7 @@ vCYhWIQfEKRu6Xz/NZtnAIUcmge9o+7FZbp1a/P5AsEoDnCRsQISsLmKgUj0puIW
 jBy+zyI6
 -----END CERTIFICATE-----`
 
+/*PrivateKey is the default private key used for the server. */
 const PrivateKey = `-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEAwYi31nM3n6UW8zk2nYxj3OFaUjgQ7fXJD/UrkMa3eni7QRnf
 V3bcmuBHOFqyHsHypcDqFKEzaiFDO5SF6R6iwzMCGDqT1fVk5ftU7X7X5U00k6BI

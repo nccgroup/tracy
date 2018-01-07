@@ -1,14 +1,12 @@
-package main
+package test
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/user"
 	"path/filepath"
 	"testing"
 	"xxterminator-plugin/configure"
@@ -308,15 +306,15 @@ func TestAddEvent(t *testing.T) {
 			} else if got.EventType.String != evntType {
 				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType.String, evntType)
 			} else if len(got.Contexts) == 0 {
-				err = fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one.")
+				err = fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one")
 			} else if got.Contexts[0].NodeName.String != "a" {
-				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'.", got.Contexts[0].NodeName)
+				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.Contexts[0].NodeName)
 			} else if int(got.Contexts[0].LocationType.Int64) != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text).", int(got.Contexts[0].LocationType.Int64))
+				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", int(got.Contexts[0].LocationType.Int64))
 			} else if got.Contexts[0].Context.String != "blahblah" {
-				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'.", got.Contexts[0].Context.String)
+				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'", got.Contexts[0].Context.String)
 			} else if int(got.Contexts[0].ID.Int64) != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1.", int(got.Contexts[0].ID.Int64))
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", int(got.Contexts[0].ID.Int64))
 			}
 		}
 
@@ -432,15 +430,15 @@ func TestDuplicateEvent(t *testing.T) {
 			} else if got.EventType.String != evntType {
 				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType.String, evntType)
 			} else if len(got.Contexts) == 0 {
-				err = fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one.")
+				err = fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one")
 			} else if got.Contexts[0].NodeName.String != "a" {
-				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'.", got.Contexts[0].NodeName)
+				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.Contexts[0].NodeName)
 			} else if int(got.Contexts[0].LocationType.Int64) != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text).", int(got.Contexts[0].LocationType.Int64))
+				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", int(got.Contexts[0].LocationType.Int64))
 			} else if got.Contexts[0].Context.String != "blahblah" {
-				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'.", got.Contexts[0].Context.String)
+				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'", got.Contexts[0].Context.String)
 			} else if int(got.Contexts[0].ID.Int64) != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1.", int(got.Contexts[0].ID.Int64))
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", int(got.Contexts[0].ID.Int64))
 			}
 		}
 
@@ -455,7 +453,7 @@ func TestDuplicateEvent(t *testing.T) {
 	addDupEvntTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
 		var err error
 		if status := rr.Code; status != http.StatusConflict {
-			err = fmt.Errorf("Adding a duplicate event should have returned an internal server error due to the unique constraint set by the database.")
+			err = fmt.Errorf("adding a duplicate event should have returned an internal server error due to the unique constraint set by the database")
 		}
 
 		return err
@@ -702,56 +700,5 @@ func addTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 }
 
 func init() {
-	traceWriter := os.Stdout
-	infoWriter := os.Stdout
-	warningWriter := os.Stdout
-	errorWriter := os.Stderr
-	log.Init(traceWriter, infoWriter, warningWriter, errorWriter)
-
-	usr, err := user.Current()
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-
-	tracyPath := filepath.Join(usr.HomeDir, ".tracy")
-	if _, err := os.Stat(tracyPath); os.IsNotExist(err) {
-		os.Mkdir(tracyPath, 0755)
-	}
-
-	/* Write the server certificates. */
-	pubKeyPath := filepath.Join(tracyPath, "cert.pem")
-	if _, err := os.Stat(pubKeyPath); os.IsNotExist(err) {
-		ioutil.WriteFile(pubKeyPath, []byte(configure.PublicKey), 0755)
-	}
-	privKeyPath := filepath.Join(tracyPath, "key.pem")
-	if _, err := os.Stat(privKeyPath); os.IsNotExist(err) {
-		ioutil.WriteFile(privKeyPath, []byte(configure.PrivateKey), 0755)
-	}
-
-	/* Read the configuration. */
-	configPath := filepath.Join(tracyPath, "tracer.json")
-	var content []byte
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		/* Try to recover by writing a new tracer.json file with the default values. */
-		def := fmt.Sprintf(configure.DefaultConfig, pubKeyPath, privKeyPath)
-		ioutil.WriteFile(configPath, []byte(def), 0755)
-		content = []byte(def)
-	} else {
-		content, err = ioutil.ReadFile(configPath)
-		if err != nil {
-			log.Error.Fatal(err)
-		}
-	}
-
-	var configData interface{}
-	err = json.Unmarshal(content, &configData)
-	if err != nil {
-		log.Error.Fatalf("Configuration file has a JSON syntax error: %s", err.Error())
-	}
-
-	/* Create the configuration channel listener to synchronize configuration changes. */
-	configure.AppConfigReadChannel = make(chan *configure.ReadConfigCmd, 10)
-	configure.AppConfigWriteChannel = make(chan *configure.WriteConfigCmd, 10)
-	configure.AppConfigAppendChannel = make(chan *configure.AppendConfigCmd, 10)
-	go configure.ConfigurationListener(configData.(map[string]interface{}))
+	log.Init()
 }

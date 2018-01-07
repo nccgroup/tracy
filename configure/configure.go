@@ -2,16 +2,87 @@ package configure
 
 import (
 	"crypto/tls"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"os/user"
+	"path/filepath"
+	"strings"
 	"time"
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/rest"
 	"xxterminator-plugin/tracer/store"
 )
+
+/*TracyPath is the path all tracy files go in. */
+var TracyPath string
+/*DatabaseFile is the database file configured through the command line. */
+var DatabaseFile string
+
+/* Set up the command line interface. */
+const (
+	databaseFileUsage   = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
+	databaseFileDefault = "prod-tracer-db.db"
+)
+
+func init() {
+	usr, err := user.Current()
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+
+	TracyPath = filepath.Join(usr.HomeDir, ".tracy")
+	if _, err := os.Stat(TracyPath); os.IsNotExist(err) {
+		os.Mkdir(TracyPath, 0755)
+	}
+
+	/* Write the server certificates. */
+	pubKeyPath := filepath.Join(TracyPath, "cert.pem")
+	if _, err := os.Stat(pubKeyPath); os.IsNotExist(err) {
+		ioutil.WriteFile(pubKeyPath, []byte(PublicKey), 0755)
+	}
+	privKeyPath := filepath.Join(TracyPath, "key.pem")
+	if _, err := os.Stat(privKeyPath); os.IsNotExist(err) {
+		ioutil.WriteFile(privKeyPath, []byte(PrivateKey), 0755)
+	}
+
+	/* Read the configuration. */
+	configPath := filepath.Join(TracyPath, "tracer.json")
+	var content []byte
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		/* Try to recover by writing a new tracer.json file with the default values. */
+		def := fmt.Sprintf(DefaultConfig, pubKeyPath, privKeyPath)
+		/* Make sure to escape the path variables in windows paths. */
+		ioutil.WriteFile(configPath, []byte(strings.Replace(def, "\\", "\\\\", -1)), 0755)
+		content = []byte(def)
+	} else {
+		content, err = ioutil.ReadFile(configPath)
+		if err != nil {
+			log.Error.Fatal(err)
+		}
+	}
+
+	var configData interface{}
+	err = json.Unmarshal(content, &configData)
+	if err != nil {
+		log.Error.Fatalf("Configuration file has a JSON syntax error: %s", err.Error())
+	}
+
+	/* Create the configuration channel listener to synchronize configuration changes. */
+	AppConfigReadChannel = make(chan *ReadConfigCmd, 10)
+	AppConfigWriteChannel = make(chan *WriteConfigCmd, 10)
+	AppConfigAppendChannel = make(chan *AppendConfigCmd, 10)
+	go ConfigurationListener(configData.(map[string]interface{}))
+
+	/* Database file. Allows the user to change the location of the SQLite database file. */
+	flag.StringVar(&DatabaseFile, "database", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
+	flag.StringVar(&DatabaseFile, "d", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage+"(shorthand)")
+}
 
 /*ProxyServer configures the TCP listener based on the user's configuration. */
 func ProxyServer() net.Listener {
@@ -67,18 +138,21 @@ type AppendConfigCmd struct {
 	resp chan bool
 }
 
-/*appConfigReadChannel is used to push changes to any subscribers within the application that
+/*AppConfigReadChannel is used to push changes to any subscribers within the application that
  * are dependent on those configurations. */
 var AppConfigReadChannel chan *ReadConfigCmd
 
-/*appConfigWriteChannel is used to push changes to any subscribers within the application that
+/*AppConfigWriteChannel is used to push changes to any subscribers within the application that
  * are dependent on those configurations. */
 var AppConfigWriteChannel chan *WriteConfigCmd
 
-/*appConfigAppendChannel is used to append items to list configuration options. */
+/*AppConfigAppendChannel is used to append items to list configuration options. */
 var AppConfigAppendChannel chan *AppendConfigCmd
 
-/*configurationListener listens for configuration changes and updates the global variable. */
+/*ConfigurationListener listens for configuration changes and updates the global variable.
+Serves as a stateless goroutine that is the only source of truth for the configuration data
+so that all reads and writes are serialized. This is done because configuration changes
+might come from various sources. */
 func ConfigurationListener(initial map[string]interface{}) {
 	configuration := initial
 	for {
@@ -207,6 +281,11 @@ func Server() (*http.Server, *mux.Router) {
 /*Database opens the database from the store package. The resultant DB is available
  * via the TracerDB global. */
 func Database(db string) {
+	/* Create the directory if it doesn't exist. */
+	if _, err := os.Stat(filepath.Dir(db)); os.IsNotExist(err) {
+		os.Mkdir(filepath.Dir(db), 0755)
+	}
+
 	/* Open the database file. */
 	_, err := store.Open("sqlite3", db)
 	if err != nil {
@@ -223,7 +302,7 @@ func DeleteDatabase(db string) error {
 	if _, err := os.Stat(db); !os.IsNotExist(err) {
 		err := os.Remove(db)
 		if err != nil {
-			ret = fmt.Errorf("wasn't able to delete the database at: %s", db)
+			ret = fmt.Errorf("wasn't able to delete the database at: %s", DatabaseFile)
 		}
 	}
 

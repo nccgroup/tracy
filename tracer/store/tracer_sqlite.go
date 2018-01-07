@@ -72,7 +72,7 @@ func DBAddTracer(db *sql.DB, t types.Tracer) (types.Tracer, error) {
 	return trcr, nil
 }
 
-/*DBGetTracers gets all the tracers. */
+/*DBGetTracersWithEvents gets all the tracers with their corresponding events. */
 func DBGetTracersWithEvents(db *sql.DB) ([]types.Tracer, error) {
 	query := fmt.Sprintf(
 		// trcrs.id, trcrs.method, trcrs.trcrStr, events.ID, trcrs.URL, events.event_data, events.location, events.event_type, events_context.ID, events_context.context, events_context.location_type, events_context.node_name
@@ -321,7 +321,7 @@ func DBEditTracer(db *sql.DB, id int, trcr types.Tracer) (types.Tracer, error) {
 	return updated, nil
 }
 
-/*DBGetTracerIDByName gets a tracer by their tracer name. This will exclude
+/*DBGetTracerIDByTracerString gets a tracer ID by their tracer string. This will exclude
  * any joins with other tables. */
 func DBGetTracerIDByTracerString(db *sql.DB, trcrStr string) (int, error) {
 	query := fmt.Sprintf(
@@ -365,7 +365,8 @@ func DBGetTracerIDByTracerString(db *sql.DB, trcrStr string) (int, error) {
 	return trcrID, nil
 }
 
-/*DBGetTracerByTracerString gets a tracer by the tracer string. */
+/*DBGetTracerWithEventsByTracerString gets a tracer by the tracer string along with
+ * all its corresponding events. */
 func DBGetTracerWithEventsByTracerString(db *sql.DB, trcrStr string) (types.Tracer, error) {
 	//trcrs.id, trcrs.method, trcrs.trcrStr, trcrs.URL, events.event_data, events.location, events.event_type
 	query := fmt.Sprintf(
@@ -431,12 +432,13 @@ func DBGetTracerWithEventsByTracerString(db *sql.DB, trcrStr string) (types.Trac
 		}
 	}
 
-	err = fmt.Errorf("Should have only received one row and that row should have had the expected ID inside.")
+	err = fmt.Errorf("Should have only received one row and that row should have had the expected ID inside")
 	log.Warning.Printf(err.Error())
 	return types.Tracer{}, err
 }
 
-/*DBGetTracerByID gets a tracer by the tracer ID. */
+/*DBGetTracerWithEventsByID gets a tracer by the tracer ID along with all its corresponding
+ * events. */
 func DBGetTracerWithEventsByID(db *sql.DB, id int) (types.Tracer, error) {
 	query := fmt.Sprintf(
 		// trcrs.id, trcrs.method, trcrs.trcrStr, events.ID, trcrs.URL, events.event_data, events.location, events.event_type, events_context.ID, events_context.context, events_context.location_type, events_context.node_name
@@ -496,15 +498,15 @@ func DBGetTracerWithEventsByID(db *sql.DB, id int) (types.Tracer, error) {
 		return types.Tracer{}, err
 	}
 
+	var ret types.Tracer
 	if val, ok := trcrs[id]; ok {
 		/* Return the tracer and nil to indicate everything went okay. */
-		return val, nil
+		ret = val
 	} else {
 		log.Warning.Printf("%+v: %s", trcrs, "Should have only received one row and that row should have had the expected ID inside.")
-		/* Shouldn't return an error when a query returns no rows. If this is the case,
-		 * just return an empty tracer struct.  */
-		return types.Tracer{}, nil
 	}
+
+	return ret, err
 }
 
 /* Helper function for parsing tracer rows with event data as well. */

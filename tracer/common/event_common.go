@@ -48,7 +48,7 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 						}
 					}
 				} else {
-					err = fmt.Errorf("The event added is not the same as the event returned.")
+					err = fmt.Errorf("the event added is not the same as the event returned")
 				}
 			}
 		}

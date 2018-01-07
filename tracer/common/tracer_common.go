@@ -35,7 +35,7 @@ func AddTracer(trcr types.Tracer) ([]byte, error) {
 func DeleteTracer(trcrID int) ([]byte, error) {
 	log.Trace.Printf("Deleting a tracer from the database: %d", trcrID)
 	var ret []byte
-	var err error = store.DBDeleteTracer(store.TracerDB, trcrID)
+	err := store.DBDeleteTracer(store.TracerDB, trcrID)
 
 	if err == nil {
 		log.Trace.Printf("Successfully deleted the tracer from the database.")

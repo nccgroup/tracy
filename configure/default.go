@@ -1,5 +1,6 @@
 package configure
 
+/*DefaultConfig is the default configuration that is used when a configuration file is not found. */
 const DefaultConfig = `{
   "tracers": {
   	"{{XSS}}": "\"'<[[ID]]>",
