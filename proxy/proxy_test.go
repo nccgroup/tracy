@@ -172,5 +172,5 @@ func init() {
 	infoWriter := os.Stdout
 	warningWriter := os.Stdout
 	errorWriter := os.Stderr
-	log.Init(traceWriter, infoWriter, warningWriter, errorWriter)
+	log.Init(traceWriter, infoWriter, warningWriter, errorWriter, true)
 }

@@ -75,7 +75,7 @@ func init() {
 	}
 
 	tracyPath := filepath.Join(usr.HomeDir, ".tracy")
-	if _, err := os.Stat(tracyPath); os.IsNotExist(err) {
+	if _, err = os.Stat(tracyPath); os.IsNotExist(err) {
 		os.Mkdir(tracyPath, 0755)
 	}
 
@@ -141,10 +141,10 @@ func init() {
 			errorWriter = os.Stderr
 		}
 	}
-	log.Init(traceWriter, infoWriter, warningWriter, errorWriter)
+	log.Init(traceWriter, infoWriter, warningWriter, errorWriter, verbose)
 
 	/* Create the directory if it doesn't exist. */
-	if _, err := os.Stat(filepath.Dir(databaseFile)); os.IsNotExist(err) {
+	if _, err = os.Stat(filepath.Dir(databaseFile)); os.IsNotExist(err) {
 		os.Mkdir(filepath.Dir(databaseFile), 0755)
 	}
 	configure.Database(databaseFile)
@@ -152,7 +152,7 @@ func init() {
 	/* Configure the CPU profiler if one was configured. */
 	if cpuprofile != cpuProfileFileDefault {
 		/* Create the directory if it doesn't exist. */
-		if _, err := os.Stat(filepath.Dir(cpuprofile)); os.IsNotExist(err) {
+		if _, err = os.Stat(filepath.Dir(cpuprofile)); os.IsNotExist(err) {
 			os.Mkdir(filepath.Dir(cpuprofile), 0755)
 		}
 		f, err := os.Create(cpuprofile)
@@ -165,18 +165,18 @@ func init() {
 
 	/* Write the server certificates. */
 	pubKeyPath := filepath.Join(tracyPath, "cert.pem")
-	if _, err := os.Stat(pubKeyPath); os.IsNotExist(err) {
+	if _, err = os.Stat(pubKeyPath); os.IsNotExist(err) {
 		ioutil.WriteFile(pubKeyPath, []byte(configure.PublicKey), 0755)
 	}
 	privKeyPath := filepath.Join(tracyPath, "key.pem")
-	if _, err := os.Stat(privKeyPath); os.IsNotExist(err) {
+	if _, err = os.Stat(privKeyPath); os.IsNotExist(err) {
 		ioutil.WriteFile(privKeyPath, []byte(configure.PrivateKey), 0755)
 	}
 
 	/* Read the configuration. */
 	configPath := filepath.Join(tracyPath, "tracer.json")
 	var content []byte
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+	if _, err = os.Stat(configPath); os.IsNotExist(err) {
 		/* Try to recover by writing a new tracer.json file with the default values. */
 		def := fmt.Sprintf(configure.DefaultConfig, pubKeyPath, privKeyPath)
 		/* Make sure to escape the path variables in windows paths. */
@@ -212,6 +212,6 @@ func init() {
 			Tracer:        types.StringToJSONNullString(k),
 			TracerPayload: types.StringToJSONNullString(v.(string)),
 		}
-		_, _ = common.AddLabel(label)
+		_, _ = common.AddLabel(label) //What is going on here? The left side does nothing
 	}
 }

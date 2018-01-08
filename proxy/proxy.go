@@ -45,16 +45,18 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	}
 
 	host := request.URL.Host
-	scheme := "http"
+	isHTTPS := false
 
 	/* Dump the request structure as a slice of bytes. */
-	dump, _ := httputil.DumpRequest(request, true)
-	log.Trace.Println(string(dump))
+	if log.Verbose {
+		dump, _ := httputil.DumpRequest(request, true) //This should only run if in debug mode
+		log.Trace.Println(string(dump))
+	}
 
 	/* If the request method is `CONNECT`, it's either a TLS connection or a websocket. */
 	if request.Method == http.MethodConnect {
 		/* Try to upgrade the `CONNECT` request to a TLS connection with the configured certificate. */
-		client, scheme, err = upgradeConnectionTLS(client, cer, host)
+		client, isHTTPS, err = upgradeConnectionTLS(client, cer, host)
 		if err != nil {
 			log.Error.Println(err)
 			return
@@ -69,13 +71,15 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 		}
 
 		/* Read the request structure as a slice of bytes. */
-		dump, err = httputil.DumpRequest(request, true)
-		if err != nil {
-			log.Error.Println(err)
-			return
-		}
+		if log.Verbose {
+			dump, err := httputil.DumpRequest(request, true) //This should only run in debug mode
+			if err != nil {
+				log.Error.Println(err)
+				return
+			}
 
-		log.Trace.Println(string(dump))
+			log.Trace.Println(string(dump))
+		}
 
 	}
 
@@ -98,19 +102,15 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	var server net.Conn
 
 	/* Based on the scheme, the API is different to backside of the proxy connection. */
-	if scheme == "http" {
+	if !isHTTPS {
 		if strings.Index(host, ":") == -1 {
 			server, err = net.Dial("tcp", host+":80")
 		} else {
 			server, err = net.Dial("tcp", host)
 		}
-	} else if scheme == "https" {
+	} else {
 		/* If the scheme is HTTPS, need to the use the tls package to make the dial. */
 		server, err = tls.Dial("tcp", host, nil)
-	} else {
-		/* Only support HTTP and HTTPS. Fail fast if another scheme is set up. */
-		log.Error.Printf("Unrecognized scheme: %s", scheme)
-		return
 	}
 
 	/* Fail fast if the connection to the backside of the proxy failed. */

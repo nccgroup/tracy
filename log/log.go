@@ -14,11 +14,13 @@ var (
 	Warning *log.Logger
 	/*Error is used for logging program errors that cannot recover. */
 	Error *log.Logger
+	/*A handler to tell if the system is in verbose mode to help reduce CPU usage in proxy */
+	Verbose bool
 )
 
 /*Init creates the logger structs for this runtime. Users of the program can specify the location of the logs using the command line
  * or configuration file. */
-func Init(traceHandle io.Writer, infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer) {
+func Init(traceHandle io.Writer, infoHandle io.Writer, warningHandle io.Writer, errorHandle io.Writer, v bool) {
 	Trace = log.New(traceHandle,
 		"[TRACE]: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
@@ -34,4 +36,6 @@ func Init(traceHandle io.Writer, infoHandle io.Writer, warningHandle io.Writer, 
 	Error = log.New(errorHandle,
 		"[ERROR]: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Verbose = v
 }
