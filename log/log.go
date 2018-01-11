@@ -19,7 +19,7 @@ var (
 	/*Error is used for logging program errors that cannot recover. */
 	Error *log.Logger
 	/* Verbose mode. Prints more detailed error messages during the program runtime. */
-	verbose bool
+	Verbose bool
 	/* Output file. Moves stdout and stderr to a file on disk. */
 	outFile         string
 	verboseUsage    = "Indicate if you'd like to run this tool with advanced debugging logs."
@@ -29,8 +29,8 @@ var (
 
 func init() {
 	//Set up the command line interface.
-	flag.BoolVar(&verbose, "verbose", false, verboseUsage)
-	flag.BoolVar(&verbose, "v", false, verboseUsage+"(shorthand)")
+	flag.BoolVar(&Verbose, "verbose", false, verboseUsage)
+	flag.BoolVar(&Verbose, "v", false, verboseUsage+"(shorthand)")
 
 	flag.StringVar(&outFile, "outfile", outFileDefault, outputFileUsage)
 	flag.StringVar(&outFile, "o", outFileDefault, outputFileUsage+"(shorthand)")
@@ -51,7 +51,7 @@ func Init() {
 			l.Fatal(err)
 		}
 
-		if verbose {
+		if Verbose {
 			/* If they pick verbose mode, redirect all the loggers to the desired output file. */
 			traceWriter = file
 			infoWriter = file
@@ -66,7 +66,7 @@ func Init() {
 		}
 	} else {
 		/* Otherwise, initialize the logger to use stdout and stderr. */
-		if verbose {
+		if Verbose {
 			traceWriter = os.Stdout
 			infoWriter = os.Stdout
 			warningWriter = os.Stdout

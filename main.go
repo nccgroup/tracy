@@ -65,6 +65,6 @@ func init() {
 			Tracer:        types.StringToJSONNullString(k),
 			TracerPayload: types.StringToJSONNullString(v.(string)),
 		}
-		_, _ = common.AddLabel(label)
+		_, _ = common.AddLabel(label) //What is going on here? The left side does nothing
 	}
 }
