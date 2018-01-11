@@ -29,7 +29,7 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 
 			/* If it is a valid tracer event and the tracer exists, then add it to the database. */
 			var event types.TracerEvent
-			event, err = store.DBAddTracerEvent(store.TracerDB, trcrEvnt, []string{trcr.TracerString})
+			event, err = store.DBAddTracerEvent(store.TracerDB, trcrEvnt, trcr.TracerString)
 			if err == nil {
 				if int(event.ID.Int64) != 0 {
 					log.Trace.Printf("Successfully added the tracer event to the database: %+v", event)
@@ -131,7 +131,6 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.EventsContext, tra
 
 	for _, a := range n.Attr {
 		if strings.Contains(a.Key, tracer) {
-			fmt.Println(a.Key)
 			*tracerLocations = append(*tracerLocations,
 				types.EventsContext{
 					NodeName:     types.StringToJSONNullString(n.Data),

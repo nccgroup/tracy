@@ -13,7 +13,7 @@ import (
 )
 
 /*DBAddTracerEvent adds an event to a slice of tracers specified by the the tracer string. */
-func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.TracerEvent, error) {
+func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts string) (types.TracerEvent, error) {
 	/* Using prepared statements. */
 	query := fmt.Sprintf(`
 	INSERT INTO %s 
@@ -33,7 +33,7 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	defer stmt.Close()
 
 	/* Commute the hash of the data so we can compare the event to other events. */
-	sum := sha1.Sum([]byte(te.Data.String))
+	sum := sha1.Sum([]byte(te.Data.String + ts))
 	sumStr := hex.EncodeToString(sum[:len(sum)])
 	/* Execute the query. */
 	res, err := stmt.Exec(te.Data, te.Location, te.EventType, sumStr)
@@ -57,22 +57,19 @@ func DBAddTracerEvent(db *sql.DB, te types.TracerEvent, ts []string) (types.Trac
 	}
 	log.Trace.Printf("AddTracerEvent: ID = %d, affected = %d", lastID, rowCnt)
 
-	/* Then, for each tracer string, add an associate to the tracers events table. */
-	for _, val := range ts {
-		/* Get the tracer associated with that key string. */
-		id, err := DBGetTracerIDByTracerString(db, val)
-		if err != nil {
-			return types.TracerEvent{}, err
-		}
-		/* We start at 1, so this shouldn't happen. */
-		if id == 0 {
-			return types.TracerEvent{}, fmt.Errorf("could not find a tracer with tracer string %s", val)
-		}
-		err = DBAddTracersEvents(db, int(lastID), id)
-		if err != nil {
-			return types.TracerEvent{}, err
-		}
-
+	/* Get the tracer associated with that key string. */
+	id, err := DBGetTracerIDByTracerString(db, ts)
+	if err != nil {
+		return types.TracerEvent{}, err
+	}
+	/* We start at 1, so this shouldn't happen. */
+	if id == 0 {
+		return types.TracerEvent{}, fmt.Errorf("could not find a tracer with tracer string %s", ts)
+	}
+	/* Associate to the tracers events table. */
+	err = DBAddTracersEvents(db, int(lastID), id)
+	if err != nil {
+		return types.TracerEvent{}, err
 	}
 
 	trcrEvnt, err := DBGetTracerEventByID(db, int(lastID))
