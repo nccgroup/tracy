@@ -9,11 +9,13 @@ import (
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/proxy"
 	"xxterminator-plugin/tracer/common"
+	"xxterminator-plugin/tracer/rest"
 	"xxterminator-plugin/tracer/types"
 )
 
 func main() {
-	fmt.Printf("Starting...")
+	fmt.Printf("Starting:\n")
+	fmt.Printf("\tproxy...")
 	/* Start the proxy. */
 	go func() {
 		/* Open a TCP listener. */
@@ -25,15 +27,21 @@ func main() {
 		/* Serve it. This will block until the user closes the program. */
 		proxy.ListenAndServe(ln, cert)
 	}()
-	fmt.Printf("proxy,")
+	fmt.Printf("done.\n")
 
+	fmt.Printf("\tconfig server...")
 	/* Serve it. Block here so the program doesn't close. */
 	go func() {
-		/* Configure and start the server, but we won't need the router. */
-		srv, _ := configure.Server()
-		log.Error.Fatal(srv.ListenAndServe())
+		log.Error.Fatal(rest.ConfigServer.ListenAndServe())
 	}()
-	fmt.Printf("tracer server. done!\n")
+	fmt.Printf("done.\n")
+
+	fmt.Printf("\ttracer server...")
+	/* Serve it. Block here so the program doesn't close. */
+	go func() {
+		log.Error.Fatal(rest.RestServer.ListenAndServe())
+	}()
+	fmt.Printf("done!\n")
 
 	/* Waiting for the user to close the program. */
 	signalChan := make(chan os.Signal, 1)
@@ -65,6 +73,7 @@ func init() {
 			Tracer:        types.StringToJSONNullString(k),
 			TracerPayload: types.StringToJSONNullString(v.(string)),
 		}
-		_, _ = common.AddLabel(label) //What is going on here? The left side does nothing
+
+		common.AddLabel(label)
 	}
 }

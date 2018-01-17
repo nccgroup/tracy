@@ -1,5 +1,10 @@
 package configure
 
+import (
+	"crypto/tls"
+	"xxterminator-plugin/log"
+)
+
 /*PublicKey is the default public key used for the server. */
 const PublicKey = `-----BEGIN CERTIFICATE-----
 MIIDAjCCAeqgAwIBAgIQb+C6es8TyPmvKTLscm29ijANBgkqhkiG9w0BAQsFADAS
@@ -49,3 +54,22 @@ r2YrAoGAMtP0PcS5uQW/k/tqZQjcNgBrDzyA0NJcQpzZHBLac1eQtI+w8bvuYJKX
 sLIcLOxku1jW3CaRt44XOGyXBACbBCn49K8p+AYDnL12Pflu3mykbvien7AmZMLY
 omOcYk1CqeNw90/WhoUDlr/C6imiHFsCXWc5zp4lYc3rqJknO84=
 -----END RSA PRIVATE KEY-----`
+
+/*Certificates loads the local certificate pairs if they exist or generates new ones on the fly. */
+func Certificates() tls.Certificate {
+	publicKey, err := ReadConfig("public-key-loc")
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+	privateKey, err := ReadConfig("private-key-loc")
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+	cer, err := tls.LoadX509KeyPair(publicKey.(string), privateKey.(string))
+	if err != nil {
+		/* Cannot continue if the application doesn't have a valid certificate for TLS connections. Fail fast. */
+		log.Error.Fatalf("Failed to parse certificate: %s", err.Error())
+	}
+
+	return cer
+}

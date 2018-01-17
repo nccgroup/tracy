@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	l "log"
 	"os"
 )
 
@@ -18,16 +17,17 @@ var (
 	Warning *log.Logger
 	/*Error is used for logging program errors that cannot recover. */
 	Error *log.Logger
-	/* Verbose mode. Prints more detailed error messages during the program runtime. */
+	/*Verbose indicate if the program is in verbose mode and should prints more detailed error messages during the program runtime. */
 	Verbose bool
 	/* Output file. Moves stdout and stderr to a file on disk. */
-	outFile         string
-	verboseUsage    = "Indicate if you'd like to run this tool with advanced debugging logs."
-	outputFileUsage = "Indicate an external file all logs should be written to."
-	outFileDefault  = "empty"
+	outFile        string
+	outFileDefault = "empty"
 )
 
 func init() {
+	verboseUsage := "Indicate if you'd like to run this tool with advanced debugging logs."
+	outputFileUsage := "Indicate an external file all logs should be written to."
+
 	//Set up the command line interface.
 	flag.BoolVar(&Verbose, "verbose", false, verboseUsage)
 	flag.BoolVar(&Verbose, "v", false, verboseUsage+"(shorthand)")
@@ -48,7 +48,7 @@ func Init() {
 		file, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 		if err != nil {
 			/* Since we haven't initialized the logger yet, have to use the standard libraries. Fail fast here. */
-			l.Fatal(err)
+			log.Fatal(err)
 		}
 
 		if Verbose {

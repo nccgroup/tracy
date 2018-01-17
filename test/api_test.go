@@ -11,14 +11,9 @@ import (
 	"testing"
 	"xxterminator-plugin/configure"
 	"xxterminator-plugin/log"
+	"xxterminator-plugin/tracer/rest"
 	"xxterminator-plugin/tracer/types"
 )
-
-/* Used to order request and their corresponding tests. */
-type RequestTestPair struct {
-	Request *http.Request
-	Test    func(*httptest.ResponseRecorder, *testing.T) error
-}
 
 /* Testing addTracer with httptest. POST /tracers */
 func TestAddTracer(t *testing.T) {
@@ -633,8 +628,6 @@ func serverTestHelper(tests []RequestTestPair, t *testing.T) {
 	/* Open the database because the init method from main.go won't trigger. */
 	configure.Database(db)
 
-	_, handler := configure.Server()
-
 	for _, pair := range tests {
 		/* For each request/test combo:
 		* 1.) send the request
@@ -642,7 +635,7 @@ func serverTestHelper(tests []RequestTestPair, t *testing.T) {
 		* 3.) run the response on the test method
 		* 4.) break on error */
 		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, pair.Request)
+		rest.RestRouter.ServeHTTP(rr, pair.Request)
 		err := pair.Test(rr, t)
 		if err != nil {
 			t.Errorf("the following request, %+v, did not pass it's test: %+v. Request body: %s", pair.Request, err, rr.Body.String())

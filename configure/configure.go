@@ -1,34 +1,24 @@
 package configure
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
-	"time"
 	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/rest"
 	"xxterminator-plugin/tracer/store"
 )
 
 /*TracyPath is the path all tracy files go in. */
 var TracyPath string
+
 /*DatabaseFile is the database file configured through the command line. */
 var DatabaseFile string
-
-/* Set up the command line interface. */
-const (
-	databaseFileUsage   = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
-	databaseFileDefault = "prod-tracer-db.db"
-)
 
 func init() {
 	usr, err := user.Current()
@@ -77,8 +67,14 @@ func init() {
 	AppConfigReadChannel = make(chan *ReadConfigCmd, 10)
 	AppConfigWriteChannel = make(chan *WriteConfigCmd, 10)
 	AppConfigAppendChannel = make(chan *AppendConfigCmd, 10)
+	AppConfigAllChannel = make(chan *AllConfigCmd, 10)
 	go ConfigurationListener(configData.(map[string]interface{}))
 
+	/* Set up the command line interface. */
+	var (
+		databaseFileUsage   = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
+		databaseFileDefault = "prod-tracer-db.db"
+	)
 	/* Database file. Allows the user to change the location of the SQLite database file. */
 	flag.StringVar(&DatabaseFile, "database", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
 	flag.StringVar(&DatabaseFile, "d", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage+"(shorthand)")
@@ -97,25 +93,6 @@ func ProxyServer() net.Listener {
 	}
 
 	return ret
-}
-
-/*Certificates loads the local certificate pairs if they exist or generates new ones on the fly. */
-func Certificates() tls.Certificate {
-	publicKey, err := ReadConfig("public-key-loc")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-	privateKey, err := ReadConfig("private-key-loc")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-	cer, err := tls.LoadX509KeyPair(publicKey.(string), privateKey.(string))
-	if err != nil {
-		/* Cannot continue if the application doesn't have a valid certificate for TLS connections. Fail fast. */
-		log.Error.Fatalf("Failed to parse certificate: %s", err.Error())
-	}
-
-	return cer
 }
 
 /*ReadConfigCmd is a channel operation used to read configuration data. */
@@ -138,6 +115,11 @@ type AppendConfigCmd struct {
 	resp chan bool
 }
 
+/*AllConfigCmd is a channel operation used to read all of the configuration data. */
+type AllConfigCmd struct {
+	resp chan map[string]interface{}
+}
+
 /*AppConfigReadChannel is used to push changes to any subscribers within the application that
  * are dependent on those configurations. */
 var AppConfigReadChannel chan *ReadConfigCmd
@@ -148,6 +130,9 @@ var AppConfigWriteChannel chan *WriteConfigCmd
 
 /*AppConfigAppendChannel is used to append items to list configuration options. */
 var AppConfigAppendChannel chan *AppendConfigCmd
+
+/*AppConfigAllChannel is used to get the entire data structure of configuration options. */
+var AppConfigAllChannel chan *AllConfigCmd
 
 /*ConfigurationListener listens for configuration changes and updates the global variable.
 Serves as a stateless goroutine that is the only source of truth for the configuration data
@@ -178,6 +163,8 @@ func ConfigurationListener(initial map[string]interface{}) {
 			case string:
 				configuration[app.key] = append(configuration[app.key].([]string), v)
 			}
+		case all := <-AppConfigAllChannel:
+			all.resp <- configuration
 		}
 	}
 }
@@ -211,12 +198,21 @@ func ReadConfig(k string) (interface{}, error) {
 
 /*AppendConfig read the global configuration of the running application. */
 func AppendConfig(k string, v interface{}) {
-	append := &AppendConfigCmd{
+	app := &AppendConfigCmd{
 		key:  k,
 		val:  v,
 		resp: make(chan bool),
 	}
-	AppConfigAppendChannel <- append
+	AppConfigAppendChannel <- app
+}
+
+/*ReadAllConfig reads all of the global configuration settings. */
+func ReadAllConfig() map[string]interface{} {
+	all := &AllConfigCmd{
+		resp: make(chan map[string]interface{}),
+	}
+	AppConfigAllChannel <- all
+	return <-all.resp
 }
 
 /*ServerInWhitelist returns true if the server is in the whitelist. Used to block the development servers. */
@@ -234,48 +230,6 @@ func ServerInWhitelist(server string) bool {
 	}
 
 	return ret
-}
-
-/*Server configures all the HTTP routes and their corresponding handler. */
-func Server() (*http.Server, *mux.Router) {
-	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
-	r := mux.NewRouter()
-	r.Methods("POST").Path("/tracers").HandlerFunc(rest.AddTracer)
-	r.Methods("DELETE").Path("/tracers/{tracerID}").HandlerFunc(rest.DeleteTracer)
-	r.Methods("PUT").Path("/tracers/{tracerID}").HandlerFunc(rest.EditTracer)
-
-	r.Methods("GET").Path("/tracers/events").HandlerFunc(rest.GetTracersWithEvents)
-	r.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(rest.GetTracer)
-	r.Methods("GET").Path("/tracers").HandlerFunc(rest.GetTracers)
-
-	/* Define our RESTful routes for tracer events. Tracer events are indexed by their
-	 * corresponding tracer ID. */
-	r.Methods("POST").Path("/tracers/{tracerID}/events").HandlerFunc(rest.AddEvent)
-	r.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(rest.AddEvents)
-
-	/* Define RESTful routes for labels. */
-	r.Methods("POST").Path("/labels").HandlerFunc(rest.AddLabel)
-	r.Methods("GET").Path("/labels").HandlerFunc(rest.GetLabels)
-	r.Methods("GET").Path("/labels/{labelID}").HandlerFunc(rest.GetLabel)
-
-	/* The base application page. */
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./tracer/view/build/")))
-	/* Create the server. */
-	addr, err := ReadConfig("tracer-server")
-	var srv *http.Server
-	if err != nil {
-		log.Error.Fatal(err)
-	} else {
-		srv = &http.Server{
-			Handler: r,
-			Addr:    addr.(string),
-			// Good practice: enforce timeouts for servers you create!
-			WriteTimeout: 15 * time.Second,
-			ReadTimeout:  15 * time.Second,
-		}
-	}
-	/* Return the server and the router. The router is mainly used for testing. */
-	return srv, r
 }
 
 /*Database opens the database from the store package. The resultant DB is available

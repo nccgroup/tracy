@@ -1,5 +1,9 @@
 /* Code used to set up listeners for all DOM writes. */
 (function(){
+    chrome.runtime.sendMessage({
+      'message-type': 'refresh'
+    });
+
     /* This observer will be used to observe changes in the DOM. It will batches DOM changes and send them to the API
     * server if it finds a tracer string. */
     var observer = new MutationObserver(function(mutations) {
@@ -14,10 +18,18 @@
                 /* In the case of a DOM type, check all the node's children for input fields. Use this as a chance
                  * to restyle new inputs that were not caught earlier. */
                 parentNode = node;
-                chrome.runtime.sendMessage({'type': 'dom', 'msg': node.outerHTML, "location": document.location.href});
+                chrome.runtime.sendMessage({
+                  'message-type': 'job',
+                  'type': 'dom', 
+                  'msg': node.outerHTML, 
+                  "location": document.location.href});
                 clickToFill(node);
             } else if (node.nodeType == 3) {
-                chrome.runtime.sendMessage({'type': 'text', 'msg': node.textContent,"location": document.location.href});
+                chrome.runtime.sendMessage({
+                  'message-type': 'job',
+                  'type': 'text', 
+                  'msg': node.textContent,
+                  "location": document.location.href});
             }
           }
         }, this);
@@ -47,12 +59,6 @@
       "cursor": "pointer",
       "border": "solid red"
     };
-
-    /* Global for the various types of tracer payloads. */
-    var tracerStringTypes = [
-      "{{XSS}}",
-      "{{PLAIN}}"
-    ];
 
     /* Input types we are currently supporting. */
     var supportedInputTypes = [
@@ -150,42 +156,48 @@
 
                     /* Create the list of tracers types they can choose from. Dynamically
                      * create them so we can easily add new types of tracer types. */
-                    for (var tracerStringTypeKey in tracerStringTypes) {
-                      var listElement = document.createElement("li");
+                    chrome.runtime.sendMessage({
+                      'message-type': 'config',
+                      'config': "tracer-string-types"}, function(response) {
+                      tracerStringTypes = response
+                    
+                      for (var tracerStringTypeKey in tracerStringTypes) {
+                        var listElement = document.createElement("li");
 
 
-                      listElement.addEventListener("mouseup", (el) => {
-                        var tag = inp;
+                        listElement.addEventListener("mouseup", (el) => {
+                          var tag = inp;
 
-                        /* Add the tracer string template. */
-                        tag.value = tag.value + el.currentTarget.innerText;
+                          /* Add the tracer string template. */
+                          tag.value = tag.value + el.currentTarget.innerText;
 
-                        /* If the user uses the drop down for the first element, toggle the box on. */
-                        if (tag.className.includes(disabledClass)) {
-                          toggleOn(tag);
-                          /* Clear any whitespace at the end of the class. */
-                          tag.className = tag.className.trim();
-                        }
-                      })
+                          /* If the user uses the drop down for the first element, toggle the box on. */
+                          if (tag.className.includes(disabledClass)) {
+                            toggleOn(tag);
+                            /* Clear any whitespace at the end of the class. */
+                            tag.className = tag.className.trim();
+                          }
+                        })
 
 
 
-                      listElement.className += "highlight-on-hover"
-                      /* Highlight the element when you mouseover it. */
-                      //listElement.addEventListener("mouseover", function(e){ e.srcElement.className = "highlight-on-hover"; });
-                      //listElement.addEventListener("mouseout", function(e){ e.srcElement.className = "";});
-                      listElement.innerText = tracerStringTypes[tracerStringTypeKey];
-                      list.appendChild(listElement);
-                    }
+                        listElement.className += "highlight-on-hover"
+                        /* Highlight the element when you mouseover it. */
+                        //listElement.addEventListener("mouseover", function(e){ e.srcElement.className = "highlight-on-hover"; });
+                        //listElement.addEventListener("mouseout", function(e){ e.srcElement.className = "";});
+                        listElement.innerText = tracerStringTypes[tracerStringTypeKey];
+                        list.appendChild(listElement);
+                      }
 
-                    //insert into root of DOM so nothing can mess it up now
-                    document.documentElement.appendChild(tagMenu);
+                      //insert into root of DOM so nothing can mess it up now
+                      document.documentElement.appendChild(tagMenu);
 
-                    tagMenu.style.left =  e.pageX + "px"
-                    tagMenu.style.top  =  e.pageY  + "px"
+                      tagMenu.style.left =  e.pageX + "px"
+                      tagMenu.style.top  =  e.pageY  + "px"
 
-                    // Set timer to null as it has fired once
-                    tagMenuTimer = null;
+                      // Set timer to null as it has fired once
+                      tagMenuTimer = null;
+                    })
                   },200, this);
                }
           });

@@ -1,7 +1,7 @@
 /* Helper function for updating the list of tracers that have been added. */
 function refreshTracerList(onFinished) {
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "http://127.0.0.1:8081/tracers", true);
+    xhr.open("GET", `http://${restServer}/tracers`, true);
     xhr.onreadystatechange = onFinished;
     xhr.send();
 }
@@ -9,7 +9,7 @@ function refreshTracerList(onFinished) {
 /* Helper function for pushing bulk events to the API. */
 function bulkAddEvents(events) {
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://127.0.0.1:8081/tracers/events/bulk", true);
+    xhr.open("POST", `http://${restServer}/tracers/events/bulk`, true);
     xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
     var eventsStr = JSON.stringify(events);
     xhr.send(eventsStr);
@@ -83,9 +83,48 @@ function requestHandler(domEvents) {
 /* Global list of DOM writes. Periodically, this will be sent to the background thread and cleared. */
 var jobs = []
 
+/* Routes messages from the extension to various functions on the background. */
+function messageRouter(message, sender, sendResponse) {
+    if (message && message["message-type"]) {
+        switch (message["message-type"]) {
+            case "job":
+                addJobToQueue(message, sender, sendResponse)
+                break
+            case "config":
+                configQuery(message, sender, sendResponse)
+                break
+            case "refresh":
+                refreshConfig(message, sender, sendResponse)
+                break
+        }
+    }
+}
+
+/* Refreshes the configuration. */
+function refreshConfig(message, sender, sendResponse) {
+    fetch('http://127.0.0.1:6001/config')
+        .then( res => res.json() )
+        .then( res => {
+            tracerStringTypes = Object.keys(res["tracers"]) 
+            restServer = res["tracer-server"]
+        })
+        .catch( error => console.error('Error:', error) )
+}
+
+/* Query the configuration. */
+function configQuery(message, sender, sendResponse) {
+    if (message && message.config) {
+        switch(message.config) {
+            case "tracer-string-types":
+                sendResponse(tracerStringTypes)
+                break
+        }
+    }
+}
+
 /* Add a job to the job queue. */
 function addJobToQueue(message, sender, sendResponse) {
-    jobs.push(message);
+    jobs.push(message)
 }
 
 /* Process all the jobs in the current queue. */
@@ -93,16 +132,19 @@ function processDomEvents(){
     /* If there are no new jobs, continue. */
     if (jobs.length > 0) {
         /* Send any jobs off to the API server. */
-        requestHandler(JSON.parse(JSON.stringify(jobs)));
+        requestHandler(JSON.parse(JSON.stringify(jobs)))
 
         /* Clear out the jobs. */
-        jobs = [];
+        jobs = []
     }
     /* Trigger another timeout after the jobs are cleared. */
-    setTimeout(processDomEvents, 3000);
+    setTimeout(processDomEvents, 3000)
 }
 /* Start processing jobs. */
-setTimeout(processDomEvents, 3000);
+setTimeout(processDomEvents, 3000)
 
 /* Any time the page sends a message to the extension, the above handler should take care of it. */
-chrome.runtime.onMessage.addListener(addJobToQueue);
+chrome.runtime.onMessage.addListener(messageRouter)
+
+var restServer = "127.0.0.1:443"
+var tracerStringTypes = ["blah", "blah"]
