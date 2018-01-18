@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"strings"
+	l "log"
 	"xxterminator-plugin/log"
 	"xxterminator-plugin/tracer/store"
 )
@@ -23,7 +23,7 @@ var DatabaseFile string
 func init() {
 	usr, err := user.Current()
 	if err != nil {
-		log.Error.Fatal(err)
+		l.Fatal(err)
 	}
 
 	TracyPath = filepath.Join(usr.HomeDir, ".tracy")
@@ -48,19 +48,19 @@ func init() {
 		/* Try to recover by writing a new tracer.json file with the default values. */
 		def := fmt.Sprintf(DefaultConfig, pubKeyPath, privKeyPath)
 		/* Make sure to escape the path variables in windows paths. */
-		ioutil.WriteFile(configPath, []byte(strings.Replace(def, "\\", "\\\\", -1)), 0755)
+		ioutil.WriteFile(configPath, []byte(def), 0755)
 		content = []byte(def)
 	} else {
 		content, err = ioutil.ReadFile(configPath)
 		if err != nil {
-			log.Error.Fatal(err)
+			l.Fatal(err)
 		}
 	}
 
 	var configData interface{}
 	err = json.Unmarshal(content, &configData)
 	if err != nil {
-		log.Error.Fatalf("Configuration file has a JSON syntax error: %s", err.Error())
+		l.Fatalf("Configuration file has a JSON syntax error: %s", err.Error())
 	}
 
 	/* Create the configuration channel listener to synchronize configuration changes. */
