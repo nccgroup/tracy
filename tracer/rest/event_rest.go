@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/common"
-	"xxterminator-plugin/tracer/store"
-	"xxterminator-plugin/tracer/types"
+	"tracy/log"
+	"tracy/tracer/common"
+	"tracy/tracer/store"
+	"tracy/tracer/types"
 )
 
 /* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.

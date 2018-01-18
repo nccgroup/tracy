@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"xxterminator-plugin/configure"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/proxy"
-	"xxterminator-plugin/tracer/common"
-	"xxterminator-plugin/tracer/rest"
-	"xxterminator-plugin/tracer/types"
+	"tracy/configure"
+	"tracy/log"
+	"tracy/proxy"
+	"tracy/tracer/common"
+	"tracy/tracer/rest"
+	"tracy/tracer/types"
 )
 
 func main() {

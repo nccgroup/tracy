@@ -8,8 +8,8 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	_ "github.com/mattn/go-sqlite3"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/types"
+	"tracy/log"
+	"tracy/tracer/types"
 )
 
 /*DBAddTracerEvent adds an event to a slice of tracers specified by the the tracer string. */

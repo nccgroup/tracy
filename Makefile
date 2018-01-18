@@ -6,7 +6,7 @@ COMMIT=$(shell git rev-parse HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 
 # Symlink into GOPATH
-PROJECT_NAME=xxterminator-plugin
+PROJECT_NAME=tracy
 BUILD_DIR=${GOPATH}/src/${PROJECT_NAME}
 CURRENT_DIR=$(shell pwd)
 BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})
@@ -15,51 +15,44 @@ BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})
 LDFLAGS = -ldflags "-X main.VERSION=${VERSION} -X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH}"
 
 # Build the project
-all: link clean linux darwin windows
-
-link:
-	BUILD_DIR=${BUILD_DIR}; \
-	BUILD_DIR_LINK=${BUILD_DIR_LINK}; \
-	CURRENT_DIR=${CURRENT_DIR}; \
-	if [ "$${BUILD_DIR_LINK}" != "$${CURRENT_DIR}" ]; then \
-		echo "Fixing symlinks for build"; \
-		rm -f $${BUILD_DIR}; \
-		ln -s $${CURRENT_DIR} $${BUILD_DIR}; \
-	fi
+all: build-linux build-darwin build-windows
 
 build-linux:
 	cd ${BUILD_DIR}; \
-	dep ensure; \
+	dep ensure -v; \
 	GOOS=linux GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-linux-${GOARCH} . ; \
+	mv ./${BINARY}-linux-${GOARCH} ${GOPATH}/src/${PROJECT_NAME}/bin/
 	cd - >/dev/null
 
 build-darwin:
 	cd ${BUILD_DIR}; \
-	dep ensure; \
+	dep ensure -v; \
 	GOOS=darwin GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-darwin-${GOARCH} . ; \
+	mv ./${BINARY}-linux-${GOARCH} ${GOPATH}/src/${PROJECT_NAME}/bin/
 	cd - >/dev/null
 
-build-darwinwindows:
+build-windows:
 	cd ${BUILD_DIR}; \
-	dep ensure; \
+	dep ensure -v; \
 	GOOS=windows GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-windows-${GOARCH}.exe . ; \
+	mv ./${BINARY}-linux-${GOARCH} ${GOPATH}/src/${PROJECT_NAME}/bin/
 	cd - >/dev/null
 
 install-linux:
 	cd ${BUILD_DIR}; \
-	dep ensure; \
+	dep ensure -v; \
 	GOOS=linux GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
 	cd - >/dev/null
 
 install-darwin:
 	cd ${BUILD_DIR}; \
-	dep ensure; \
+	dep ensure -v; \
 	GOOS=darwin GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
 	cd - >/dev/null
 
 install-windows:
 	cd ${BUILD_DIR}; \
-	dep ensure; \
+	dep ensure -v; \
 	GOOS=windows GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
 	cd - >/dev/null
 
@@ -85,4 +78,4 @@ deps:
 clean:
 	-rm -f ${BINARY}-*
 
-.PHONY: link linux darwin windows test vet fmt clean deps
+.PHONY: linux darwin windows test vet fmt clean deps

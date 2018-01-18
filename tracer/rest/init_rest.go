@@ -4,8 +4,8 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"time"
-	"xxterminator-plugin/configure"
-	"xxterminator-plugin/log"
+	"tracy/configure"
+	"tracy/log"
 )
 
 /*RestServer is the HTTP server that serves all the API. */

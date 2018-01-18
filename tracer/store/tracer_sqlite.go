@@ -6,8 +6,8 @@ import (
 	/* Chosing this library because it implements the golang stdlin database
 	 * sql interface. */
 	_ "github.com/mattn/go-sqlite3"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/types"
+	"tracy/log"
+	"tracy/tracer/types"
 )
 
 func makeSliceFromMap(trcrs map[int]types.Tracer) []types.Tracer {

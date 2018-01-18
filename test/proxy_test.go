@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/proxy"
-	"xxterminator-plugin/tracer/types"
+	"tracy/log"
+	"tracy/proxy"
+	"tracy/tracer/types"
 )
 
 var requestDataNoTags = `GET /api/v1/action/ HTTP/1.1

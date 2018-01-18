@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
-	"xxterminator-plugin/configure"
-	"xxterminator-plugin/log"
-	tracerClient "xxterminator-plugin/tracer/client"
+	"tracy/configure"
+	"tracy/log"
+	tracerClient "tracy/tracer/client"
 )
 
 /*ListenAndServe waits and listens for TCP connections and proxies them. */

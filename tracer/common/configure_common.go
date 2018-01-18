@@ -2,7 +2,7 @@ package common
 
 import (
 	"encoding/json"
-	"xxterminator-plugin/configure"
+	"tracy/configure"
 )
 
 /*GetConfig is the common functionality for getting the global configuration. */

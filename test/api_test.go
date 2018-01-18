@@ -9,10 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"xxterminator-plugin/configure"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/rest"
-	"xxterminator-plugin/tracer/types"
+	"tracy/configure"
+	"tracy/log"
+	"tracy/tracer/rest"
+	"tracy/tracer/types"
 )
 
 /* Testing addTracer with httptest. POST /tracers */

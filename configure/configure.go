@@ -5,13 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	l "log"
 	"net"
 	"os"
 	"os/user"
 	"path/filepath"
-	l "log"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/store"
+	"tracy/log"
+	"tracy/tracer/store"
 )
 
 /*TracyPath is the path all tracy files go in. */

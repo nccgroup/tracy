@@ -2,7 +2,7 @@ package rest
 
 import (
 	"net/http"
-	"xxterminator-plugin/tracer/common"
+	"tracy/tracer/common"
 )
 
 /*GetConfig gets the global configuration for the application. */

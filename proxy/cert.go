@@ -15,7 +15,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"xxterminator-plugin/log"
+	"tracy/log"
 )
 
 /* Upgrade a TLS connection if the proxy receives a 'CONNECT' action from the connection. */

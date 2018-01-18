@@ -7,7 +7,7 @@ import (
 	 * sql interface. */
 	_ "github.com/mattn/go-sqlite3"
 	"os"
-	"xxterminator-plugin/log"
+	"tracy/log"
 )
 
 /*TracersTable is the database table name for tracers. */

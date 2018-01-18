@@ -2,7 +2,7 @@ package configure
 
 import (
 	"crypto/tls"
-	"xxterminator-plugin/log"
+	"tracy/log"
 )
 
 /*PublicKey is the default public key used for the server. */

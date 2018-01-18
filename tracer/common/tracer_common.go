@@ -3,9 +3,9 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/store"
-	"xxterminator-plugin/tracer/types"
+	"tracy/log"
+	"tracy/tracer/store"
+	"tracy/tracer/types"
 )
 
 /*AddTracer is the common functionality to add a tracer to the database. This function

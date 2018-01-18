@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"xxterminator-plugin/configure"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/types"
+	"tracy/configure"
+	"tracy/log"
+	"tracy/tracer/types"
 )
 
 /* Helper function for searching for tracer tags in query parameters and body and replacing them with randomly generated

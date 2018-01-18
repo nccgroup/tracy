@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/types"
+	"tracy/log"
+	"tracy/tracer/types"
 )
 
 /*DBAddLabel adds a label to the labels table. */

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"golang.org/x/net/html"
 	"strings"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/store"
-	"xxterminator-plugin/tracer/types"
+	"tracy/log"
+	"tracy/tracer/store"
+	"tracy/tracer/types"
 )
 
 /*AddEvent is the common functionality to add an event to the database. This function

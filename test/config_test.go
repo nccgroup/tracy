@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"xxterminator-plugin/configure"
-	"xxterminator-plugin/log"
-	"xxterminator-plugin/tracer/rest"
+	"tracy/configure"
+	"tracy/log"
+	"tracy/tracer/rest"
 )
 
 func init() {
