@@ -6,6 +6,7 @@ import (
 	"time"
 	"tracy/configure"
 	"tracy/log"
+	"tracy/tracer/view"
 )
 
 /*RestServer is the HTTP server that serves all the API. */
@@ -44,7 +45,7 @@ func init() {
 	RestRouter.Methods("GET").Path("/labels/{labelID}").HandlerFunc(GetLabel)
 
 	/* The base application page. */
-	RestRouter.PathPrefix("/").Handler(http.FileServer(http.Dir("./tracer/view/build/")))
+	RestRouter.PathPrefix("/").Handler(http.FileServer(view.AssetFS()))
 
 	/* Define routes for config. */
 	ConfigRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
