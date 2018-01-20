@@ -38,7 +38,8 @@ class MainTable extends Component {
     this.onAfterDeleteTracer = this.onAfterDeleteTracer.bind(this);
     this.loadDataCache = this.loadDataCache.bind(this);
     this.state = {
-      data: []
+      data: [],
+      rawData: ""
     };
   }
 
@@ -48,10 +49,11 @@ class MainTable extends Component {
 
   shouldComponentUpdate(nextProps, nextState) {
     var ret = true;
-    //Only the filters changed. Just update based on the cache.
+    //Only the filters changed.
     if (this.props.tracerFilters.length !== nextProps.tracerFilters.length ||
       this.props.contextFilters.length !== nextProps.contextFilters.length) {
       this.loadDataCache(nextProps.tracerFilters, nextProps.contextFilters);
+      this.getTracers();
       ret = false;
     }
     return ret;
@@ -60,9 +62,9 @@ class MainTable extends Component {
   expandEventRow(row) {
     var rawData;
     try {
-      rawData = JSON.stringify(JSON.parse(row.RawData), null, 2);;
+      rawData = JSON.stringify(JSON.parse(row.RawData), null, 2)
     } catch (e) {
-      rawData = row.RawData;
+      rawData = row.RawData
     }
     return (
       <TracerEventDataExpanded
@@ -73,13 +75,13 @@ class MainTable extends Component {
 
   // Try to load data from local storage while this is getting the new data. 
   loadDataCache(tracerFilters, contextFilters) {    
-    const dataString = localStorage.getItem("data");
+    const dataString = this.state.rawData
     try {
       if (dataString !== null && dataString.length > 0) {
-        const data = this.parseVisibleData(JSON.parse(dataString), tracerFilters, contextFilters);
+        const data = this.parseVisibleData(JSON.parse(dataString), tracerFilters, contextFilters)
         this.setState({
           data: data
-        });
+        })
       }
     } catch (e) {
       // Nothing needs to be done here.
@@ -89,10 +91,10 @@ class MainTable extends Component {
   /* getTracers makes an XMLHTTPRequest to the tracers/events API to get the latest set of events. */
   getTracers() {
     /* Create the HTTP GET request to the /tracers API endpoint. */
-    var req = new XMLHttpRequest();
-    req.open("GET", "http://localhost:8081/tracers/events", true);
-    req.onreadystatechange = this.setTracers;      
-    req.send();
+    var req = new XMLHttpRequest()
+    req.open("GET", "http://localhost:8081/tracers/events", true)
+    req.onreadystatechange = this.setTracers
+    req.send()
   }
 
   parseVisibleData(data, tracerFilters, contextFilters) {
@@ -111,33 +113,20 @@ class MainTable extends Component {
     // For some reason, 304 Not Modified requests still hit this code.
     if (req.target.readyState === 4 && req.target.status === 200 && req.target.responseText !== "") {
       try {
-        var cachedDataString = localStorage.getItem("data");
-        if (cachedDataString !== null) {
           // If there was a cache and it looks different, update.
-          if (req.target.responseText.length !== cachedDataString.length) {
-            // Cache the data in the local storage so filters can be applied right away.
-            localStorage.setItem("data", req.target.responseText);
-            const data = this.parseVisibleData(
+          if (req.target.responseText.length !== this.state.rawData.length) {
+            // Cache the data in the state so filters can be applied right away.
+            // TODO: this will probably make the UI really slow after a while.
+            const parsedData = this.parseVisibleData(
               JSON.parse(req.target.responseText), 
               this.props.tracerFilters, 
-              this.props.contextFilters);
+              this.props.contextFilters)
 
             this.setState({
-              data: data
-            });
+              data: parsedData,
+              rawData: req.target.responseText
+            })
           }
-        } else {
-          // Cache the data in the local storage so filters can be applied right away.
-          localStorage.setItem("data", req.target.responseText);
-          const data = this.parseVisibleData(
-            JSON.parse(req.target.responseText), 
-            this.props.tracerFilters, 
-            this.props.contextFilters);
-
-          this.setState({
-            data: data
-          });
-        }
       } catch (e) {
         // Probably an error with parsing the JSON. 
         console.error(e);

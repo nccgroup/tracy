@@ -9,30 +9,29 @@ import NavItem from 'react-bootstrap/lib/NavItem';
 
 class App extends Component {
 	constructor(props) {
-		super(props);
+		super(props)
 		// Filter functions that can be used to show and reveal types of events
 		// globally.
-		this.state = {};
-		this.handleChange = this.handleChange.bind(this);
+		this.state = {}
+		this.handleChange = this.handleChange.bind(this)
 	}
 
 	handleChange(evt, filter) {
-		this.setState(function(prevState, props) {
-			let ret = {};
-		 	ret[evt] = filter;
-			return ret;
-		});
+		this.setState( (prevState, props) => {
+			let ret = {}
+		 	ret[evt] = filter
+			return ret
+		})
 	}
 
 	render() {
-		// TODO: these probably don't need to be configurable
 		// Enum to human-readable structure to translate the various DOM contexts.
 		const locationTypes = {
 		  0: "attribute name",
 		  1: "text",
 		  2: "node name",
 		  3: "attribute value"
-		};
+		}
 
 		// Enum to human-readable structure to translate the different severity ratings. 
 		const severity = {
@@ -40,10 +39,19 @@ class App extends Component {
 		  1: "suspicious",
 		  2: "probable",
 		  3: "exploitable"
-		};
+		}
 
-		const contextKeys = ["responses", "exploitable", "archivedContexts", "text"];
-		const tracerKeys = ["archivedTracers", "inactive"];
+		const contextKeys = [
+			"responses", 
+			"exploitable", 
+			"archivedContexts", 
+			"text"
+		]
+
+		const tracerKeys = [
+			"archivedTracers", 
+			"inactive"
+		]
 
 		const contextFilters = Object.keys(this.state).filter(function(n){
 			return contextKeys.includes(n) && this.state[n];
