@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"tracy/log"
 	"tracy/tracer/store"
 )
@@ -27,25 +28,27 @@ func init() {
 	}
 
 	TracyPath = filepath.Join(usr.HomeDir, ".tracy")
-	if _, err := os.Stat(TracyPath); os.IsNotExist(err) {
+	if _, err = os.Stat(TracyPath); os.IsNotExist(err) {
 		os.Mkdir(TracyPath, 0755)
 	}
 
 	/* Write the server certificates. */
 	pubKeyPath := filepath.Join(TracyPath, "cert.pem")
-	if _, err := os.Stat(pubKeyPath); os.IsNotExist(err) {
+	if _, err = os.Stat(pubKeyPath); os.IsNotExist(err) {
 		ioutil.WriteFile(pubKeyPath, []byte(PublicKey), 0755)
 	}
 	privKeyPath := filepath.Join(TracyPath, "key.pem")
-	if _, err := os.Stat(privKeyPath); os.IsNotExist(err) {
+	if _, err = os.Stat(privKeyPath); os.IsNotExist(err) {
 		ioutil.WriteFile(privKeyPath, []byte(PrivateKey), 0755)
 	}
 
 	/* Read the configuration. */
 	configPath := filepath.Join(TracyPath, "tracer.json")
 	var content []byte
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+	if _, err = os.Stat(configPath); os.IsNotExist(err) {
 		/* Try to recover by writing a new tracer.json file with the default values. */
+		pubKeyPath = strings.Replace(pubKeyPath, "\\", "\\\\", -1)
+		privKeyPath = strings.Replace(privKeyPath, "\\", "\\\\", -1)
 		def := fmt.Sprintf(DefaultConfig, pubKeyPath, privKeyPath)
 		/* Make sure to escape the path variables in windows paths. */
 		ioutil.WriteFile(configPath, []byte(def), 0755)
