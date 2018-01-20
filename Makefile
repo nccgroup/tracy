@@ -15,10 +15,20 @@ BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})
 LDFLAGS = "-X main.VERSION=${VERSION} -X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH}"
 
 # Build the project for all platforms
-all: clean
+all: test clean view bins
+	
+# Build the cross-compiled binaries with xgo	
+bins:
 	dep ensure -v;
 	xgo -dest ${GOPATH}/src/${PROJECT_NAME}/bin --ldflags=${LDFLAGS} --targets=windows/amd64,linux/amd64,darwin/amd64 ${GOPATH}/src/${PROJECT_NAME}
 
+# Build the view and static assets into a Go file
+view:
+	npm --prefix ${GOPATH}/src/${PROJECT_NAME}/tracer/view run build
+	go-bindata-assetfs -pkg rest ${GOPATH}/src/${PROJECT_NAME}/tracer/view/build/...
+	mv ./bindata_assetfs.go ${GOPATH}/src/${PROJECT_NAME}/tracer/rest/
+
+# Format all the Go code
 fmt:
 	cd ${BUILD_DIR}; \
 	go fmt $$(go list ./... | grep -v /vendor/) ; \
@@ -34,11 +44,14 @@ lint:
 
 # Install the go dependency management tool
 # Install the go linting tool
-deps:
-	go get -u github.com/golang/dep/cmd/dep; \
-	go get -u github.com/golang/lint/golint;
+build-deps:
+	go get github.com/golang/dep/cmd/dep; \
+	go get github.com/golang/lint/golint; \
+	go get github.com/karalabe/xgo; \
+	go get github.com/jteeuwen/go-bindata/...; \
+	go get github.com/elazarl/go-bindata-assetfs/...; \
 
 clean:
 	-rm -f ${GOPATH}/src/${PROJECT_NAME}/bin/*
 
-.PHONY: linux darwin windows test vet fmt clean deps
+.PHONY: all bins view test fmt clean build-deps

@@ -322,22 +322,30 @@ class MainTable extends Component {
 
   /* Test if the context is in a attribute value and part of a DOM event. */
   isInAttributeValueAndNotResponse(context) {
-    return this.isInAttributeValue(context) && context.EventType.toLowerCase() !== "response"
+    return this.isInAttributeValue(context) 
+      && context.EventType.toLowerCase() !== "response"
+      && context.EventType.toLowerCase() !== "text"
   }
 
   /* Test if the context is in a script tag and part of a DOM event. */
   isInScriptTagAndNotResponse(context) {
-    return this.isInScriptTag(context) && context.EventType.toLowerCase() !== "response"
+    return this.isInScriptTag(context) 
+      && context.EventType.toLowerCase() !== "response"
+      && context.EventType.toLowerCase() !== "text"
   }
 
   /* Test if a payload is in an attribute and part of a DOM event. */
   isAttributeNameAndNotResponse(context) {
-    return this.isAttributeName(context) && context.EventType.toLowerCase() !== "response"
+    return this.isAttributeName(context) 
+      && context.EventType.toLowerCase() !== "response"
+      && context.EventType.toLowerCase() !== "text"
   }
 
    /* Test if a payload is in a node name and part of a DOM event. */
   isNodeNameAndNotResponse(context) {
-    return this.isNodeName(context) && context.EventType.toLowerCase() !== "response"
+    return this.isNodeName(context) 
+      && context.EventType.toLowerCase() !== "response"
+      && context.EventType.toLowerCase() !== "text"
   }
 
   /* Test to see if the tracer was made the attribute name. */
