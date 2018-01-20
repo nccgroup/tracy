@@ -4,7 +4,7 @@ import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-bootstrap-table/dist/react-bootstrap-table.min.css'
 import 'bootstrap/dist/css/bootstrap-theme.min.css';
-import TracerEventDataExpanded from './TracerEventDataExpanded.js'
+import TracerEventDataExpanded from './TracerEventDataExpanded'
 
 class MainTable extends Component {
 
@@ -28,9 +28,13 @@ class MainTable extends Component {
     this.assignEventsSeverityRating = this.assignEventsSeverityRating.bind(this);
     this.assignContextSeverityRating = this.assignContextSeverityRating.bind(this);
     this.isAttributeName = this.isAttributeName.bind(this);
+    this.isAttributeNameAndNotResponse = this.isAttributeNameAndNotResponse.bind(this);
     this.isNodeName = this.isNodeName.bind(this);
+    this.isNodeNameAndNotResponse = this.isNodeNameAndNotResponse.bind(this);
     this.isInAttributeValue = this.isInAttributeValue.bind(this);
+    this.isInAttributeValueAndNotResponse = this.isInAttributeValueAndNotResponse.bind(this);
     this.isInScriptTag = this.isInScriptTag.bind(this);
+    this.isInScriptTagAndNotResponse = this.isInScriptTagAndNotResponse.bind(this);
     this.onAfterDeleteTracer = this.onAfterDeleteTracer.bind(this);
     this.loadDataCache = this.loadDataCache.bind(this);
     this.state = {
@@ -275,17 +279,17 @@ class MainTable extends Component {
   assignContextSeverityRating(context) {
     var ret = context;
 
-    // These s should return a truthy value if the row is known to be exploitable. 
+    // These should return a truthy value if the row is known to be exploitable. 
     const exploitableTests = [
-      this.isAttributeName,
-      this.isNodeName
+      this.isAttributeNameAndNotResponse,
+      this.isNodeNameAndNotResponse
     ];
     // These s should return a truthy value if the row is known to be probable. 
     const probableTests = [];
     // These s should return a truthy value if the row is known to be suspicious. 
     const suspiciousTests = [
-      this.isInScriptTag,
-      this.isInAttributeValue
+      this.isInScriptTagAndNotResponse,
+      this.isInAttributeValueAndNotResponse
     ];
     // These s should return a truthy value if the row is known to be unexploitable. 
     const unexploitableTests = [];
@@ -316,32 +320,52 @@ class MainTable extends Component {
     return ret;
   }
 
+  /* Test if the context is in a attribute value and part of a DOM event. */
+  isInAttributeValueAndNotResponse(context) {
+    return this.isInAttributeValue(context) && context.EventType.toLowerCase() !== "response"
+  }
+
+  /* Test if the context is in a script tag and part of a DOM event. */
+  isInScriptTagAndNotResponse(context) {
+    return this.isInScriptTag(context) && context.EventType.toLowerCase() !== "response"
+  }
+
+  /* Test if a payload is in an attribute and part of a DOM event. */
+  isAttributeNameAndNotResponse(context) {
+    return this.isAttributeName(context) && context.EventType.toLowerCase() !== "response"
+  }
+
+   /* Test if a payload is in a node name and part of a DOM event. */
+  isNodeNameAndNotResponse(context) {
+    return this.isNodeName(context) && context.EventType.toLowerCase() !== "response"
+  }
+
   /* Test to see if the tracer was made the attribute name. */
   isAttributeName(context) {
-    return context.ContextLocationType === this.props.locationTypes[0];
+    return context.ContextLocationType === this.props.locationTypes[0]
   }
 
   /* Test to see if the tracer was made the node name. */
   isNodeName(context) {
-    return context.ContextLocationType === this.props.locationTypes[2];
+    return context.ContextLocationType === this.props.locationTypes[2]
   }
 
   /* Test to see if the tracer was found inside a script tag. */
   isInScriptTag(context) {
-    return context.ContextLocationType === this.props.locationTypes[1] && context.NodeType === "script";
+    return context.ContextLocationType === this.props.locationTypes[1] && context.NodeType === "script"
   }
 
   /* Test to see if the tracer was found inside an attribute value. */
   isInAttributeValue(context) {
-    return context.ContextLocationType === this.props.locationTypes[3];
+    return context.ContextLocationType === this.props.locationTypes[3]
   }
 
   isInTextnode(context) {
-    return context.ContextLocationType === this.props.locationTypes[1];
+    return context.ContextLocationType === this.props.locationTypes[1]
   }
 
   formatRowSeverity(row, rowIdx) {
-    return this.props.severity[row.Severity];
+    return this.props.severity[row.Severity]
   }
 
   onAfterDeleteContext(rowKeys) {
