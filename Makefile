@@ -12,49 +12,12 @@ CURRENT_DIR=$(shell pwd)
 BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})
 
 # Setup the -ldflags option for go build here, interpolate the variable values
-LDFLAGS = -ldflags "-X main.VERSION=${VERSION} -X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH}"
+LDFLAGS = "-X main.VERSION=${VERSION} -X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH}"
 
-# Build the project
-all: build-linux build-darwin build-windows
-
-build-linux:
-	cd ${BUILD_DIR}; \
-	dep ensure -v; \
-	GOOS=linux GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-linux-${GOARCH} . ; \
-	mv ./${BINARY}-linux-${GOARCH} ${GOPATH}/src/${PROJECT_NAME}/bin/
-	cd - >/dev/null
-
-build-darwin:
-	cd ${BUILD_DIR}; \
-	dep ensure -v; \
-	GOOS=darwin GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-darwin-${GOARCH} . ; \
-	mv ./${BINARY}-linux-${GOARCH} ${GOPATH}/src/${PROJECT_NAME}/bin/
-	cd - >/dev/null
-
-build-windows:
-	cd ${BUILD_DIR}; \
-	dep ensure -v; \
-	GOOS=windows GOARCH=${GOARCH} go build ${LDFLAGS} -o ${BINARY}-windows-${GOARCH}.exe . ; \
-	mv ./${BINARY}-linux-${GOARCH} ${GOPATH}/src/${PROJECT_NAME}/bin/
-	cd - >/dev/null
-
-install-linux:
-	cd ${BUILD_DIR}; \
-	dep ensure -v; \
-	GOOS=linux GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
-	cd - >/dev/null
-
-install-darwin:
-	cd ${BUILD_DIR}; \
-	dep ensure -v; \
-	GOOS=darwin GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
-	cd - >/dev/null
-
-install-windows:
-	cd ${BUILD_DIR}; \
-	dep ensure -v; \
-	GOOS=windows GOARCH=${GOARCH} go install ${LDFLAGS} . ; \
-	cd - >/dev/null
+# Build the project for all platforms
+all: clean
+	dep ensure -v;
+	xgo -dest ${GOPATH}/src/${PROJECT_NAME}/bin --ldflags=${LDFLAGS} --targets=windows/amd64,linux/amd64,darwin/amd64 ${GOPATH}/src/${PROJECT_NAME}
 
 fmt:
 	cd ${BUILD_DIR}; \
@@ -76,6 +39,6 @@ deps:
 	go get -u github.com/golang/lint/golint;
 
 clean:
-	-rm -f ${BINARY}-*
+	-rm -f ${GOPATH}/src/${PROJECT_NAME}/bin/*
 
 .PHONY: linux darwin windows test vet fmt clean deps
