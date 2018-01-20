@@ -110,7 +110,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 		}
 	} else {
 		/* If the scheme is HTTPS, need to the use the tls package to make the dial. */
-		server, err = tls.Dial("tcp", host, nil)
+		server, err = tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: true})
 	}
 
 	/* Fail fast if the connection to the backside of the proxy failed. */
