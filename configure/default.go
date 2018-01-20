@@ -4,13 +4,14 @@ package configure
 const DefaultConfig = `{
   "tracers": {
   	"{{XSS}}": "\"'<[[ID]]>",
-  	"{{PLAIN}}": "[[ID]]"
+  	"{{PLAIN}}": "[[ID]]",
+    "{{XSSJSON}}": "\\\"'<[[ID]]>"
    },
   "default-tracer": "{{PLAIN}}",
   "server-whitelist": [
-  	"localhost:8081", 
-    "127.0.0.1:8081", 
-    "localhost:3000", 
+  	"localhost:8081",
+    "127.0.0.1:8081",
+    "localhost:3000",
     "127.0.0.1:3000"
   ],
   "tracer-server": "127.0.0.1:8081",
