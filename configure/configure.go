@@ -35,11 +35,11 @@ func init() {
 	/* Write the server certificates. */
 	pubKeyPath := filepath.Join(TracyPath, "cert.pem")
 	if _, err = os.Stat(pubKeyPath); os.IsNotExist(err) {
-		ioutil.WriteFile(pubKeyPath, []byte(PublicKey), 0755)
+		generateRootCA(TracyPath)
 	}
 	privKeyPath := filepath.Join(TracyPath, "key.pem")
 	if _, err = os.Stat(privKeyPath); os.IsNotExist(err) {
-		ioutil.WriteFile(privKeyPath, []byte(PrivateKey), 0755)
+		generateRootCA(TracyPath)
 	}
 
 	/* Read the configuration. */
