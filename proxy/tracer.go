@@ -67,19 +67,31 @@ func ReplaceTagsInBody(body []byte) ([]byte, []string) {
 
 	for i := 0; i < len(body); i++ {
 
+		/* Check that the length of the body is long enough to be able to compare to two bytes.
+		If it is check to see if the first two bytes match "{{" in theory this should be the start of the tag*/
 		if i+2 < len(body) && bytes.Compare(body[i:i+2], []byte("{{")) == 0 {
 
 			log.Trace.Printf("Found the  start of a tracer tag")
 
-			tag := []byte{'{', '{'}
-			for j := i + 2; j < len(body) && body[j] != 0x25 && body[j] != 0x7B && body[j] != 0x7D; j++ {
+			/* From here on tag will hold the contents that we think is a tag but really it could be anything that just starts with {{ */
+			tag := []byte("{{")
+
+			/* This loop will loop looking for a %,{ or } while building up the inner part of the tag
+			We look for percent here just in case it is the start of a encoded tag*/
+			for j := i + 2; j < len(body) && body[j] != '%' && body[j] != '{' && body[j] != '}'; j++ {
 				tag = append(tag, body[j])
 			}
 
+			/* This code makes sure there is enough room to do the compare, if there is it checks to see if the next type bytes are }} this could
+			indicate the end of a tag */
 			if len(tag)+i+1 < len(body) && bytes.Compare(body[len(tag)+i:len(tag)+i+2], []byte("}}")) == 0 {
-				tag = append(tag, byte('}'), byte('}'))
+				tag = append(tag, []byte("}}")...)
+
+				/*Check to see if the tracer we found is a real tracer or just something that looks like one*/
 				tracerString, tracerBytes := generateTracerFromTag(string(tag))
 
+				/* If the tracer string does not exest it means that it was just something that looks like a tracer
+				else it was a real tracer and we need to append it */
 				if tracerString == "" {
 					replacedBody = append(replacedBody, tag...)
 				} else {
@@ -88,6 +100,7 @@ func ReplaceTagsInBody(body []byte) ([]byte, []string) {
 					replacedTracerStrings = append(replacedTracerStrings, tracerString)
 				}
 
+				/* Update the look to make sure that it is pointing at the next byte after the tracer string*/
 				i += len(tag) - 1
 				continue
 			} else {
@@ -98,6 +111,7 @@ func ReplaceTagsInBody(body []byte) ([]byte, []string) {
 			}
 		}
 
+		/* This code is the same as the above code but it is looking for the encoded version */
 		if i+7 < len(body) && bytes.Compare(body[i:i+6], []byte("%7B%7B")) == 0 {
 
 			log.Trace.Printf("Found the  start of a tracer tag")
