@@ -28,6 +28,7 @@ func init() {
 	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracer)
 	RestRouter.Methods("DELETE").Path("/tracers/{tracerID}").HandlerFunc(DeleteTracer)
 	RestRouter.Methods("PUT").Path("/tracers/{tracerID}").HandlerFunc(EditTracer)
+	RestRouter.Methods("GET").Path("/tracers/generate").HandlerFunc(GenerateTracer)
 
 	RestRouter.Methods("GET").Path("/tracers/events").HandlerFunc(GetTracersWithEvents)
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(GetTracer)
@@ -61,6 +62,7 @@ func init() {
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
+			ErrorLog: log.Error,
 		}
 
 		ConfigServer = &http.Server{
@@ -69,6 +71,7 @@ func init() {
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
+			ErrorLog: log.Error,
 		}
 	}
 }

@@ -88,7 +88,7 @@ func ReplaceTagsInBody(body []byte) ([]byte, []string) {
 				tag = append(tag, []byte("}}")...)
 
 				/*Check to see if the tracer we found is a real tracer or just something that looks like one*/
-				tracerString, tracerBytes := generateTracerFromTag(string(tag))
+				tracerString, tracerBytes := GenerateTracerFromTag(string(tag))
 
 				/* If the tracer string does not exest it means that it was just something that looks like a tracer
 				else it was a real tracer and we need to append it */
@@ -124,7 +124,7 @@ func ReplaceTagsInBody(body []byte) ([]byte, []string) {
 
 			if len(tag)+i+5 < len(body) && bytes.Compare(body[len(tag)+i:len(tag)+i+6], []byte("%7D%7D")) == 0 {
 				tag = append(tag, []byte("%7D%7D")...)
-				tracerString, tracerBytes := generateTracerFromTag(string(tag))
+				tracerString, tracerBytes := GenerateTracerFromTag(string(tag))
 
 				if tracerString == "" {
 					replacedBody = append(replacedBody, tag...)
@@ -154,9 +154,9 @@ func ReplaceTagsInBody(body []byte) ([]byte, []string) {
 	return replacedBody, replacedTracerStrings
 }
 
-/* Helper function that returns a random string that is used to track the tracer and the actual payload
+/* GenerateTracerFromTag is a helper function that returns a random string that is used to track the tracer and the actual payload
  * as a slice of bytes. */
-func generateTracerFromTag(tag string) (string, []byte) {
+func GenerateTracerFromTag(tag string) (string, []byte) {
 	idTag := "[[ID]]"
 	unescapedTag, err := url.QueryUnescape(tag)
 
