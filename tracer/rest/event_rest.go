@@ -67,7 +67,6 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	status, ret := addEventHelper(int(trcrID), trcrEvnt)
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -117,7 +116,6 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(finalStatus)
 	w.Write(finalRet)
 }
