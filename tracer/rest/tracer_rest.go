@@ -9,6 +9,7 @@ import (
 	"tracy/log"
 	"tracy/tracer/common"
 	"tracy/tracer/types"
+	"tracy/proxy"
 )
 
 /*AddTracer decodes an HTTP request to add a new tracer to the database. */
@@ -29,7 +30,6 @@ func AddTracer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -59,7 +59,6 @@ func DeleteTracer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -92,7 +91,6 @@ func EditTracer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -113,7 +111,6 @@ func GetTracers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -139,7 +136,6 @@ func GetTracersWithEvents(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ret = trcrsStr
 		w.Header().Set("Etag", eTagHash)
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "application/json")
 	}
 
@@ -172,7 +168,50 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(status)
+	w.Write(ret)
+}
+
+/*GenerateTracer generates a new tracer and stored it in the database. Often used for
+ * frontend heavy applications that might start using the input right away before
+ * sending a request to the Tracy proxy. */
+func GenerateTracer(w http.ResponseWriter, r *http.Request) {
+	ret := []byte("{}")
+	status := http.StatusInternalServerError
+
+	r.ParseForm()
+
+	t := r.Form.Get("type")
+	if len(t) != 0 {
+		u := r.Form.Get("url")
+		if len(u) != 0 {						
+			_, payload := proxy.GenerateTracerFromTag(t)
+			if payload != nil {
+				//TODO: should collect more information about the location of where
+				// it was generated. generating a tracer like this loses information
+				// about inputs without being obvious about it. if we wanted to do 
+				// reproduction steps, how would we do that here?
+				genTracer := types.Tracer{
+					Method: types.StringToJSONNullString("GENERATED"),
+					URL: types.StringToJSONNullString(u),
+					TracerString: t,
+				}
+		
+				trcrStr, err := common.AddTracer(genTracer)
+				if err != nil {
+					ret = ServerError(err)
+					log.Error.Printf(err.Error())
+				} else {
+					/* Final success case. */
+					status = http.StatusOK
+					ret = trcrStr
+				}
+			}
+		}
+	}
+
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(ret)
 }

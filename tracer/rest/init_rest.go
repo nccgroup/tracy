@@ -2,6 +2,8 @@ package rest
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/gorilla/handlers"
+	"compress/gzip"
 	"net/http"
 	"time"
 	"tracy/configure"
@@ -28,6 +30,7 @@ func init() {
 	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracer)
 	RestRouter.Methods("DELETE").Path("/tracers/{tracerID}").HandlerFunc(DeleteTracer)
 	RestRouter.Methods("PUT").Path("/tracers/{tracerID}").HandlerFunc(EditTracer)
+	RestRouter.Methods("GET").Path("/tracers/generate").HandlerFunc(GenerateTracer)
 
 	RestRouter.Methods("GET").Path("/tracers/events").HandlerFunc(GetTracersWithEvents)
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(GetTracer)
@@ -55,20 +58,30 @@ func init() {
 	if err != nil {
 		log.Error.Fatal(err)
 	} else {
+		//Additional server features
+		handler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
+		corsOptions := []handlers.CORSOption{
+			handlers.AllowedOriginValidator(func(a string) bool {
+			return true
+		})}
+		handler = handlers.CORS(corsOptions...)(handler)
+
 		RestServer = &http.Server{
-			Handler: RestRouter,
+			Handler: handler,
 			Addr:    addr.(string),
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
+			ErrorLog: log.Error,
 		}
 
 		ConfigServer = &http.Server{
-			Handler: ConfigRouter,
+			Handler: handler,
 			Addr:    "127.0.0.1:6001", // hardcoded configuration server so the web client knows where to get the configuration settings from
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
+			ErrorLog: log.Error,
 		}
 	}
 }
