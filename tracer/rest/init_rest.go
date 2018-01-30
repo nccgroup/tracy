@@ -59,15 +59,15 @@ func init() {
 		log.Error.Fatal(err)
 	} else {
 		//Additional server features
-		handler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
+		restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
 		corsOptions := []handlers.CORSOption{
 			handlers.AllowedOriginValidator(func(a string) bool {
 			return true
 		})}
-		handler = handlers.CORS(corsOptions...)(handler)
+		restHandler = handlers.CORS(corsOptions...)(restHandler)
 
 		RestServer = &http.Server{
-			Handler: handler,
+			Handler: restHandler,
 			Addr:    addr.(string),
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
@@ -75,8 +75,12 @@ func init() {
 			ErrorLog: log.Error,
 		}
 
+		//Additional server features
+		configHandler := handlers.CompressHandlerLevel(ConfigRouter, gzip.BestCompression)
+		configHandler = handlers.CORS(corsOptions...)(configHandler)
+
 		ConfigServer = &http.Server{
-			Handler: handler,
+			Handler: configHandler,
 			Addr:    "127.0.0.1:6001", // hardcoded configuration server so the web client knows where to get the configuration settings from
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,

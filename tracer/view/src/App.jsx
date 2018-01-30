@@ -30,7 +30,8 @@ class App extends Component {
 		  0: "attribute name",
 		  1: "text",
 		  2: "node name",
-		  3: "attribute value"
+		  3: "attribute value",
+		  4: "comment block"
 		}
 
 		// Enum to human-readable structure to translate the different severity ratings. 

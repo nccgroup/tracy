@@ -12,7 +12,7 @@
     "react-router": "^4.2.0",
     "react-router-bootstrap": "^0.24.4",
     "react-router-dom": "^4.2.2",
-    "react-scripts": "1.0.14"
+    "react-scripts": "^1.0.14"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -103,6 +103,7 @@ const (
 	inText
 	inNodeName
 	inAttrVal
+	inComment
 )
 
 /* Helper function that recursively traverses the DOM notes and records any context
@@ -117,8 +118,8 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.EventsContext, tra
 					NodeName:     types.StringToJSONNullString(n.Parent.Data),
 					LocationType: types.Int64ToJSONNullInt64(inText),
 					Context:      types.StringToJSONNullString(n.Data),
-				}
-		} else n.Type == html.DocumentNode || n.Type == html.ElementNode || n.Type == html.DoctypeNode {
+				})
+		} else if n.Type == html.DocumentNode || n.Type == html.ElementNode || n.Type == html.DoctypeNode {
 			log.Trace.Printf("Found Tracer in DomNode. Parent Node: %s, Data: %s", n.Parent.Data, n.Data)
 			*tracerLocations = append(*tracerLocations,
 				types.EventsContext{
@@ -129,6 +130,12 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.EventsContext, tra
 		} else {
 			//TODO: although, we should care about these cases, there could be a case where the comment could be broken out of 
 			log.Trace.Printf("Found a comment node. We probably don't care about these as much. Parent node: %s, Data: %s", n.Parent, n.Data)
+			*tracerLocations = append(*tracerLocations,
+				types.EventsContext{
+					NodeName:     types.StringToJSONNullString(n.Parent.Data),
+					LocationType: types.Int64ToJSONNullInt64(inComment),
+					Context:      types.StringToJSONNullString(n.Data),
+			})
 		}
 	}
 
