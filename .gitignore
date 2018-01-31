@@ -2,3 +2,4 @@
 Gopkg.lock
 vendor/*
 bin/*
+tracer/rest/bindata_assetfs.go

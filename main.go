@@ -61,6 +61,7 @@ func init() {
 	flag.Parse()
 	log.Init()
 	configure.Database(configure.DatabaseFile)
+	rest.Init()
 
 	//TODO: decide if we want to add labels to the database or just keep in them in a configuration file
 	/* Add the configured labels to the database. */

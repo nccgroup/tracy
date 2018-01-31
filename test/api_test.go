@@ -694,4 +694,5 @@ func addTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 
 func init() {
 	log.Init()
+	rest.Init()
 }

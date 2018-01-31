@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 	"tracy/configure"
+	"flag"
 	"tracy/log"
 )
 
@@ -23,7 +24,7 @@ var ConfigServer *http.Server
 var ConfigRouter *mux.Router
 
 /*Helper that configures all the HTTP routes and their corresponding handler. */
-func init() {
+func Init() {
 	RestRouter = mux.NewRouter()
 	ConfigRouter = mux.NewRouter()
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
@@ -46,8 +47,12 @@ func init() {
 	RestRouter.Methods("GET").Path("/labels").HandlerFunc(GetLabels)
 	RestRouter.Methods("GET").Path("/labels/{labelID}").HandlerFunc(GetLabel)
 
-	/* The base application page. */
-	RestRouter.PathPrefix("/").Handler(http.FileServer(assetFS()))
+	/* The base application page. Don't use the compiled assets unless in production. */
+	if configure.DebugUI || flag.Lookup("test.v") != nil {
+		RestRouter.PathPrefix("/").Handler(http.FileServer(http.Dir("./tracer/view/build")))
+	} else {
+		RestRouter.PathPrefix("/").Handler(http.FileServer(assetFS()))
+	}
 
 	/* Define routes for config. */
 	ConfigRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
@@ -58,7 +63,7 @@ func init() {
 	if err != nil {
 		log.Error.Fatal(err)
 	} else {
-		//Additional server features
+		//Additional server features rest server
 		restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
 		corsOptions := []handlers.CORSOption{
 			handlers.AllowedOriginValidator(func(a string) bool {
@@ -75,7 +80,7 @@ func init() {
 			ErrorLog: log.Error,
 		}
 
-		//Additional server features
+		//Additional server features for configuration server
 		configHandler := handlers.CompressHandlerLevel(ConfigRouter, gzip.BestCompression)
 		configHandler = handlers.CORS(corsOptions...)(configHandler)
 

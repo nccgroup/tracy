@@ -21,6 +21,9 @@ var TracyPath string
 /*DatabaseFile is the database file configured through the command line. */
 var DatabaseFile string
 
+/*DebugUI is the flag used to tell if the user is debugging the UI. */
+var DebugUI bool
+
 func init() {
 	usr, err := user.Current()
 	if err != nil {
@@ -77,10 +80,13 @@ func init() {
 	var (
 		databaseFileUsage   = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
 		databaseFileDefault = "prod-tracer-db.db"
+		debugUIUsage = "Indicate if you'd like the UI to use the non-compiled assets in the case of debugging."
 	)
 	/* Database file. Allows the user to change the location of the SQLite database file. */
 	flag.StringVar(&DatabaseFile, "database", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
-	flag.StringVar(&DatabaseFile, "d", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage+"(shorthand)")
+	flag.StringVar(&DatabaseFile, "d", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
+	flag.BoolVar(&DebugUI, "debug-ui", false, debugUIUsage)
+	flag.BoolVar(&DebugUI, "du", false, debugUIUsage+"(shorthand)")
 }
 
 /*ProxyServer configures the TCP listener based on the user's configuration. */
