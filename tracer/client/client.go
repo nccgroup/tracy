@@ -13,33 +13,15 @@ import (
 
 /*AddTracers takes multiple tracer structs and sends them to the tracer API. This client request can return multiple errors,
  * up to one per tracer sent. */
-func AddTracers(tracers []types.Tracer) []error {
+func AddTracers(request types.Request) []error {
 	ret := make([]error, 0)
 
-	log.Trace.Printf("Adding the following tracers: %+v", tracers)
-	/* For each of the tracers, marshal it and send it off to the API. */
-	for _, tracer := range tracers {
-		err := AddTracer(tracer)
-		if err != nil {
-			log.Warning.Printf(err.Error())
-			ret = append(ret, err)
-		}
-	}
-
-	return ret
-}
-
-/*AddTracer adds one tracer to the tracer API. */
-func AddTracer(tracer types.Tracer) error {
-	log.Trace.Printf("Adding the following tracer: %+v", tracer)
-	var ret error
-	tracerJSON, err := json.Marshal(tracer)
+	log.Trace.Printf("Adding the following tracers: %+v", request.Tracers)
+	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		log.Warning.Printf(err.Error())
-		/* If one of the tracer's is messed up and leave. */
-		ret = err
 	} else {
-		log.Trace.Printf("Decoded the tracer into the following JSON: %s", tracerJSON)
+		log.Trace.Printf("Decoded the tracer into the following JSON: %s", requestJSON)
 
 		/* Send the request off to the API. We don't need the response.*/
 		var tracerServer interface{}
@@ -50,19 +32,18 @@ func AddTracer(tracer types.Tracer) error {
 			url := fmt.Sprintf("http://%s/tracers", tracerServer.(string))
 			contentType := "application/json; charset=UTF-8"
 			log.Trace.Printf("Sending POST request to %s %s", url, contentType)
-			_, err := http.Post(url, contentType, bytes.NewBuffer(tracerJSON))
+			_, err = http.Post(url, contentType, bytes.NewBuffer(requestJSON))
 
 			/* If there was a server error, move to the next tracer. */
 			if err != nil {
 				log.Warning.Printf(err.Error())
-				ret = err
 			} else {
-				log.Trace.Printf("Request submitted successsfully")
+				log.Trace.Printf("Request submitted successfully")
 			}
 		}
 	}
 
-	return ret
+	return err
 }
 
 /*GetTracers gets a list of the current tracers in the database. */
@@ -144,15 +125,15 @@ func AddLabel(label types.Label) error {
 	log.Trace.Printf("Adding the following label: %+v", label)
 	var ret error
 
-	labelStr, err := json.Marshal(label)
+	labelJSON, err := json.Marshal(label)
 	if err == nil {
 		var tracerServer interface{}
 		tracerServer, err = configure.ReadConfig("tracer-server")
 		if err == nil {
 			url := fmt.Sprintf("http://%s/labels", tracerServer.(string))
 			contentType := "application/json; charset=UTF-8"
-			log.Trace.Printf("Sending POST request with %s to %s %s", labelStr, url, contentType)
-			_, err = http.Post(url, contentType, bytes.NewBuffer(labelStr))
+			log.Trace.Printf("Sending POST request with %s to %s %s", labelJSON, url, contentType)
+			_, err = http.Post(url, contentType, bytes.NewBuffer(labelJSON))
 		}
 	}
 
@@ -195,7 +176,7 @@ func GetLabels() ([]types.Label, error) {
 	return ret, err
 }
 
-/*GetLabel gets the label with the ID in the database. */
+/*GetLabel gets the label with the ID in the API. */
 func GetLabel(ID int) (types.Label, error) {
 	log.Trace.Printf("Getting the label %d", ID)
 	ret := types.Label{}

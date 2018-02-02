@@ -20,33 +20,22 @@ func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
 
-	/* Validate the event before uploading it to the database. */
-	if trcrEvnt.Data.String == "" {
-		ret = []byte("The data field for the event was empty.")
-		log.Error.Println(string(ret))
-	} else if trcrEvnt.Location.String == "" {
-		ret = []byte("The location field for the event was empty.")
-		log.Error.Println(string(ret))
-	} else if trcrEvnt.EventType.String == "" {
-		ret = []byte("The event type field for the event was empty.")
-		log.Error.Println(string(ret))
-	} else {
-		log.Trace.Printf("The tracer event conforms to the expected.")
-		var evntStr []byte
-		var err error
-		evntStr, err = common.AddEvent(trcrID, trcrEvnt)
-		if err != nil {
-			ret = []byte(err.Error())
-			log.Error.Println(err)
-			if strings.Contains(err.Error(), "UNIQUE") {
-				status = http.StatusConflict
-			}
-		} else {
-			log.Trace.Printf("Successfully added the tracer event: %v", string(evntStr))
-			/* Final success case. */
-			status = http.StatusOK
-			ret = evntStr
+	/* Validation is performed by the database schema. */
+	log.Trace.Printf("The tracer event conforms to the expected.")
+	var evntStr []byte
+	var err error
+	evntStr, err = common.AddEvent(trcrID, trcrEvnt)
+	if err != nil {
+		ret = []byte(err.Error())
+		log.Error.Println(err)
+		if strings.Contains(err.Error(), "UNIQUE") {
+			status = http.StatusConflict
 		}
+	} else {
+		log.Trace.Printf("Successfully added the tracer event: %v", string(evntStr))
+		/* Final success case. */
+		status = http.StatusOK
+		ret = evntStr
 	}
 
 	return status, ret

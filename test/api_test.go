@@ -23,7 +23,7 @@ func TestAddTracer(t *testing.T) {
 		method     = "GET"
 		addURL     = "http://127.0.0.1:8081/tracers"
 		getURL     = "http://127.0.0.1:8081/tracers/1"
-		addTrcrStr = fmt.Sprintf(`{"TracerString": "%s", "URL": "%s", "Method": "%s"}`, trcrStr, URL, method)
+		addTrcrStr = fmt.Sprintf(`{"TracerString": "%s", "RequestURL": "%s", "RequestMethod": "%s"}`, trcrStr, URL, method)
 	)
 
 	/* ADDING A TRACER */

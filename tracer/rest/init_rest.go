@@ -1,13 +1,13 @@
 package rest
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/gorilla/handlers"
 	"compress/gzip"
+	"flag"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"net/http"
 	"time"
 	"tracy/configure"
-	"flag"
 	"tracy/log"
 )
 
@@ -28,18 +28,16 @@ func Init() {
 	RestRouter = mux.NewRouter()
 	ConfigRouter = mux.NewRouter()
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
-	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracer)
-	RestRouter.Methods("DELETE").Path("/tracers/{tracerID}").HandlerFunc(DeleteTracer)
-	RestRouter.Methods("PUT").Path("/tracers/{tracerID}").HandlerFunc(EditTracer)
+	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracers)
 	RestRouter.Methods("GET").Path("/tracers/generate").HandlerFunc(GenerateTracer)
 
-	RestRouter.Methods("GET").Path("/tracers/events").HandlerFunc(GetTracersWithEvents)
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(GetTracer)
 	RestRouter.Methods("GET").Path("/tracers").HandlerFunc(GetTracers)
 
 	/* Define our RESTful routes for tracer events. Tracer events are indexed by their
 	 * corresponding tracer ID. */
 	RestRouter.Methods("POST").Path("/tracers/{tracerID}/events").HandlerFunc(AddEvent)
+	RestRouter.Methods("GET").Path("/tracers/{tracerID}/events").HandlerFunc(GetEvents)
 	RestRouter.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(AddEvents)
 
 	/* Define RESTful routes for labels. */
@@ -67,8 +65,8 @@ func Init() {
 		restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
 		corsOptions := []handlers.CORSOption{
 			handlers.AllowedOriginValidator(func(a string) bool {
-			return true
-		})}
+				return true
+			})}
 		restHandler = handlers.CORS(corsOptions...)(restHandler)
 
 		RestServer = &http.Server{
@@ -77,7 +75,7 @@ func Init() {
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
-			ErrorLog: log.Error,
+			ErrorLog:     log.Error,
 		}
 
 		//Additional server features for configuration server
@@ -90,7 +88,7 @@ func Init() {
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
-			ErrorLog: log.Error,
+			ErrorLog:     log.Error,
 		}
 	}
 }

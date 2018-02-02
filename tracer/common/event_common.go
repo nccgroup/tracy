@@ -12,45 +12,21 @@ import (
 
 /*AddEvent is the common functionality to add an event to the database. This function
  * has been separated so both HTTP and websocket servers can use it. */
-func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
-	log.Trace.Printf("Adding the following tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
+func AddEvent(tracerID int, event types.TracerEvent) ([]byte, error) {
+	log.Trace.Printf("Adding the following tracer event: %+v, tracerID: %d", event, tracerID)
 	var ret []byte
 	var err error
 
-	/* Look up the tracer based on the provided ID. */
-	var trcr types.Tracer
-	trcr, err = store.DBGetTracerWithEventsByID(store.TracerDB, trcrID)
-	if err == nil {
-		/* Make sure the ID of the tracer exists. */
-		if trcr.ID == 0 {
-			err = fmt.Errorf("The tracer ID %d doesn't exist: %+v", trcrID, trcr)
-		} else {
-			log.Trace.Printf("Found the tracer in the database: %+v.", trcr)
+	event.TracerID = tracerID
+	if err = store.DB.Create(&event).Error; err == nil {
+		log.Trace.Printf("Successfully added the tracer event to the database.")
+		var contexts []types.DOMContext
+		contexts, err = addDomContext(event)
 
-			/* If it is a valid tracer event and the tracer exists, then add it to the database. */
-			var event types.TracerEvent
-			event, err = store.DBAddTracerEvent(store.TracerDB, trcrEvnt, trcr.TracerString)
-			if err == nil {
-				if int(event.ID.Int64) != 0 {
-					log.Trace.Printf("Successfully added the tracer event to the database: %+v", event)
-
-					/* After adding an event, make sure the context also gets stored at the same time. */
-					err = addEventContext(event, trcrID)
-					if err == nil {
-						log.Trace.Printf("Successfully added the tracer context to the database.")
-
-						/* Need to do an additional query here to return the results of adding the contexts. */
-						event, err = store.DBGetTracerEventByID(store.TracerDB, int(event.ID.Int64))
-
-						if err == nil {
-							log.Trace.Printf("Got the following event just inserted: %+v", event)
-							ret, err = json.Marshal(event)
-						}
-					}
-				} else {
-					err = fmt.Errorf("the event added is not the same as the event returned")
-				}
-			}
+		if err == nil {
+			log.Trace.Printf("Successfully added the DOM context to the database.")
+			event.DOMContexts = contexts
+			ret, err = json.Marshal(event)
 		}
 	}
 
@@ -61,40 +37,37 @@ func AddEvent(trcrID int, trcrEvnt types.TracerEvent) ([]byte, error) {
 	return ret, err
 }
 
-/*addEventContext is the common functionality for adding data to the event context table. */
-func addEventContext(trcrEvnt types.TracerEvent, trcrID int) error {
-	log.Trace.Printf("Adding the event context for %+v", trcrEvnt)
+/*addDomContext is the common functionality for adding data to the event context table. */
+func addDomContext(tracerEvent types.TracerEvent) ([]types.DOMContext, error) {
+	log.Trace.Printf("Adding the event context for %+v", tracerEvent)
 	var err error
+	var contexts []types.DOMContext
+
 	var doc *html.Node
-	doc, err = html.Parse(strings.NewReader(trcrEvnt.Data.String))
+	doc, err = html.Parse(strings.NewReader(tracerEvent.RawEvent))
 	if err == nil {
-		var contexts []types.EventsContext
-
 		/* Need to get the tracer string this event is mapped to. */
-		var trcr types.Tracer
-		trcr, err = store.DBGetTracerWithEventsByID(store.TracerDB, trcrID)
-		if err == nil {
+		var tracer types.Tracer
+		if err = store.DB.First(&tracer, "id = ?", tracerEvent.TracerID).Error; err == nil {
 			/* Find all instances of the string string and record their appropriate contexts.*/
-			getTracerLocation(doc, &contexts, trcr.TracerString)
-
-			log.Trace.Printf("Got the following contexts from the event: %+v", contexts)
-
+			getTracerLocation(doc, &contexts, tracer.TracerString)
+			log.Trace.Printf("Got the following DOM contexts from the event: %+v", contexts)
 			/* Add the tracer context to the event for each instance of a tracer string found in the DOM. */
 			for _, v := range contexts {
-				err = store.DBAddEventContext(store.TracerDB, v, trcrEvnt.ID)
-				if err != nil {
+				v.TracerEventID = tracerEvent.Model.ID
+				//TODO: If multiple errors happen in this loop, we will lose some of the data.
+				if err = store.DB.Create(&v).Error; err != nil {
 					log.Warning.Printf(err.Error())
 				}
 			}
 		}
 	}
 
-	/* Catch errors that drop. */
 	if err != nil {
 		log.Warning.Printf(err.Error())
 	}
 
-	return err
+	return contexts, err
 }
 
 /* Constants used to track the categories for the locations of a tracer string. */
@@ -108,53 +81,53 @@ const (
 
 /* Helper function that recursively traverses the DOM notes and records any context
  * surrounding a particular string. */
-func getTracerLocation(n *html.Node, tracerLocations *[]types.EventsContext, tracer string) {
+func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer string) {
 
 	if strings.Contains(n.Data, tracer) {
 		if n.Type == html.TextNode {
 			log.Trace.Printf("Found Tracer in TextNode. Parent Node: %s, Data: %s", n.Parent.Data, n.Data)
 			*tracerLocations = append(*tracerLocations,
-				types.EventsContext{
-					NodeName:     types.StringToJSONNullString(n.Parent.Data),
-					LocationType: types.Int64ToJSONNullInt64(inText),
-					Context:      types.StringToJSONNullString(n.Data),
+				types.DOMContext{
+					HTMLNodeType:     n.Parent.Data,
+					HTMLLocationType: inText,
+					EventContext:     n.Data,
 				})
 		} else if n.Type == html.DocumentNode || n.Type == html.ElementNode || n.Type == html.DoctypeNode {
 			log.Trace.Printf("Found Tracer in DomNode. Parent Node: %s, Data: %s", n.Parent.Data, n.Data)
 			*tracerLocations = append(*tracerLocations,
-				types.EventsContext{
-					NodeName:     types.StringToJSONNullString(n.Parent.Data),
-					LocationType: types.Int64ToJSONNullInt64(inNodeName),
-					Context:      types.StringToJSONNullString(n.Data),
+				types.DOMContext{
+					HTMLNodeType:     n.Parent.Data,
+					HTMLLocationType: inNodeName,
+					EventContext:     n.Data,
 				})
 		} else {
-			//TODO: although, we should care about these cases, there could be a case where the comment could be broken out of 
+			//TODO: although, we should care about these cases, there could be a case where the comment could be broken out of
 			log.Trace.Printf("Found a comment node. We probably don't care about these as much. Parent node: %s, Data: %s", n.Parent, n.Data)
 			*tracerLocations = append(*tracerLocations,
-				types.EventsContext{
-					NodeName:     types.StringToJSONNullString(n.Parent.Data),
-					LocationType: types.Int64ToJSONNullInt64(inComment),
-					Context:      types.StringToJSONNullString(n.Data),
-			})
+				types.DOMContext{
+					HTMLNodeType:     n.Parent.Data,
+					HTMLLocationType: inComment,
+					EventContext:     n.Data,
+				})
 		}
 	}
 
 	for _, a := range n.Attr {
 		if strings.Contains(a.Key, tracer) {
 			*tracerLocations = append(*tracerLocations,
-				types.EventsContext{
-					NodeName:     types.StringToJSONNullString(n.Data),
-					LocationType: types.Int64ToJSONNullInt64(inAttr),
-					Context:      types.StringToJSONNullString(a.Key),
+				types.DOMContext{
+					HTMLNodeType:     n.Data,
+					HTMLLocationType: inAttr,
+					EventContext:     a.Key,
 				})
 		}
 
 		if strings.Contains(a.Val, tracer) {
 			*tracerLocations = append(*tracerLocations,
-				types.EventsContext{
-					NodeName:     types.StringToJSONNullString(n.Data),
-					LocationType: types.Int64ToJSONNullInt64(inAttrVal),
-					Context:      types.StringToJSONNullString(a.Val),
+				types.DOMContext{
+					HTMLNodeType:     n.Data,
+					HTMLLocationType: inAttrVal,
+					EventContext:     a.Val,
 				})
 		}
 	}

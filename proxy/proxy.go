@@ -83,21 +83,33 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 
 	}
 
+	/* Search through the request for the tracer keyword. */
+	tracers, err := replaceTracers(request)
+
+	if err != nil {
+		/* If there was an error replacing the tracers, fail fast and leave. */
+		log.Error.Println(err)
+		return
+	}
+
 	/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
 	 * server API call because it will trigger a recursion. */
-	if !configure.ServerInWhitelist(host) {
-		/* Search through the request for the tracer keyword. */
-		tracers, err := replaceTracers(request)
+	go func() {
+		if !configure.ServerInWhitelist(host) {
+			dump, err := httputil.DumpRequest(request, true)
+			if err != nil {
+				dump = "ERROR DUMPING"
+			}
 
-		if err != nil {
-			/* If there was an error replacing the tracers, fail fast and leave. */
-			log.Error.Println(err)
-			return
+			req := types.Request{
+				RawRequest: dump,
+				Tracers:    tracers,
+			}
+
+			/* Use the tracer API client to add the new tracers. */
+			tracerClient.AddTracers(req)
 		}
-
-		/* Use the tracer API client to add the new tracers. */
-		go tracerClient.AddTracers(tracers)
-	}
+	}()
 
 	var server net.Conn
 

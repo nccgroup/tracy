@@ -1,10 +1,15 @@
 package types
 
+import (
+	"github.com/jinzhu/gorm"
+)
+
 /*TracerEvent is an event that marks when a particular tracer was viewed again. */
 type TracerEvent struct {
-	ID        JSONNullInt64   `json:"ID"`
-	Data      JSONNullString  `json:"Data"`
-	Location  JSONNullString  `json:"Location"`
-	EventType JSONNullString  `json:"EventType"`
-	Contexts  []EventsContext `json:"Contexts"`
+	gorm.Model
+	TracerID    uint         `json:"tracer_id" gorm:"not null;index"`
+	RawEvent    string       `json:"raw_event"  gorm:"not null;unique_index:idx_event_collision"`
+	EventURL    string       `json:"event_url"  gorm:"not null; unique_index:idx_event_collision"`
+	EventType   string       `json:"event_type"  gorm:"not null"`
+	DOMContexts []DOMContext `json:"dom_contexts"`
 }

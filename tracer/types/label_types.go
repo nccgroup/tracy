@@ -1,8 +1,12 @@
 package types
 
+import (
+	"github.com/jinzhu/gorm"
+)
+
 /*Label is a payload type that can be used by the extension. */
 type Label struct {
-	ID            JSONNullInt64  `json:"ID"`
-	Tracer        JSONNullString `json:"Tracer"`
-	TracerPayload JSONNullString `json:"TracerPayload"`
+	gorm.Model
+	TracerString  string `json:"tracer" gorm:"not null"`
+	TracerPayload string `json:"tracer_payload" gorm:"not null"`
 }

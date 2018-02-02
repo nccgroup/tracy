@@ -59,8 +59,13 @@ func main() {
 func init() {
 	// Parse the flags. Have to parse them hear since other package initialize command line
 	flag.Parse()
+	// Set up the logging based on the user command line flags
 	log.Init()
-	configure.Database(configure.DatabaseFile)
+	// Open the database
+	if err := store.Open(configure.DatabaseFile); err != nil {
+		log.Error.Fatal(err.Error())
+	}
+	// Initialize the rest routes
 	rest.Init()
 
 	//TODO: decide if we want to add labels to the database or just keep in them in a configuration file
