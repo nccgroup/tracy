@@ -22,12 +22,11 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if ret, err = common.AddTracer(in); err == nil {
 		ret = ServerError(err)
-		log.Error.Printf(err.Error())
+		log.Error.Println(err)
 	} else {
 		status = http.StatusOK
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -40,12 +39,11 @@ func GetTracers(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if ret, err = common.GetTracers(); err != nil {
 		ret = ServerError(err)
-		log.Error.Printf(err.Error())
+		log.Error.Println(err)
 	} else {
 		status = http.StatusOK
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -57,21 +55,19 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	if tracerID, ok := vars["tracerID"]; ok {
-		id, err := strconv.ParseInt(tracerID, 10, 32)
-		if err != nil {
+		if id, err := strconv.ParseUint(tracerID, 10, 32); err != nil {
 			ret = ServerError(err)
-			log.Error.Printf(err.Error())
+			log.Error.Println(err)
 		} else {
-			if ret, err = common.GetTracer(int(id)); err != nil {
+			if ret, err = common.GetTracer(uint(id)); err != nil {
 				ret = ServerError(err)
-				log.Error.Printf(err.Error())
+				log.Error.Println(err)
 			} else {
 				status = http.StatusOK
 			}
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -108,7 +104,7 @@ func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 
 				if ret, err = common.AddTracer(genTracer); err != nil {
 					ret = ServerError(err)
-					log.Error.Printf(err.Error())
+					log.Error.Println(err)
 				} else {
 					status = http.StatusOK
 				}
@@ -116,7 +112,30 @@ func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	w.Write(ret)
+}
+
+/*GetRequest gets the tracer raw request string belonging to the tracer ID in the URL. */
+func GetRequest(w http.ResponseWriter, r *http.Request) {
+	ret := []byte("{}")
+	status := http.StatusInternalServerError
+
+	vars := mux.Vars(r)
+	if tracerID, ok := vars["tracerID"]; ok {
+		if id, err := strconv.ParseUint(tracerID, 10, 32); err != nil {
+			ret = ServerError(err)
+			log.Error.Printf(err.Error())
+		} else {
+			if ret, err = common.GetTracerequest(uint(id)); err != nil {
+				ret = ServerError(err)
+				log.Error.Println(err)
+			} else {
+				status = http.StatusOK
+			}
+		}
+	}
+
 	w.WriteHeader(status)
 	w.Write(ret)
 }

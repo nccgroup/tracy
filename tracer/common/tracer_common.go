@@ -30,7 +30,7 @@ func AddTracer(request types.Request) ([]byte, error) {
 
 /*GetTracer is the common functionality to get a tracer from the database. This function
  * has been separated so both HTTP and websocket servers can use it. */
-func GetTracer(tracerID int) ([]byte, error) {
+func GetTracer(tracerID uint) ([]byte, error) {
 	log.Trace.Printf("Getting the following tracer:%d", tracerID)
 	var ret []byte
 	var err error
@@ -56,9 +56,28 @@ func GetTracers() ([]byte, error) {
 	var err error
 
 	var tracers []types.Tracer
-	if err = store.DB.First(&tracers); err == nil {
+	if err = store.DB.Find(&tracers).Error; err == nil {
 		log.Trace.Printf("Successfully got the tracers: %+v", tracers)
 		ret, err = json.Marshal(tracers)
+	}
+
+	if err != nil {
+		log.Warning.Printf(err.Error())
+	}
+
+	return ret, err
+}
+
+/*GetTracerRequest gets the raw request for the trace that was just selected. */
+func GetTracerRequest(tracerID uint) ([]byte, error) {
+	log.Trace.Printf("Getting request for the given tracer ID.")
+	var ret []byte
+	var err error
+
+	var request types.Request
+	if err = store.DB.First(&request).Error; err == nil {
+		log.Trace.Printf("Successfully got the request: %+v", request)
+		ret, err = json.Marshal(request)
 	}
 
 	if err != nil {

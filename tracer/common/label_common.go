@@ -13,7 +13,7 @@ func AddLabel(label types.Label) ([]byte, error) {
 	log.Trace.Printf("Adding the following label: %+v", l)
 	var ret []byte
 
-	if err = store.DB.Create(&label); err == nil {
+	if err = store.DB.Create(&label).Error; err == nil {
 		log.Trace.Printf("Successfully added the label to the database: %+v", label)
 		ret, err = json.Marshal(label)
 	} else {
@@ -24,13 +24,13 @@ func AddLabel(label types.Label) ([]byte, error) {
 }
 
 /*GetLabel is the common functionality to get a label from the database. */
-func GetLabel(ID int) ([]byte, error) {
-	log.Trace.Printf("Getting the following label: %d", ID)
+func GetLabel(labelID uint) ([]byte, error) {
+	log.Trace.Printf("Getting the following label: %d", labelID)u
 	var ret []byte
 	var err error
 
 	var label types.Label
-	if err = store.DB.First(&label, ID).Error; err == nil {
+	if err = store.DB.First(&label, labelID)u.Error; err == nil {
 		log.Trace.Printf("Successfully got the following label: %+v", label)
 		ret, err = json.Marshal(label)
 	}

@@ -59,12 +59,12 @@ function requestHandler(domEvents) {
                      * will be submitted in bulk to the event API. */
                     if (tracersPerDomEvent.length > 0) {
                         var event = {
-                            "Event" : {
-                                "Data" :        domEvent.msg,
-                                "Location" :    domEvent.location,
-                                "EventType" :   domEvent.type,
+                            "event" : {
+                                "raw_event" :        domEvent.msg,
+                                "event_url" :    domEvent.location,
+                                "event_type" :   domEvent.type,
                             },
-                            "TracerStrings":    tracersPerDomEvent
+                            "tracer_string":    tracersPerDomEvent
                         }
                         filteredEvents.push(event);
                     }

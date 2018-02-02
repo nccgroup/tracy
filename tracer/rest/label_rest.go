@@ -17,17 +17,13 @@ func AddLabel(w http.ResponseWriter, r *http.Request) {
 	in := types.Label{}
 	json.NewDecoder(r.Body).Decode(&in)
 
-	labelStr, err := common.AddLabel(in)
-	if err != nil {
+	if ret, err = common.AddLabel(in); err != nil {
 		ret = ServerError(err)
 		log.Error.Printf(err.Error())
 	} else {
-		/* Final success case. */
 		status = http.StatusOK
-		ret = labelStr
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -37,17 +33,13 @@ func GetLabels(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
 
-	labels, err := common.GetLabels()
-	if err != nil {
+	if ret, err = common.GetLabels(); err != nil {
 		ret = ServerError(err)
 		log.Error.Printf(err.Error())
 	} else {
-		/* Final success case. */
 		status = http.StatusOK
-		ret = labels
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(ret)
 }
@@ -59,24 +51,20 @@ func GetLabel(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	if labelID, ok := vars["labelID"]; ok {
-		id, err := strconv.ParseInt(labelID, 10, 32)
+		id, err := strconv.ParseUint(labelID, 10, 32)
 		if err != nil {
 			ret = ServerError(err)
 			log.Error.Printf(err.Error())
 		} else {
-			labels, err := common.GetLabel(int(id))
-			if err != nil {
+			if ret, err = common.GetLabel(uint(id)); err != nil {
 				ret = ServerError(err)
 				log.Error.Printf(err.Error())
 			} else {
-				/* Final success case. */
 				status = http.StatusOK
-				ret = labels
 			}
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(ret)
 }

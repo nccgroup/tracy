@@ -30,6 +30,7 @@ func Init() {
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
 	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracers)
 	RestRouter.Methods("GET").Path("/tracers/generate").HandlerFunc(GenerateTracer)
+	RestRouter.Methods("GET").Path("/tracers/{tracerID}/request").HandlerFunc(GetRequest)
 
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(GetTracer)
 	RestRouter.Methods("GET").Path("/tracers").HandlerFunc(GetTracers)
@@ -61,13 +62,15 @@ func Init() {
 	if err != nil {
 		log.Error.Fatal(err)
 	} else {
-		//Additional server features rest server
-		restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
 		corsOptions := []handlers.CORSOption{
 			handlers.AllowedOriginValidator(func(a string) bool {
 				return true
 			})}
+
+		//Additional server features rest server
+		restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
 		restHandler = handlers.CORS(corsOptions...)(restHandler)
+		restHandler = applicationJSONMiddleware(restHandler)
 
 		RestServer = &http.Server{
 			Handler: restHandler,
@@ -81,6 +84,7 @@ func Init() {
 		//Additional server features for configuration server
 		configHandler := handlers.CompressHandlerLevel(ConfigRouter, gzip.BestCompression)
 		configHandler = handlers.CORS(corsOptions...)(configHandler)
+		configHandler = applicationJSONMiddleware(configHandler)
 
 		ConfigServer = &http.Server{
 			Handler: configHandler,
@@ -91,4 +95,11 @@ func Init() {
 			ErrorLog:     log.Error,
 		}
 	}
+}
+
+/* Helper for adding application/json content type to all APIs. */
+func applicationJSONMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+	})
 }

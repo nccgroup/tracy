@@ -13,34 +13,25 @@ import (
 
 /*AddTracers takes multiple tracer structs and sends them to the tracer API. This client request can return multiple errors,
  * up to one per tracer sent. */
-func AddTracers(request types.Request) []error {
-	ret := make([]error, 0)
-
+func AddTracers(request types.Request) error {
 	log.Trace.Printf("Adding the following tracers: %+v", request.Tracers)
-	requestJSON, err := json.Marshal(request)
-	if err != nil {
-		log.Warning.Printf(err.Error())
-	} else {
+	var requestJSON string
+	var err error
+	if requestJSON, err = json.Marshal(request); err == nil {
 		log.Trace.Printf("Decoded the tracer into the following JSON: %s", requestJSON)
 
 		/* Send the request off to the API. We don't need the response.*/
 		var tracerServer interface{}
-		tracerServer, err = configure.ReadConfig("tracer-server")
-		if err != nil {
-			log.Warning.Printf(err.Error())
-		} else {
+		if tracerServer, err = configure.ReadConfig("tracer-server"); err == nil {
 			url := fmt.Sprintf("http://%s/tracers", tracerServer.(string))
 			contentType := "application/json; charset=UTF-8"
 			log.Trace.Printf("Sending POST request to %s %s", url, contentType)
 			_, err = http.Post(url, contentType, bytes.NewBuffer(requestJSON))
-
-			/* If there was a server error, move to the next tracer. */
-			if err != nil {
-				log.Warning.Printf(err.Error())
-			} else {
-				log.Trace.Printf("Request submitted successfully")
-			}
 		}
+	}
+
+	if err != nil {
+		log.Warning.Printf(err.Error())
 	}
 
 	return err
@@ -50,17 +41,17 @@ func AddTracers(request types.Request) []error {
 func GetTracers() ([]types.Tracer, error) {
 	log.Trace.Printf("Getting all the tracers")
 	ret := make([]types.Tracer, 0)
+	var err error
 
-	/* Make the GET request. */
-	tracerServer, err := configure.ReadConfig("tracer-server")
-	if err == nil {
+	var tracerServer interface{}
+	if tracerServer, err = configure.ReadConfig("tracer-server"); err == nil {
 		url := fmt.Sprintf("http://%s/tracers", tracerServer.(string))
 		log.Trace.Printf("Sending GET request to %s", url)
-		tracers, err := http.Get(url)
-		if err == nil {
+		var tracers *http.Response
+		if tracers, err = http.Get(url); err == nil {
 			log.Trace.Printf("Request submitted successfully")
-			tracersBody, err := ioutil.ReadAll(tracers.Body)
-			if err == nil {
+			var tracersBody []byte
+			if tracersBody, err = ioutil.ReadAll(tracers.Body); err == nil {
 				log.Trace.Printf("Read the following from the request response: %s", tracersBody)
 				/* Last success case. Unmarshal the tracers and check for parsing errors. */
 				err = json.Unmarshal(tracersBody, &ret)
@@ -84,8 +75,7 @@ func AddTracerEvents(tracerEvents map[int]types.TracerEvent) []error {
 
 	for tracerID, tracerEvent := range tracerEvents {
 		/* Using the tracer ID associated with the event, add it to the API. */
-		err := AddTracerEvent(tracerEvent, tracerID)
-		if err != nil {
+		if err := AddTracerEvent(tracerEvent, tracerID); err != nil {
 			/* If there is an error, record it and continue. */
 			log.Warning.Printf(err.Error())
 			ret = append(ret, err)
@@ -99,22 +89,22 @@ func AddTracerEvents(tracerEvents map[int]types.TracerEvent) []error {
 /*AddTracerEvent adds a single tracer event struct to a tracer using the tracer API. */
 func AddTracerEvent(tracerEvent types.TracerEvent, tracerID int) error {
 	log.Trace.Printf("Adding the following tracer event: %+v, tracer ID: %s", tracerEvent, tracerID)
+	var err error
+	tracerEvent.TracerID = tracerID
 
-	eventData, err := json.Marshal(tracerEvent)
-	if err == nil {
+	var eventJSON string
+	if eventJSON, err = json.Marshal(tracerEvent); err == nil {
 		var tracerServer interface{}
-		tracerServer, err = configure.ReadConfig("tracer-server")
-		if err == nil {
+		if tracerServer, err = configure.ReadConfig("tracer-server"); err == nil {
 			url := fmt.Sprintf("http://%s/tracers/%d/events", tracerServer.(string), tracerID)
 			contentType := "application/json; charset=UTF-8"
-			log.Trace.Printf("Sending POST request with %s to %s %s", eventData, url, contentType)
-			_, err = http.Post(url, contentType, bytes.NewBuffer(eventData))
+			log.Trace.Printf("Sending POST request with %s to %s %s", eventJSON, url, contentType)
+			_, err = http.Post(url, contentType, bytes.NewBuffer(eventJSON))
 		}
 	}
 
-	/* If an error dropped here, record it. */
 	if err != nil {
-		log.Warning.Printf(err.Error())
+		log.Warning.Println(err)
 	}
 
 	return err
@@ -137,30 +127,29 @@ func AddLabel(label types.Label) error {
 		}
 	}
 
-	/* If an error dropped here, record it. */
 	if err != nil {
-		log.Warning.Printf(err.Error())
-		ret = err
+		log.Warning.Println(err)
 	}
 
-	return ret
+	return err
 }
 
 /*GetLabels gets a list of the all the labels in the database. */
 func GetLabels() ([]types.Label, error) {
 	log.Trace.Printf("Getting all the labels")
 	ret := make([]types.Label, 0)
+	var err error
 
-	/* Make the GET request. */
-	tracerServer, err := configure.ReadConfig("tracer-server")
-	if err == nil {
+	var tracerServer interface{}
+	if tracerServer, err = configure.ReadConfig("tracer-server"); err == nil {
 		url := fmt.Sprintf("http://%s/labels", tracerServer.(string))
 		log.Trace.Printf("Sending GET request to %s", url)
-		labels, err := http.Get(url)
-		if err == nil {
+
+		var labels *http.Response
+		if labels, err = http.Get(url); err == nil {
 			log.Trace.Printf("Request submitted successfully")
-			tracersBody, err := ioutil.ReadAll(labels.Body)
-			if err == nil {
+			var tracersBody []byte
+			if tracersBody, err = ioutil.ReadAll(labels.Body); err == nil {
 				log.Trace.Printf("Read the following from the request response: %s", tracersBody)
 				/* Last success case. Unmarshal the tracers and check for parsing errors. */
 				err = json.Unmarshal(tracersBody, &ret)
@@ -170,7 +159,7 @@ func GetLabels() ([]types.Label, error) {
 	}
 
 	if err != nil {
-		log.Warning.Printf(err.Error())
+		log.Warning.Println(err)
 	}
 
 	return ret, err
@@ -180,17 +169,17 @@ func GetLabels() ([]types.Label, error) {
 func GetLabel(ID int) (types.Label, error) {
 	log.Trace.Printf("Getting the label %d", ID)
 	ret := types.Label{}
+	var err error
 
-	/* Make the GET request. */
-	tracerServer, err := configure.ReadConfig("tracer-server")
-	if err == nil {
+	var tracerServer interface{}
+	if tracerServer, err = configure.ReadConfig("tracer-server"); err == nil {
 		url := fmt.Sprintf("http://%s/tracers/%d", tracerServer.(string), ID)
 		log.Trace.Printf("Sending GET request to %s", url)
-		label, err := http.Get(url)
-		if err == nil {
+		var label *http.Response
+		if label, err = http.Get(url); err == nil {
 			log.Trace.Printf("Request submitted successfully")
-			labelBody, err := ioutil.ReadAll(label.Body)
-			if err == nil {
+			var labelBody []byte
+			if labelBody, err = ioutil.ReadAll(label.Body); err == nil {
 				log.Trace.Printf("Read the following from the request response: %s", labelBody)
 				/* Last success case. Unmarshal the label and check for parsing errors. */
 				err = json.Unmarshal(labelBody, &ret)
