@@ -1,4 +1,4 @@
-package test
+package proxy
 
 import (
 	"bufio"
@@ -8,9 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"tracy/log"
-	"tracy/proxy"
-	"tracy/tracer/types"
+	"tracy/api/types"
 )
 
 var requestDataNoTags = `GET /api/v1/action/ HTTP/1.1
@@ -68,7 +66,7 @@ func testAddTracersBodyHelper(requestDataString string) (int, error) {
 		return 0, err
 	}
 
-	newRequest, addedTracers := proxy.ReplaceTagsInBody(requestData)
+	newRequest, addedTracers := ReplaceTagsInBody(requestData)
 
 	for _, addedTracer := range addedTracers {
 		i := bytes.Index(newRequest, []byte(addedTracer))
@@ -104,7 +102,7 @@ func testAddTracerQueryHelper(requestData string) (int, error) {
 		return 0, err
 	}
 
-	newQuery, addedTracers := proxy.ReplaceTagsInQueryParameters(request.URL.RawQuery)
+	newQuery, addedTracers := ReplaceTagsInQueryParameters(request.URL.RawQuery)
 
 	for _, addedTracer := range addedTracers {
 		i := strings.Index(newQuery, addedTracer)
@@ -162,11 +160,7 @@ func TestFindNoTracers(t *testing.T) {
 }
 
 func testFindTracersHelper(responseData string, tracers []types.Tracer) (int, error) {
-	foundTracers := proxy.FindTracersInResponseBody(responseData, "www.test.com", tracers)
+	foundTracers := FindTracersInResponseBody(responseData, "www.test.com", tracers)
 
 	return len(foundTracers), nil
-}
-
-func init() {
-	log.Init()
 }

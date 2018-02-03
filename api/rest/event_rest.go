@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"tracy/api/common"
+	"tracy/api/store"
+	"tracy/api/types"
 	"tracy/log"
-	"tracy/tracer/common"
-	"tracy/tracer/store"
-	"tracy/tracer/types"
 )
 
 /* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.
@@ -25,9 +25,7 @@ func addEventHelper(trcrID uint, trcrEvnt types.TracerEvent) (int, []byte) {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			status = http.StatusConflict
 		}
-		fmt.Printf("Error: %+v", err)
 	} else {
-		fmt.Printf("Here (ret): %+v", string(ret))
 		log.Trace.Printf("Successfully added the tracer event: %v", string(ret))
 		status = http.StatusOK
 	}

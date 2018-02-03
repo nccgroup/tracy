@@ -2,7 +2,7 @@ package rest
 
 import (
 	"net/http"
-	"tracy/tracer/common"
+	"tracy/api/common"
 )
 
 /*GetConfig gets the global configuration for the application. */

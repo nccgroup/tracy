@@ -5,9 +5,9 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
+	"tracy/api/common"
+	"tracy/api/types"
 	"tracy/log"
-	"tracy/tracer/common"
-	"tracy/tracer/types"
 )
 
 /*AddLabel decodes an HTTP request to add a new label to the database. */

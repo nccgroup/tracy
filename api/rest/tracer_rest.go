@@ -6,10 +6,10 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
+	"tracy/api/common"
+	"tracy/api/types"
 	"tracy/log"
 	"tracy/proxy"
-	"tracy/tracer/common"
-	"tracy/tracer/types"
 )
 
 /*AddTracers decodes an HTTP request to add a new tracer(s) to the database. */

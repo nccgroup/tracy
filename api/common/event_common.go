@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"golang.org/x/net/html"
 	"strings"
+	"tracy/api/store"
+	"tracy/api/types"
 	"tracy/log"
-	"tracy/tracer/store"
-	"tracy/tracer/types"
 )
 
 /*AddEvent is the common functionality to add an event to the database. This function
@@ -38,7 +38,7 @@ func GetEvents(tracerID uint) ([]byte, error) {
 	var err error
 
 	var tracerEvents []types.TracerEvent
-	if err = store.DB.Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err == nil {
+	if err = store.DB.Joins("JOIN dom_contexts on dom_contexts.tracer_event_id=tracer_events.id").Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err == nil {
 		log.Trace.Printf("Successfully got the tracer events: %+v", tracerEvents)
 		ret, err = json.Marshal(tracerEvents)
 	}

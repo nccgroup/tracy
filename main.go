@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"tracy/api/common"
+	"tracy/api/rest"
+	"tracy/api/store"
+	"tracy/api/types"
 	"tracy/configure"
 	"tracy/log"
 	"tracy/proxy"
-	"tracy/tracer/common"
-	"tracy/tracer/rest"
-	"tracy/tracer/types"
 )
 
 func main() {
@@ -76,8 +77,8 @@ func init() {
 	}
 	for k, v := range tracers.(map[string]interface{}) {
 		label := types.Label{
-			Tracer:        types.StringToJSONNullString(k),
-			TracerPayload: types.StringToJSONNullString(v.(string)),
+			TracerString:  k,
+			TracerPayload: v.(string),
 		}
 
 		common.AddLabel(label)

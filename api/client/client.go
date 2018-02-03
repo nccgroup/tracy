@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"tracy/api/types"
 	"tracy/configure"
 	"tracy/log"
-	"tracy/tracer/types"
 )
 
 /*AddTracers takes multiple tracer structs and sends them to the tracer API. This client request can return multiple errors,

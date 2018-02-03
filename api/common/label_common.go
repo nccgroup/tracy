@@ -2,9 +2,9 @@ package common
 
 import (
 	"encoding/json"
+	"tracy/api/store"
+	"tracy/api/types"
 	"tracy/log"
-	"tracy/tracer/store"
-	"tracy/tracer/types"
 )
 
 /*AddLabel is the common functionality to add a label to the database. */

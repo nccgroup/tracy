@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	tracerClient "tracy/api/client"
+	"tracy/api/types"
 	"tracy/configure"
 	"tracy/log"
-	tracerClient "tracy/tracer/client"
-	"tracy/tracer/types"
 )
 
 /*ListenAndServe waits and listens for TCP connections and proxies them. */

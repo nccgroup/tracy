@@ -3,8 +3,8 @@ package store
 import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"tracy/api/types"
 	"tracy/log"
-	"tracy/tracer/types"
 )
 
 /*DB is the one global used to gain access to the database from this package.
