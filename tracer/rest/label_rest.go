@@ -15,14 +15,13 @@ func AddLabel(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
 	in := types.Label{}
-	json.NewDecoder(r.Body).Decode(&in)
-	var err error
-
-	if ret, err = common.AddLabel(in); err != nil {
-		ret = ServerError(err)
-		log.Error.Printf(err.Error())
-	} else {
-		status = http.StatusOK
+	if err := json.NewDecoder(r.Body).Decode(&in); err == nil {
+		if ret, err = common.AddLabel(in); err != nil {
+			ret = ServerError(err)
+			log.Error.Printf(err.Error())
+		} else {
+			status = http.StatusOK
+		}
 	}
 
 	w.WriteHeader(status)

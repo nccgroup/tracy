@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	//"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -16,14 +17,14 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
 	in := types.Request{}
-	json.NewDecoder(r.Body).Decode(&in)
 
-	var err error
-	if ret, err = common.AddTracer(in); err == nil {
-		ret = ServerError(err)
-		log.Error.Println(err)
-	} else {
-		status = http.StatusOK
+	if err := json.NewDecoder(r.Body).Decode(&in); err == nil {
+		if ret, err = common.AddTracer(in); err != nil {
+			ret = ServerError(err)
+			log.Error.Println(err)
+		} else {
+			status = http.StatusOK
+		}
 	}
 
 	w.WriteHeader(status)

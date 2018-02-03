@@ -19,13 +19,15 @@ func addEventHelper(trcrID uint, trcrEvnt types.TracerEvent) (int, []byte) {
 	log.Trace.Printf("Adding a tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
 	status := http.StatusInternalServerError
 	var ret []byte
-
-	if ret, err := common.AddEvent(trcrID, trcrEvnt); err != nil {
+	var err error
+	if ret, err = common.AddEvent(trcrID, trcrEvnt); err != nil {
 		log.Error.Println(err)
 		if strings.Contains(err.Error(), "UNIQUE") {
 			status = http.StatusConflict
 		}
+		fmt.Printf("Error: %+v", err)
 	} else {
+		fmt.Printf("Here (ret): %+v", string(ret))
 		log.Trace.Printf("Successfully added the tracer event: %v", string(ret))
 		status = http.StatusOK
 	}
@@ -39,12 +41,13 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusInternalServerError
 	vars := mux.Vars(r)
 	tracerEvent := types.TracerEvent{}
-	json.NewDecoder(r.Body).Decode(&tracerEvent)
-
-	/* Add the tracer event. */
-	if tracerID, err := strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {
-		log.Trace.Printf("Parsed the following tracer ID from the route: %d", tracerID)
-		status, ret = addEventHelper(uint(tracerID), tracerEvent)
+	if err := json.NewDecoder(r.Body).Decode(&tracerEvent); err == nil {
+		/* Add the tracer event. */
+		var tracerID uint64
+		if tracerID, err = strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {
+			log.Trace.Printf("Parsed the following tracer ID from the route: %d", tracerID)
+			status, ret = addEventHelper(uint(tracerID), tracerEvent)
+		}
 	}
 
 	w.WriteHeader(status)

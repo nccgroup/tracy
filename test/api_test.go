@@ -19,21 +19,13 @@ import (
 /* Testing addTracer with httptest. POST /tracers */
 func TestAddTracer(t *testing.T) {
 	var (
-		tracerString = "blahblah"
-		URL          = "http://example.com"
-		method       = "GET"
-		addURL       = "http://127.0.0.1:8081/tracers"
-		getURL       = "http://127.0.0.1:8081/tracers/1"
-		rawRequest   = `GET / HTTP/1.1
-Host: gorm.io
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Connection: keep-alive
-Pragma: no-cache
-Cache-Control: no-cache`
-		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", tracers: [{"tracer_string": %s}]}`, rawRequest, URL, method, tracerString)
+		tracerString    = "blahblah"
+		URL             = "http://example.com"
+		method          = "GET"
+		addURL          = "http://127.0.0.1:8081/tracers"
+		getURL          = "http://127.0.0.1:8081/tracers/1"
+		rawRequest      = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
+		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", "tracers": [{"tracer_string": "%s"}]}`, rawRequest, URL, method, tracerString)
 	)
 
 	/* ADDING A TRACER */
@@ -67,24 +59,16 @@ Cache-Control: no-cache`
 /* Testing adding a tracer event. POST /tracers/<tracer_id>/events */
 func TestAddEvent(t *testing.T) {
 	var (
-		tracerString = "blahblah"
-		data         = "dahdata<a>blahblah</a>"
-		URL          = "http://example.com"
-		location     = "dahlocation"
-		method       = "GET"
-		eventType    = "dateventType"
-		addEventURL  = "http://127.0.0.1:8081/tracers/1/events"
-		addTracerURL = "http://127.0.0.1:8081/tracers"
-		rawRequest   = `GET / HTTP/1.1
-Host: gorm.io
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Connection: keep-alive
-Pragma: no-cache
-Cache-Control: no-cache`
-		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", tracers: [{"tracer_string": %s}]}`, rawRequest, URL, method, tracerString)
+		tracerString    = "blahblah"
+		data            = "dahdata<a>blahblah</a>"
+		URL             = "http://example.com"
+		location        = "dahlocation"
+		method          = "GET"
+		eventType       = "dateventType"
+		addEventURL     = "http://127.0.0.1:8081/tracers/1/events"
+		addTracerURL    = "http://127.0.0.1:8081/tracers"
+		rawRequest      = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
+		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", "tracers": [{"tracer_string": "%s"}]}`, rawRequest, URL, method, tracerString)
 		eventString     = fmt.Sprintf(`{"raw_event": "%s", "event_url": "%s", "event_type": "%s"}`, data, location, eventType)
 	)
 
@@ -104,7 +88,7 @@ Cache-Control: no-cache`
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
 
-	addEvntTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+	addEventTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
 		/* Return variable. */
 		var err error
 
@@ -145,7 +129,7 @@ Cache-Control: no-cache`
 
 	/* GETTING AN EVENT */
 	/////////////////////
-	getEventReq, err := http.NewRequest("GET", fmt.Sprintf("%s/1", addTracerURL), nil)
+	getEventReq, err := http.NewRequest("GET", fmt.Sprintf("%s", addEventURL), nil)
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
@@ -162,23 +146,21 @@ Cache-Control: no-cache`
 			got := []types.TracerEvent{}
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
-			/* Make sure we have enough events. */
 			if len(got) == 0 {
-				err = fmt.Errorf("addTracerEvent didn't have any events to use. Expected 1")
-			} else {
-				/* Otherwise, grab the event. */
-				gotEvent := got[0]
+				err = fmt.Errorf("addTracerEvent returned the wrong number of events. Got 0, but expected 1")
+			}
 
-				/* Make sure the data we inserted was also the data we received back from the database. */
-				if gotEvent.ID != 1 {
-					err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", gotEvent.ID, 1)
-				} else if gotEvent.RawEvent != data {
-					err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", gotEvent.RawEvent, data)
-				} else if gotEvent.EventURL != location {
-					err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", gotEvent.EventURL, location)
-				} else if gotEvent.EventType != eventType {
-					err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", gotEvent.EventType, eventType)
-				}
+			event := got[0]
+
+			/* Make sure the data we inserted was also the data we received back from the database. */
+			if event.ID != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", event.ID, 1)
+			} else if event.RawEvent != data {
+				err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", event.RawEvent, data)
+			} else if event.EventURL != location {
+				err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", event.EventURL, location)
+			} else if event.EventType != eventType {
+				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", event.EventType, eventType)
 			}
 		}
 
@@ -189,7 +171,7 @@ Cache-Control: no-cache`
 
 	tests := make([]RequestTestPair, 3)
 	addReqTest := RequestTestPair{addReq, addTest}
-	addEventReqTest := RequestTestPair{addEventReq, addEvntTest}
+	addEventReqTest := RequestTestPair{addEventReq, addEventTest}
 	getEventReqTest := RequestTestPair{getEventReq, getEventTest}
 	tests[0] = addReqTest
 	tests[1] = addEventReqTest
@@ -200,24 +182,16 @@ Cache-Control: no-cache`
 /* Testing the database does not log duplicate events. */
 func TestDuplicateEvent(t *testing.T) {
 	var (
-		tracerString = "blahblah"
-		data         = "dahdata<a>blahblah</a>"
-		URL          = "http://example.com"
-		location     = "dahlocation"
-		method       = "GET"
-		eventType    = "dateventType"
-		addEventURL  = "http://127.0.0.1:8081/tracers/1/events"
-		addTracerURL = "http://127.0.0.1:8081/tracers"
-		rawRequest   = `GET / HTTP/1.1
-Host: gorm.io
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate
-Connection: keep-alive
-Pragma: no-cache
-Cache-Control: no-cache`
-		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", tracers: [{"tracer_string": %s}]}`, rawRequest, URL, method, tracerString)
+		tracerString    = "blahblah"
+		data            = "dahdata<a>blahblah</a>"
+		URL             = "http://example.com"
+		location        = "dahlocation"
+		method          = "GET"
+		eventType       = "dateventType"
+		addEventURL     = "http://127.0.0.1:8081/tracers/1/events"
+		addTracerURL    = "http://127.0.0.1:8081/tracers"
+		rawRequest      = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
+		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", "tracers": [{"tracer_string": "%s"}]}`, rawRequest, URL, method, tracerString)
 		eventString     = fmt.Sprintf(`{"raw_event": "%s", "event_url": "%s", "event_type": "%s"}`, data, location, eventType)
 	)
 
@@ -279,7 +253,7 @@ Cache-Control: no-cache`
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
 
-	addDupEvntTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
+	addDupEventTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
 		var err error
 		if status := rr.Code; status != http.StatusConflict {
 			err = fmt.Errorf("adding a duplicate event should have returned an internal server error due to the unique constraint set by the database")
@@ -293,7 +267,7 @@ Cache-Control: no-cache`
 	tests := make([]RequestTestPair, 3)
 	addReqTest := RequestTestPair{addReq, addTest}
 	addEventReqTest := RequestTestPair{addEventReq, addFirstEventTest}
-	addDupEvntReqTest := RequestTestPair{addEventReqDup, addDupEvntTest}
+	addDupEvntReqTest := RequestTestPair{addEventReqDup, addDupEventTest}
 	tests[0] = addReqTest
 	tests[1] = addEventReqTest
 	tests[2] = addDupEvntReqTest
@@ -308,8 +282,8 @@ func TestAddLabel(t *testing.T) {
 		payload   = "blahblahblah"
 		labelURL  = "http://127.0.0.1:8081/labels"
 		getURL    = "http://127.0.0.1:8081/labels/1"
-		addLabel  = fmt.Sprintf(`{"Tracer": "%s", "TracerPayload": "%s"}`, tracer, payload)
-		addLabel2 = fmt.Sprintf(`{"Tracer": "%s", "TracerPayload": "%s"}`, tracer2, payload)
+		addLabel  = fmt.Sprintf(`{"tracer_string": "%s", "tracer_payload": "%s"}`, tracer, payload)
+		addLabel2 = fmt.Sprintf(`{"tracer_string": "%s", "tracer_payload": "%s"}`, tracer2, payload)
 	)
 
 	/* ADDING A LABEL */
@@ -332,7 +306,7 @@ func TestAddLabel(t *testing.T) {
 
 		/* Validate the response gave us back the event we added. */
 		if got.ID != 1 {
-			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", got.ID)
+			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", got.ID, 1)
 		} else if got.TracerString != tracer {
 			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.TracerString, tracer)
 		} else if got.TracerPayload != payload {
@@ -395,8 +369,8 @@ func TestAddLabel(t *testing.T) {
 		/* Validate the response gave us back the event we added. */
 		if got.ID != 2 {
 			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", 2)
-		} else if got.TracerString != tracer {
-			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.TracerString, tracer)
+		} else if got.TracerString != tracer2 {
+			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.TracerString, tracer2)
 		} else if got.TracerPayload != payload {
 			err = fmt.Errorf("addLabel returned the wrong tracer payload. Got %s, but expected %s", got.TracerPayload, payload)
 		}

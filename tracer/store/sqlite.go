@@ -28,7 +28,8 @@ func Open(path string) error {
 		&types.Tracer{},
 		&types.TracerEvent{},
 		&types.DOMContext{},
-		&types.Request{})
+		&types.Request{},
+		&types.Label{})
 
 	/* We want to disable the goroutine thread pool that is used by default since this application doesn't need it and will
 	 * cause performance issues. https://stackoverflow.com/questions/35804884/sqlite-concurrent-writing-performance */
