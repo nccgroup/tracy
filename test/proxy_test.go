@@ -81,7 +81,7 @@ func testAddTracersBodyHelper(requestDataString string) (int, error) {
 }
 
 func TestAddTracersQueryNoTags(t *testing.T) {
-	numTracers, err := testAddTracerQuaryHelper(requestDataNoTags)
+	numTracers, err := testAddTracerQueryHelper(requestDataNoTags)
 	if err != nil {
 		t.Fatalf("Failed to insert Tracers with error: %+v", err)
 	} else if numTracers != 0 { //1 is the number of exspected tracers
@@ -90,7 +90,7 @@ func TestAddTracersQueryNoTags(t *testing.T) {
 }
 
 func TestAddTracersQueryTags(t *testing.T) {
-	numTracers, err := testAddTracerQuaryHelper(requestDataTags)
+	numTracers, err := testAddTracerQueryHelper(requestDataTags)
 	if err != nil {
 		t.Fatalf("Failed to insert Tracers with error: %+v", err)
 	} else if numTracers != 1 { //1 is the number of exspected tracers
@@ -98,16 +98,16 @@ func TestAddTracersQueryTags(t *testing.T) {
 	}
 }
 
-func testAddTracerQuaryHelper(requestData string) (int, error) {
+func testAddTracerQueryHelper(requestData string) (int, error) {
 	request, err := http.ReadRequest(bufio.NewReader(strings.NewReader(requestData)))
 	if err != nil {
 		return 0, err
 	}
 
-	newQuary, addedTracers := proxy.ReplaceTagsInQueryParameters(request.URL.RawQuery)
+	newQuery, addedTracers := proxy.ReplaceTagsInQueryParameters(request.URL.RawQuery)
 
 	for _, addedTracer := range addedTracers {
-		i := strings.Index(newQuary, addedTracer)
+		i := strings.Index(newQuery, addedTracer)
 		if i == -1 {
 			return 0, fmt.Errorf("no tracer found")
 		}

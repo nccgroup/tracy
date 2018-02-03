@@ -15,7 +15,7 @@ import (
 
 /* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.
  * Returns the HTTP status and the return value. */
-func addEventHelper(trcrID int, trcrEvnt types.TracerEvent) (int, []byte) {
+func addEventHelper(trcrID uint, trcrEvnt types.TracerEvent) (int, []byte) {
 	log.Trace.Printf("Adding a tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
 	status := http.StatusInternalServerError
 
