@@ -11,6 +11,7 @@ import (
 	"tracy/configure"
 	"tracy/log"
 	tracerClient "tracy/tracer/client"
+	"tracy/tracer/types"
 )
 
 /*ListenAndServe waits and listens for TCP connections and proxies them. */
@@ -98,12 +99,14 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 		if !configure.ServerInWhitelist(host) {
 			dump, err := httputil.DumpRequest(request, true)
 			if err != nil {
-				dump = "ERROR DUMPING"
+				dump = []byte("ERROR DUMPING")
 			}
 
 			req := types.Request{
-				RawRequest: dump,
-				Tracers:    tracers,
+				RawRequest:    string(dump),
+				RequestURL:    request.Host + request.RequestURI,
+				RequestMethod: request.Method,
+				Tracers:       tracers,
 			}
 
 			/* Use the tracer API client to add the new tracers. */

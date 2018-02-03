@@ -4,7 +4,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-/*EventsContext is an event that marks when a particular tracer was viewed again. */
+/*DOMContext is an event that marks when a particular tracer was viewed again. */
 type DOMContext struct {
 	gorm.Model
 	TracerEventID    uint   `json:"tracer_event_id" gorm:"not null; index"`

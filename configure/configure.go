@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 	"tracy/log"
-	"tracy/tracer/store"
 )
 
 /*TracyPath is the path all tracy files go in. */

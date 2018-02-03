@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"tracy/log"
 	"tracy/tracer/store"
 	"tracy/tracer/types"
@@ -12,7 +11,7 @@ import (
  * has been separated so both HTTP and websocket servers can use it. */
 func AddTracer(request types.Request) ([]byte, error) {
 	/* Log message to record the tracer added and any errors that might have been triggered. */
-	log.Trace.Printf("Adding a tracer to the database: %+v", tracer)
+	log.Trace.Printf("Adding a tracer to the database: %+v", request)
 	var ret []byte
 	var err error
 

@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"golang.org/x/net/html"
 	"strings"
 	"tracy/log"
@@ -64,7 +63,7 @@ func getDomContexts(tracerEvent types.TracerEvent) ([]types.DOMContext, error) {
 		var tracer types.Tracer
 		if err = store.DB.First(&tracer, "id = ?", tracerEvent.TracerID).Error; err == nil {
 			/* Find all instances of the string string and record their appropriate contexts.*/
-			getTracerLocation(doc, &contexts, tracer.TracerString, tracerEvent.Model.ID)
+			getTracerLocation(doc, &contexts, tracer.TracerString, tracerEvent.ID)
 			log.Trace.Printf("Got the following DOM contexts from the event: %+v", contexts)
 		}
 	}
@@ -144,6 +143,6 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 	}
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		getTracerLocation(c, tracerLocations, tracer)
+		getTracerLocation(c, tracerLocations, tracer, tracerEventID)
 	}
 }

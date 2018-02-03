@@ -23,7 +23,7 @@ var ConfigServer *http.Server
 /*ConfigRouter is the router used to map the configuration functionality. Exposed for testing. */
 var ConfigRouter *mux.Router
 
-/*Helper that configures all the HTTP routes and their corresponding handler. */
+/*Init is a helper that configures all the HTTP routes and their corresponding handler. */
 func Init() {
 	RestRouter = mux.NewRouter()
 	ConfigRouter = mux.NewRouter()

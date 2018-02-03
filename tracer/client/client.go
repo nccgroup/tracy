@@ -15,7 +15,7 @@ import (
  * up to one per tracer sent. */
 func AddTracers(request types.Request) error {
 	log.Trace.Printf("Adding the following tracers: %+v", request.Tracers)
-	var requestJSON string
+	var requestJSON []byte
 	var err error
 	if requestJSON, err = json.Marshal(request); err == nil {
 		log.Trace.Printf("Decoded the tracer into the following JSON: %s", requestJSON)
@@ -75,7 +75,7 @@ func AddTracerEvents(tracerEvents map[int]types.TracerEvent) []error {
 
 	for tracerID, tracerEvent := range tracerEvents {
 		/* Using the tracer ID associated with the event, add it to the API. */
-		if err := AddTracerEvent(tracerEvent, tracerID); err != nil {
+		if err := AddTracerEvent(tracerEvent, uint(tracerID)); err != nil {
 			/* If there is an error, record it and continue. */
 			log.Warning.Printf(err.Error())
 			ret = append(ret, err)
@@ -87,12 +87,12 @@ func AddTracerEvents(tracerEvents map[int]types.TracerEvent) []error {
 }
 
 /*AddTracerEvent adds a single tracer event struct to a tracer using the tracer API. */
-func AddTracerEvent(tracerEvent types.TracerEvent, tracerID int) error {
+func AddTracerEvent(tracerEvent types.TracerEvent, tracerID uint) error {
 	log.Trace.Printf("Adding the following tracer event: %+v, tracer ID: %s", tracerEvent, tracerID)
 	var err error
 	tracerEvent.TracerID = tracerID
 
-	var eventJSON string
+	var eventJSON []byte
 	if eventJSON, err = json.Marshal(tracerEvent); err == nil {
 		var tracerServer interface{}
 		if tracerServer, err = configure.ReadConfig("tracer-server"); err == nil {
@@ -113,7 +113,6 @@ func AddTracerEvent(tracerEvent types.TracerEvent, tracerID int) error {
 /*AddLabel adds a single label to the tracer API. */
 func AddLabel(label types.Label) error {
 	log.Trace.Printf("Adding the following label: %+v", label)
-	var ret error
 
 	labelJSON, err := json.Marshal(label)
 	if err == nil {

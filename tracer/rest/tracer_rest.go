@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -12,7 +11,7 @@ import (
 	"tracy/tracer/types"
 )
 
-/*AddTracer decodes an HTTP request to add a new tracer(s) to the database. */
+/*AddTracers decodes an HTTP request to add a new tracer(s) to the database. */
 func AddTracers(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
@@ -127,7 +126,7 @@ func GetRequest(w http.ResponseWriter, r *http.Request) {
 			ret = ServerError(err)
 			log.Error.Printf(err.Error())
 		} else {
-			if ret, err = common.GetTracerequest(uint(id)); err != nil {
+			if ret, err = common.GetTracerRequest(uint(id)); err != nil {
 				ret = ServerError(err)
 				log.Error.Println(err)
 			} else {

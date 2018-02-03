@@ -12,6 +12,7 @@ import (
 	"tracy/configure"
 	"tracy/log"
 	"tracy/tracer/rest"
+	"tracy/tracer/store"
 	"tracy/tracer/types"
 )
 
@@ -116,8 +117,8 @@ Cache-Control: no-cache`
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
 			/* Validate the response gave us back the event we added. */
-			if got.Model.ID != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.Model.ID, 1)
+			if got.ID != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
 			} else if got.RawEvent != data {
 				err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", got.RawEvent, data)
 			} else if got.EventURL != location {
@@ -126,14 +127,14 @@ Cache-Control: no-cache`
 				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType, eventType)
 			} else if len(got.DOMContexts) == 0 {
 				err = fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one")
-			} else if got.Contexts[0].HTMLNodeType != "a" {
-				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.Contexts[0].HTMLNodeType)
-			} else if got.Contexts[0].HTMLLocationType != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", got.Contexts[0].HTMLLocationType)
-			} else if got.Contexts[0].EventContext != "blahblah" {
-				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'", got.Contexts[0].EventContext)
-			} else if got.Contexts[0].Model.ID != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", got.Contexts[0].Model.ID)
+			} else if got.DOMContexts[0].HTMLNodeType != "a" {
+				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.DOMContexts[0].HTMLNodeType)
+			} else if got.DOMContexts[0].HTMLLocationType != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", got.DOMContexts[0].HTMLLocationType)
+			} else if got.DOMContexts[0].EventContext != "blahblah" {
+				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'", got.DOMContexts[0].EventContext)
+			} else if got.DOMContexts[0].ID != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", got.DOMContexts[0].ID)
 			}
 		}
 
@@ -169,8 +170,8 @@ Cache-Control: no-cache`
 				gotEvent := got[0]
 
 				/* Make sure the data we inserted was also the data we received back from the database. */
-				if gotEvent.Model.ID != 1 {
-					err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", gotEvent.Model.ID, 1)
+				if gotEvent.ID != 1 {
+					err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", gotEvent.ID, 1)
 				} else if gotEvent.RawEvent != data {
 					err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", gotEvent.RawEvent, data)
 				} else if gotEvent.EventURL != location {
@@ -249,8 +250,8 @@ Cache-Control: no-cache`
 			json.Unmarshal([]byte(rr.Body.String()), &got)
 
 			/* Validate the response gave us back the event we added. */
-			if got.Model.ID != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.Model.ID, 1)
+			if got.ID != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
 			} else if got.RawEvent != data {
 				err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", got.RawEvent, data)
 			} else if got.EventURL != location {
@@ -259,14 +260,14 @@ Cache-Control: no-cache`
 				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType, eventType)
 			} else if len(got.DOMContexts) == 0 {
 				err = fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one")
-			} else if got.Contexts[0].HTMLNodeType != "a" {
-				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.Contexts[0].HTMLNodeType)
-			} else if got.Contexts[0].HTMLLocationType != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", got.Contexts[0].HTMLLocationType)
-			} else if got.Contexts[0].EventContext != "blahblah" {
-				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'", got.Contexts[0].EventContext)
-			} else if got.Contexts[0].Model.ID != 1 {
-				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", got.Contexts[0].Model.ID)
+			} else if got.DOMContexts[0].HTMLNodeType != "a" {
+				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.DOMContexts[0].HTMLNodeType)
+			} else if got.DOMContexts[0].HTMLLocationType != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", got.DOMContexts[0].HTMLLocationType)
+			} else if got.DOMContexts[0].EventContext != "blahblah" {
+				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'", got.DOMContexts[0].EventContext)
+			} else if got.DOMContexts[0].ID != 1 {
+				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", got.DOMContexts[0].ID)
 			}
 		}
 
@@ -330,8 +331,8 @@ func TestAddLabel(t *testing.T) {
 		json.Unmarshal([]byte(rr.Body.String()), &got)
 
 		/* Validate the response gave us back the event we added. */
-		if got.Model.ID != 1 {
-			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", got.Model.ID)
+		if got.ID != 1 {
+			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", got.ID)
 		} else if got.TracerString != tracer {
 			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.TracerString, tracer)
 		} else if got.TracerPayload != payload {
@@ -361,8 +362,8 @@ func TestAddLabel(t *testing.T) {
 		json.Unmarshal([]byte(rr.Body.String()), &got)
 
 		/* Validate the response gave us back the event we added. */
-		if got.Model.ID != 1 {
-			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", got.Model.ID)
+		if got.ID != 1 {
+			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", got.ID)
 		} else if got.TracerString != tracer {
 			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.TracerString, tracer)
 		} else if got.TracerPayload != payload {
@@ -392,7 +393,7 @@ func TestAddLabel(t *testing.T) {
 		json.Unmarshal([]byte(rr.Body.String()), &got)
 
 		/* Validate the response gave us back the event we added. */
-		if got.Model.ID != 2 {
+		if got.ID != 2 {
 			err = fmt.Errorf("addLabel returned the wrong ID. Got %d, but expected %d", 2)
 		} else if got.TracerString != tracer {
 			err = fmt.Errorf("addLabel returned the wrong tracer. Got %s, but expected %s", got.TracerString, tracer)
@@ -459,7 +460,7 @@ func serverTestHelper(tests []RequestTestPair, t *testing.T) {
 	/* Delete any existing database entries */
 	configure.DeleteDatabase(db)
 	/* Open the database because the init method from main.go won't trigger. */
-	configure.Database(db)
+	store.Open(db)
 
 	for _, pair := range tests {
 		/* For each request/test combo:
@@ -515,10 +516,6 @@ func addTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 		/* Sanity checks to make sure the added tracer wasn't empty. */
 		if got.ID != 1 {
 			err = fmt.Errorf("The inserted tracer has the wrong ID. Expected 1, got: %d", got.ID)
-		} else if got.URL.String == "" {
-			err = fmt.Errorf("The inserted tracer has the wrong URL. Got nothing, but expected: %s", got.URL.String)
-		} else if got.Method.String == "" {
-			err = fmt.Errorf("The inserted tracer has the wrong Method. Got: %s", got.Method.String)
 		}
 	}
 

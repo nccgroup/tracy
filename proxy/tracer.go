@@ -35,11 +35,8 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 		/* Create tracer structs out of the generated tracer strings. */
 		addedTracers := make([]types.Tracer, len(replacedTracerStrings))
 		for i := 0; i < len(replacedTracerStrings); i++ {
-			fullURL := types.StringToJSONNullString(req.Host + req.RequestURI) //capture host, path, and query params
 			addedTracers[i] = types.Tracer{
 				TracerString: replacedTracerStrings[i],
-				URL:          fullURL,
-				Method:       types.StringToJSONNullString(req.Method),
 			}
 		}
 
@@ -154,7 +151,7 @@ func ReplaceTagsInBody(body []byte) ([]byte, []string) {
 	return replacedBody, replacedTracerStrings
 }
 
-/* GenerateTracerFromTag is a helper function that returns a random string that is used to track the tracer and the actual payload
+/*GenerateTracerFromTag is a helper function that returns a random string that is used to track the tracer and the actual payload
  * as a slice of bytes. */
 func GenerateTracerFromTag(tag string) (string, []byte) {
 	idTag := "[[ID]]"
@@ -205,11 +202,12 @@ func FindTracersInResponseBody(response string, url string, tracers []types.Trac
 	/* Create tracer event structs from the tracers that were found. */
 	for _, foundTracer := range tracersFound {
 		event := types.TracerEvent{
-			Data:      types.StringToJSONNullString(response),
-			Location:  types.StringToJSONNullString(url),
-			EventType: types.StringToJSONNullString("Response"),
+			TracerID:  foundTracer.ID,
+			RawEvent:  response,
+			EventURL:  url,
+			EventType: "response",
 		}
-		ret[foundTracer.ID] = event
+		ret[int(foundTracer.ID)] = event
 	}
 
 	return ret

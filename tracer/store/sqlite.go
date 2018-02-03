@@ -1,22 +1,22 @@
 package store
 
 import (
-	"database/sql"
-	"fmt"
-	"os"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"tracy/log"
+	"tracy/tracer/types"
 )
 
 /*DB is the one global used to gain access to the database from this package.
  * Other packages, like testing, might choose to not use this database and instead
  * will supply their own. */
-var DB gorm.DB
+var DB *gorm.DB
 
 /*Open the database and create the tables if they aren't already created.
  * Errors indicate something incorrectly happened while
  * connecting. Don't forget to close this DB when finished using it. */
-func Open(driver, path string) error {
-	db, err := gorm.Open("sqlite3", "test.db")
+func Open(path string) error {
+	db, err := gorm.Open("sqlite3", path)
 	if err != nil {
 		log.Error.Printf(err.Error())
 	}

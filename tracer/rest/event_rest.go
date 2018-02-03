@@ -18,6 +18,7 @@ import (
 func addEventHelper(trcrID uint, trcrEvnt types.TracerEvent) (int, []byte) {
 	log.Trace.Printf("Adding a tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
 	status := http.StatusInternalServerError
+	var ret []byte
 
 	if ret, err := common.AddEvent(trcrID, trcrEvnt); err != nil {
 		log.Error.Println(err)
@@ -53,6 +54,7 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 /*GetEvents gets all the events associated with a tracer ID. */
 func GetEvents(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
+	vars := mux.Vars(r)
 	status := http.StatusInternalServerError
 
 	if tracerID, err := strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {

@@ -11,6 +11,7 @@ import (
 	"tracy/configure"
 	"tracy/log"
 	"tracy/tracer/rest"
+	"tracy/tracer/store"
 )
 
 func init() {
@@ -64,7 +65,7 @@ func configTestHelper(tests []RequestTestPair, t *testing.T) {
 	/* Delete any existing database entries */
 	configure.DeleteDatabase(db)
 	/* Open the database because the init method from main.go won't trigger. */
-	configure.Database(db)
+	store.Open(db)
 
 	for _, pair := range tests {
 		/* For each request/test combo:
