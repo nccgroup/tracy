@@ -126,7 +126,6 @@ func generateRootCA(path string) {
 
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	certOut.Close()
-	l.Println("written cert.pem")
 
 	keyOut, err := os.OpenFile(filepath.Join(path, "key.pem"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
@@ -142,5 +141,4 @@ func generateRootCA(path string) {
 
 	pem.Encode(keyOut, &pem.Block{Type: "EC PRIVATE KEY", Bytes: b})
 	keyOut.Close()
-	l.Println("written key.pem")
 }

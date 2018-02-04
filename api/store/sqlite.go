@@ -15,7 +15,7 @@ var DB *gorm.DB
 /*Open the database and create the tables if they aren't already created.
  * Errors indicate something incorrectly happened while
  * connecting. Don't forget to close this DB when finished using it. */
-func Open(path string) error {
+func Open(path string, logMode bool) error {
 	db, err := gorm.Open("sqlite3", path)
 	if err != nil {
 		log.Error.Printf(err.Error())
@@ -23,7 +23,7 @@ func Open(path string) error {
 
 	db.Exec("PRAGMA foreign_keys = ON")
 	db.Exec("PRAGMA journal_mode = WAL")
-	db.LogMode(true)
+	db.LogMode(logMode)
 	db.AutoMigrate(
 		&types.Tracer{},
 		&types.TracerEvent{},

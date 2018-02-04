@@ -63,7 +63,7 @@ func init() {
 	// Set up the logging based on the user command line flags
 	log.Init()
 	// Open the database
-	if err := store.Open(configure.DatabaseFile); err != nil {
+	if err := store.Open(configure.DatabaseFile, log.Verbose); err != nil {
 		log.Error.Fatal(err.Error())
 	}
 	// Initialize the rest routes

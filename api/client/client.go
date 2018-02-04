@@ -54,6 +54,7 @@ func GetTracers() ([]types.Tracer, error) {
 			if tracersBody, err = ioutil.ReadAll(tracers.Body); err == nil {
 				log.Trace.Printf("Read the following from the request response: %s", tracersBody)
 				/* Last success case. Unmarshal the tracers and check for parsing errors. */
+				fmt.Println(tracersBody)
 				err = json.Unmarshal(tracersBody, &ret)
 			}
 			defer tracers.Body.Close()

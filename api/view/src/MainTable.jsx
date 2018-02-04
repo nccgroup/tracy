@@ -92,7 +92,7 @@ class MainTable extends Component {
   getTracers() {
     /* Create the HTTP GET request to the /tracers API endpoint. */
     var req = new XMLHttpRequest()
-    req.open("GET", "http://localhost:8081/tracers/events", true)
+    req.open("GET", "http://localhost:8081/tracers", true)
     req.onreadystatechange = this.setTracers
     req.send()
   }

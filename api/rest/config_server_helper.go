@@ -27,7 +27,7 @@ func ConfigTestHelper(tests []RequestTestPair, t *testing.T) {
 	/* Delete any existing database entries */
 	configure.DeleteDatabase(db)
 	/* Open the database because the init method from main.go won't trigger. */
-	store.Open(db)
+	store.Open(db, true)
 
 	for _, pair := range tests {
 		/* For each request/test combo:
