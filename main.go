@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"tracy/configure"
 	"tracy/log"
 	"tracy/proxy"
@@ -43,6 +45,8 @@ func main() {
 	}()
 	fmt.Printf("done!\n")
 
+	openbrowser("http://localhost:8081")
+
 	/* Waiting for the user to close the program. */
 	signalChan := make(chan os.Signal, 1)
 	cleanupDone := make(chan bool)
@@ -77,4 +81,24 @@ func init() {
 
 		common.AddLabel(label)
 	}
+}
+
+//Taken from here https://gist.github.com/hyg/9c4afcd91fe24316cbf0
+func openbrowser(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+
 }
