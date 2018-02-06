@@ -48,7 +48,7 @@ func GetLabels() ([]byte, error) {
 	var ret []byte
 	var err error
 
-	var labels []types.Label
+	labels := make([]types.Label, 0)
 	if err = store.DB.Find(&labels).Error; err == nil {
 		log.Trace.Printf("Successfully got the labels: %+v", labels)
 		ret, err = json.Marshal(labels)

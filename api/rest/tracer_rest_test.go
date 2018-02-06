@@ -12,7 +12,7 @@ import (
 
 /* Testing addTracer with httptest. POST /tracers */
 func TestAddTracer(t *testing.T) {
-	Init()
+	Configure()
 
 	var (
 		tracerString    = "blahblah"

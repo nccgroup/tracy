@@ -12,7 +12,7 @@ import (
 
 /* Testing addLabel with httptest. POST /labels */
 func TestAddLabel(t *testing.T) {
-	Init()
+	Configure()
 
 	var (
 		tracer    = "{{XSS2}}"

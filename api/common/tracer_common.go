@@ -54,10 +54,10 @@ func GetTracers() ([]byte, error) {
 	var ret []byte
 	var err error
 
-	var tracers []types.Tracer
-	if err = store.DB.Find(&tracers).Error; err == nil {
-		log.Trace.Printf("Successfully got the tracers: %+v", tracers)
-		ret, err = json.Marshal(tracers)
+	requests := make([]types.Request, 0)
+	if err = store.DB.Joins("JOIN tracers on tracers.request_id=requests.id").Preload("Tracers").Find(&requests).Error; err == nil {
+		log.Trace.Printf("Successfully got the tracers: %+v", requests)
+		ret, err = json.Marshal(requests)
 	}
 
 	if err != nil {

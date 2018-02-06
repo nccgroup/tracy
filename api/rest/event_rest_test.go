@@ -12,7 +12,7 @@ import (
 
 /* Testing adding a tracer event. POST /tracers/<tracer_id>/events */
 func TestAddEvent(t *testing.T) {
-	Init()
+	Configure()
 
 	var (
 		tracerString    = "blahblah"
@@ -155,7 +155,7 @@ func TestAddEvent(t *testing.T) {
 
 /* Testing the database does not log duplicate events. */
 func TestDuplicateEvent(t *testing.T) {
-	Init()
+	Configure()
 
 	var (
 		tracerString    = "blahblah"

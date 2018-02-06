@@ -20,7 +20,7 @@ class MainTable extends Component {
     this.setTracers = this.setTracers.bind(this);
     this.getTracers = this.getTracers.bind(this);
     this.formatEvent = this.formatEvent.bind(this);
-    this.formatData = this.formatData.bind(this);
+    this.formatRequest = this.formatRequest.bind(this);
     this.formatRowSeverity = this.formatRowSeverity.bind(this);
     this.parseURLParameters = this.parseURLParameters.bind(this);
     this.parseHost = this.parseHost.bind(this);
@@ -36,10 +36,8 @@ class MainTable extends Component {
     this.isInScriptTag = this.isInScriptTag.bind(this);
     this.isInScriptTagAndNotResponse = this.isInScriptTagAndNotResponse.bind(this);
     this.onAfterDeleteTracer = this.onAfterDeleteTracer.bind(this);
-    this.loadDataCache = this.loadDataCache.bind(this);
     this.state = {
-      data: [],
-      rawData: ""
+      tracers: []
     };
   }
 
@@ -52,7 +50,6 @@ class MainTable extends Component {
     //Only the filters changed.
     if (this.props.tracerFilters.length !== nextProps.tracerFilters.length ||
       this.props.contextFilters.length !== nextProps.contextFilters.length) {
-      this.loadDataCache(nextProps.tracerFilters, nextProps.contextFilters);
       this.getTracers();
       ret = false;
     }
@@ -73,21 +70,6 @@ class MainTable extends Component {
     );
   }
 
-  // Try to load data from local storage while this is getting the new data. 
-  loadDataCache(tracerFilters, contextFilters) {    
-    const dataString = this.state.rawData
-    try {
-      if (dataString !== null && dataString.length > 0) {
-        const data = this.parseVisibleData(JSON.parse(dataString), tracerFilters, contextFilters)
-        this.setState({
-          data: data
-        })
-      }
-    } catch (e) {
-      // Nothing needs to be done here.
-    }
-  }
-
   /* getTracers makes an XMLHTTPRequest to the tracers/events API to get the latest set of events. */
   getTracers() {
     /* Create the HTTP GET request to the /tracers API endpoint. */
@@ -97,15 +79,11 @@ class MainTable extends Component {
     req.send()
   }
 
-  parseVisibleData(data, tracerFilters, contextFilters) {
-    var parsedData = data.map(function(n){
-      return this.formatData(n, contextFilters);
-    }.bind(this)) // format the data to fit the table
-    .map(this.assignEventsSeverityRating); // assign a severity rating to each of the tracers events
-
+  parseVisibleTracers(requests, tracerFilters) {
+    const parsedTracers = [].concat.apply([], requests.map( (n) => this.formatRequest(n) )).filter( (n) => n)
+    return parsedTracers
     // Apply filters from the filter column component.
-    return tracerFilters.reduce( (accum, cur) => 
-      accum.filter(cur), parsedData);
+    //return tracerFilters.reduce( (accum, cur) => accum.filter(cur), parsedTracers);
   }
 
   /* setTracers catches the response from the XMLHTTPRequest of getTracers. */
@@ -113,18 +91,14 @@ class MainTable extends Component {
     // For some reason, 304 Not Modified requests still hit this code.
     if (req.target.readyState === 4 && req.target.status === 200 && req.target.responseText !== "") {
       try {
-          // If there was a cache and it looks different, update.
-          if (req.target.responseText.length !== this.state.rawData.length) {
-            // Cache the data in the state so filters can be applied right away.
-            // TODO: this will probably make the UI really slow after a while.
-            const parsedData = this.parseVisibleData(
-              JSON.parse(req.target.responseText), 
-              this.props.tracerFilters, 
-              this.props.contextFilters)
-
+          // If the number of tracers changed, update.
+          // TODO: move to Server Sent events for this. no need to do all this polling. keep this for the initial data grab, then push updates
+          const tracers = JSON.parse(req.target.responseText)
+          if (tracers.length !== this.state.tracers.length) {
+            const parsedTracers = this.parseVisibleTracers(tracers, this.props.tracerFilters)
+            console.log("parsedTracers: ", parsedTracers)
             this.setState({
-              data: parsedData,
-              rawData: req.target.responseText
+              tracers: parsedTracers
             })
           }
       } catch (e) {
@@ -135,7 +109,6 @@ class MainTable extends Component {
   }
 
   componentDidMount() {
-    this.loadDataCache(this.props.tracerFilters, this.props.contextFilters);
     this.getTracers();
     setInterval(this.getTracers, 3000);
   }
@@ -202,31 +175,23 @@ class MainTable extends Component {
     return ret;
   }
 
-  /* Format all the data events and parse the data into the corresponding columns. */
-  formatData(data, contextFilters) {
-    var ret = {};
-    if (data.Events.length !== 0) {
-      var formattedEvents = data.Events
-        .map(this.formatEvent)
-        .reduce((accum, curr) => accum.concat(curr), []);
-
-      // Apply filters from the filter column component.
-      formattedEvents = contextFilters.reduce( (accum, cur) => 
-        accum.filter(cur), formattedEvents);
-
-      ret = {
-        ID: data.ID,
-        Method: data.Method,
-        TracerString: data.TracerString,
-        Host: this.parseHost(data.URL),
-        Path: this.parsePath(data.URL),
-        Params: this.parseURLParameters(data.URL),
-        Contexts: formattedEvents
+  /* Message the request objects into a set of tracer data structure so the table can read their columns. */
+  formatRequest(request) {
+      if (request.Tracers) {
+        return request.Tracers.map( (tracer) => {
+          return {
+            ID: tracer.ID,
+            RawRequest: request.RawRequest,
+            RequestMethod: request.RequestMethod,
+            RequestURL: this.parseHost(request.RequestURL),
+            RequestPath: this.parsePath(request.RequestURL),
+            TracerString: tracer.TracerString,
+            OverallSeverity: tracer.OverallSeverity,
+          }})
       }
-    }
-
-    return ret;
   }
+
+
 
   /* Format all the event contexts into their corresponding columns. */
   formatEvent(event) {
@@ -362,7 +327,7 @@ class MainTable extends Component {
   }
 
   formatRowSeverity(row, rowIdx) {
-    return this.props.severity[row.Severity]
+    return this.props.severity[row.overall_severity]
   }
 
   onAfterDeleteContext(rowKeys) {
@@ -416,14 +381,14 @@ class MainTable extends Component {
     // Pass the tracer string to the event context so they know how to highlight. 
     row.Contexts.map((context) =>
       context["TracerString"] = row.TracerString);
+        /*expandableRow={ (n) => true }
+        expandComponent={ this.expandEventRow }
+        expandColumnOptions={ { expandColumnVisible: true } }*/
     return (
       <BootstrapTable 
         data={row.Contexts}
         cellEdit={{  mode: 'click' }}
         options={options}
-        expandableRow={ (n) => true }
-        expandComponent={ this.expandEventRow }
-        expandColumnOptions={ { expandColumnVisible: true } }
         trClassName={ this.formatRowSeverity }
         selectRow={ this.selectRow }
         deleteRow={ true } 
@@ -509,21 +474,19 @@ class MainTable extends Component {
       afterDeleteRow: this.onAfterDeleteTracer,  
       expandBy: "column"
     };
+        /*expandComponent={ this.expandTracerRow }
+        expandColumnOptions={ { expandColumnVisible: true } }*/
     return (
       <BootstrapTable 
-        data={this.state.data}
+        data={this.state.tracers}
         options={ options }
         expandableRow={ this.isExpandableRow }
         trClassName={ this.formatRowSeverity }
-        expandComponent={ this.expandTracerRow }
-        expandColumnOptions={ { expandColumnVisible: true } }
         selectRow={ this.selectRow }
         containerStyle={ { height: "85vh", overflow: "visible" } }
-        deleteRow={ true }
-        search>
+        deleteRow={ true }>
         <TableHeaderColumn 
           dataField="ID"
-          width="4%"
           isKey={true} 
           dataAlign="center" 
           dataSort={true}
@@ -532,41 +495,39 @@ class MainTable extends Component {
             ID
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="Method" 
-          width="4%"
+          dataField="RequestMethod"
           dataSort={true}
           expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             Method
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="Host" 
+          dataField="RequestURL" 
           dataSort={true}
           expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             Host
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="Path" 
+          dataField="RequestPath" 
           dataSort={true}
           expandable={false}
           filter={ { type: 'RegexFilter',  } }>
             Path
         </TableHeaderColumn>
         <TableHeaderColumn 
-          dataField="Params" 
-          dataSort={true}
-          expandable={false}
-          filter={ { type: 'RegexFilter',  } }>
-            Query Parameters
-        </TableHeaderColumn>
-        <TableHeaderColumn 
           dataField="TracerString" 
           dataSort={true}
-          width="5%"
           expandable={false}
           filter={ { type: 'RegexFilter',  } }>
-            Tracer
+            Tracer String
+        </TableHeaderColumn>
+        <TableHeaderColumn 
+          dataField="OverallSeverity" 
+          dataSort={true}
+          expandable={false}
+          filter={ { type: 'RegexFilter',  } }>
+            Severity
         </TableHeaderColumn>
       </BootstrapTable>)
   }

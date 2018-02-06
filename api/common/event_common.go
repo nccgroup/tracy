@@ -37,7 +37,7 @@ func GetEvents(tracerID uint) ([]byte, error) {
 	var ret []byte
 	var err error
 
-	var tracerEvents []types.TracerEvent
+	tracerEvents := make([]types.TracerEvent, 0)
 	if err = store.DB.Joins("JOIN dom_contexts on dom_contexts.tracer_event_id=tracer_events.id").Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err == nil {
 		log.Trace.Printf("Successfully got the tracer events: %+v", tracerEvents)
 		ret, err = json.Marshal(tracerEvents)

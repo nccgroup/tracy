@@ -50,11 +50,10 @@ func GetTracers() ([]types.Tracer, error) {
 		var tracers *http.Response
 		if tracers, err = http.Get(url); err == nil {
 			log.Trace.Printf("Request submitted successfully")
-			var tracersBody []byte
+			tracersBody := make([]byte, 0)
 			if tracersBody, err = ioutil.ReadAll(tracers.Body); err == nil {
 				log.Trace.Printf("Read the following from the request response: %s", tracersBody)
 				/* Last success case. Unmarshal the tracers and check for parsing errors. */
-				fmt.Println(tracersBody)
 				err = json.Unmarshal(tracersBody, &ret)
 			}
 			defer tracers.Body.Close()
@@ -148,7 +147,7 @@ func GetLabels() ([]types.Label, error) {
 		var labels *http.Response
 		if labels, err = http.Get(url); err == nil {
 			log.Trace.Printf("Request submitted successfully")
-			var tracersBody []byte
+			tracersBody := make([]byte, 0)
 			if tracersBody, err = ioutil.ReadAll(labels.Body); err == nil {
 				log.Trace.Printf("Read the following from the request response: %s", tracersBody)
 				/* Last success case. Unmarshal the tracers and check for parsing errors. */
@@ -178,7 +177,7 @@ func GetLabel(ID int) (types.Label, error) {
 		var label *http.Response
 		if label, err = http.Get(url); err == nil {
 			log.Trace.Printf("Request submitted successfully")
-			var labelBody []byte
+			labelBody := make([]byte, 0)
 			if labelBody, err = ioutil.ReadAll(label.Body); err == nil {
 				log.Trace.Printf("Read the following from the request response: %s", labelBody)
 				/* Last success case. Unmarshal the label and check for parsing errors. */

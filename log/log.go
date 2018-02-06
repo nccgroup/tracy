@@ -57,8 +57,8 @@ func init() {
 		log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-/*Init takes the command line options and builds the loggers. */
-func Init() {
+/*Configure takes the command line options and builds the loggers. */
+func Configure() {
 	/* Configure the logging settings. */
 	var traceWriter io.Writer
 	var infoWriter io.Writer

@@ -27,7 +27,7 @@ class FilterColumn extends Component {
 	}
 
 	// filterArchivedTracers filters out events and tracers that have been archived.
-	filterArchivedTracers(tracer) { 
+	filterArchivedTracers(tracer) {
 	    return !this.isInLocalStorage("archivedTracers", tracer.ID);
 	}
 

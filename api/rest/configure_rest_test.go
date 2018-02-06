@@ -10,7 +10,7 @@ import (
 
 /* Testing readConfig. GET /config */
 func TestGetAllConfig(t *testing.T) {
-	Init()
+	Configure()
 
 	getReq, err := http.NewRequest("GET", "http://127.1.0.1:66666/config", nil)
 	if err != nil {

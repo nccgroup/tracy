@@ -23,8 +23,8 @@ var ConfigServer *http.Server
 /*ConfigRouter is the router used to map the configuration functionality. Exposed for testing. */
 var ConfigRouter *mux.Router
 
-/*Init is a helper that configures all the HTTP routes and their corresponding handler. */
-func Init() {
+/*Configure is a helper that configures all the HTTP routes and their corresponding handler. */
+func Configure() {
 	RestRouter = mux.NewRouter()
 	ConfigRouter = mux.NewRouter()
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
@@ -101,5 +101,6 @@ func Init() {
 func applicationJSONMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
 	})
 }
