@@ -49,6 +49,10 @@ build-deps:
 	go get github.com/golang/lint/golint; \
 	go get github.com/karalabe/xgo; \
 	go get github.com/jteeuwen/go-bindata/...; \
+	go get github.com/gorilla/handlers; \
+	go get github.com/gorilla/mux; \
+	go get github.com/mattn/go-sqlite3; \
+	go get golang.org/x/net/html; \
 	go get github.com/elazarl/go-bindata-assetfs/...
 	
 # Install the dependencies for a developer.
