@@ -2,10 +2,13 @@ package rest
 
 import (
 	"compress/gzip"
+	"crypto/sha1"
+	"encoding/hex"
 	"flag"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"net/http"
+	"net/http/httptest"
 	"time"
 	"tracy/configure"
 	"tracy/log"
@@ -71,6 +74,7 @@ func Configure() {
 		restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
 		restHandler = handlers.CORS(corsOptions...)(restHandler)
 		restHandler = applicationJSONMiddleware(restHandler)
+		restHandler = cacheMiddleware(restHandler)
 
 		RestServer = &http.Server{
 			Handler: restHandler,
@@ -85,6 +89,7 @@ func Configure() {
 		configHandler := handlers.CompressHandlerLevel(ConfigRouter, gzip.BestCompression)
 		configHandler = handlers.CORS(corsOptions...)(configHandler)
 		configHandler = applicationJSONMiddleware(configHandler)
+		configHandler = cacheMiddleware(configHandler)
 
 		ConfigServer = &http.Server{
 			Handler: configHandler,
@@ -102,5 +107,46 @@ func applicationJSONMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
+	})
+}
+
+/* Helper for adding caching to get requests that haven't changed. */
+func cacheMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rec := httptest.NewRecorder()
+		next.ServeHTTP(rec, r)
+
+		// We copy the original headers first.
+		for k, v := range rec.Header() {
+			w.Header()[k] = v
+		}
+
+		// Only want to cache response request by HTTP GET requests.
+		body := rec.Body.Bytes()
+		if r.Method == http.MethodGet {
+			// Check if the request is cached
+			eTagHash := r.Header.Get("If-None-Match")
+			sum := sha1.Sum(body)
+			sumStr := hex.EncodeToString(sum[:len(sum)])
+			if eTagHash != "" {
+				if eTagHash == sumStr {
+					w.Header().Set("Cache-Control", "no-cache")
+					w.WriteHeader(http.StatusNotModified)
+					w.Write([]byte(""))
+				} else {
+					w.Header().Set("Cache-Control", "no-cache")
+					w.WriteHeader(rec.Code)
+					w.Write(body)
+				}
+			} else {
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Etag", sumStr)
+				w.WriteHeader(rec.Code)
+				w.Write(body)
+			}
+		} else {
+			w.WriteHeader(rec.Code)
+			w.Write(body)
+		}
 	})
 }

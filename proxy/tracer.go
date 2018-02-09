@@ -184,18 +184,20 @@ func ReplaceTagsInQueryParameters(rawQuery string) (string, []string) {
 
 /*FindTracersInResponseBody is a helper function for finding tracer strings in
  * the response body of an HTTP request. */
-func FindTracersInResponseBody(response string, url string, tracers []types.Tracer) map[int]types.TracerEvent {
+func FindTracersInResponseBody(response string, url string, requests []types.Request) []types.TracerEvent {
 	var tracersFound []types.Tracer
-	ret := make(map[int]types.TracerEvent)
+	ret := make([]types.TracerEvent, 0)
 
 	/* For each of the tracers, look for the tracer's tracer string in the response. */
-	for _, tracer := range tracers {
-		index := strings.Index(response, tracer.TracerString)
+	for _, request := range requests {
+		for _, tracer := range request.Tracers {
+			index := strings.Index(response, tracer.TracerString)
 
-		/* Negative indicates no match. Continue. */
-		if index > -1 {
-			log.Trace.Printf("Found a tracer! %s", tracer.TracerString)
-			tracersFound = append(tracersFound, tracer)
+			/* Negative indicates no match. Continue. */
+			if index > -1 {
+				log.Trace.Printf("Found a tracer! %s", tracer.TracerString)
+				tracersFound = append(tracersFound, tracer)
+			}
 		}
 	}
 
@@ -207,7 +209,7 @@ func FindTracersInResponseBody(response string, url string, tracers []types.Trac
 			EventURL:  url,
 			EventType: "response",
 		}
-		ret[int(foundTracer.ID)] = event
+		ret = append(ret, event)
 	}
 
 	return ret

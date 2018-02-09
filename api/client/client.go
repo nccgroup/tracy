@@ -38,9 +38,9 @@ func AddTracers(request types.Request) error {
 }
 
 /*GetTracers gets a list of the current tracers in the database. */
-func GetTracers() ([]types.Tracer, error) {
+func GetTracers() ([]types.Request, error) {
 	log.Trace.Printf("Getting all the tracers")
-	ret := make([]types.Tracer, 0)
+	ret := make([]types.Request, 0)
 	var err error
 
 	var tracerServer interface{}
@@ -52,9 +52,9 @@ func GetTracers() ([]types.Tracer, error) {
 			log.Trace.Printf("Request submitted successfully")
 			tracersBody := make([]byte, 0)
 			if tracersBody, err = ioutil.ReadAll(tracers.Body); err == nil {
-				log.Trace.Printf("Read the following from the request response: %s", tracersBody)
 				/* Last success case. Unmarshal the tracers and check for parsing errors. */
 				err = json.Unmarshal(tracersBody, &ret)
+				log.Trace.Printf("Read the following from the request response: %+v", ret)
 			}
 			defer tracers.Body.Close()
 		}
@@ -69,13 +69,13 @@ func GetTracers() ([]types.Tracer, error) {
 
 /*AddTracerEvents takes multiple tracer event structs and adds to them to a tracer using the tracer API. This client
  * request can return multiple errors, up to one per tracer sent. */
-func AddTracerEvents(tracerEvents map[int]types.TracerEvent) []error {
+func AddTracerEvents(tracerEvents []types.TracerEvent) []error {
 	log.Trace.Printf("Adding the following tracer events: %+v", tracerEvents)
 	ret := make([]error, 0)
 
-	for tracerID, tracerEvent := range tracerEvents {
+	for _, tracerEvent := range tracerEvents {
 		/* Using the tracer ID associated with the event, add it to the API. */
-		if err := AddTracerEvent(tracerEvent, uint(tracerID)); err != nil {
+		if err := AddTracerEvent(tracerEvent); err != nil {
 			/* If there is an error, record it and continue. */
 			log.Warning.Printf(err.Error())
 			ret = append(ret, err)
@@ -87,16 +87,15 @@ func AddTracerEvents(tracerEvents map[int]types.TracerEvent) []error {
 }
 
 /*AddTracerEvent adds a single tracer event struct to a tracer using the tracer API. */
-func AddTracerEvent(tracerEvent types.TracerEvent, tracerID uint) error {
-	log.Trace.Printf("Adding the following tracer event: %+v, tracer ID: %s", tracerEvent, tracerID)
+func AddTracerEvent(tracerEvent types.TracerEvent) error {
+	log.Trace.Printf("Adding the following tracer event: %+v", tracerEvent)
 	var err error
-	tracerEvent.TracerID = tracerID
 
 	var eventJSON []byte
 	if eventJSON, err = json.Marshal(tracerEvent); err == nil {
 		var tracerServer interface{}
 		if tracerServer, err = configure.ReadConfig("tracer-server"); err == nil {
-			url := fmt.Sprintf("http://%s/tracers/%d/events", tracerServer.(string), tracerID)
+			url := fmt.Sprintf("http://%s/tracers/%d/events", tracerServer.(string), tracerEvent.TracerID)
 			contentType := "application/json; charset=UTF-8"
 			log.Trace.Printf("Sending POST request with %s to %s %s", eventJSON, url, contentType)
 			_, err = http.Post(url, contentType, bytes.NewBuffer(eventJSON))

@@ -96,7 +96,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
 	 * server API call because it will trigger a recursion. */
 	go func() {
-		if !configure.ServerInWhitelist(host) {
+		if !configure.ServerInWhitelist(host) && len(tracers) > 0 {
 			dump, err := httputil.DumpRequest(request, true)
 			if err != nil {
 				dump = []byte("ERROR DUMPING")
@@ -159,22 +159,26 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 		 * in a goroutine. The proxy can finish this connection before this finishes. */
 		go func() {
 			/* Get a current list of the tracers so they can be searched for. */
-			tracers, err := tracerClient.GetTracers()
+			requests, err := tracerClient.GetTracers()
 			if err != nil {
 				/* If there is an error, fail fast and leave. */
 				log.Error.Println(err)
 				return
 			}
 
-			/* Get the tracer events that correspond to tracers found in the response. */
-			splits := strings.Split(string(responseRawBytes), "\r\n\r\n")
-			if len(splits) == 2 {
-				url := request.Host + request.RequestURI
-				tracerEvents := FindTracersInResponseBody(splits[1], url, tracers)
+			if len(requests) != 0 {
+				log.Trace.Printf("Need to parse the following %d requests for tracer strings: %+v", len(requests), requests)
 
-				log.Trace.Printf("Found the following tracer events: %+v", tracerEvents)
-				/* Use the API to add each tracer events to their corresponding tracer. */
-				tracerClient.AddTracerEvents(tracerEvents)
+				/* Get the tracer events that correspond to tracers found in the response. */
+				splits := strings.Split(string(responseRawBytes), "\r\n\r\n")
+				if len(splits) == 2 {
+					url := request.Host + request.RequestURI
+					tracerEvents := FindTracersInResponseBody(splits[1], url, requests)
+
+					log.Trace.Printf("Found the following tracer events: %+v", tracerEvents)
+					/* Use the API to add each tracer events to their corresponding tracer. */
+					tracerClient.AddTracerEvents(tracerEvents)
+				}
 			}
 		}()
 	}
