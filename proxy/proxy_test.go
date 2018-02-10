@@ -131,9 +131,10 @@ Connection: close
 
 func TestFindTracers(t *testing.T) {
 	//findTracers(responseString string, tracers map[int]types.Tracer) []types.Tracer {
-	tracers := make([]types.Tracer, 1)
+	tracers := make([]types.Request, 1)
 	tracer := types.Tracer{TracerString: "AASDFG"}
-	tracers[0] = tracer
+	tracers[0].Tracers = make([]types.Tracer, 1)
+	tracers[0].Tracers[0] = tracer
 
 	numHits, err := testFindTracersHelper(responseStringTracer, tracers)
 
@@ -146,9 +147,10 @@ func TestFindTracers(t *testing.T) {
 
 func TestFindNoTracers(t *testing.T) {
 	//findTracers(responseString string, tracers map[int]types.Tracer) []types.Tracer {
-	tracers := make([]types.Tracer, 1)
+	tracers := make([]types.Request, 1)
 	tracer := types.Tracer{TracerString: "AASDFG"}
-	tracers[0] = tracer
+	tracers[0].Tracers = make([]types.Tracer, 1)
+	tracers[0].Tracers[0] = tracer
 
 	numHits, err := testFindTracersHelper(responseStringNoTracer, tracers)
 
@@ -159,7 +161,7 @@ func TestFindNoTracers(t *testing.T) {
 	}
 }
 
-func testFindTracersHelper(responseData string, tracers []types.Tracer) (int, error) {
+func testFindTracersHelper(responseData string, tracers []types.Request) (int, error) {
 	foundTracers := FindTracersInResponseBody(responseData, "www.test.com", tracers)
 
 	return len(foundTracers), nil

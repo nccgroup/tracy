@@ -168,9 +168,19 @@ class DOMContextViewer extends Component {
 						response.map(this.formatEvent.bind(this))
 					);
 
-					this.setState({
-						events: nEvents
-					});
+					const filteredEvents = this.props.contextFilters.reduce(
+						(accum, cur) => accum.filter(cur),
+						nEvents
+					);
+
+					// Need to check this race condition. There is a chance that when
+					// this request returns, the tracer ID might have changed already.
+					// If that is the case, we need to not render the results.
+					if (this.props.tracerID === tracerID) {
+						this.setState({
+							events: filteredEvents
+						});
+					}
 				});
 		}
 		// Set the next timeout if the repeat parameter is set

@@ -65,9 +65,12 @@ class TracerTable extends Component {
 		const parsedTracers = [].concat
 			.apply([], requests.map(n => this.formatRequest(n)))
 			.filter(n => n);
-		return parsedTracers;
+
 		// Apply filters from the filter column component.
-		//return tracerFilters.reduce( (accum, cur) => accum.filter(cur), parsedTracers);
+		return tracerFilters.reduce(
+			(accum, cur) => accum.filter(cur),
+			parsedTracers
+		);
 	}
 
 	/* setTracers catches the response from the XMLHTTPRequest of getTracers. */
@@ -174,7 +177,8 @@ class TracerTable extends Component {
 					RequestURL: this.parseHost(request.RequestURL),
 					RequestPath: this.parsePath(request.RequestURL),
 					TracerString: tracer.TracerString,
-					OverallSeverity: tracer.OverallSeverity
+					OverallSeverity: tracer.OverallSeverity,
+					TracerEventsLength: tracer.TracerEventsLength
 				};
 			});
 		}

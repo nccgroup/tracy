@@ -57,7 +57,6 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 	if tracerID, ok := vars["tracerID"]; ok {
 		if id, err := strconv.ParseUint(tracerID, 10, 32); err != nil {
 			ret = ServerError(err)
-			panic(err)
 			log.Error.Println(err)
 		} else {
 			if ret, err = common.GetTracer(uint(id)); err != nil {

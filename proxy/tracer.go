@@ -184,9 +184,8 @@ func ReplaceTagsInQueryParameters(rawQuery string) (string, []string) {
 
 /*FindTracersInResponseBody is a helper function for finding tracer strings in
  * the response body of an HTTP request. */
-func FindTracersInResponseBody(response string, url string, requests []types.Request) []types.TracerEvent {
-	var tracersFound []types.Tracer
-	ret := make([]types.TracerEvent, 0)
+func FindTracersInResponseBody(response string, url string, requests []types.Request) []types.Tracer {
+	ret := make([]types.Tracer, 0)
 
 	/* For each of the tracers, look for the tracer's tracer string in the response. */
 	for _, request := range requests {
@@ -196,20 +195,19 @@ func FindTracersInResponseBody(response string, url string, requests []types.Req
 			/* Negative indicates no match. Continue. */
 			if index > -1 {
 				log.Trace.Printf("Found a tracer! %s", tracer.TracerString)
-				tracersFound = append(tracersFound, tracer)
+				//TODO: should we create multiple events if a tracer shows up multiple times in a response?
+				event := types.TracerEvent{
+					TracerID:  tracer.ID,
+					RawEvent:  response,
+					EventURL:  url,
+					EventType: "response",
+				}
+				tracer.TracerEvents = make([]types.TracerEvent, 1)
+				tracer.TracerEvents[0] = event
+
+				ret = append(ret, tracer)
 			}
 		}
-	}
-
-	/* Create tracer event structs from the tracers that were found. */
-	for _, foundTracer := range tracersFound {
-		event := types.TracerEvent{
-			TracerID:  foundTracer.ID,
-			RawEvent:  response,
-			EventURL:  url,
-			EventType: "response",
-		}
-		ret = append(ret, event)
 	}
 
 	return ret

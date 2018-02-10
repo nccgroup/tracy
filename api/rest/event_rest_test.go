@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/yosssi/gohtml"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -24,8 +25,8 @@ func TestAddEvent(t *testing.T) {
 		addEventURL     = "http://127.0.0.1:8081/tracers/1/events"
 		addTracerURL    = "http://127.0.0.1:8081/tracers"
 		rawRequest      = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
-		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", "tracers": [{"tracer_string": "%s"}]}`, rawRequest, URL, method, tracerString)
-		eventString     = fmt.Sprintf(`{"raw_event": "%s", "event_url": "%s", "event_type": "%s"}`, data, location, eventType)
+		addTracerString = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerString": "%s"}]}`, rawRequest, URL, method, tracerString)
+		eventString     = fmt.Sprintf(`{"RawEvent": "%s", "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
 	)
 
 	/* ADDING A TRACER */
@@ -59,7 +60,7 @@ func TestAddEvent(t *testing.T) {
 			/* Validate the response gave us back the event we added. */
 			if got.ID != 1 {
 				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
-			} else if got.RawEvent != data {
+			} else if got.RawEvent != gohtml.Format(data) {
 				err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", got.RawEvent, data)
 			} else if got.EventURL != location {
 				err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.EventURL, location)
@@ -111,7 +112,7 @@ func TestAddEvent(t *testing.T) {
 				/* Make sure the data we inserted was also the data we received back from the database. */
 				if event.ID != 1 {
 					err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", event.ID, 1)
-				} else if event.RawEvent != data {
+				} else if event.RawEvent != gohtml.Format(data) {
 					err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", event.RawEvent, data)
 				} else if event.EventURL != location {
 					err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", event.EventURL, location)
@@ -167,8 +168,8 @@ func TestDuplicateEvent(t *testing.T) {
 		addEventURL     = "http://127.0.0.1:8081/tracers/1/events"
 		addTracerURL    = "http://127.0.0.1:8081/tracers"
 		rawRequest      = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
-		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", "tracers": [{"tracer_string": "%s"}]}`, rawRequest, URL, method, tracerString)
-		eventString     = fmt.Sprintf(`{"raw_event": "%s", "event_url": "%s", "event_type": "%s"}`, data, location, eventType)
+		addTracerString = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerString": "%s"}]}`, rawRequest, URL, method, tracerString)
+		eventString     = fmt.Sprintf(`{"RawEvent": "%s", "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
 	)
 
 	/* ADDING A TRACER */
@@ -202,7 +203,7 @@ func TestDuplicateEvent(t *testing.T) {
 			/* Validate the response gave us back the event we added. */
 			if got.ID != 1 {
 				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
-			} else if got.RawEvent != data {
+			} else if got.RawEvent != gohtml.Format(data) {
 				err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", got.RawEvent, data)
 			} else if got.EventURL != location {
 				err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.EventURL, location)

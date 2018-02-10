@@ -107,6 +107,7 @@ class App extends Component {
 							<DOMContextViewer
 								tracerID={this.state.tracerID}
 								handleEventSelection={this.handleEventSelection}
+								contextFilters={contextFilters}
 							/>
 						</Col>
 					</Row>
@@ -116,7 +117,6 @@ class App extends Component {
 								rawRequest={this.state.rawRequest}
 								selectedEvent={this.state.selectedEvent}
 								timingInterval={3000}
-								contextFilters={contextFilters}
 							/>
 						</Col>
 					</Row>

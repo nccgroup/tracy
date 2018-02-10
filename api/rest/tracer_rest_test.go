@@ -21,7 +21,7 @@ func TestAddTracer(t *testing.T) {
 		addURL          = "http://127.0.0.1:8081/tracers"
 		getURL          = "http://127.0.0.1:8081/tracers/1"
 		rawRequest      = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
-		addTracerString = fmt.Sprintf(`{"raw_request": "%s", "request_url": "%s", "request_method": "%s", "tracers": [{"tracer_string": "%s"}]}`, rawRequest, URL, method, tracerString)
+		addTracerString = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerString": "%s"}]}`, rawRequest, URL, method, tracerString)
 	)
 
 	/* ADDING A TRACER */

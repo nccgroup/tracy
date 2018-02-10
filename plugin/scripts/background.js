@@ -73,7 +73,7 @@ function requestHandler(domEvents) {
                         var event = {
                             TracerEvent: {
                                 RawEvent: domEvent.msg,
-                                EventURL: domEvent.location,
+                                EventURL: encodeURI(domEvent.location),
                                 EventType: domEvent.type
                             },
                             TracerStrings: tracersPerDomEvent

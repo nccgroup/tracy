@@ -77,7 +77,11 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 		log.Trace.Printf("Got the following DOM contexts from the event: %+v", contexts)
 
 		// Update the tracer with the highest severity
-		tracer.OverallSeverity = *ret
+		if *ret > tracer.OverallSeverity {
+			tracer.OverallSeverity = *ret
+		}
+		// Also, increase the tracer event length by 1
+		tracer.TracerEventsLength += 1
 		err = store.DB.Save(&tracer).Error
 	}
 

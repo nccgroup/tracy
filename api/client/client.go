@@ -40,7 +40,7 @@ func AddTracers(request types.Request) error {
 /*GetTracers gets a list of the current tracers in the database. */
 func GetTracers() ([]types.Request, error) {
 	log.Trace.Printf("Getting all the tracers")
-	ret := make([]types.Request, 0)
+	ret := []types.Request{}
 	var err error
 
 	var tracerServer interface{}
@@ -50,11 +50,9 @@ func GetTracers() ([]types.Request, error) {
 		var tracers *http.Response
 		if tracers, err = http.Get(url); err == nil {
 			log.Trace.Printf("Request submitted successfully")
-			tracersBody := make([]byte, 0)
-			if tracersBody, err = ioutil.ReadAll(tracers.Body); err == nil {
-				/* Last success case. Unmarshal the tracers and check for parsing errors. */
-				err = json.Unmarshal(tracersBody, &ret)
-				log.Trace.Printf("Read the following from the request response: %+v", ret)
+			/* Last success case. Unmarshal the tracers and check for parsing errors. */
+			if err := json.NewDecoder(tracers.Body).Decode(&ret); err == nil {
+				log.Trace.Printf("1HERE: Read the following from the request response: %+v", ret)
 			}
 			defer tracers.Body.Close()
 		}

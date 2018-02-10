@@ -2,13 +2,18 @@ package proxy
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"crypto/tls"
+	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 	tracerClient "tracy/api/client"
+	"tracy/api/common"
 	"tracy/api/types"
 	"tracy/configure"
 	"tracy/log"
@@ -138,18 +143,16 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	/* Write the entire request to the backside connection of the proxy. */
 	request.Write(server)
 
-	/* Check for errors. */
 	resp, err := http.ReadResponse(bufio.NewReader(server), nil)
 	if err != nil {
 		log.Error.Println(err)
 		return
 	}
 
-	/* If no errors, read the response as a slice of bytes. */
-	responseRawBytes, err := httputil.DumpResponse(resp, true)
+	var save bytes.Buffer
+	b, err := ioutil.ReadAll(io.TeeReader(resp.Body, &save))
 	if err != nil {
-		log.Error.Printf("Got an error dumping the response: %s", err.Error())
-		return
+		panic(err)
 	}
 
 	/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
@@ -158,32 +161,52 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 		/* Search for any known tracers in the response. Since the list of tracers might get large, perform this operation
 		 * in a goroutine. The proxy can finish this connection before this finishes. */
 		go func() {
-			/* Get a current list of the tracers so they can be searched for. */
-			requests, err := tracerClient.GetTracers()
-			if err != nil {
-				/* If there is an error, fail fast and leave. */
-				log.Error.Println(err)
-				return
+			// Check that the server actually sent compressed data
+			var err error
+			if resp.Header.Get("Content-Encoding") == "gzip" {
+				// Note that we are only reading the response body. No longer a need to manually filter it out
+				var reader io.ReadCloser
+				if reader, err = gzip.NewReader(bytes.NewReader(b)); err == nil {
+					defer reader.Close()
+					b, err = ioutil.ReadAll(reader)
+				}
 			}
 
-			if len(requests) != 0 {
-				log.Trace.Printf("Need to parse the following %d requests for tracer strings: %+v", len(requests), requests)
+			if err == nil {
+				/* Get a current list of the tracers so they can be searched for. */
+				var requestsJSON []byte
+				requestsJSON, err = common.GetTracers()
+				if err == nil {
+					requests := []types.Request{}
+					err = json.Unmarshal(requestsJSON, &requests)
+					if err == nil {
+						if len(requests) != 0 {
+							log.Trace.Printf("Need to parse the following %d requests for tracer strings: %+v", len(requests), requests)
 
-				/* Get the tracer events that correspond to tracers found in the response. */
-				splits := strings.Split(string(responseRawBytes), "\r\n\r\n")
-				if len(splits) == 2 {
-					url := request.Host + request.RequestURI
-					tracerEvents := FindTracersInResponseBody(splits[1], url, requests)
+							url := request.Host + request.RequestURI
+							tracers := FindTracersInResponseBody(string(b), url, requests)
 
-					log.Trace.Printf("Found the following tracer events: %+v", tracerEvents)
-					/* Use the API to add each tracer events to their corresponding tracer. */
-					tracerClient.AddTracerEvents(tracerEvents)
+							/* Use the API to add each tracer events to their corresponding tracer. */
+							for _, tracer := range tracers {
+								for _, event := range tracer.TracerEvents {
+									//TODO: should probably make a bulk add events function
+									_, err = common.AddEvent(tracer, event)
+								}
+							}
+
+						}
+					}
 				}
+			}
+
+			if err != nil {
+				log.Error.Println(err)
 			}
 		}()
 	}
 
 	/* Right the response back to the client. */
+	resp.Body = ioutil.NopCloser(&save)
 	resp.Write(client)
 
 	/* If the backside of the proxy tries to change the protocol, forward this change and simply copy the bytes
@@ -230,4 +253,25 @@ func bridge(client net.Conn, server net.Conn) {
 			return
 		}
 	}
+}
+
+//copied from https://golang.org/src/net/http/httputil/dump.go?s=8166:8231#L271
+// drainBody reads all of b to memory and then returns two equivalent
+// ReadClosers yielding the same bytes.
+//
+// It returns an error if the initial slurp of all bytes fails. It does not attempt
+// to make the returned ReadClosers have identical error-matching behavior.
+func drainBody(b io.ReadCloser) (r1, r2 io.ReadCloser, err error) {
+	if b == http.NoBody {
+		// No copying needed. Preserve the magic sentinel meaning of NoBody.
+		return http.NoBody, http.NoBody, nil
+	}
+	var buf bytes.Buffer
+	if _, err = buf.ReadFrom(b); err != nil {
+		return nil, b, err
+	}
+	if err = b.Close(); err != nil {
+		return nil, b, err
+	}
+	return ioutil.NopCloser(&buf), ioutil.NopCloser(bytes.NewReader(buf.Bytes())), nil
 }

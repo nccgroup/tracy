@@ -20,8 +20,8 @@ func TestAddLabel(t *testing.T) {
 		payload   = "blahblahblah"
 		labelURL  = "http://127.0.0.1:8081/labels"
 		getURL    = "http://127.0.0.1:8081/labels/1"
-		addLabel  = fmt.Sprintf(`{"tracer_string": "%s", "tracer_payload": "%s"}`, tracer, payload)
-		addLabel2 = fmt.Sprintf(`{"tracer_string": "%s", "tracer_payload": "%s"}`, tracer2, payload)
+		addLabel  = fmt.Sprintf(`{"TracerString": "%s", "TracerPayload": "%s"}`, tracer, payload)
+		addLabel2 = fmt.Sprintf(`{"TracerString": "%s", "TracerPayload": "%s"}`, tracer2, payload)
 	)
 
 	/* ADDING A LABEL */
