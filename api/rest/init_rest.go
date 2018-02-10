@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"time"
 	"tracy/configure"
 	"tracy/log"
@@ -50,8 +51,8 @@ func Configure() {
 	RestRouter.Methods("GET").Path("/labels/{labelID}").HandlerFunc(GetLabel)
 
 	/* The base application page. Don't use the compiled assets unless in production. */
-	if configure.DebugUI || flag.Lookup("test.v") != nil {
-		RestRouter.PathPrefix("/").Handler(http.FileServer(http.Dir("./tracer/view/build")))
+	if v := flag.Lookup("test.v"); v != nil || configure.DebugUI {
+		RestRouter.PathPrefix("/").Handler(http.FileServer(http.Dir("./api/view/build")))
 	} else {
 		RestRouter.PathPrefix("/").Handler(http.FileServer(assetFS()))
 	}
@@ -105,7 +106,10 @@ func Configure() {
 /* Helper for adding application/json content type to all APIs. */
 func applicationJSONMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		// The root path and its assets are not application/json
+		if strings.HasPrefix(r.RequestURI, "/labels") || strings.HasPrefix(r.RequestURI, "/tracers") {
+			w.Header().Set("Content-Type", "application/json")
+		}
 		next.ServeHTTP(w, r)
 	})
 }
