@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"github.com/yosssi/gohtml"
 	"golang.org/x/net/html"
 	"strings"
 	"tracy/api/store"
@@ -11,25 +12,16 @@ import (
 
 /*AddEvent is the common functionality to add an event to the database. This function
  * has been separated so both HTTP and websocket servers can use it. */
-func AddEvent(tracerID uint, event types.TracerEvent) ([]byte, error) {
-	log.Trace.Printf("Adding the following tracer event: %+v, tracerID: %d", event, tracerID)
+func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
+	log.Trace.Printf("Adding the following tracer event: %+v, tracer: %+v", event, tracer)
 	var ret []byte
 	var err error
 
-	event.TracerID = tracerID
-	var overall uint
-	if event.DOMContexts, overall, err = getDomContexts(event); err == nil {
+	if event.DOMContexts, err = getDomContexts(event, tracer); err == nil {
+		event.RawEvent = gohtml.Format(event.RawEvent)
 		if err = store.DB.Create(&event).Error; err == nil {
 			log.Trace.Printf("Successfully added the tracer event to the database.")
 			ret, err = json.Marshal(event)
-		}
-
-		// Update the tracer with the highest severity
-		tracer := types.Tracer{}
-		tracer.ID = tracerID
-		if err = store.DB.First(&tracer).Error; err == nil {
-			tracer.OverallSeverity = overall
-			err = store.DB.Save(&tracer).Error
 		}
 	}
 
@@ -60,7 +52,7 @@ func GetEvents(tracerID uint) ([]byte, error) {
 }
 
 /*addDomContext is the common functionality for adding data to the event context table. */
-func getDomContexts(tracerEvent types.TracerEvent) ([]types.DOMContext, uint, error) {
+func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types.DOMContext, error) {
 	log.Trace.Printf("Adding the event context for %+v", tracerEvent)
 	var err error
 	var contexts []types.DOMContext
@@ -70,20 +62,31 @@ func getDomContexts(tracerEvent types.TracerEvent) ([]types.DOMContext, uint, er
 	var ret *uint = &sev
 	doc, err = html.Parse(strings.NewReader(tracerEvent.RawEvent))
 	if err == nil {
-		/* Need to get the tracer string this event is mapped to. */
-		var tracer types.Tracer
-		if err = store.DB.First(&tracer, "id = ?", tracerEvent.TracerID).Error; err == nil {
-			/* Find all instances of the string string and record their appropriate contexts.*/
-			getTracerLocation(doc, &contexts, tracer.TracerString, tracerEvent.ID, ret)
-			log.Trace.Printf("Got the following DOM contexts from the event: %+v", contexts)
+		// There are two places that will be calling this function. In one place, the API
+		// string doesn't send the tracer string with its request, so we need to fetch it.
+		// Otherwise, the tracer struct should have it already and we don't need to make
+		// another db call.
+		if tracer.TracerString == "" {
+			if err = store.DB.First(&tracer, "id = ?", tracerEvent.TracerID).Error; err != nil {
+				goto Error
+			}
 		}
+
+		/* Find all instances of the string string and record their appropriate contexts.*/
+		getTracerLocation(doc, &contexts, tracer.TracerString, tracerEvent.ID, ret)
+		log.Trace.Printf("Got the following DOM contexts from the event: %+v", contexts)
+
+		// Update the tracer with the highest severity
+		tracer.OverallSeverity = *ret
+		err = store.DB.Save(&tracer).Error
 	}
 
+Error:
 	if err != nil {
 		log.Warning.Printf(err.Error())
 	}
 
-	return contexts, *ret, err
+	return contexts, err
 }
 
 /* Constants used to track the categories for the locations of a tracer string. */
@@ -107,7 +110,7 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					TracerEventID:    tracerEventID,
 					HTMLNodeType:     n.Parent.Data,
 					HTMLLocationType: inText,
-					EventContext:     n.Data,
+					EventContext:     gohtml.Format(n.Data),
 					Severity:         0,
 				})
 		} else if n.Type == html.DocumentNode || n.Type == html.ElementNode || n.Type == html.DoctypeNode {
@@ -121,7 +124,7 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					TracerEventID:    tracerEventID,
 					HTMLNodeType:     n.Parent.Data,
 					HTMLLocationType: inNodeName,
-					EventContext:     n.Data,
+					EventContext:     gohtml.Format(n.Data),
 					Severity:         sev,
 				})
 		} else {
@@ -133,7 +136,7 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					TracerEventID:    tracerEventID,
 					HTMLNodeType:     n.Parent.Data,
 					HTMLLocationType: inComment,
-					EventContext:     n.Data,
+					EventContext:     gohtml.Format(n.Data),
 					Severity:         sev,
 				})
 		}

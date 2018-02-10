@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import TracerTable from "./TracerTable";
 import DetailsViewer from "./DetailsViewer";
 import FilterColumn from "./FilterColumn";
+import DOMContextViewer from "./DOMContextViewer";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
 import Navbar from "react-bootstrap/lib/Navbar";
@@ -10,11 +11,13 @@ class App extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			eventID: -1,
+			tracerID: -1,
+			selectedEvent: "",
 			rawRequest: ""
 		};
 		this.handleFilterChange = this.handleFilterChange.bind(this);
 		this.handleRowSelection = this.handleRowSelection.bind(this);
+		this.handleEventSelection = this.handleEventSelection.bind(this);
 	}
 
 	/* Called whenever one of the filter buttons is toggled. */
@@ -27,10 +30,17 @@ class App extends Component {
 	}
 
 	/* Called whenever a new tracer row is selected. */
-	handleRowSelection(eventID, rawRequest) {
+	handleRowSelection(tracerID, rawRequest) {
 		this.setState({
-			eventID: eventID,
+			tracerID: tracerID,
 			rawRequest: rawRequest
+		});
+	}
+
+	/* Called whenever a new event is select. */
+	handleEventSelection(nSelectedEvent) {
+		this.setState({
+			selectedEvent: nSelectedEvent
 		});
 	}
 
@@ -69,42 +79,49 @@ class App extends Component {
 			);
 
 		return (
-			<div>
-				<Navbar>
-					<Navbar.Header>
-						<Navbar.Brand>
-							<a href="#/">TRACY</a>
-						</Navbar.Brand>
-					</Navbar.Header>
-				</Navbar>
-				<Row>
-					<Col md={12}>
-						<div>
+			<Row>
+				<Col md={12} className="container">
+					<Navbar>
+						<Navbar.Header>
+							<Navbar.Brand>
+								<a href="#/">TRACY</a>
+							</Navbar.Brand>
+						</Navbar.Header>
+					</Navbar>
+					<Row>
+						<Col md={12}>
 							<FilterColumn
+								className="filter-column"
 								handleChange={this.handleFilterChange}
 							/>
-						</div>
-					</Col>
-				</Row>
-				<Row>
-					<Col md={12}>
-						<TracerTable
-							tracerFilters={tracerFilters}
-							handleRowSelection={this.handleRowSelection}
-						/>
-					</Col>
-				</Row>
-				<Row>
-					<Col md={12}>
-						<DetailsViewer
-							rawRequest={this.state.rawRequest}
-							eventID={this.state.eventID}
-							timingInterval={3000}
-							contextFilters={contextFilters}
-						/>
-					</Col>
-				</Row>
-			</div>
+						</Col>
+					</Row>
+					<Row>
+						<Col md={6}>
+							<TracerTable
+								tracerFilters={tracerFilters}
+								handleRowSelection={this.handleRowSelection}
+							/>
+						</Col>
+						<Col md={6}>
+							<DOMContextViewer
+								tracerID={this.state.tracerID}
+								handleEventSelection={this.handleEventSelection}
+							/>
+						</Col>
+					</Row>
+					<Row>
+						<Col md={12}>
+							<DetailsViewer
+								rawRequest={this.state.rawRequest}
+								selectedEvent={this.state.selectedEvent}
+								timingInterval={3000}
+								contextFilters={contextFilters}
+							/>
+						</Col>
+					</Row>
+				</Col>
+			</Row>
 		);
 	}
 }

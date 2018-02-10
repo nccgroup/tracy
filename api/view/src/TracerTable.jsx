@@ -79,18 +79,16 @@ class TracerTable extends Component {
 			req.target.responseText !== ""
 		) {
 			try {
-				// If the number of tracers changed, update.
 				// TODO: move to Server Sent events for this. no need to do all this polling. keep this for the initial data grab, then push updates
 				const tracers = JSON.parse(req.target.responseText);
-				if (tracers.length !== this.state.tracers.length) {
-					const parsedTracers = this.parseVisibleTracers(
-						tracers,
-						this.props.tracerFilters
-					);
-					this.setState({
-						tracers: parsedTracers
-					});
-				}
+				const parsedTracers = this.parseVisibleTracers(
+					tracers,
+					this.props.tracerFilters
+				);
+
+				this.setState({
+					tracers: parsedTracers
+				});
 			} catch (e) {
 				// Probably an error with parsing the JSON.
 				console.error(e);
@@ -224,7 +222,7 @@ class TracerTable extends Component {
 				expandableRow={this.isExpandableRow}
 				trClassName={this.formatRowSeverity}
 				selectRow={selectRowProp}
-				maxHeight="500"
+				height="300px"
 				scrollTop={"Bottom"}
 				hover
 				condensed

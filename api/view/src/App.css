@@ -1,4 +1,4 @@
-.tracer-row{
+.tracer-row {
   border-bottom: solid;
   border-color: black;
   margin-left: 5%;
@@ -21,31 +21,36 @@
 }
 
 .menudown-icon {
-  float:  right;
+  float: right;
   width: 200px;
 }
 
 .highlight {
   background-color: yellow;
 }
-
+/*
 code {
   display: inline;
   white-space: pre-wrap;
   padding: 0;
   background-color: antiquewhite;
-}
+}*/
 
-pre {
+/*pre {
   white-space: pre-wrap;
-}
+  overflow: auto;
+  background-color: #ffffff;
+  border: 1px solid #898989;
+  padding: 5px;
+  height: 50vh;
+}*/
 
 .hidden {
   display: none;
 }
 
 .navigation-arrows {
-  margin-left: 2.5%; 
+  margin-left: 2.5%;
   top: 500px;
   position: fixed;
 }
@@ -55,7 +60,7 @@ pre {
 }
 
 .blinker {
-   animation: fadeIn 1s ease-in-out 0s;
+  animation: fadeIn 1s ease-in-out 0s;
 }
 
 @keyframes fadeIn {
@@ -96,13 +101,13 @@ pre {
   background-color: #ffb347;
 }
 
-.row{
-    overflow: hidden; 
+.row {
+  overflow: hidden;
 }
 
-[class*="col-"]{
-    margin-bottom: -99999px;
-    padding-bottom: 99999px;
+[class*="col-"] {
+  margin-bottom: -99999px;
+  padding-bottom: 99999px;
 }
 
 .main-table {
@@ -114,10 +119,10 @@ pre {
   background-color: #b7b7b7ff;
 }
 
-.filter-buttons { 
+.filter-buttons {
   border: solid;
   background-color: #b6d7a8ff;
-  padding: 3%;/*
+  padding: 3%; /*
   margin-right: 5%;
   margin-left: 5%;
   margin-top: 5%;*/
@@ -168,4 +173,16 @@ pre {
 
 body {
   overflow: hidden;
+}
+
+.raw-event {
+  height: 50vh;
+}
+
+.raw-request {
+  height: 50vh;
+}
+
+.details-viewer {
+  margin-top: 25px;
 }

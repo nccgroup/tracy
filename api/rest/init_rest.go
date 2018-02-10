@@ -135,6 +135,7 @@ func cacheMiddleware(next http.Handler) http.Handler {
 					w.Write([]byte(""))
 				} else {
 					w.Header().Set("Cache-Control", "no-cache")
+					w.Header().Set("Etag", sumStr)
 					w.WriteHeader(rec.Code)
 					w.Write(body)
 				}

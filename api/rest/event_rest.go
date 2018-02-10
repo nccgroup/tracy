@@ -15,12 +15,13 @@ import (
 
 /* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.
  * Returns the HTTP status and the return value. */
-func addEventHelper(trcrID uint, trcrEvnt types.TracerEvent) (int, []byte) {
-	log.Trace.Printf("Adding a tracer event: %+v, tracerID: %d", trcrEvnt, trcrID)
+func addEventHelper(tracer types.Tracer, tracerEvent types.TracerEvent) (int, []byte) {
+	tracerEvent.TracerID = tracer.ID
+	log.Trace.Printf("Adding a tracer event: %+v", tracerEvent)
 	status := http.StatusInternalServerError
 	var ret []byte
 	var err error
-	if ret, err = common.AddEvent(trcrID, trcrEvnt); err != nil {
+	if ret, err = common.AddEvent(tracer, tracerEvent); err != nil {
 		log.Error.Println(err)
 		if strings.Contains(err.Error(), "UNIQUE") {
 			status = http.StatusConflict
@@ -44,7 +45,9 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 		var tracerID uint64
 		if tracerID, err = strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {
 			log.Trace.Printf("Parsed the following tracer ID from the route: %d", tracerID)
-			status, ret = addEventHelper(uint(tracerID), tracerEvent)
+			tracer := types.Tracer{}
+			tracer.ID = uint(tracerID)
+			status, ret = addEventHelper(tracer, tracerEvent)
 		}
 	}
 
@@ -93,7 +96,7 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			/* Add the tracer event. */
-			status, ret := addEventHelper(tracer.ID, tracerEvent.TracerEvent)
+			status, ret := addEventHelper(tracer, tracerEvent.TracerEvent)
 
 			/* If any of them fail, the whole request status fails. */
 			if status == http.StatusInternalServerError {
