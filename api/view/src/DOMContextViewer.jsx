@@ -204,6 +204,7 @@ class DOMContextViewer extends Component {
 		const selectRowProp = {
 			mode: "radio",
 			clickToSelect: true,
+			hideSelectColumn: true, // enable hide selection column.
 			onSelect: this.onRowSelect,
 			bgColor: function(row, isSelect) {
 				if (isSelect) {
@@ -215,7 +216,6 @@ class DOMContextViewer extends Component {
 		return (
 			<BootstrapTable
 				data={this.state.events}
-				cellEdit={{ mode: "click" }}
 				options={options}
 				trClassName={this.formatRowSeverity}
 				selectRow={selectRowProp}

@@ -28,22 +28,14 @@
 .highlight {
   background-color: yellow;
 }
-/*
-code {
-  display: inline;
-  white-space: pre-wrap;
-  padding: 0;
-  background-color: antiquewhite;
-}*/
 
-/*pre {
-  white-space: pre-wrap;
-  overflow: auto;
-  background-color: #ffffff;
-  border: 1px solid #898989;
-  padding: 5px;
-  height: 50vh;
-}*/
+pre {
+  font-size: x-small !important;
+}
+
+td {
+  font-size: x-small;
+}
 
 .hidden {
   display: none;
@@ -173,6 +165,7 @@ code {
 
 body {
   overflow: hidden;
+  font-size: xx-small;
 }
 
 .raw-event {

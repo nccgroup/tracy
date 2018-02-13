@@ -213,13 +213,13 @@ class TracerTable extends Component {
 	render() {
 		const options = {
 			defaultSortName: "ID",
-			defaultSortOrder: "desc",
-			afterDeleteRow: this.onAfterDeleteTracer
+			defaultSortOrder: "desc"
 		};
 
 		const selectRowProp = {
 			mode: "radio",
 			clickToSelect: true,
+			hideSelectColumn: true, // enable hide selection column.
 			onSelect: this.onRowSelect,
 			bgColor: function(row, isSelect) {
 				if (isSelect) {
@@ -232,7 +232,6 @@ class TracerTable extends Component {
 			<BootstrapTable
 				data={this.state.tracers}
 				options={options}
-				expandableRow={this.isExpandableRow}
 				trClassName={this.formatRowSeverity}
 				selectRow={selectRowProp}
 				height="300px"
