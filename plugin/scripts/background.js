@@ -41,7 +41,6 @@ function requestHandler(domEvents) {
                             requests[request]["Tracers"][tracer][
                                 "TracerPayload"
                             ];
-                        console.log("tracer: ", tracerString);
 
                         /* If a tracer was found, make sure all the event data is proper and add it to the list of tracers found for this event.
                          * Continue to the rest of the recorded. */

@@ -127,7 +127,9 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 		} else {
 			//TODO: although, we should care about these cases, there could be a case where the comment could be broken out of
 			log.Trace.Printf("Found a comment node. We probably don't care about these as much. Parent node: %s, Data: %s", n.Parent, n.Data)
-			sev = 1
+			if tracerEvent.EventType != "response" {
+				sev = 1
+			}
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
 					TracerEventID:    tracerEvent.ID,
@@ -155,7 +157,9 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 		}
 
 		if strings.Contains(a.Val, tracer) {
-			sev = 1
+			if tracerEvent.EventType != "response" {
+				sev = 1
+			}
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
 					TracerEventID:    tracerEvent.ID,

@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
-import HighlightedElement from "./HighlightedElement";
+//import HighlightedElement from "./HighlightedElement";
 
 /* View used to show the raw request and the events for the selected tracer row. */
 class DetailsViewer extends Component {

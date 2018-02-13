@@ -51,6 +51,8 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 			tracer.ID = uint(tracerID)
 			status, ret = addEventHelper(tracer, tracerEvent)
 		}
+	} else {
+		log.Error.Println(err)
 	}
 
 	w.WriteHeader(status)
@@ -70,6 +72,8 @@ func GetEvents(w http.ResponseWriter, r *http.Request) {
 		} else {
 			status = http.StatusOK
 		}
+	} else {
+		log.Error.Println(err)
 	}
 
 	w.WriteHeader(status)
