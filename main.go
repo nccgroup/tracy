@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"tracy/api/common"
 	"tracy/api/rest"
 	"tracy/api/store"

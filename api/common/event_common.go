@@ -78,6 +78,7 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 
 		// Update the tracer with the highest severity
 		if *ret > tracer.OverallSeverity {
+			log.Trace.Println("The severity changed: %+v, %d", tracer, *ret)
 			tracer.OverallSeverity = *ret
 		}
 		// Also, increase the tracer event length by 1
