@@ -15,7 +15,7 @@ BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})
 LDFLAGS = "-X main.VERSION=${VERSION} -X main.COMMIT=${COMMIT} -X main.BRANCH=${BRANCH}"
 
 # Build the project for all platforms. Really only for CI or builders.
-all: test clean view bins
+all: test view bins
 	
 # Build the cross-compiled binaries with xgo. Really only for CI or builders.
 bins:
@@ -24,10 +24,10 @@ bins:
 
 # Build the view and static assets into a Go file
 view:
-	npm --prefix ${GOPATH}/src/${PROJECT_NAME}/tracer/view run build; \
-	cd ${GOPATH}/src/${PROJECT_NAME}/tracer/view/; \
+	npm --prefix ${GOPATH}/src/${PROJECT_NAME}/api/view run build; \
+	cd ${GOPATH}/src/${PROJECT_NAME}/api/view/; \
 	go-bindata-assetfs -pkg rest ./build/...; \
-	mv ./bindata_assetfs.go ${GOPATH}/src/${PROJECT_NAME}/tracer/rest/
+	mv ./bindata_assetfs.go ${GOPATH}/src/${PROJECT_NAME}/api/rest/
 
 # Format all the Go code
 fmt:
@@ -59,7 +59,4 @@ build-deps:
 dev-deps:
 	go get github.com/golang/dep/cmd/dep
 
-clean:
-	-rm -f ${GOPATH}/src/${PROJECT_NAME}/bin/*
-
-.PHONY: all bins view test fmt clean build-deps dev-deps
+.PHONY: all bins view test fmt build-deps dev-deps
