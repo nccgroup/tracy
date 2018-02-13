@@ -66,10 +66,10 @@ func testAddTracersBodyHelper(requestDataString string) (int, error) {
 		return 0, err
 	}
 
-	newRequest, addedTracers := ReplaceTagsInBody(requestData)
+	newRequest, addedTracers := replaceTracerStrings(requestData)
 
 	for _, addedTracer := range addedTracers {
-		i := bytes.Index(newRequest, []byte(addedTracer))
+		i := bytes.Index(newRequest, []byte(addedTracer.TracerPayload))
 		if i == -1 {
 			return 0, fmt.Errorf("Could not find Tracer")
 		}
@@ -102,10 +102,10 @@ func testAddTracerQueryHelper(requestData string) (int, error) {
 		return 0, err
 	}
 
-	newQuery, addedTracers := ReplaceTagsInQueryParameters(request.URL.RawQuery)
+	newQuery, addedTracers := replaceTracerStrings([]byte(request.URL.RawQuery))
 
 	for _, addedTracer := range addedTracers {
-		i := strings.Index(newQuery, addedTracer)
+		i := strings.Index(string(newQuery), addedTracer.TracerPayload)
 		if i == -1 {
 			return 0, fmt.Errorf("no tracer found")
 		}
@@ -132,7 +132,7 @@ Connection: close
 func TestFindTracers(t *testing.T) {
 	//findTracers(responseString string, tracers map[int]types.Tracer) []types.Tracer {
 	tracers := make([]types.Request, 1)
-	tracer := types.Tracer{TracerString: "AASDFG"}
+	tracer := types.Tracer{TracerPayload: "AASDFG"}
 	tracers[0].Tracers = make([]types.Tracer, 1)
 	tracers[0].Tracers[0] = tracer
 
@@ -148,7 +148,7 @@ func TestFindTracers(t *testing.T) {
 func TestFindNoTracers(t *testing.T) {
 	//findTracers(responseString string, tracers map[int]types.Tracer) []types.Tracer {
 	tracers := make([]types.Request, 1)
-	tracer := types.Tracer{TracerString: "AASDFG"}
+	tracer := types.Tracer{TracerPayload: "AASDFG"}
 	tracers[0].Tracers = make([]types.Tracer, 1)
 	tracers[0].Tracers[0] = tracer
 
@@ -157,12 +157,12 @@ func TestFindNoTracers(t *testing.T) {
 	if err != nil {
 		t.Fatal("Magic just happened") //error should always be null
 	} else if numHits != 0 {
-		t.Fatal("Failed to find tracer")
+		t.Fatalf("Found too many tracers? %d", numHits)
 	}
 }
 
 func testFindTracersHelper(responseData string, tracers []types.Request) (int, error) {
-	foundTracers := FindTracersInResponseBody(responseData, "www.test.com", tracers)
+	foundTracers := findTracersInResponseBody(responseData, "www.test.com", tracers)
 
 	return len(foundTracers), nil
 }

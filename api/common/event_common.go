@@ -39,7 +39,7 @@ func GetEvents(tracerID uint) ([]byte, error) {
 	var err error
 
 	tracerEvents := make([]types.TracerEvent, 0)
-	if err = store.DB.Joins("JOIN dom_contexts on dom_contexts.tracer_event_id=tracer_events.id").Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err == nil {
+	if err = store.DB.Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err == nil {
 		log.Trace.Printf("Successfully got the tracer events: %+v", tracerEvents)
 		ret, err = json.Marshal(tracerEvents)
 	}
@@ -66,14 +66,14 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 		// string doesn't send the tracer string with its request, so we need to fetch it.
 		// Otherwise, the tracer struct should have it already and we don't need to make
 		// another db call.
-		if tracer.TracerString == "" {
+		if tracer.TracerPayload == "" {
 			if err = store.DB.First(&tracer, "id = ?", tracerEvent.TracerID).Error; err != nil {
 				goto Error
 			}
 		}
 
 		/* Find all instances of the string string and record their appropriate contexts.*/
-		getTracerLocation(doc, &contexts, tracer.TracerString, tracerEvent.ID, ret)
+		getTracerLocation(doc, &contexts, tracer.TracerPayload, tracerEvent, ret)
 		log.Trace.Printf("Got the following DOM contexts from the event: %+v", contexts)
 
 		// Update the tracer with the highest severity
@@ -93,27 +93,18 @@ Error:
 	return contexts, err
 }
 
-/* Constants used to track the categories for the locations of a tracer string. */
-const (
-	inAttr = iota
-	inText
-	inNodeName
-	inAttrVal
-	inComment
-)
-
 /* Helper function that recursively traverses the DOM notes and records any context
  * surrounding a particular string. */
-func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer string, tracerEventID uint, highest *uint) {
+func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer string, tracerEvent types.TracerEvent, highest *uint) {
 	var sev uint = 0
 	if strings.Contains(n.Data, tracer) {
 		if n.Type == html.TextNode {
 			log.Trace.Printf("Found Tracer in TextNode. Parent Node: %s, Data: %s", n.Parent.Data, n.Data)
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
-					TracerEventID:    tracerEventID,
+					TracerEventID:    tracerEvent.ID,
 					HTMLNodeType:     n.Parent.Data,
-					HTMLLocationType: inText,
+					HTMLLocationType: types.Text,
 					EventContext:     gohtml.Format(n.Data),
 					Severity:         0,
 				})
@@ -121,13 +112,15 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 			log.Trace.Printf("Found Tracer in DomNode. Parent Node: %s, Data: %s", n.Parent.Data, n.Data)
 
 			if n.Parent.Data == "script" {
-				sev = 1
+				if tracerEvent.EventType != "response" {
+					sev = 1
+				}
 			}
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
-					TracerEventID:    tracerEventID,
+					TracerEventID:    tracerEvent.ID,
 					HTMLNodeType:     n.Parent.Data,
-					HTMLLocationType: inNodeName,
+					HTMLLocationType: types.NodeName,
 					EventContext:     gohtml.Format(n.Data),
 					Severity:         sev,
 				})
@@ -137,9 +130,9 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 			sev = 1
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
-					TracerEventID:    tracerEventID,
+					TracerEventID:    tracerEvent.ID,
 					HTMLNodeType:     n.Parent.Data,
-					HTMLLocationType: inComment,
+					HTMLLocationType: types.Comment,
 					EventContext:     gohtml.Format(n.Data),
 					Severity:         sev,
 				})
@@ -148,12 +141,14 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 
 	for _, a := range n.Attr {
 		if strings.Contains(a.Key, tracer) {
-			sev = 3
+			if tracerEvent.EventType != "response" {
+				sev = 3
+			}
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
-					TracerEventID:    tracerEventID,
+					TracerEventID:    tracerEvent.ID,
 					HTMLNodeType:     n.Data,
-					HTMLLocationType: inAttr,
+					HTMLLocationType: types.Attr,
 					EventContext:     a.Key,
 					Severity:         sev,
 				})
@@ -163,9 +158,9 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 			sev = 1
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
-					TracerEventID:    tracerEventID,
+					TracerEventID:    tracerEvent.ID,
 					HTMLNodeType:     n.Data,
-					HTMLLocationType: inAttrVal,
+					HTMLLocationType: types.AttrVal,
 					EventContext:     a.Val,
 					Severity:         sev,
 				})
@@ -177,6 +172,6 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 	}
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		getTracerLocation(c, tracerLocations, tracer, tracerEventID, highest)
+		getTracerLocation(c, tracerLocations, tracer, tracerEvent, highest)
 	}
 }

@@ -90,9 +90,9 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 		for _, tracerEvent := range bulkTracerEvent {
 			/* For each of the tracer strings that were found in the DOM event, find the tracer they are associated with
 			 * and add an event to it. */
-			for _, tracerString := range tracerEvent.TracerStrings {
+			for _, tracerPayload := range tracerEvent.TracerPayloads {
 				var tracer types.Tracer
-				if err := store.DB.First(&tracer, "tracer_string = ?", tracerString).Error; err != nil {
+				if err := store.DB.First(&tracer, "tracer_payload = ?", tracerPayload).Error; err != nil {
 					/* If there was an error getting the tracer, fail fast and continue to the next one. */
 					log.Error.Println(err)
 					continue

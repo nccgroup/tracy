@@ -4,6 +4,15 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+/* Constants used to track the categories for the HTMLLocationType of a tracer string. */
+const (
+	Attr = iota
+	Text
+	NodeName
+	AttrVal
+	Comment
+)
+
 /*DOMContext is an event that marks when a particular tracer was viewed again. */
 type DOMContext struct {
 	gorm.Model

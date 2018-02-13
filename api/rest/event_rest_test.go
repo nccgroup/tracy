@@ -16,22 +16,22 @@ func TestAddEvent(t *testing.T) {
 	Configure()
 
 	var (
-		tracerString    = "blahblah"
-		data            = "dahdata<a>blahblah</a>"
-		URL             = "http://example.com"
-		location        = "dahlocation"
-		method          = "GET"
-		eventType       = "dateventType"
-		addEventURL     = "http://127.0.0.1:8081/tracers/1/events"
-		addTracerURL    = "http://127.0.0.1:8081/tracers"
-		rawRequest      = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
-		addTracerString = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerString": "%s"}]}`, rawRequest, URL, method, tracerString)
-		eventString     = fmt.Sprintf(`{"RawEvent": "%s", "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
+		tracerString     = "blahblah"
+		data             = "dahdata<a>blahblah</a>"
+		URL              = "http://example.com"
+		location         = "dahlocation"
+		method           = "GET"
+		eventType        = "dateventType"
+		addEventURL      = "http://127.0.0.1:8081/tracers/1/events"
+		addTracerURL     = "http://127.0.0.1:8081/tracers"
+		rawRequest       = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
+		addTracerPayload = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerPayload": "%s"}]}`, rawRequest, URL, method, tracerString)
+		eventString      = fmt.Sprintf(`{"RawEvent": "%s", "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
 	)
 
 	/* ADDING A TRACER */
 	/////////////////////
-	addReq, err := http.NewRequest("POST", addTracerURL, bytes.NewBuffer([]byte(addTracerString)))
+	addReq, err := http.NewRequest("POST", addTracerURL, bytes.NewBuffer([]byte(addTracerPayload)))
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
@@ -159,22 +159,22 @@ func TestDuplicateEvent(t *testing.T) {
 	Configure()
 
 	var (
-		tracerString    = "blahblah"
-		data            = "dahdata<a>blahblah</a>"
-		URL             = "http://example.com"
-		location        = "dahlocation"
-		method          = "GET"
-		eventType       = "dateventType"
-		addEventURL     = "http://127.0.0.1:8081/tracers/1/events"
-		addTracerURL    = "http://127.0.0.1:8081/tracers"
-		rawRequest      = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
-		addTracerString = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerString": "%s"}]}`, rawRequest, URL, method, tracerString)
-		eventString     = fmt.Sprintf(`{"RawEvent": "%s", "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
+		tracerString     = "blahblah"
+		data             = "dahdata<a>blahblah</a>"
+		URL              = "http://example.com"
+		location         = "dahlocation"
+		method           = "GET"
+		eventType        = "dateventType"
+		addEventURL      = "http://127.0.0.1:8081/tracers/1/events"
+		addTracerURL     = "http://127.0.0.1:8081/tracers"
+		rawRequest       = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
+		addTracerPayload = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerPayload": "%s"}]}`, rawRequest, URL, method, tracerString)
+		eventString      = fmt.Sprintf(`{"RawEvent": "%s", "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
 	)
 
 	/* ADDING A TRACER */
 	/////////////////////
-	addReq, err := http.NewRequest("POST", addTracerURL, bytes.NewBuffer([]byte(addTracerString)))
+	addReq, err := http.NewRequest("POST", addTracerURL, bytes.NewBuffer([]byte(addTracerPayload)))
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}

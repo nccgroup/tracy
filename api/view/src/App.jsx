@@ -12,11 +12,15 @@ class App extends Component {
 		super(props);
 		this.state = {
 			tracerID: -1,
-			selectedEvent: "",
-			rawRequest: ""
+			rawEvent: "",
+			requestIndex: 0,
+			tracerStringLength: 0,
+			eventIndex: 0,
+			rawRequest: "",
+			requestLocationType: 0
 		};
 		this.handleFilterChange = this.handleFilterChange.bind(this);
-		this.handleRowSelection = this.handleRowSelection.bind(this);
+		this.handleTracerSelection = this.handleTracerSelection.bind(this);
 		this.handleEventSelection = this.handleEventSelection.bind(this);
 	}
 
@@ -30,17 +34,26 @@ class App extends Component {
 	}
 
 	/* Called whenever a new tracer row is selected. */
-	handleRowSelection(tracerID, rawRequest) {
+	handleTracerSelection(
+		nTracerID,
+		nRawRequest,
+		nRequestIndex,
+		nRequestLocationType,
+		nTracerStringLength
+	) {
 		this.setState({
-			tracerID: tracerID,
-			rawRequest: rawRequest
+			tracerID: nTracerID,
+			rawRequest: nRawRequest,
+			requestIndex: nRequestIndex,
+			requestLocationType: nRequestLocationType,
+			tracerStringLength: nTracerStringLength
 		});
 	}
 
 	/* Called whenever a new event is select. */
-	handleEventSelection(nSelectedEvent) {
+	handleEventSelection(nRawEvent) {
 		this.setState({
-			selectedEvent: nSelectedEvent
+			rawEvent: nRawEvent
 		});
 	}
 
@@ -100,7 +113,9 @@ class App extends Component {
 						<Col md={6}>
 							<TracerTable
 								tracerFilters={tracerFilters}
-								handleRowSelection={this.handleRowSelection}
+								handleTracerSelection={
+									this.handleTracerSelection
+								}
 							/>
 						</Col>
 						<Col md={6}>
@@ -115,7 +130,14 @@ class App extends Component {
 						<Col md={12}>
 							<DetailsViewer
 								rawRequest={this.state.rawRequest}
-								selectedEvent={this.state.selectedEvent}
+								requestStart={this.state.requestIndex}
+								requestLocationType={
+									this.state.requestLocationType
+								}
+								requestStop={this.state.tracerStringLength}
+								rawEvent={this.state.rawEvent}
+								eventStart={this.state.eventIndex}
+								eventStop={this.state.tracerPayloadLength}
 								timingInterval={3000}
 							/>
 						</Col>

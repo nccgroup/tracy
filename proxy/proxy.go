@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
-	tracerClient "tracy/api/client"
 	"tracy/api/common"
 	"tracy/api/types"
 	"tracy/configure"
@@ -114,8 +113,11 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 				Tracers:       tracers,
 			}
 
-			/* Use the tracer API client to add the new tracers. */
-			tracerClient.AddTracers(req)
+			/* Use the API to add each tracer events to their corresponding tracer. */
+			_, err = common.AddTracer(req)
+			if err != nil {
+				log.Error.Println(err)
+			}
 		}
 	}()
 
@@ -155,12 +157,12 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 		panic(err)
 	}
 
-	/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
-	 * server API call because it will trigger a recursion. */
-	if !configure.ServerInWhitelist(host) {
-		/* Search for any known tracers in the response. Since the list of tracers might get large, perform this operation
-		 * in a goroutine. The proxy can finish this connection before this finishes. */
-		go func() {
+	/* Search for any known tracers in the response. Since the list of tracers might get large, perform this operation
+	 * in a goroutine. The proxy can finish this connection before this finishes. */
+	go func() {
+		/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
+		 * server API call because it will trigger a recursion. */
+		if !configure.ServerInWhitelist(host) {
 			// Check that the server actually sent compressed data
 			var err error
 			if resp.Header.Get("Content-Encoding") == "gzip" {
@@ -184,7 +186,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 							log.Trace.Printf("Need to parse the following %d requests for tracer strings: %+v", len(requests), requests)
 
 							url := request.Host + request.RequestURI
-							tracers := FindTracersInResponseBody(string(b), url, requests)
+							tracers := findTracersInResponseBody(string(b), url, requests)
 
 							/* Use the API to add each tracer events to their corresponding tracer. */
 							for _, tracer := range tracers {
@@ -202,8 +204,8 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 			if err != nil {
 				log.Error.Println(err)
 			}
-		}()
-	}
+		}
+	}()
 
 	/* Right the response back to the client. */
 	resp.Body = ioutil.NopCloser(&save)

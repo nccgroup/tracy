@@ -177,6 +177,9 @@ class TracerTable extends Component {
 					RequestURL: this.parseHost(request.RequestURL),
 					RequestPath: this.parsePath(request.RequestURL),
 					TracerString: tracer.TracerString,
+					TracerPayload: tracer.TracerPayload,
+					TracerLocationIndex: tracer.TracerLocationIndex,
+					TracerLocationType: tracer.TracerLocationType,
 					OverallSeverity: tracer.OverallSeverity,
 					TracerEventsLength: tracer.TracerEventsLength
 				};
@@ -197,7 +200,13 @@ class TracerTable extends Component {
 
 	onRowSelect(row, isSelected, e) {
 		if (isSelected) {
-			this.props.handleRowSelection(row.ID, row.RawRequest);
+			this.props.handleTracerSelection(
+				row.ID,
+				row.RawRequest,
+				row.TracerLocationIndex,
+				row.TracerLocationType,
+				row.TracerString.length
+			);
 		}
 	}
 
@@ -271,6 +280,14 @@ class TracerTable extends Component {
 					expandable={false}
 				>
 					Tracer String
+				</TableHeaderColumn>
+				<TableHeaderColumn
+					dataField="TracerPayload"
+					width="125"
+					dataSort={true}
+					expandable={false}
+				>
+					Tracer Payload
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="OverallSeverity"

@@ -39,7 +39,7 @@ function requestHandler(domEvents) {
                     for (var tracer in requests[request]["Tracers"]) {
                         var tracerString =
                             requests[request]["Tracers"][tracer][
-                                "TracerString"
+                                "TracerPayload"
                             ];
                         console.log("tracer: ", tracerString);
 
@@ -76,7 +76,7 @@ function requestHandler(domEvents) {
                                 EventURL: encodeURI(domEvent.location),
                                 EventType: domEvent.type
                             },
-                            TracerStrings: tracersPerDomEvent
+                            TracerPayloads: tracersPerDomEvent
                         };
                         filteredEvents.push(event);
                     }
@@ -113,6 +113,7 @@ function messageRouter(message, sender, sendResponse) {
 
 /* Refreshes the configuration. */
 function refreshConfig(message, sender, sendResponse) {
+    //TODO: make this a file. This config server is dumb and will break when we have this work for server mode
     fetch("http://127.0.0.1:6001/config")
         .then(res => res.json())
         .then(res => {

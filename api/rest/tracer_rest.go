@@ -97,7 +97,8 @@ func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 					RequestURL:    requestURL,
 					Tracers: []types.Tracer{
 						types.Tracer{
-							TracerString: tracerString,
+							TracerPayload: string(payload),
+							TracerString:  tracerString,
 						},
 					},
 				}
