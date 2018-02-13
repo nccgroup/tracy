@@ -34,10 +34,31 @@ func init() {
 
 	flag.StringVar(&outFile, "outfile", outFileDefault, outputFileUsage)
 	flag.StringVar(&outFile, "o", outFileDefault, outputFileUsage+"(shorthand)")
+
+	/* Defaults for tests. */
+	var traceWriter io.Writer = os.Stdout
+	var infoWriter io.Writer = os.Stdout
+	var warningWriter io.Writer = os.Stdout
+	var errorWriter io.Writer = os.Stderr
+	Trace = log.New(traceWriter,
+		"[TRACE]: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Info = log.New(infoWriter,
+		"[INFO]: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Warning = log.New(warningWriter,
+		"[WARNING]: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
+
+	Error = log.New(errorWriter,
+		"[ERROR]: ",
+		log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-/*Init takes the command line options and builds the loggers. */
-func Init() {
+/*Configure takes the command line options and builds the loggers. */
+func Configure() {
 	/* Configure the logging settings. */
 	var traceWriter io.Writer
 	var infoWriter io.Writer

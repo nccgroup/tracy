@@ -36,7 +36,7 @@ fmt:
 	cd - >/dev/null
 
 test:
-	go test ${PROJECT_NAME}/test
+	go test ./...
 
 lint:
 	cd ${BUILD_DIR} ; \

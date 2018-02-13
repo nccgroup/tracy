@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 	"tracy/log"
-	"tracy/tracer/store"
 )
 
 /*TracyPath is the path all tracy files go in. */
@@ -80,7 +79,7 @@ func init() {
 	var (
 		databaseFileUsage   = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
 		databaseFileDefault = "prod-tracer-db.db"
-		debugUIUsage = "Indicate if you'd like the UI to use the non-compiled assets in the case of debugging."
+		debugUIUsage        = "Indicate if you'd like the UI to use the non-compiled assets in the case of debugging."
 	)
 	/* Database file. Allows the user to change the location of the SQLite database file. */
 	flag.StringVar(&DatabaseFile, "database", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
@@ -239,22 +238,6 @@ func ServerInWhitelist(server string) bool {
 	}
 
 	return ret
-}
-
-/*Database opens the database from the store package. The resultant DB is available
- * via the TracerDB global. */
-func Database(db string) {
-	/* Create the directory if it doesn't exist. */
-	if _, err := os.Stat(filepath.Dir(db)); os.IsNotExist(err) {
-		os.Mkdir(filepath.Dir(db), 0755)
-	}
-
-	/* Open the database file. */
-	_, err := store.Open("sqlite3", db)
-	if err != nil {
-		/* Can't really recover here. We need the database. */
-		log.Error.Fatal(err)
-	}
 }
 
 /*DeleteDatabase deletes the database at the file path specified. */
