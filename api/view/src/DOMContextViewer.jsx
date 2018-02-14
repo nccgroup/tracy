@@ -29,7 +29,7 @@ class DOMContextViewer extends Component {
 
 	onRowSelect(row, isSelected, e) {
 		if (isSelected) {
-			this.props.handleEventSelection(row.RawEvent);
+			this.props.handleEventSelection(row.RawEvent, row.EventContext);
 		}
 	}
 

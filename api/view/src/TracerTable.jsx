@@ -4,7 +4,6 @@ import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-bootstrap-table/dist/react-bootstrap-table.min.css";
 import "bootstrap/dist/css/bootstrap-theme.min.css";
-import TracerEventDataExpanded from "./TracerEventDataExpanded";
 
 class TracerTable extends Component {
 	constructor(props) {
@@ -21,10 +20,6 @@ class TracerTable extends Component {
 		};
 	}
 
-	isExpandableRow(row) {
-		return row.Contexts && row.Contexts.length > 0;
-	}
-
 	shouldComponentUpdate(nextProps, nextState) {
 		var ret = true;
 		//Only the filters changed.
@@ -35,21 +30,6 @@ class TracerTable extends Component {
 			ret = false;
 		}
 		return ret;
-	}
-
-	expandEventRow(row) {
-		var rawData;
-		try {
-			rawData = JSON.stringify(JSON.parse(row.RawData), null, 2);
-		} catch (e) {
-			rawData = row.RawData;
-		}
-		return (
-			<TracerEventDataExpanded
-				data={rawData}
-				tracerString={row.TracerString}
-			/>
-		);
 	}
 
 	/* getTracers makes an XMLHTTPRequest to the tracers/events API to get the latest set of events. */
@@ -205,7 +185,8 @@ class TracerTable extends Component {
 				row.RawRequest,
 				row.TracerLocationIndex,
 				row.TracerLocationType,
-				row.TracerString.length
+				row.TracerString.length,
+				row.TracerPayload.length
 			);
 		}
 	}

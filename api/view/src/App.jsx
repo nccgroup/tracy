@@ -15,9 +15,11 @@ class App extends Component {
 			rawEvent: "",
 			requestIndex: 0,
 			tracerStringLength: 0,
+			tracerPayloadLength: 0,
 			eventIndex: 0,
 			rawRequest: "",
-			requestLocationType: 0
+			requestLocationType: 0,
+			eventContext: ""
 		};
 		this.handleFilterChange = this.handleFilterChange.bind(this);
 		this.handleTracerSelection = this.handleTracerSelection.bind(this);
@@ -39,21 +41,24 @@ class App extends Component {
 		nRawRequest,
 		nRequestIndex,
 		nRequestLocationType,
-		nTracerStringLength
+		nTracerStringLength,
+		nTracerPayloadLength
 	) {
 		this.setState({
 			tracerID: nTracerID,
 			rawRequest: nRawRequest,
 			requestIndex: nRequestIndex,
 			requestLocationType: nRequestLocationType,
-			tracerStringLength: nTracerStringLength
+			tracerStringLength: nTracerStringLength,
+			tracerPayloadLength: nTracerPayloadLength
 		});
 	}
 
 	/* Called whenever a new event is select. */
-	handleEventSelection(nRawEvent) {
+	handleEventSelection(nRawEvent, nEventContext) {
 		this.setState({
-			rawEvent: nRawEvent
+			rawEvent: nRawEvent,
+			eventContext: nEventContext
 		});
 	}
 
@@ -134,11 +139,14 @@ class App extends Component {
 								requestLocationType={
 									this.state.requestLocationType
 								}
-								requestStop={this.state.tracerStringLength}
+								tracerStringLength={
+									this.state.tracerStringLength
+								}
+								tracerPayloadLength={
+									this.state.tracerPayloadLength
+								}
+								eventContext={this.state.eventContext}
 								rawEvent={this.state.rawEvent}
-								eventStart={this.state.eventIndex}
-								eventStop={this.state.tracerPayloadLength}
-								timingInterval={3000}
 							/>
 						</Col>
 					</Row>
