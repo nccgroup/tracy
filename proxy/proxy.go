@@ -99,6 +99,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	if client != nil {
 		defer client.Close()
 	}
+
 	/* Search through the request for the tracer keyword. */
 	tracers, err := replaceTracers(request)
 
