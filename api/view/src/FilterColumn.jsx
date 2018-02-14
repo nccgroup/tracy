@@ -48,7 +48,7 @@ class FilterColumn extends Component {
 
 	render() {
 		return (
-			<div>
+			<div className="filter-column">
 				<FilterButton
 					value="responses"
 					description="HTTP Responses"
@@ -73,7 +73,7 @@ class FilterColumn extends Component {
 }
 
 /* Not really sure if I want these filters anymore. Archives weren't that useful
- and responses are def not that useful. 
+ and responses are def not that useful.
 				<FilterButton
 					value="archivedContexts"
 					description="Archived Contexts"

@@ -95,6 +95,9 @@ class App extends Component {
 			<Row>
 				<Col md={12} className="container">
 					<Navbar>
+						<FilterColumn
+							handleChange={this.handleFilterChange}
+						/>
 						<Navbar.Header>
 							<Navbar.Brand>
 								<a href="#/">TRACY</a>
@@ -102,15 +105,7 @@ class App extends Component {
 						</Navbar.Header>
 					</Navbar>
 					<Row>
-						<Col md={12}>
-							<FilterColumn
-								className="filter-column"
-								handleChange={this.handleFilterChange}
-							/>
-						</Col>
-					</Row>
-					<Row>
-						<Col md={6}>
+						<Col md={6} className="left-column">
 							<TracerTable
 								tracerFilters={tracerFilters}
 								handleTracerSelection={
@@ -118,7 +113,7 @@ class App extends Component {
 								}
 							/>
 						</Col>
-						<Col md={6}>
+						<Col md={6} className="right-column">
 							<DOMContextViewer
 								tracerID={this.state.tracerID}
 								handleEventSelection={this.handleEventSelection}

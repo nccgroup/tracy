@@ -20,6 +20,14 @@
   color: white;
 }
 
+div.left-column {
+  padding-right: 0;
+}
+
+div.right-column {
+  padding-left: 0;
+}
+
 .menudown-icon {
   float: right;
   width: 200px;
@@ -30,11 +38,12 @@
 }
 
 pre {
-  font-size: x-small !important;
+  font-size: small !important;
 }
 
 td {
-  font-size: x-small;
+  font-size: small;
+  padding: 0px !important;
 }
 
 .hidden {
@@ -108,7 +117,7 @@ td {
 }
 
 .filter-column {
-  background-color: #b7b7b7ff;
+  position: absolute;
 }
 
 .filter-buttons {
@@ -177,5 +186,5 @@ body {
 }
 
 .details-viewer {
-  margin-top: 25px;
+  margin-top: 0px;
 }

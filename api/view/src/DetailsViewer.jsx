@@ -37,11 +37,11 @@ class DetailsViewer extends Component {
 
 		return (
 			<Row id="details-views" className="details-viewer">
-				<Col md={6}>
+				<Col md={6} className="left-column">
 					<pre className="raw-request">{this.props.rawRequest}</pre>
 				</Col>
 
-				<Col md={6}>
+				<Col md={6} className="right-column">
 					<pre className="raw-event"> {this.props.rawEvent}</pre>
 				</Col>
 			</Row>
