@@ -20,6 +20,14 @@
   color: white;
 }
 
+div.left-column {
+  padding-right: 0;
+}
+
+div.right-column {
+  padding-left: 0;
+}
+
 .menudown-icon {
   float: right;
   width: 200px;
@@ -30,11 +38,13 @@
 }
 
 pre {
-  font-size: x-small !important;
+  font-size: small !important;
+  border-radius: 0px !important;
 }
 
 td {
-  font-size: x-small;
+  font-size: small;
+  padding: 0px !important;
 }
 
 .hidden {
@@ -108,7 +118,7 @@ td {
 }
 
 .filter-column {
-  background-color: #b7b7b7ff;
+  position: absolute;
 }
 
 .filter-buttons {
@@ -165,17 +175,35 @@ td {
 
 body {
   overflow: hidden;
-  font-size: xx-small;
 }
 
-.raw-data {
-  height: 50vh;
+.raw-event {
+  height: 65vh;
 }
 
 .raw-request {
-  height: 50vh;
+  height: 65vh;
 }
 
 .details-viewer {
-  margin-top: 25px;
+  margin-top: 0px;
+}
+
+.nav-bar {
+  margin-bottom: 0px;
+  height: 4vh;
+}
+
+.header {
+  height: 5vh;
+}
+
+.title {
+  font-size: xx-large;
+  text-align: center;
+}
+
+.row-selected {
+  background-color: black;
+  color: white;
 }

@@ -4,6 +4,10 @@ import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-bootstrap-table/dist/react-bootstrap-table.min.css";
 import "bootstrap/dist/css/bootstrap-theme.min.css";
+<<<<<<< HEAD
+=======
+import TracerEventDataExpanded from "./TracerEventDataExpanded";
+>>>>>>> heath_ui_theme
 
 class TracerTable extends Component {
 	constructor(props) {
@@ -31,7 +35,7 @@ class TracerTable extends Component {
 		}
 		return ret;
 	}
-
+	
 	/* getTracers makes an XMLHTTPRequest to the tracers/events API to get the latest set of events. */
 	getTracers() {
 		/* Create the HTTP GET request to the /tracers API endpoint. */
@@ -192,21 +196,32 @@ class TracerTable extends Component {
 	}
 
 	render() {
+		const thStyle = {
+			fontSize: "small",
+			backgroundColor: "black",
+			color: "white"
+		};
+		const tableStyle = {
+			borderRadius: "0px",
+			height: "3vh"
+		};
+		const bodyStyle = {
+			height: "27vh"
+		};
+		const containerStyle = {
+			height: "30vh"
+		};
 		const options = {
 			defaultSortName: "ID",
 			defaultSortOrder: "desc"
 		};
 
-		const selectRowProp = {
+		const selectRow = {
 			mode: "radio",
 			clickToSelect: true,
 			hideSelectColumn: true, // enable hide selection column.
 			onSelect: this.onRowSelect,
-			bgColor: function(row, isSelect) {
-				if (isSelect) {
-					return "antiquewhite";
-				}
-			}
+			className: "row-selected"
 		};
 
 		return (
@@ -214,18 +229,19 @@ class TracerTable extends Component {
 				data={this.state.tracers}
 				options={options}
 				trClassName={this.formatRowSeverity}
-				selectRow={selectRowProp}
-				height="300px"
+				selectRow={selectRow}
+				containerStyle={containerStyle}
+				tableStyle={tableStyle}
+				bodyStyle={bodyStyle}
 				scrollTop={"Bottom"}
-				hover
 				condensed
-				search
 			>
 				<TableHeaderColumn
 					dataField="ID"
 					width="50"
 					isKey={true}
 					dataAlign="center"
+					thStyle={thStyle}
 					dataSort={true}
 					expandable={false}
 				>
@@ -234,6 +250,7 @@ class TracerTable extends Component {
 				<TableHeaderColumn
 					dataField="RequestMethod"
 					dataSort={true}
+					thStyle={thStyle}
 					width="75"
 					expandable={false}
 				>
@@ -242,6 +259,7 @@ class TracerTable extends Component {
 				<TableHeaderColumn
 					dataField="RequestURL"
 					dataSort={true}
+					thStyle={thStyle}
 					expandable={false}
 				>
 					Host
@@ -249,6 +267,7 @@ class TracerTable extends Component {
 				<TableHeaderColumn
 					dataField="RequestPath"
 					dataSort={true}
+					thStyle={thStyle}
 					expandable={false}
 				>
 					Path
@@ -257,6 +276,7 @@ class TracerTable extends Component {
 					dataField="TracerString"
 					width="125"
 					dataSort={true}
+					thStyle={thStyle}
 					expandable={false}
 				>
 					Tracer String
@@ -265,6 +285,7 @@ class TracerTable extends Component {
 					dataField="TracerPayload"
 					width="125"
 					dataSort={true}
+					thStyle={thStyle}
 					expandable={false}
 				>
 					Tracer Payload
@@ -273,6 +294,7 @@ class TracerTable extends Component {
 					dataField="OverallSeverity"
 					dataSort={true}
 					expandable={false}
+					thStyle={thStyle}
 					width="50"
 				>
 					Overall Severity

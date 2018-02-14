@@ -99,7 +99,6 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	if client != nil {
 		defer client.Close()
 	}
-
 	/* Search through the request for the tracer keyword. */
 	tracers, err := replaceTracers(request)
 
@@ -207,10 +206,8 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 					if err == nil {
 						if len(requests) != 0 {
 							log.Trace.Printf("Need to parse the following %d requests for tracer strings: %+v", len(requests), requests)
-
 							url := request.Host + request.RequestURI
 							tracers := findTracersInResponseBody(string(b), url, requests)
-
 							/* Use the API to add each tracer events to their corresponding tracer. */
 							for _, tracer := range tracers {
 								for _, event := range tracer.TracerEvents {
