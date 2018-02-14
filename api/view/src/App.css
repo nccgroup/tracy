@@ -39,6 +39,7 @@ div.right-column {
 
 pre {
   font-size: small !important;
+  border-radius: 0px !important;
 }
 
 td {
@@ -174,17 +175,35 @@ td {
 
 body {
   overflow: hidden;
-  font-size: xx-small;
 }
 
 .raw-event {
-  height: 50vh;
+  height: 65vh;
 }
 
 .raw-request {
-  height: 50vh;
+  height: 65vh;
 }
 
 .details-viewer {
   margin-top: 0px;
+}
+
+.nav-bar {
+  margin-bottom: 0px;
+  height: 4vh;
+}
+
+.header {
+  height: 5vh;
+}
+
+.title {
+  font-size: xx-large;
+  text-align: center;
+}
+
+.row-selected {
+  background-color: black;
+  color: white;
 }

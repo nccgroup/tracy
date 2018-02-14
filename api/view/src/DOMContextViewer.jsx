@@ -196,21 +196,33 @@ class DOMContextViewer extends Component {
 	}
 
 	render() {
+		const thStyle = {
+			fontSize: "small",
+			backgroundColor: "black",
+			color: "white"
+		};
+		const tableStyle = {
+			borderRadius: "0px",
+			height: "3vh"
+		};
+		const bodyStyle = {
+			height: "27vh"
+		};
+		const containerStyle = {
+			height: "30vh"
+		};
+
 		const options = {
 			defaultSortName: "Severity",
 			defaultSortOrder: "desc"
 		};
 
-		const selectRowProp = {
+		const selectRow = {
 			mode: "radio",
 			clickToSelect: true,
 			hideSelectColumn: true, // enable hide selection column.
 			onSelect: this.onRowSelect,
-			bgColor: function(row, isSelect) {
-				if (isSelect) {
-					return "antiquewhite";
-				}
-			}
+			className: "row-selected"
 		};
 
 		return (
@@ -218,11 +230,11 @@ class DOMContextViewer extends Component {
 				data={this.state.events}
 				options={options}
 				trClassName={this.formatRowSeverity}
-				selectRow={selectRowProp}
-				height="300 px"
+				selectRow={selectRow}
+				containerStyle={containerStyle}
+				tableStyle={tableStyle}
+				bodyStyle={bodyStyle}
 				scrollTop={"Bottom"}
-				hover
-				search
 				condensed
 			>
 				<TableHeaderColumn
@@ -230,6 +242,7 @@ class DOMContextViewer extends Component {
 					isKey={true}
 					width="50"
 					dataAlign="center"
+					thStyle={thStyle}
 					dataSort={true}
 					expandable={false}
 				>
@@ -237,6 +250,7 @@ class DOMContextViewer extends Component {
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="EventHost"
+					thStyle={thStyle}
 					dataSort={true}
 					expandable={false}
 					editable={{ readOnly: true }}
@@ -245,6 +259,7 @@ class DOMContextViewer extends Component {
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="EventPath"
+					thStyle={thStyle}
 					dataSort={true}
 					expandable={false}
 					editable={{ readOnly: true }}
@@ -253,6 +268,7 @@ class DOMContextViewer extends Component {
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="HTMLLocationType"
+					thStyle={thStyle}
 					dataSort={true}
 					width="115"
 					expandable={false}
@@ -262,6 +278,7 @@ class DOMContextViewer extends Component {
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="HTMLNodeType"
+					thStyle={thStyle}
 					dataSort={true}
 					width="75"
 					expandable={false}
@@ -271,6 +288,7 @@ class DOMContextViewer extends Component {
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="EventType"
+					thStyle={thStyle}
 					dataSort={true}
 					width="75"
 					expandable={false}
@@ -280,6 +298,7 @@ class DOMContextViewer extends Component {
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="EventContext"
+					thStyle={thStyle}
 					dataSort={true}
 					expandable={false}
 					editable={{ readOnly: true }}
@@ -288,6 +307,7 @@ class DOMContextViewer extends Component {
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="Severity"
+					thStyle={thStyle}
 					dataSort={true}
 					width="50"
 					expandable={false}

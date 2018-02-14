@@ -5,7 +5,6 @@ import FilterColumn from "./FilterColumn";
 import DOMContextViewer from "./DOMContextViewer";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
-import Navbar from "react-bootstrap/lib/Navbar";
 
 class App extends Component {
 	constructor(props) {
@@ -94,16 +93,17 @@ class App extends Component {
 		return (
 			<Row>
 				<Col md={12} className="container">
-					<Navbar>
-						<FilterColumn
-							handleChange={this.handleFilterChange}
-						/>
-						<Navbar.Header>
-							<Navbar.Brand>
-								<a href="#/">TRACY</a>
-							</Navbar.Brand>
-						</Navbar.Header>
-					</Navbar>
+					<Row className="header">
+						<Col md={4}>
+							<FilterColumn
+								handleChange={this.handleFilterChange}
+							/>
+						</Col>
+						<Col md={4}>
+							<div className="title">Tracy</div>
+						</Col>
+						<Col md={4} />
+					</Row>
 					<Row>
 						<Col md={6} className="left-column">
 							<TracerTable
