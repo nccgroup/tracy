@@ -4,10 +4,6 @@ import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-bootstrap-table/dist/react-bootstrap-table.min.css";
 import "bootstrap/dist/css/bootstrap-theme.min.css";
-<<<<<<< HEAD
-=======
-import TracerEventDataExpanded from "./TracerEventDataExpanded";
->>>>>>> heath_ui_theme
 
 class TracerTable extends Component {
 	constructor(props) {
@@ -35,7 +31,7 @@ class TracerTable extends Component {
 		}
 		return ret;
 	}
-	
+
 	/* getTracers makes an XMLHTTPRequest to the tracers/events API to get the latest set of events. */
 	getTracers() {
 		/* Create the HTTP GET request to the /tracers API endpoint. */
