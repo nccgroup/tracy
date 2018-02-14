@@ -40,10 +40,13 @@ func ListenAndServe(ln net.Listener, cert tls.Certificate) {
 /* Helper function that handles any TCP connections to the proxy. Client refers to the client making the connection to the
  * proxy. Server refers to the actual server they are attempting to connect to after going through the proxy. */
 func handleConnection(client net.Conn, cer tls.Certificate) {
-	defer client.Close()
 	/* Read a request structure from the TCP connection. */
 	request, err := http.ReadRequest(bufio.NewReader(client))
-	/* Throw an error and fail fast if it doesn't look like HTTP. */
+
+	if err == io.EOF {
+		return
+	}
+
 	if err != nil {
 		log.Error.Println(err)
 		return
@@ -69,7 +72,11 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 
 		/* After the connection has been upgraded, reread the request structure over TLS. */
 		request, err = http.ReadRequest(bufio.NewReader(client))
-		/* Fail fast if the protocol doesn't look like HTTP. */
+
+		if err == io.EOF {
+			return
+		}
+
 		if err != nil {
 			log.Error.Println(err)
 			return
@@ -86,6 +93,11 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 			log.Trace.Println(string(dump))
 		}
 
+	}
+
+	/* Moving the client close here for the same reason as request, above. */
+	if client != nil {
+		defer client.Close()
 	}
 
 	/* Search through the request for the tracer keyword. */
@@ -124,6 +136,8 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	var server net.Conn
 
 	/* Based on the scheme, the API is different to backside of the proxy connection. */
+	//TODO: I think we can change the default transport here to timeout a bit faster and to
+	//use connections
 	if !isHTTPS {
 		if strings.Index(host, ":") == -1 {
 			server, err = net.Dial("tcp", host+":80")
@@ -135,17 +149,25 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 		server, err = tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: true})
 	}
 
+	/* Preventing a panic by making sure we don't close a nil connection. */
+	if server != nil {
+		defer server.Close()
+	}
+
 	/* Fail fast if the connection to the backside of the proxy failed. */
 	if err != nil {
 		log.Error.Println(err)
 		return
 	}
-	defer server.Close()
 
 	/* Write the entire request to the backside connection of the proxy. */
 	request.Write(server)
 
 	resp, err := http.ReadResponse(bufio.NewReader(server), nil)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
 	if err != nil {
 		log.Error.Println(err)
 		return
@@ -154,7 +176,8 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	var save bytes.Buffer
 	b, err := ioutil.ReadAll(io.TeeReader(resp.Body, &save))
 	if err != nil {
-		panic(err)
+		log.Error.Println(err)
+		return
 	}
 
 	/* Search for any known tracers in the response. Since the list of tracers might get large, perform this operation
@@ -168,7 +191,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 			if resp.Header.Get("Content-Encoding") == "gzip" {
 				// Note that we are only reading the response body. No longer a need to manually filter it out
 				var reader io.ReadCloser
-				if reader, err = gzip.NewReader(bytes.NewReader(b)); err == nil {
+				if reader, err = gzip.NewReader(bytes.NewReader(b)); err == nil && reader != nil {
 					defer reader.Close()
 					b, err = ioutil.ReadAll(reader)
 				}
@@ -201,6 +224,10 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 				}
 			}
 
+			if err == io.EOF {
+				return
+			}
+
 			if err != nil {
 				log.Error.Println(err)
 			}
@@ -228,52 +255,21 @@ func bridge(client net.Conn, server net.Conn) {
 	for {
 		/* Read up to 1024*4 bytes from the client. */
 		nb, err := client.Read(buf)
-		if err != nil {
-			/* If there was an error, fail fast unless EOF. */
-			if err != io.EOF {
-				log.Error.Println(err)
-				return
-			}
+		if err == io.EOF || nb == 0 { // As of golang 1.7, 0-byte-reads don't always return EOF
+			break
 		}
-		/* If the number of bytes read is zero, the client is finished. Leave. */
-		if nb == 0 {
-			return
+
+		if err != nil {
+			log.Error.Println(err)
 		}
 
 		/* Copy the bytes read above to the other connection. */
-		nr, err := server.Write(buf[:nb])
+		_, err = server.Write(buf[:nb])
 
 		if err != nil {
 			/* If there was an error, fail fast. */
 			log.Error.Println(err)
-			return
-		}
-
-		/* If the number of bytes written is zero, it probably means no bytes were read or the connection closed.
-		 * In either case, leave. */
-		if nr == 0 {
-			return
+			break
 		}
 	}
-}
-
-//copied from https://golang.org/src/net/http/httputil/dump.go?s=8166:8231#L271
-// drainBody reads all of b to memory and then returns two equivalent
-// ReadClosers yielding the same bytes.
-//
-// It returns an error if the initial slurp of all bytes fails. It does not attempt
-// to make the returned ReadClosers have identical error-matching behavior.
-func drainBody(b io.ReadCloser) (r1, r2 io.ReadCloser, err error) {
-	if b == http.NoBody {
-		// No copying needed. Preserve the magic sentinel meaning of NoBody.
-		return http.NoBody, http.NoBody, nil
-	}
-	var buf bytes.Buffer
-	if _, err = buf.ReadFrom(b); err != nil {
-		return nil, b, err
-	}
-	if err = b.Close(); err != nil {
-		return nil, b, err
-	}
-	return ioutil.NopCloser(&buf), ioutil.NopCloser(bytes.NewReader(buf.Bytes())), nil
 }

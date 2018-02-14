@@ -8,7 +8,7 @@ class DetailsViewer extends Component {
 	render() {
 		const index = this.props.rawEvent.indexOf(this.props.eventContext);
 		var ret;
-		if (this.props.rawEvent !== "" && index !== -1) {
+		if (this.props.rawEvent !== "") {
 			//TODO: wish I knew how to calculate this
 			const lineHeight = 11;
 			const newLines = this.occurrences(this.props.rawEvent, "\n");

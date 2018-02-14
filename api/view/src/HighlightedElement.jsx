@@ -18,22 +18,27 @@ class HighlightedElement extends Component {
 	}
 
 	render() {
-		const pre = this.props.data.substring(0, this.props.start);
-		const highlight = this.props.data.substring(
-			this.props.start,
-			this.props.stop
-		);
-		const post = this.props.data.substring(
-			this.props.stop,
-			this.props.data.length
-		);
-		const ret = (
-			<pre className="raw-data">
-				{pre}
-				<code className="highlight">{highlight}</code>
-				{post}
-			</pre>
-		);
+		var ret;
+		if (this.props.start !== -1) {
+			const pre = this.props.data.substring(0, this.props.start);
+			const highlight = this.props.data.substring(
+				this.props.start,
+				this.props.stop
+			);
+			const post = this.props.data.substring(
+				this.props.stop,
+				this.props.data.length
+			);
+			ret = (
+				<pre className="raw-data">
+					{pre}
+					<code className="highlight">{highlight}</code>
+					{post}
+				</pre>
+			);
+		} else {
+			ret = <pre className="raw-data">{this.props.data}</pre>;
+		}
 
 		return ret;
 	}
