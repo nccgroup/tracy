@@ -24,8 +24,7 @@
          ],
          "all_frames": true,
         "js": [
-          "scripts/dom-mutations.js",
-          "scripts/method-hooking-injector.js"
+          "scripts/dom-mutations.js"
         ],
         "css": [
           "css/dropdown.css"
