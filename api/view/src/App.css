@@ -185,6 +185,10 @@ body {
   height: 65vh;
 }
 
+.raw-data {
+  height: 65vh;
+}
+
 .details-viewer {
   margin-top: 0px;
 }
