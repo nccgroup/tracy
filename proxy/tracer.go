@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -55,101 +56,74 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 /* Helper function to replace any tracer strings in the request
  * with tracer payloads. Returns the replaced body along with a list of
  * tracers used to replace the tracer strings. */
-func replaceTracerStrings(body []byte) ([]byte, []types.Tracer) {
+func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 	var replacedTracers []types.Tracer
+	var err error
 	replacedBody := make([]byte, 0)
 
-	for i := 0; i < len(body); i++ {
+	labelsConfig, err := configure.ReadConfig("tracers")
+	if err != nil {
+		log.Error.Fatal(err.Error())
+		return []byte{}, []types.Tracer{}
+	}
 
-		/* Check that the length of the body is long enough to be able to compare to two bytes.
-		If it is check to see if the first two bytes match "{{" in theory this should be the start of the tag*/
-		if i+2 < len(body) && bytes.Compare(body[i:i+2], []byte("{{")) == 0 {
+	var labels [][]byte
+	for s, _ := range labelsConfig.(map[string]interface{}) {
+		labels = append(labels, []byte(s))
+		labels = append(labels, []byte(url.QueryEscape(s)))
+	}
 
-			log.Trace.Printf("Found the  start of a tracer tag")
-
-			/* From here on tag will hold the contents that we think is a tag but really it could be anything that just starts with {{ */
-			tag := []byte("{{")
-
-			/* This loop will loop looking for a %,{ or } while building up the inner part of the tag
-			We look for percent here just in case it is the start of a encoded tag*/
-			for j := i + 2; j < len(body) && body[j] != '%' && body[j] != '{' && body[j] != '}'; j++ {
-				tag = append(tag, body[j])
-			}
-
-			/* This code makes sure there is enough room to do the compare, if there is it checks to see if the next type bytes are }} this could
-			indicate the end of a tag */
-			if len(tag)+i+1 < len(body) && bytes.Compare(body[len(tag)+i:len(tag)+i+2], []byte("}}")) == 0 {
-				tag = append(tag, []byte("}}")...)
-
-				/*Check to see if the tracer we found is a real tracer or just something that looks like one*/
-				tracerPayload, tracerBytes := GenerateTracerFromTag(string(tag))
-
-				/* If the tracer string does not exist it means that it was just something that looks like a tracer
-				else it was a real tracer and we need to append it */
-				if tracerPayload == "" {
-					replacedBody = append(replacedBody, tag...)
-				} else {
-					replacedBody = append(replacedBody, tracerBytes...)
-					log.Trace.Printf("Found a tag with value of: %s", string(tag))
-					tracer := types.Tracer{
-						TracerString:        string(tag),
-						TracerPayload:       tracerPayload,
-						TracerLocationIndex: uint(i) + 1,
-					}
-					replacedTracers = append(replacedTracers, tracer)
+	i := -1
+	for {
+		i++
+		// Using this label to return from the inner loop a little bit nicer.
+	start:
+		if i >= len(data) {
+			break
+		}
+		// Check that the length of the data is long enough to be able to compare to two bytes.
+		// If it is, check to see if the first two bytes match the configured start value or the configured
+		// start value URL encoded.
+		for _, tracerString := range labels {
+			if i+len(tracerString) <= len(data) && bytes.Compare(data[i:i+len(tracerString)], tracerString) == 0 {
+				log.Trace.Printf("Found a tracer string: %s")
+				// From here on, tracerString will hold the contents that we think is
+				// a tracer string but really it could be anything that just starts with
+				// whatever was configured by start-payload in the configuration file.
+				var tracerPayload string
+				var tracerBytes []byte
+				tracerPayload, tracerBytes, err = TransformTracerString(tracerString)
+				if err != nil {
+					log.Error.Println("There must be something wrong with configuration file syncing properly.")
+					goto notFound
 				}
+
+				replacedBody = append(replacedBody, tracerBytes...)
+
+				// It is annoying for the UI to display URL encoded values. Convert them here.
+				var uTracerString string
+				uTracerString, err = url.QueryUnescape(string(tracerString))
+				if err != nil {
+					log.Error.Println(err)
+					return []byte{}, []types.Tracer{}
+				}
+
+				tracer := types.Tracer{
+					TracerString:        uTracerString,
+					TracerPayload:       tracerPayload,
+					TracerLocationIndex: uint(i) + 1,
+				}
+				replacedTracers = append(replacedTracers, tracer)
 
 				/* Update the look to make sure that it is pointing at the next byte after the tracer string*/
-				i += len(tag) - 1
-				continue
-			} else {
-				log.Trace.Printf("Found a none tag with value of: %s", string(tag))
-				i += len(tag) - 1
-				replacedBody = append(replacedBody, tag...)
-				continue
+				i += len(tracerString)
+				// We finished this tracer string, we don't need to iterate the other ones.
+				goto start
 			}
 		}
-
-		/* This code is the same as the above code but it is looking for the encoded version */
-		if i+7 < len(body) && bytes.Compare(body[i:i+6], []byte("%7B%7B")) == 0 {
-
-			log.Trace.Printf("Found the  start of a tracer tag")
-
-			tag := []byte("%7B%7B")
-
-			for j := i + 6; j < len(body) && body[j] != 0x25 && body[j] != 0x7B && body[j] != 0x7D; j++ {
-				tag = append(tag, body[j])
-			}
-
-			if len(tag)+i+5 < len(body) && bytes.Compare(body[len(tag)+i:len(tag)+i+6], []byte("%7D%7D")) == 0 {
-				tag = append(tag, []byte("%7D%7D")...)
-				tracerPayload, tracerBytes := GenerateTracerFromTag(string(tag))
-
-				if tracerPayload == "" {
-					replacedBody = append(replacedBody, tag...)
-				} else {
-					replacedBody = append(replacedBody, tracerBytes...)
-					tracer := types.Tracer{
-						TracerString:        string(tag),
-						TracerPayload:       tracerPayload,
-						TracerLocationIndex: uint(i) + 1,
-					}
-					replacedTracers = append(replacedTracers, tracer)
-				}
-
-				i += len(tag) - 1
-				continue
-			} else {
-				log.Trace.Printf("Found a none tag with value of: %s", string(tag))
-				i += len(tag) - 1
-				replacedBody = append(replacedBody, tag...)
-				continue
-			}
-
-		}
-
-		//If no tag start of tag is found just append the byte
-		replacedBody = append(replacedBody, body[i])
+	notFound:
+		//If no tracer string was found just append the byte
+		replacedBody = append(replacedBody, data[i])
 	}
 
 	log.Trace.Printf("New Body Value: %s %d", string(replacedBody), len(replacedBody))
@@ -157,11 +131,11 @@ func replaceTracerStrings(body []byte) ([]byte, []types.Tracer) {
 	return replacedBody, replacedTracers
 }
 
-/*GenerateTracerFromTag is a helper function that returns a random string that is used to track the tracer and the actual payload
+/*TransformTracerString is a helper function that returns a random string that is used to track the tracer and the actual payload
  * as a slice of bytes. */
-func GenerateTracerFromTag(tag string) (string, []byte) {
+func TransformTracerString(tracerString []byte) (string, []byte, error) {
 	idTag := "[[ID]]"
-	unescapedTag, err := url.QueryUnescape(tag)
+	unescapedTag, err := url.QueryUnescape(string(tracerString))
 
 	if err == nil {
 		labels, err := configure.ReadConfig("tracers")
@@ -169,14 +143,14 @@ func GenerateTracerFromTag(tag string) (string, []byte) {
 			for tracer, payload := range labels.(map[string]interface{}) {
 				if unescapedTag == tracer {
 					randID := generateRandomTracerString()
-					return string(randID), []byte(strings.Replace(payload.(string), idTag, string(randID), 1))
+					return string(randID), []byte(strings.Replace(payload.(string), idTag, string(randID), 1)), nil
 				}
 			}
 		}
 	}
 
 	//No tag found
-	return "", nil
+	return "", nil, fmt.Errorf("There were no tracers that matched: %s", string(tracerString))
 }
 
 /*FindTracersInResponseBody is a helper function for finding tracer strings in

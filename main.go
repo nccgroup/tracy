@@ -57,7 +57,7 @@ func main() {
 	}()
 	fmt.Printf("done!\n")
 
-	openbrowser("http://localhost:8081")
+	//openbrowser("http://localhost:8081")
 
 	/* Waiting for the user to close the program. */
 	signalChan := make(chan os.Signal, 1)

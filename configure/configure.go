@@ -48,7 +48,7 @@ func init() {
 	}
 
 	/* Read the configuration. */
-	configPath := filepath.Join(TracyPath, "tracer.json")
+	configPath := filepath.Join(TracyPath, "tracy.json")
 	var content []byte
 	if _, err = os.Stat(configPath); os.IsNotExist(err) {
 		/* Try to recover by writing a new tracer.json file with the default values. */

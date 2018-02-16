@@ -78,15 +78,14 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
-	var err error
 
 	r.ParseForm()
 	tracerString := r.Form.Get("tracer_string")
 	if len(tracerString) != 0 {
 		requestURL := r.Form.Get("url")
 		if len(requestURL) != 0 {
-			_, payload := proxy.GenerateTracerFromTag(tracerString)
-			if payload != nil {
+			_, payload, err := proxy.TransformTracerString([]byte(tracerString))
+			if err == nil {
 				//TODO: should collect more information about the location of where
 				// it was generated. generating a tracer like this loses information
 				// about inputs without being obvious about it. if we wanted to do
