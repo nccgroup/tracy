@@ -19,7 +19,7 @@ import (
 )
 
 /*ListenAndServe waits and listens for TCP connections and proxies them. */
-func ListenAndServe(ln net.Listener, cert tls.Certificate) {
+func ListenAndServe(ln net.Listener) {
 	/* Never stop listening for TCP connections. */
 	for {
 		/* Block until a TCP connection comes in. */
@@ -27,7 +27,7 @@ func ListenAndServe(ln net.Listener, cert tls.Certificate) {
 
 		if err == nil {
 			/* Pass case. Proxy the connection on a separate goroutine and go back to listening. */
-			go handleConnection(conn, cert)
+			go handleConnection(conn)
 		} else {
 			log.Error.Println(err)
 		}
@@ -39,7 +39,7 @@ func ListenAndServe(ln net.Listener, cert tls.Certificate) {
 
 /* Helper function that handles any TCP connections to the proxy. Client refers to the client making the connection to the
  * proxy. Server refers to the actual server they are attempting to connect to after going through the proxy. */
-func handleConnection(client net.Conn, cer tls.Certificate) {
+func handleConnection(client net.Conn) {
 	/* Read a request structure from the TCP connection. */
 	request, err := http.ReadRequest(bufio.NewReader(client))
 
@@ -64,7 +64,7 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	/* If the request method is `CONNECT`, it's either a TLS connection or a websocket. */
 	if request.Method == http.MethodConnect {
 		/* Try to upgrade the `CONNECT` request to a TLS connection with the configured certificate. */
-		client, isHTTPS, err = upgradeConnectionTLS(client, cer, host)
+		client, isHTTPS, err = upgradeConnectionTLS(client, host)
 		if err != nil {
 			log.Error.Println(err)
 			return
@@ -139,25 +139,39 @@ func handleConnection(client net.Conn, cer tls.Certificate) {
 	//TODO: I think we can change the default transport here to timeout a bit faster and to
 	//use connections
 	if !isHTTPS {
+
 		if strings.Index(host, ":") == -1 {
 			server, err = net.Dial("tcp", host+":80")
 		} else {
 			server, err = net.Dial("tcp", host)
 		}
+
+		if server != nil {
+			defer server.Close()
+		}
+
+		/* Fail fast if the connection to the backside of the proxy failed. */
+		if err != nil {
+			log.Error.Println(err)
+			return
+		}
 	} else {
+		var tserver *tls.Conn
 		/* If the scheme is HTTPS, need to the use the tls package to make the dial. */
-		server, err = tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: true})
-	}
+		tserver, err = tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: true})
 
-	/* Preventing a panic by making sure we don't close a nil connection. */
-	if server != nil {
-		defer server.Close()
-	}
+		// Have to check for nil differently with tls.Dial because it return a pointer
+		// of a connection instead of a struct
+		var nilTest *tls.Conn
+		if tserver != nilTest {
+			server = tserver
+			defer server.Close()
+		}
 
-	/* Fail fast if the connection to the backside of the proxy failed. */
-	if err != nil {
-		log.Error.Println(err)
-		return
+		if err != nil {
+			log.Error.Println(err)
+			return
+		}
 	}
 
 	/* Write the entire request to the backside connection of the proxy. */

@@ -1,12 +1,17 @@
 package main
 
 import (
+	"crypto/tls"
+	"encoding/json"
+	"encoding/pem"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"runtime/pprof"
 	"tracy/api/common"
 	"tracy/api/rest"
 	"tracy/api/store"
@@ -16,7 +21,13 @@ import (
 	"tracy/proxy"
 )
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
+	if *cpuprofile != "" {
+		defer pprof.StopCPUProfile()
+	}
+
 	fmt.Printf("Starting:\n")
 	fmt.Printf("\tproxy...")
 	/* Start the proxy. */
@@ -24,11 +35,11 @@ func main() {
 		/* Open a TCP listener. */
 		ln := configure.ProxyServer()
 
-		/* Load the configured certificates. */
-		cert := configure.Certificates()
+		/* TODO: move to the init stuff, this isn't really a configuration. Load the configured certificates. */
+		configure.Certificates()
 
 		/* Serve it. This will block until the user closes the program. */
-		proxy.ListenAndServe(ln, cert)
+		proxy.ListenAndServe(ln)
 	}()
 	fmt.Printf("done.\n")
 
@@ -64,6 +75,15 @@ func main() {
 func init() {
 	// Parse the flags. Have to parse them hear since other package initialize command line
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			panic(err)
+		}
+		pprof.StartCPUProfile(f)
+	}
+
 	// Set up the logging based on the user command line flags
 	log.Configure()
 	// Open the database
@@ -87,6 +107,35 @@ func init() {
 		}
 
 		common.AddLabel(label)
+	}
+
+	// Instantiate the certificate cache
+	certsJSON, err := ioutil.ReadFile(configure.CertCacheFile)
+	if err != nil {
+		certsJSON = []byte("[]")
+		// Can recover from this. Simply make a cache file and instantiate an empty cache.
+		ioutil.WriteFile(configure.CertCacheFile, certsJSON, os.ModePerm)
+	}
+
+	certs := []proxy.CertCacheEntry{}
+	if err := json.Unmarshal(certsJSON, &certs); err == nil {
+		cache := make(map[string]tls.Certificate)
+		for _, cert := range certs {
+			keyPEM := cert.Certs.KeyPEM
+			certPEM := cert.Certs.CertPEM
+
+			cachedCert, err := tls.X509KeyPair(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certPEM}), pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyPEM}))
+			if err != nil {
+				log.Error.Println(err)
+			}
+
+			cache[cert.Host] = cachedCert
+		}
+
+		proxy.SetCertCache(cache)
+	} else {
+		log.Error.Println(err)
+		log.Error.Println(string(certsJSON))
 	}
 }
 

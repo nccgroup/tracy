@@ -67,6 +67,8 @@ sLIcLOxku1jW3CaRt44XOGyXBACbBCn49K8p+AYDnL12Pflu3mykbvien7AmZMLY
 omOcYk1CqeNw90/WhoUDlr/C6imiHFsCXWc5zp4lYc3rqJknO84=
 -----END RSA PRIVATE KEY-----`
 
+var SigningCertificate tls.Certificate
+
 /*Certificates loads the local certificate pairs if they exist or generates new ones on the fly. */
 func Certificates() tls.Certificate {
 	publicKey, err := ReadConfig("public-key-loc")
@@ -83,6 +85,7 @@ func Certificates() tls.Certificate {
 		log.Error.Fatalf("Failed to parse certificate: %s", err.Error())
 	}
 
+	SigningCertificate = cer
 	return cer
 }
 

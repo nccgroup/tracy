@@ -8,18 +8,21 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
-	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
+	"tracy/configure"
 	"tracy/log"
 )
 
 /* Upgrade a TLS connection if the proxy receives a 'CONNECT' action from the connection. */
-func upgradeConnectionTLS(conn net.Conn, cert tls.Certificate, host string) (net.Conn, bool, error) {
+func upgradeConnectionTLS(conn net.Conn, host string) (net.Conn, bool, error) {
 	/* Respond to the client with 200 to inform them that a TLS connection is possible. */
 	resp := http.Response{Status: "Connection established", Proto: "HTTP/1.0", ProtoMajor: 1, StatusCode: 200}
 	resp.Write(conn)
@@ -38,28 +41,40 @@ func upgradeConnectionTLS(conn net.Conn, cert tls.Certificate, host string) (net
 		return connBuff, false, nil
 	}
 
-	newCer, err := certCache(host)
+	r := &cacheRequest{
+		host: host,
+		err:  make(chan error),
+		resp: make(chan tls.Certificate),
+	}
+	cacheChan <- r
+	err = <-r.err
 
-	if err != nil { //If the cert is not cached make it and cache it
-		newCer, err = generateCert(host, cert)
-		if err != nil {
-			return nil, false, err
-		}
-		cache[host] = newCer
+	if err != nil {
+		return nil, false, err
 	}
 
+	newCer := <-r.resp
 	config := &tls.Config{Certificates: []tls.Certificate{newCer}}
-
 	clientConn := tls.Server(connBuff, config)
 
 	return clientConn, true, nil
 }
 
-func generateCert(host string, cert tls.Certificate) (tls.Certificate, error) {
+type KeyPairBytes struct {
+	CertPEM []byte `json:"CertPEM"`
+	KeyPEM  []byte `json:"KeyPEM"`
+}
+
+type CertCacheEntry struct {
+	Host  string `json:"Host"`
+	Certs KeyPairBytes
+}
+
+func generateCert(host string, cert tls.Certificate) (tls.Certificate, error, KeyPairBytes) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return tls.Certificate{}, err
+		return tls.Certificate{}, err, KeyPairBytes{}
 	}
 	notBefore := time.Now()
 	notAfter := notBefore.Add(10000000000000000)
@@ -81,35 +96,109 @@ func generateCert(host string, cert tls.Certificate) (tls.Certificate, error) {
 
 	certs, err := x509.ParseCertificates(cert.Certificate[0])
 	if err != nil {
-		return tls.Certificate{}, err
+		return tls.Certificate{}, err, KeyPairBytes{}
 	}
 
 	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, certs[0], priv.Public(), cert.PrivateKey)
 	if err != nil {
-		return tls.Certificate{}, err
+		return tls.Certificate{}, err, KeyPairBytes{}
 	}
 
 	b, err := x509.MarshalECPrivateKey(priv)
 	newCer, err := tls.X509KeyPair(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes}), pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: b}))
 
-	return newCer, err
+	keyPairBytes := KeyPairBytes{
+		KeyPEM:  b,
+		CertPEM: derBytes,
+	}
+	return newCer, err, keyPairBytes
 }
 
+func SetCertCache(cache map[string]tls.Certificate) {
+	cacheChan = make(chan *cacheRequest, 10)
+	go certCache(cacheChan, cache)
+}
+
+//TODO: Might be worth preloading this cache with known hosts like google.com. Currently, it is
+// taking a lot of time to generate these certificates
 var cache map[string]tls.Certificate
+var cacheChan chan *cacheRequest
 
-func certCache(host string) (tls.Certificate, error) {
-	if cache == nil {
-		cache = make(map[string]tls.Certificate)
-		return tls.Certificate{}, fmt.Errorf("No cached cert")
+type cacheRequest struct {
+	host string // host querying
+	err  chan error
+	resp chan tls.Certificate // result
+}
+
+// Accessing the cache needs to be thread safe since multiple connections will be accessing it
+// and some of those threads might trigger from the same host. If this function is not thread
+// safe, we'll get duplicate on-the-fly certificate generations, which is a lot of extra cycles.
+func certCache(cacheChan chan *cacheRequest, cache map[string]tls.Certificate) {
+	// Long-lived loop. Avoid memory allocations by reusing these.
+	var (
+		r          *cacheRequest
+		newCer     tls.Certificate
+		err        error
+		cacheEntry KeyPairBytes
+		exists     bool
+	)
+
+	for {
+		log.Trace.Printf("Cache status: %+v\n", cache)
+		r = <-cacheChan
+
+		// This is a transaction. If we have a cache miss, we can't process the next
+		// cache request until we've generated a new certificate and added it to the
+		// cache, otherwise race conditions will unnecessary generate certificates
+		// for duplicate hosts.
+		if newCer, exists = cache[r.host]; exists {
+			log.Trace.Printf("Cache hit for %s\n", r.host)
+			r.err <- nil
+			r.resp <- newCer
+		} else {
+			log.Trace.Printf("Cache miss for %s...\n", r.host)
+			newCer, err, cacheEntry = generateCert(r.host, configure.SigningCertificate)
+
+			if err != nil {
+				log.Error.Println(err)
+				r.err <- err
+			} else {
+				go func() {
+					// Write the entry to the cache file
+					err := writeCertCacheFile(cacheEntry, r.host, configure.CertCacheFile)
+					if err != nil {
+						log.Error.Println(err)
+					}
+				}()
+				cache[r.host] = newCer
+				r.err <- nil
+				r.resp <- newCer
+			}
+		}
+
+	}
+}
+
+func writeCertCacheFile(keyPairBytes KeyPairBytes, host, certCacheFile string) error {
+	var err error
+	var cacheJSON []byte
+	if cacheJSON, err = ioutil.ReadFile(certCacheFile); err == nil {
+		certs := []CertCacheEntry{}
+		if err = json.Unmarshal(cacheJSON, &certs); err == nil {
+			newEntry := CertCacheEntry{
+				Host:  host,
+				Certs: keyPairBytes,
+			}
+			certs = append(certs, newEntry)
+			var certsJSON []byte
+			if certsJSON, err = json.Marshal(certs); err == nil {
+				ioutil.WriteFile(certCacheFile, certsJSON, os.ModePerm)
+			}
+		}
 	}
 
-	if cert, exist := cache[host]; exist {
-		log.Trace.Println("Cache hit!")
-		return cert, nil
-	}
-
-	return tls.Certificate{}, fmt.Errorf("No cached cert")
+	return err
 }
 
 type bufferedConn struct {

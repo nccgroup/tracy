@@ -20,6 +20,9 @@ var TracyPath string
 /*DatabaseFile is the database file configured through the command line. */
 var DatabaseFile string
 
+/*CertCacheFile is the path of the cache file used to store a list of certificates already been dynamically generated for hosts tracy has seen. */
+var CertCacheFile string
+
 /*DebugUI is the flag used to tell if the user is debugging the UI. */
 var DebugUI bool
 
@@ -77,13 +80,19 @@ func init() {
 
 	/* Set up the command line interface. */
 	var (
-		databaseFileUsage   = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
-		databaseFileDefault = "prod-tracer-db.db"
-		debugUIUsage        = "Indicate if you'd like the UI to use the non-compiled assets in the case of debugging."
+		databaseFileUsage    = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
+		databaseFileDefault  = "prod-tracer-db.db"
+		certCacheFileUsage   = "Indicate the file to use for the certificate cache file."
+		certCacheFileDefault = "certificate-cache.json"
+		debugUIUsage         = "Indicate if you'd like the UI to use the non-compiled assets in the case of debugging."
 	)
-	/* Database file. Allows the user to change the location of the SQLite database file. */
+	// Database file. Allows the user to change the location of the SQLite database file.
 	flag.StringVar(&DatabaseFile, "database", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
 	flag.StringVar(&DatabaseFile, "d", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
+	// Cache file for certificates.
+	flag.StringVar(&CertCacheFile, "certificate-cache", filepath.Join(TracyPath, certCacheFileDefault), certCacheFileUsage)
+	flag.StringVar(&CertCacheFile, "cc", filepath.Join(TracyPath, certCacheFileDefault), certCacheFileUsage+"(shorthand)")
+	// If you want to use the web UI, but don't want to compile all the assets
 	flag.BoolVar(&DebugUI, "debug-ui", false, debugUIUsage)
 	flag.BoolVar(&DebugUI, "du", false, debugUIUsage+"(shorthand)")
 }
