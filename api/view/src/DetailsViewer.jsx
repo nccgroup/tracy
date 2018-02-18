@@ -15,13 +15,13 @@ class DetailsViewer extends Component {
 
 			ret = (
 				<Row id="details-views" className="details-viewer">
-					<Col md={6}>
+					<Col md={6} className="left-bottom-column">
 						<pre className="raw-request">
 							{this.props.rawRequest}
 						</pre>
 					</Col>
 
-					<Col md={6}>
+					<Col md={6} className="right-bottom-column">
 						<HighlightedElement
 							data={this.props.rawEvent}
 							start={index}
@@ -34,13 +34,13 @@ class DetailsViewer extends Component {
 		} else {
 			ret = (
 				<Row id="details-views" className="details-viewer">
-					<Col md={6}>
+					<Col md={6} className="left-bottom-column">
 						<pre className="raw-request">
 							{this.props.rawRequest}
 						</pre>
 					</Col>
 
-					<Col md={6}>
+					<Col md={6} className="right-bottom-column">
 						<pre className="raw-data">
 							Click one of the tracer events above to see the
 							tracer's destination.

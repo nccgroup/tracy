@@ -198,8 +198,9 @@ class DOMContextViewer extends Component {
 	render() {
 		const thStyle = {
 			fontSize: "small",
-			backgroundColor: "black",
-			color: "white"
+			backgroundColor: "#20262e",
+			color: "white",
+			borderWidth: "0"
 		};
 		const tableStyle = {
 			borderRadius: "0px",
