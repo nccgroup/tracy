@@ -7,13 +7,13 @@ class FilterButton extends Component {
 			enabled: false
 		}
 
-		this.handleChange = this.handleChange.bind(this);
+		this.handleClick = this.handleClick.bind(this);
 	}
 
 	componentDidMount() {
 		// If the value is in localStorage, we need to enable the filter.
 		if (this.get(this.props.value)) {
-			this.handleChange(this.props.value);
+			this.handleClick(this.props.value);
 		}
 	}
 
@@ -85,7 +85,7 @@ class FilterButton extends Component {
 		localStorage.setItem(key, JSON.stringify(value));
 	}
 
-	handleChange(evt) {
+	handleClick(evt) {
 		var value = {};
 		try {
 			value = evt.target.value;
@@ -110,18 +110,22 @@ class FilterButton extends Component {
 	}
 
 	render() {
-		const checked = this.state.enabled ? "checked" : ""
-	    return <div
-	    	className="filter-button"><input 
-	    		type="checkbox"
-	        	id={this.props.value}
-	        	value={this.props.value}
-	    		onChange={this.handleChange} 
-	        	checked={checked}></input>
-	        <label
-	        	className="filter-button-label">
-	    		{this.props.description}
-	    	</label></div>	    
+	    return <button type="button"
+			         className={this.state.enabled ? 'button-active': null} 
+			         id={this.props.value}
+							 onClick={this.handleClick}>{this.props.description}</button>
+
+			// <div
+	    // 	className="filter-button"><input
+	    // 		type="checkbox"
+	    //     	id={this.props.value}
+	    //     	value={this.props.value}
+	    // 		onChange={this.handleChange}
+	    //     	checked={checked}></input>
+	    //     <label
+	    //     	className="filter-button-label">
+	    // 		{this.props.description}
+	    // 	</label></div>
 	}
 }
 

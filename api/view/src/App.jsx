@@ -99,7 +99,7 @@ class App extends Component {
 			<Row>
 				<Col md={12} className="container">
 					<Row className="header">
-						<Col md={4}>
+						<Col md={4} className="filter-container">
 							<FilterColumn
 								handleChange={this.handleFilterChange}
 							/>
@@ -110,7 +110,7 @@ class App extends Component {
 						<Col md={4} />
 					</Row>
 					<Row>
-						<Col md={6} className="left-column">
+						<Col md={6} className="left-top-column">
 							<TracerTable
 								tracerFilters={tracerFilters}
 								handleTracerSelection={
@@ -118,7 +118,7 @@ class App extends Component {
 								}
 							/>
 						</Col>
-						<Col md={6} className="right-column">
+						<Col md={6} className="right-top-column">
 							<DOMContextViewer
 								tracerID={this.state.tracerID}
 								handleEventSelection={this.handleEventSelection}

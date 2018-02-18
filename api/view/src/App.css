@@ -20,12 +20,12 @@
   color: white;
 }
 
-div.left-column {
-  padding-right: 0;
-}
-
-div.right-column {
+div.right-bottom-column,
+div.left-bottom-column,
+div.right-top-column,
+div.left-top-column {
   padding-left: 0;
+  border: solid #39464e 1px;
 }
 
 .menudown-icon {
@@ -35,16 +35,30 @@ div.right-column {
 
 .highlight {
   background-color: yellow;
+  color: black;
 }
 
 pre {
   font-size: small !important;
   border-radius: 0px !important;
+  border-width: 0 !important;
 }
 
-td {
+div.left-top-column td,
+div.right-top-column td {
   font-size: small;
   padding: 0px !important;
+  border-width: 0 !important;
+}
+
+div.left-top-column tr,
+div.right-top-column tr {
+  font-size: small;
+  padding: 0px !important;
+}
+
+div.react-bs-table-bordered {
+  border-width: 0;
 }
 
 .hidden {
@@ -89,27 +103,22 @@ td {
 }
 
 .exploitable {
-  background-color: #ff9994;
+  color: #ff9994;
 }
 
 .unexploitable {
 }
 
 .suspicious {
-  background-color: #fdfd96;
+  color: #fdfd96;
 }
 
 .probable {
-  background-color: #ffb347;
+  color: #ffb347;
 }
 
 .row {
   overflow: hidden;
-}
-
-[class*="col-"] {
-  margin-bottom: -99999px;
-  padding-bottom: 99999px;
 }
 
 .main-table {
@@ -119,6 +128,8 @@ td {
 
 .filter-column {
   position: absolute;
+  height: 100%;
+  display: block;
 }
 
 .filter-buttons {
@@ -177,18 +188,6 @@ body {
   overflow: hidden;
 }
 
-.raw-event {
-  height: 65vh;
-}
-
-.raw-request {
-  height: 65vh;
-}
-
-.raw-data {
-  height: 65vh;
-}
-
 .details-viewer {
   margin-top: 0px;
 }
@@ -199,7 +198,11 @@ body {
 }
 
 .header {
-  height: 5vh;
+  height: 50px;
+  background-color: #1c2128;
+  color: #e6e6e8;
+  margin-bottom: 0;
+  border-bottom: #39464e solid 1px;
 }
 
 .title {
@@ -208,6 +211,40 @@ body {
 }
 
 .row-selected {
-  background-color: black;
+  background-color: #362c94;
   color: white;
+}
+
+html body {
+  background-color: #20262e;
+  color: #e6e6e8;
+}
+
+div.header button {
+  background-color: inherit;
+  border: 0;
+  height: 100%;
+  border-right: #39464e solid 1px;
+}
+
+pre.raw-request,
+pre.raw-data {
+  background-color: inherit;
+  color: #e6e6e8;
+  height: 65vh;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+div.container {
+  margin-left: 10px;
+}
+
+div.header .button-active {
+  background-color: #252c35;
+}
+
+div.header .filter-container {
+  padding-left: 1px;
 }
