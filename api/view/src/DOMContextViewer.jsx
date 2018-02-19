@@ -8,7 +8,8 @@ class DOMContextViewer extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			events: []
+			events: [],
+			loading: false
 		};
 
 		this.requestEvents = this.requestEvents.bind(this);
@@ -46,9 +47,13 @@ class DOMContextViewer extends Component {
 			nextProps.tracerID !== this.props.tracerID
 		) {
 			// If the tracerID changed, trigger a request right away. Don't repeat here.
+			this.setState({
+				loading: true
+			});
 			this.requestEvents(false, nextProps.tracerID);
 		}
 
+		// This happens when the tracer table selects a new row.
 		if (nextProps.tracerID === -1) {
 			this.setState({
 				events: []
@@ -171,7 +176,8 @@ class DOMContextViewer extends Component {
 					// If that is the case, we need to not render the results.
 					if (this.props.tracerID === tracerID) {
 						this.setState({
-							events: filteredEvents
+							events: filteredEvents,
+							loading: false
 						});
 					}
 				});
@@ -219,98 +225,106 @@ class DOMContextViewer extends Component {
 			className: "row-selected"
 		};
 
-		return (
-			<BootstrapTable
-				data={this.state.events}
-				options={options}
-				trClassName={this.formatRowSeverity}
-				selectRow={selectRow}
-				containerStyle={containerStyle}
-				tableStyle={tableStyle}
-				bodyStyle={bodyStyle}
-				scrollTop={"Bottom"}
-				condensed
-			>
-				<TableHeaderColumn
-					dataField="ID"
-					isKey={true}
-					width="50"
-					dataAlign="center"
-					thStyle={thStyle}
-					dataSort={true}
-					expandable={false}
+		let ret;
+		console.log("loading: ", this.state.loading);
+		if (this.state.loading) {
+			ret = <div>Loading...</div>;
+		} else {
+			ret = (
+				<BootstrapTable
+					data={this.state.events}
+					options={options}
+					trClassName={this.formatRowSeverity}
+					selectRow={selectRow}
+					containerStyle={containerStyle}
+					tableStyle={tableStyle}
+					bodyStyle={bodyStyle}
+					scrollTop={"Bottom"}
+					condensed
 				>
-					ID
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="EventHost"
-					thStyle={thStyle}
-					dataSort={true}
-					expandable={false}
-					editable={{ readOnly: true }}
-				>
-					Host
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="EventPath"
-					thStyle={thStyle}
-					dataSort={true}
-					expandable={false}
-					editable={{ readOnly: true }}
-				>
-					Path
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="HTMLLocationType"
-					thStyle={thStyle}
-					dataSort={true}
-					width="115"
-					expandable={false}
-					editable={{ readOnly: true }}
-				>
-					Location Type
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="HTMLNodeType"
-					thStyle={thStyle}
-					dataSort={true}
-					width="75"
-					expandable={false}
-					editable={{ readOnly: true }}
-				>
-					Node Type
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="EventType"
-					thStyle={thStyle}
-					dataSort={true}
-					width="75"
-					expandable={false}
-					editable={{ readOnly: true }}
-				>
-					Event Type
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="EventContext"
-					thStyle={thStyle}
-					dataSort={true}
-					expandable={false}
-					editable={{ readOnly: true }}
-				>
-					Event Context
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="Severity"
-					thStyle={thStyle}
-					dataSort={true}
-					width="50"
-					expandable={false}
-					editable={{ type: "textarea" }}
-				>
-					Severity
-				</TableHeaderColumn>
-			</BootstrapTable>
-		);
+					<TableHeaderColumn
+						dataField="ID"
+						isKey={true}
+						width="50"
+						dataAlign="center"
+						thStyle={thStyle}
+						dataSort={true}
+						expandable={false}
+					>
+						ID
+					</TableHeaderColumn>
+					<TableHeaderColumn
+						dataField="EventHost"
+						thStyle={thStyle}
+						dataSort={true}
+						expandable={false}
+						editable={{ readOnly: true }}
+					>
+						Host
+					</TableHeaderColumn>
+					<TableHeaderColumn
+						dataField="EventPath"
+						thStyle={thStyle}
+						dataSort={true}
+						expandable={false}
+						editable={{ readOnly: true }}
+					>
+						Path
+					</TableHeaderColumn>
+					<TableHeaderColumn
+						dataField="HTMLLocationType"
+						thStyle={thStyle}
+						dataSort={true}
+						width="115"
+						expandable={false}
+						editable={{ readOnly: true }}
+					>
+						Location Type
+					</TableHeaderColumn>
+					<TableHeaderColumn
+						dataField="HTMLNodeType"
+						thStyle={thStyle}
+						dataSort={true}
+						width="75"
+						expandable={false}
+						editable={{ readOnly: true }}
+					>
+						Node Type
+					</TableHeaderColumn>
+					<TableHeaderColumn
+						dataField="EventType"
+						thStyle={thStyle}
+						dataSort={true}
+						width="75"
+						expandable={false}
+						editable={{ readOnly: true }}
+					>
+						Event Type
+					</TableHeaderColumn>
+					<TableHeaderColumn
+						dataField="EventContext"
+						thStyle={thStyle}
+						dataSort={true}
+						expandable={false}
+						editable={{ readOnly: true }}
+					>
+						Event Context
+					</TableHeaderColumn>
+					<TableHeaderColumn
+						dataField="Severity"
+						thStyle={thStyle}
+						dataSort={true}
+						width="50"
+						expandable={false}
+						editable={{ type: "textarea" }}
+					>
+						Severity
+					</TableHeaderColumn>
+				</BootstrapTable>
+			);
+		}
+
+		return ret;
 	}
 }
 
