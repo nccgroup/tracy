@@ -6,7 +6,8 @@ import HighlightedElement from "./HighlightedElement";
 /* View used to show the raw request and the events for the selected tracer row. */
 class DetailsViewer extends Component {
 	render() {
-		const index = this.props.rawEvent.indexOf(this.props.eventContext);
+		const eventIndex = this.props.rawEvent.indexOf(this.props.eventContext);
+		//const requestIndex = this.props.rawRequest.indexOf(this.props.eventContext);
 		var ret;
 		if (this.props.rawEvent !== "") {
 			//TODO: wish I knew how to calculate this
@@ -16,15 +17,19 @@ class DetailsViewer extends Component {
 			ret = (
 				<Row id="details-views" className="details-viewer">
 					<Col md={6} className="left-bottom-column">
-						<pre className="raw-request">
-							{this.props.rawRequest}
-						</pre>
+						<HighlightedElement
+							className="raw-request"
+							data={this.props.rawRequest}
+							lang="http"
+							start={-1}
+						/>
 					</Col>
 					<Col md={6} className="right-bottom-column">
 						<HighlightedElement
 							data={this.props.rawEvent}
-							start={index}
-							stop={index + this.props.eventContext.length}
+							lang="html"
+							start={eventIndex}
+							stop={eventIndex + this.props.eventContext.length}
 							scrollTo={newLines * lineHeight}
 						/>
 					</Col>
@@ -34,9 +39,12 @@ class DetailsViewer extends Component {
 			ret = (
 				<Row id="details-views" className="details-viewer">
 					<Col md={6} className="left-bottom-column">
-						<pre className="raw-request">
-							{this.props.rawRequest}
-						</pre>
+						<HighlightedElement
+							className="raw-request"
+							data={this.props.rawRequest}
+							lang="http"
+							start={-1}
+						/>
 					</Col>
 					<Col md={6} className="right-bottom-column">
 						<pre className="raw-data">

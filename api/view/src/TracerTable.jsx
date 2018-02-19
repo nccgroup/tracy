@@ -179,22 +179,21 @@ class TracerTable extends Component {
 	}
 
 	onRowSelect(row, isSelected, e) {
-		if (isSelected) {
-			this.props.handleTracerSelection(
-				row.ID,
-				row.RawRequest,
-				row.TracerLocationIndex,
-				row.TracerLocationType,
-				row.TracerString.length,
-				row.TracerPayload.length
-			);
-		}
+		this.props.handleTracerSelection(
+			row.ID,
+			row.RawRequest,
+			row.TracerLocationIndex,
+			row.TracerLocationType,
+			row.TracerString.length,
+			row.TracerPayload.length,
+			isSelected
+		);
 	}
 
 	render() {
 		const thStyle = {
 			fontSize: "small",
-			backgroundColor: "#20262e",
+			backgroundColor: "#282c34",
 			color: "white",
 			borderWidth: "0"
 		};

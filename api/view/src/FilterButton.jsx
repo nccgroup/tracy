@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 class FilterButton extends Component {
 	constructor(props) {
 		super(props);
 
 		this.state = {
 			enabled: false
-		}
+		};
 
 		this.handleClick = this.handleClick.bind(this);
 	}
@@ -17,7 +17,6 @@ class FilterButton extends Component {
 		}
 	}
 
-
 	get(rowKey) {
 		const key = "filters";
 		var ret = false;
@@ -25,7 +24,7 @@ class FilterButton extends Component {
 			var stored = JSON.parse(localStorage.getItem(key));
 			const id = stored.indexOf(rowKey);
 			if (id >= 0) {
-				ret = true
+				ret = true;
 			}
 		} catch (e) {
 			// Nothing to do
@@ -35,20 +34,20 @@ class FilterButton extends Component {
 	}
 
 	store(rowKeys) {
-		var value = rowKeys
+		var value = rowKeys;
 		if (!Array.isArray(rowKeys)) {
-		  value = [].concat(rowKeys)
+			value = [].concat(rowKeys);
 		}
 		const key = "filters";
 		var old;
 		try {
-		  old = JSON.parse(localStorage.getItem(key));
+			old = JSON.parse(localStorage.getItem(key));
 		} catch (e) {
-		  old = [];
+			old = [];
 		}
 
 		if (old && Array.isArray(old)) {
-		  value = old.concat(value)
+			value = old.concat(value);
 		}
 
 		//Don't store duplicates
@@ -58,20 +57,20 @@ class FilterButton extends Component {
 	}
 
 	remove(rowKeys) {
-		var value = rowKeys
+		var value = rowKeys;
 		if (!Array.isArray(rowKeys)) {
-		  value = [].concat(rowKeys)
+			value = [].concat(rowKeys);
 		}
 		const key = "filters";
 		var old;
 		try {
-		  old = JSON.parse(localStorage.getItem(key));
+			old = JSON.parse(localStorage.getItem(key));
 		} catch (e) {
-		  old = [];
+			old = [];
 		}
 
 		if (old && Array.isArray(old)) {
-			value = value.reduce(function(accum, curr){
+			value = value.reduce(function(accum, curr) {
 				const id = accum.indexOf(curr);
 				if (id >= 0) {
 					accum.splice(id, 1);
@@ -102,30 +101,36 @@ class FilterButton extends Component {
 			this.store(this.props.value);
 		}
 
-		this.setState(function(prevState){
+		this.setState(function(prevState) {
 			return {
 				enabled: !prevState.enabled
-			}
+			};
 		});
 	}
 
 	render() {
-	    return <button type="button"
-			         className={this.state.enabled ? 'button-active': null} 
-			         id={this.props.value}
-							 onClick={this.handleClick}>{this.props.description}</button>
+		return (
+			<button
+				type="button"
+				className={this.state.enabled ? "button-active" : null}
+				id={this.props.value}
+				onClick={this.handleClick}
+			>
+				{this.props.description}
+			</button>
+		);
 
-			// <div
-	    // 	className="filter-button"><input
-	    // 		type="checkbox"
-	    //     	id={this.props.value}
-	    //     	value={this.props.value}
-	    // 		onChange={this.handleChange}
-	    //     	checked={checked}></input>
-	    //     <label
-	    //     	className="filter-button-label">
-	    // 		{this.props.description}
-	    // 	</label></div>
+		// <div
+		// 	className="filter-button"><input
+		// 		type="checkbox"
+		//     	id={this.props.value}
+		//     	value={this.props.value}
+		// 		onChange={this.handleChange}
+		//     	checked={checked}></input>
+		//     <label
+		//     	className="filter-button-label">
+		// 		{this.props.description}
+		// 	</label></div>
 	}
 }
 

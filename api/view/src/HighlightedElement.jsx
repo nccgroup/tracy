@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
+import HighLight from "react-syntax-highlight";
+import "../node_modules/highlight.js/styles/atom-one-dark.css";
 
 /* View used to show the raw request and the events for the selected tracer row. */
 class HighlightedElement extends Component {
@@ -29,15 +31,27 @@ class HighlightedElement extends Component {
 				this.props.stop,
 				this.props.data.length
 			);
-			ret = (
+			/*ret = (
 				<pre className="raw-data">
 					{pre}
 					<code className="highlight">{highlight}</code>
 					{post}
 				</pre>
+			);*/
+			ret = (
+				<HighLight
+					lang={this.props.lang}
+					value={pre + highlight + post}
+				/>
 			);
 		} else {
-			ret = <pre className="raw-data">{this.props.data}</pre>;
+			ret = (
+				<HighLight
+					className="raw-data"
+					lang={this.props.lang}
+					value={this.props.data}
+				/>
+			);
 		}
 
 		return ret;

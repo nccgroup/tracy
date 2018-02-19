@@ -24,7 +24,7 @@ div.right-bottom-column,
 div.left-bottom-column,
 div.right-top-column,
 div.left-top-column {
-  padding-left: 0;
+  padding: 9.5px;
   border: solid #39464e 1px;
 }
 
@@ -42,6 +42,7 @@ pre {
   font-size: small !important;
   border-radius: 0px !important;
   border-width: 0 !important;
+  /*padding: 0;*/
 }
 
 div.left-top-column td,
@@ -189,6 +190,7 @@ body {
 }
 
 .details-viewer {
+  background-color: #282c34;
   margin-top: 0px;
 }
 
@@ -225,6 +227,14 @@ div.header button {
   border: 0;
   height: 100%;
   border-right: #39464e solid 1px;
+}
+
+pre code {
+  padding: 9.5px;
+}
+
+.right-bottom-column pre {
+  pading: 0;
 }
 
 pre.raw-request,

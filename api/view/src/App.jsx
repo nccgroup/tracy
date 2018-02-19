@@ -41,24 +41,48 @@ class App extends Component {
 		nRequestIndex,
 		nRequestLocationType,
 		nTracerStringLength,
-		nTracerPayloadLength
+		nTracerPayloadLength,
+		isSelected
 	) {
-		this.setState({
-			tracerID: nTracerID,
-			rawRequest: nRawRequest,
-			requestIndex: nRequestIndex,
-			requestLocationType: nRequestLocationType,
-			tracerStringLength: nTracerStringLength,
-			tracerPayloadLength: nTracerPayloadLength
-		});
+		if (isSelected) {
+			this.setState({
+				tracerID: nTracerID,
+				rawRequest: nRawRequest,
+				requestIndex: nRequestIndex,
+				requestLocationType: nRequestLocationType,
+				tracerStringLength: nTracerStringLength,
+				tracerPayloadLength: nTracerPayloadLength,
+				rawEvent: "",
+				eventContext: ""
+			});
+		} else {
+			this.setState({
+				tracerID: -1,
+				rawRequest: "",
+				requestIndex: 0,
+				requestLocationType: 0,
+				tracerStringLength: 0,
+				tracerPayloadLength: 0,
+				rawEvent: "",
+				eventContext: ""
+			});
+		}
 	}
 
 	/* Called whenever a new event is select. */
-	handleEventSelection(nRawEvent, nEventContext) {
-		this.setState({
-			rawEvent: nRawEvent,
-			eventContext: nEventContext
-		});
+	handleEventSelection(nRawEvent, nEventContext, isSelected) {
+		if (isSelected) {
+			this.setState({
+				rawEvent: nRawEvent,
+				eventContext: nEventContext
+			});
+		} else {
+			console.log("not selected");
+			this.setState({
+				rawEvent: "",
+				eventContext: ""
+			});
+		}
 	}
 
 	render() {
@@ -120,6 +144,7 @@ class App extends Component {
 						</Col>
 						<Col md={6} className="right-top-column">
 							<DOMContextViewer
+								events={this.state.events}
 								tracerID={this.state.tracerID}
 								handleEventSelection={this.handleEventSelection}
 								contextFilters={contextFilters}

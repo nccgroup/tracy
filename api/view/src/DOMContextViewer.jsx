@@ -28,9 +28,11 @@ class DOMContextViewer extends Component {
 	}
 
 	onRowSelect(row, isSelected, e) {
-		if (isSelected) {
-			this.props.handleEventSelection(row.RawEvent, row.EventContext);
-		}
+		this.props.handleEventSelection(
+			row.RawEvent,
+			row.EventContext,
+			isSelected
+		);
 	}
 
 	componentDidMount() {
@@ -45,6 +47,12 @@ class DOMContextViewer extends Component {
 		) {
 			// If the tracerID changed, trigger a request right away. Don't repeat here.
 			this.requestEvents(false, nextProps.tracerID);
+		}
+
+		if (nextProps.tracerID === -1) {
+			this.setState({
+				events: []
+			});
 		}
 	}
 
@@ -128,21 +136,6 @@ class DOMContextViewer extends Component {
 			);
 		}
 
-		//TODO: do we want to even bother with these?
-		/*else {
-			return {
-				ID: event.ID,
-				HTMLLocationType: "",
-				HTMLNodeType: "",
-				EventContext: "",
-				RawEvent: event.RawEvent,
-				EventType: event.EventType,
-				EventHost: this.parseHost(event.EventURL),
-				EventPath: this.parsePath(event.EventURL),
-				Severity: event.Severity
-			};
-		}*/
-
 		return ret;
 	}
 
@@ -198,7 +191,7 @@ class DOMContextViewer extends Component {
 	render() {
 		const thStyle = {
 			fontSize: "small",
-			backgroundColor: "#20262e",
+			backgroundColor: "#282c34",
 			color: "white",
 			borderWidth: "0"
 		};
