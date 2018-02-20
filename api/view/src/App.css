@@ -28,6 +28,13 @@ div.left-top-column {
   border: solid #39464e 1px;
 }
 
+div.right-top-column,
+div.left-top-column {
+  height: 30vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .menudown-icon {
   float: right;
   width: 200px;
@@ -257,4 +264,39 @@ div.header .button-active {
 
 div.header .filter-container {
   padding-left: 1px;
+}
+
+.glyphicon-refresh-animate {
+  -animation: spin 0.7s infinite linear;
+  -ms-animation: spin 0.7s infinite linear;
+  -webkit-animation: spinw 0.7s infinite linear;
+}
+
+@keyframes spin {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+@-webkit-keyframes spinw {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+div.loading-spinner-parent {
+  height: 29vh;
+  position: relative;
+}
+
+div.loading-spinner-child {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
 }

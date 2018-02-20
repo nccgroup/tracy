@@ -3,6 +3,8 @@ import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-bootstrap-table/dist/react-bootstrap-table.min.css";
 import "bootstrap/dist/css/bootstrap-theme.min.css";
+import Col from "react-bootstrap/lib/Col";
+import FormGroup from "react-bootstrap/lib/FormGroup";
 
 class DOMContextViewer extends Component {
 	constructor(props) {
@@ -197,20 +199,15 @@ class DOMContextViewer extends Component {
 	render() {
 		const thStyle = {
 			fontSize: "small",
-			backgroundColor: "#282c34",
+			backgroundColor: "#20262E",
 			color: "white",
 			borderWidth: "0"
 		};
 		const tableStyle = {
-			borderRadius: "0px",
-			height: "3vh"
+			borderRadius: "0px"
 		};
-		const bodyStyle = {
-			height: "27vh"
-		};
-		const containerStyle = {
-			height: "30vh"
-		};
+		const bodyStyle = {};
+		const containerStyle = {};
 
 		const options = {
 			defaultSortName: "Severity",
@@ -226,9 +223,14 @@ class DOMContextViewer extends Component {
 		};
 
 		let ret;
-		console.log("loading: ", this.state.loading);
 		if (this.state.loading) {
-			ret = <div>Loading...</div>;
+			ret = (
+				<FormGroup className="loading-spinner-parent">
+					<Col md={12} className="loading-spinner-child text-center">
+						<span className="glyphicon glyphicon-refresh glyphicon-refresh-animate" />
+					</Col>
+				</FormGroup>
+			);
 		} else {
 			ret = (
 				<BootstrapTable

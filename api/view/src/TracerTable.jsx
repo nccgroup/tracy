@@ -193,20 +193,15 @@ class TracerTable extends Component {
 	render() {
 		const thStyle = {
 			fontSize: "small",
-			backgroundColor: "#282c34",
+			backgroundColor: "#20262E",
 			color: "white",
 			borderWidth: "0"
 		};
 		const tableStyle = {
-			borderRadius: "0px",
-			height: "3vh"
+			borderRadius: "0px"
 		};
-		const bodyStyle = {
-			height: "27vh"
-		};
-		const containerStyle = {
-			height: "30vh"
-		};
+		const bodyStyle = {};
+		const containerStyle = {};
 		const options = {
 			defaultSortName: "ID",
 			defaultSortOrder: "desc"
