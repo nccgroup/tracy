@@ -6,32 +6,38 @@ import HighlightedElement from "./HighlightedElement";
 /* View used to show the raw request and the events for the selected tracer row. */
 class DetailsViewer extends Component {
 	render() {
-		const eventIndex = this.props.rawEvent.indexOf(this.props.eventContext);
-		//const requestIndex = this.props.rawRequest.indexOf(this.props.eventContext);
 		var ret;
-		if (this.props.rawEvent !== "") {
-			//TODO: wish I knew how to calculate this
-			const lineHeight = 11;
-			const newLines = this.occurrences(this.props.rawEvent, "\n");
-
+		const helpTracer =
+			"Click one of the tracers above to list all of its destinations on the right.";
+		const helpEvent =
+			"Click one of the tracer events above to see the tracer's destination.";
+		if (this.isEmpty(this.props.event) && this.isEmpty(this.props.tracer)) {
+			ret = (
+				<Row id="details-views" className="details-viewer">
+					<Col md={6} className="left-bottom-column">
+						<pre className="raw-data">{helpTracer}</pre>
+					</Col>
+					<Col md={6} className="right-bottom-column">
+						<pre className="raw-data">{helpEvent}</pre>
+					</Col>
+				</Row>
+			);
+		} else if (
+			!this.isEmpty(this.props.tracer) &&
+			this.isEmpty(this.props.event)
+		) {
 			ret = (
 				<Row id="details-views" className="details-viewer">
 					<Col md={6} className="left-bottom-column">
 						<HighlightedElement
-							className="raw-request"
-							data={this.props.rawRequest}
+							highlightString={this.props.tracer.TracerPayload}
+							data={this.props.tracer.RawRequest}
+							eventID={-1}
 							lang="http"
-							start={-1}
 						/>
 					</Col>
 					<Col md={6} className="right-bottom-column">
-						<HighlightedElement
-							data={this.props.rawEvent}
-							lang="html"
-							start={eventIndex}
-							stop={eventIndex + this.props.eventContext.length}
-							scrollTo={newLines * lineHeight}
-						/>
+						<pre className="raw-data">{helpEvent}</pre>
 					</Col>
 				</Row>
 			);
@@ -40,23 +46,29 @@ class DetailsViewer extends Component {
 				<Row id="details-views" className="details-viewer">
 					<Col md={6} className="left-bottom-column">
 						<HighlightedElement
-							className="raw-request"
-							data={this.props.rawRequest}
+							highlightString={this.props.tracer.TracerPayload}
+							eventID={-1}
+							data={this.props.tracer.RawRequest}
 							lang="http"
-							start={-1}
 						/>
 					</Col>
 					<Col md={6} className="right-bottom-column">
-						<pre className="raw-data">
-							Click one of the tracer events above to see the
-							tracer's destination.
-						</pre>
+						<HighlightedElement
+							data={this.props.event.RawEvent}
+							highlightString={this.props.tracer.TracerPayload}
+							eventID={this.props.event.RawEventIndex}
+							lang="html"
+						/>
 					</Col>
 				</Row>
 			);
 		}
 
 		return ret;
+	}
+
+	isEmpty(obj) {
+		return Object.keys(obj).length === 0 && obj.constructor === Object;
 	}
 
 	// stolen from : https://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string

@@ -179,15 +179,7 @@ class TracerTable extends Component {
 	}
 
 	onRowSelect(row, isSelected, e) {
-		this.props.handleTracerSelection(
-			row.ID,
-			row.RawRequest,
-			row.TracerLocationIndex,
-			row.TracerLocationType,
-			row.TracerString.length,
-			row.TracerPayload.length,
-			isSelected
-		);
+		this.props.handleTracerSelection(row, isSelected);
 	}
 
 	render() {

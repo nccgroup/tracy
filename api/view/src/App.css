@@ -240,7 +240,8 @@ pre code {
   padding: 9.5px;
 }
 
-.right-bottom-column pre {
+.right-bottom-column pre,
+.left-bottom-column pre {
   padding: 0;
 }
 

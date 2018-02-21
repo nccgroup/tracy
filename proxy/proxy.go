@@ -114,19 +114,18 @@ func handleConnection(client net.Conn) {
 	go func() {
 		if !configure.ServerInWhitelist(host) && len(tracers) > 0 {
 			dump, err := httputil.DumpRequest(request, true)
-			if err != nil {
-				dump = []byte("ERROR DUMPING")
+			if err == nil {
+				req := types.Request{
+					RawRequest:    string(dump),
+					RequestURL:    request.Host + request.RequestURI,
+					RequestMethod: request.Method,
+					Tracers:       tracers,
+				}
+
+				/* Use the API to add each tracer events to their corresponding tracer. */
+				_, err = common.AddTracer(req)
 			}
 
-			req := types.Request{
-				RawRequest:    string(dump),
-				RequestURL:    request.Host + request.RequestURI,
-				RequestMethod: request.Method,
-				Tracers:       tracers,
-			}
-
-			/* Use the API to add each tracer events to their corresponding tracer. */
-			_, err = common.AddTracer(req)
 			if err != nil {
 				log.Error.Println(err)
 			}

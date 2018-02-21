@@ -10,15 +10,8 @@ class App extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			tracerID: -1,
-			rawEvent: "",
-			requestIndex: 0,
-			tracerStringLength: 0,
-			tracerPayloadLength: 0,
-			eventIndex: 0,
-			rawRequest: "",
-			requestLocationType: 0,
-			eventContext: ""
+			tracer: {},
+			event: {}
 		};
 		this.handleFilterChange = this.handleFilterChange.bind(this);
 		this.handleTracerSelection = this.handleTracerSelection.bind(this);
@@ -35,52 +28,29 @@ class App extends Component {
 	}
 
 	/* Called whenever a new tracer row is selected. */
-	handleTracerSelection(
-		nTracerID,
-		nRawRequest,
-		nRequestIndex,
-		nRequestLocationType,
-		nTracerStringLength,
-		nTracerPayloadLength,
-		isSelected
-	) {
+	handleTracerSelection(nTracer, isSelected) {
 		if (isSelected) {
 			this.setState({
-				tracerID: nTracerID,
-				rawRequest: nRawRequest,
-				requestIndex: nRequestIndex,
-				requestLocationType: nRequestLocationType,
-				tracerStringLength: nTracerStringLength,
-				tracerPayloadLength: nTracerPayloadLength,
-				rawEvent: "",
-				eventContext: ""
+				tracer: nTracer,
+				event: {}
 			});
 		} else {
 			this.setState({
-				tracerID: -1,
-				rawRequest: "",
-				requestIndex: 0,
-				requestLocationType: 0,
-				tracerStringLength: 0,
-				tracerPayloadLength: 0,
-				rawEvent: "",
-				eventContext: ""
+				tracer: {},
+				event: {}
 			});
 		}
 	}
 
 	/* Called whenever a new event is select. */
-	handleEventSelection(nRawEvent, nEventContext, isSelected) {
+	handleEventSelection(nEvent, isSelected) {
 		if (isSelected) {
 			this.setState({
-				rawEvent: nRawEvent,
-				eventContext: nEventContext
+				event: nEvent
 			});
 		} else {
-			console.log("not selected");
 			this.setState({
-				rawEvent: "",
-				eventContext: ""
+				event: {}
 			});
 		}
 	}
@@ -145,7 +115,7 @@ class App extends Component {
 						<Col md={6} className="right-top-column">
 							<DOMContextViewer
 								events={this.state.events}
-								tracerID={this.state.tracerID}
+								tracer={this.state.tracer}
 								handleEventSelection={this.handleEventSelection}
 								contextFilters={contextFilters}
 							/>
@@ -154,19 +124,8 @@ class App extends Component {
 					<Row>
 						<Col md={12}>
 							<DetailsViewer
-								rawRequest={this.state.rawRequest}
-								requestStart={this.state.requestIndex}
-								requestLocationType={
-									this.state.requestLocationType
-								}
-								tracerStringLength={
-									this.state.tracerStringLength
-								}
-								tracerPayloadLength={
-									this.state.tracerPayloadLength
-								}
-								eventContext={this.state.eventContext}
-								rawEvent={this.state.rawEvent}
+								tracer={this.state.tracer}
+								event={this.state.event}
 							/>
 						</Col>
 					</Row>

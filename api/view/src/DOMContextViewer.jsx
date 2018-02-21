@@ -31,11 +31,7 @@ class DOMContextViewer extends Component {
 	}
 
 	onRowSelect(row, isSelected, e) {
-		this.props.handleEventSelection(
-			row.RawEvent,
-			row.EventContext,
-			isSelected
-		);
+		this.props.handleEventSelection(row, isSelected);
 	}
 
 	componentDidMount() {
@@ -43,20 +39,27 @@ class DOMContextViewer extends Component {
 		this.requestEvents(true);
 	}
 
+	isEmpty(obj) {
+		return Object.keys(obj).length === 0 && obj.constructor === Object;
+	}
+
 	componentWillReceiveProps(nextProps) {
 		if (
-			nextProps.tracerID !== -1 &&
-			nextProps.tracerID !== this.props.tracerID
+			(!this.isEmpty(nextProps.tracer) &&
+				this.isEmpty(this.props.tracer)) ||
+			(!this.isEmpty(nextProps.tracer) &&
+				!this.isEmpty(this.props.tracer) &&
+				nextProps.tracer.ID !== this.props.tracer.ID)
 		) {
 			// If the tracerID changed, trigger a request right away. Don't repeat here.
 			this.setState({
 				loading: true
 			});
-			this.requestEvents(false, nextProps.tracerID);
+			this.requestEvents(false, nextProps.tracer.ID);
 		}
 
 		// This happens when the tracer table selects a new row.
-		if (nextProps.tracerID === -1) {
+		if (this.isEmpty(nextProps.tracer)) {
 			this.setState({
 				events: []
 			});
@@ -126,7 +129,7 @@ class DOMContextViewer extends Component {
 		var ret = [];
 		if (event.DOMContexts && event.DOMContexts.length > 0) {
 			ret = event.DOMContexts.map(
-				function(context) {
+				function(context, idx) {
 					return {
 						ID: event.ID + context.ID,
 						HTMLLocationType:
@@ -134,6 +137,7 @@ class DOMContextViewer extends Component {
 						HTMLNodeType: context.HTMLNodeType,
 						EventContext: context.EventContext,
 						RawEvent: event.RawEvent,
+						RawEventIndex: idx,
 						EventType: event.EventType,
 						EventHost: this.parseHost(event.EventURL),
 						EventPath: this.parsePath(event.EventURL),
@@ -148,12 +152,12 @@ class DOMContextViewer extends Component {
 
 	requestEvents(
 		repeat,
-		tracerID = this.props.tracerID,
+		tracerID = this.props.tracer.ID,
 		timingInterval = 1500
 	) {
 		// By default, the app starts with non of the tracers selected. Don't make a
 		// request in this case.
-		if (tracerID !== -1) {
+		if (tracerID) {
 			var req = new Request(
 				`http://127.0.0.1:8081/tracers/${tracerID}/events`,
 				{ method: "GET" }
@@ -176,7 +180,7 @@ class DOMContextViewer extends Component {
 					// Need to check this race condition. There is a chance that when
 					// this request returns, the tracer ID might have changed already.
 					// If that is the case, we need to not render the results.
-					if (this.props.tracerID === tracerID) {
+					if (this.props.tracer.ID === tracerID) {
 						this.setState({
 							events: filteredEvents,
 							loading: false
