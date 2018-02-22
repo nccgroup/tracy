@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>XSS Terminate Options</title>
+    <meta charset="utf-8">
 </head>
     <body>
 
-    <div id="options">
-        <label>The location of the XSS Terminate API server.</label>
-        <input id="proxy-server" type="url" placeholder="https://localhost:8080"/>
-    </div>
-
-    <button id="save">Save</button>
-    <div id="status"></div>
+    <form>
+      <label>API Server</label>
+      <input type="text" id="api-server" ><br><br>
+      <label>Proxy Server</label>
+      <input type="text" id="proxy-server" ><br><br>
+      <button type="submit">Save</button>
+    </form>
 
     <script src="../scripts/options.js"></script>
     </body>

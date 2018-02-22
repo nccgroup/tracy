@@ -138,8 +138,14 @@ function addJobToQueue(message, sender, sendResponse) {
     jobs.push(message);
 }
 
+//TODO: make this configurable
+const DELAY = 0.05;
+
+/* Start processing jobs. */
+browser.alarms.create({ delayInMinutes: DELAY });
+
 /* Process all the jobs in the current queue. */
-function processDomEvents() {
+browser.alarms.onAlarm.addListener(function(alarm) {
     /* If there are no new jobs, continue. */
     if (jobs.length > 0) {
         /* Send any jobs off to the API server. */
@@ -148,14 +154,13 @@ function processDomEvents() {
         /* Clear out the jobs. */
         jobs = [];
     }
-    /* Trigger another timeout after the jobs are cleared. */
-    setTimeout(processDomEvents, 3000);
-}
-/* Start processing jobs. */
-setTimeout(processDomEvents, 3000);
+
+    /* Trigger another alarm after the jobs are cleared. */
+    browser.alarms.create({ delayInMinutes: DELAY });
+});
 
 /* Any time the page sends a message to the extension, the above handler should take care of it. */
-chrome.runtime.onMessage.addListener(messageRouter);
+browser.runtime.onMessage.addListener(messageRouter);
 
 var restServer = "127.0.0.1:443";
 var tracerStringTypes = ["blah", "blah"];
