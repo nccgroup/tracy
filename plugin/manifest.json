@@ -12,7 +12,7 @@
       "matches": ["<all_urls>"],
       "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*"],
       "all_frames": true,
-      "js": ["scripts/dom-mutations.js"],
+      "js": ["scripts/dom-mutations.js", "scripts/highlight.js"],
       "css": ["css/dropdown.css"],
       "run_at": "document_start"
     }

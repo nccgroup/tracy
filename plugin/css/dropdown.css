@@ -7,18 +7,20 @@ div#tag-menu {
 	width: 100%;
 	z-index: 1000000000000;
 	background-color: white;
-	width: 150px;
-	height: 50px;
-	max-width: 150px;
-	max-height: 50px;
+	/*width: 150px;
+	height: 50px;*/
+	max-width: 200px;
+	max-height: 100px;
+	overflow: auto;
+	padding: 5px;
 }
 
 div#tag-menu * {
-	all: initial
+	all: initial;
 }
 
 #tag-menu ul li.highlight-on-hover {
-		display: block;
+	display: block;
 }
 
 #tag-menu ul li.highlight-on-hover:hover {

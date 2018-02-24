@@ -117,6 +117,7 @@ function refreshConfig(message, sender, sendResponse) {
         .then(res => res.json())
         .then(res => {
             tracerStringTypes = Object.keys(res["tracers"]);
+            defaultTracer = res["default-tracer"];
             restServer = res["tracer-server"];
         })
         .catch(error => console.error("Error:", error));
@@ -128,6 +129,9 @@ function configQuery(message, sender, sendResponse) {
         switch (message.config) {
             case "tracer-string-types":
                 sendResponse(tracerStringTypes);
+                break;
+            case "default-tracer":
+                sendResponse(defaultTracer);
                 break;
         }
     }
@@ -142,10 +146,10 @@ function addJobToQueue(message, sender, sendResponse) {
 const DELAY = 0.05;
 
 /* Start processing jobs. */
-browser.alarms.create({ delayInMinutes: DELAY });
+chrome.alarms.create({ delayInMinutes: DELAY });
 
 /* Process all the jobs in the current queue. */
-browser.alarms.onAlarm.addListener(function(alarm) {
+chrome.alarms.onAlarm.addListener(function(alarm) {
     /* If there are no new jobs, continue. */
     if (jobs.length > 0) {
         /* Send any jobs off to the API server. */
@@ -156,11 +160,12 @@ browser.alarms.onAlarm.addListener(function(alarm) {
     }
 
     /* Trigger another alarm after the jobs are cleared. */
-    browser.alarms.create({ delayInMinutes: DELAY });
+    chrome.alarms.create({ delayInMinutes: DELAY });
 });
 
 /* Any time the page sends a message to the extension, the above handler should take care of it. */
-browser.runtime.onMessage.addListener(messageRouter);
+chrome.runtime.onMessage.addListener(messageRouter);
 
 var restServer = "127.0.0.1:443";
 var tracerStringTypes = ["blah", "blah"];
+var defaultTracer = "blah";

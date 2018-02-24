@@ -99,7 +99,7 @@ func generateCert(host string, cert tls.Certificate) (tls.Certificate, error, Ke
 		return tls.Certificate{}, err, KeyPairBytes{}
 	}
 
-	priv, err := ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
+	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, certs[0], priv.Public(), cert.PrivateKey)
 	if err != nil {
 		return tls.Certificate{}, err, KeyPairBytes{}
