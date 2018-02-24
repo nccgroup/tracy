@@ -99,7 +99,7 @@ func generateCert(host string, cert tls.Certificate) (tls.Certificate, error, Ke
 		return tls.Certificate{}, err, KeyPairBytes{}
 	}
 
-	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, certs[0], priv.Public(), cert.PrivateKey)
 	if err != nil {
 		return tls.Certificate{}, err, KeyPairBytes{}
@@ -145,7 +145,6 @@ func certCache(cacheChan chan *cacheRequest, cache map[string]tls.Certificate) {
 	)
 
 	for {
-		log.Trace.Printf("Cache status: %+v\n", cache)
 		r = <-cacheChan
 
 		// This is a transaction. If we have a cache miss, we can't process the next

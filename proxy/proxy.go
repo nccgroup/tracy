@@ -167,6 +167,10 @@ func handleConnection(client net.Conn) {
 			defer server.Close()
 		}
 
+		if err == io.EOF {
+			return
+		}
+
 		if err != nil {
 			log.Error.Println(err)
 			return

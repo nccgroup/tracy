@@ -90,7 +90,7 @@ func Certificates() tls.Certificate {
 }
 
 func generateRootCA(path string) {
-	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		log.Error.Fatalf("Can not generate Private Key: %s", err)
 	}

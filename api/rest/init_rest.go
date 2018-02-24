@@ -1,12 +1,12 @@
 package rest
 
 import (
-	"compress/gzip"
 	"crypto/sha1"
 	"encoding/hex"
 	"flag"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	l "log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -72,8 +72,8 @@ func Configure() {
 			})}
 
 		//Additional server features rest server
-		restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
-		restHandler = handlers.CORS(corsOptions...)(restHandler)
+		//restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
+		restHandler := handlers.CORS(corsOptions...)(RestRouter)
 		restHandler = applicationJSONMiddleware(restHandler)
 		restHandler = cacheMiddleware(restHandler)
 
@@ -83,12 +83,12 @@ func Configure() {
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
-			ErrorLog:     log.Error,
+			ErrorLog:     log.Error.(*l.Logger),
 		}
 
 		//Additional server features for configuration server
-		configHandler := handlers.CompressHandlerLevel(ConfigRouter, gzip.BestCompression)
-		configHandler = handlers.CORS(corsOptions...)(configHandler)
+		//configHandler := handlers.CompressHandlerLevel(ConfigRouter, gzip.BestCompression)
+		configHandler := handlers.CORS(corsOptions...)(ConfigRouter)
 		configHandler = applicationJSONMiddleware(configHandler)
 		configHandler = cacheMiddleware(configHandler)
 
@@ -98,7 +98,7 @@ func Configure() {
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
-			ErrorLog:     log.Error,
+			ErrorLog:     log.Error.(*l.Logger),
 		}
 	}
 }

@@ -3,26 +3,32 @@ package log
 import (
 	"flag"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 )
 
 var (
 	/*Trace is used for logging trivial things to the command line. Only print in verbose mode. */
-	Trace *log.Logger
+	Trace logger
 	/*Info is used for logging more detailed program data. Only display this in verbose mode. */
-	Info *log.Logger
+	Info logger
 	/*Warning is used for logging errors and exceptions that do not halt program flow. Only display in verbose mode. */
-	Warning *log.Logger
+	Warning logger
 	/*Error is used for logging program errors that cannot recover. */
-	Error *log.Logger
+	Error logger
 	/*Verbose indicate if the program is in verbose mode and should prints more detailed error messages during the program runtime. */
 	Verbose bool
 	/* Output file. Moves stdout and stderr to a file on disk. */
 	outFile        string
 	outFileDefault = "empty"
 )
+
+/* Configure flags the logging format. */
+const flags int = log.Ldate | log.Ltime | log.Lshortfile
+const traceStr string = "[TRACE]:"
+const infoStr string = "[INFO]:"
+const warnStr string = "[WARNING]:"
+const errorStr string = "[ERROR]:"
 
 func init() {
 	verboseUsage := "Indicate if you'd like to run this tool with advanced debugging logs."
@@ -36,34 +42,14 @@ func init() {
 	flag.StringVar(&outFile, "o", outFileDefault, outputFileUsage+"(shorthand)")
 
 	/* Defaults for tests. */
-	var traceWriter io.Writer = os.Stdout
-	var infoWriter io.Writer = os.Stdout
-	var warningWriter io.Writer = os.Stdout
-	var errorWriter io.Writer = os.Stderr
-	Trace = log.New(traceWriter,
-		"[TRACE]: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-
-	Info = log.New(infoWriter,
-		"[INFO]: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-
-	Warning = log.New(warningWriter,
-		"[WARNING]: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
-
-	Error = log.New(errorWriter,
-		"[ERROR]: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
+	Trace = log.New(os.Stdout, traceStr, flags)
+	Info = log.New(os.Stdout, infoStr, flags)
+	Warning = log.New(os.Stdout, warnStr, flags)
+	Error = log.New(os.Stderr, errorStr, flags)
 }
 
 /*Configure takes the command line options and builds the loggers. */
 func Configure() {
-	/* Configure the logging settings. */
-	var traceWriter io.Writer
-	var infoWriter io.Writer
-	var warningWriter io.Writer
-	var errorWriter io.Writer
 	if outFile != outFileDefault {
 		/* If they specified an output file, initialize the loggers to use that file. */
 		file, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
@@ -74,45 +60,114 @@ func Configure() {
 
 		if Verbose {
 			/* If they pick verbose mode, redirect all the loggers to the desired output file. */
-			traceWriter = file
-			infoWriter = file
-			warningWriter = file
-			errorWriter = file
+			Trace = log.New(file, traceStr, flags)
+			Info = log.New(file, infoStr, flags)
+			Warning = log.New(file, warnStr, flags)
+			Error = log.New(file, errorStr, flags)
 		} else {
 			/* Otherwise, discard the more verbose output. */
-			traceWriter = ioutil.Discard
-			infoWriter = ioutil.Discard
-			warningWriter = ioutil.Discard
-			errorWriter = file
+			Trace = &NopLogger{}
+			Info = &NopLogger{}
+			Warning = &NopLogger{}
+			Error = log.New(file, errorStr, flags)
 		}
 	} else {
 		/* Otherwise, initialize the logger to use stdout and stderr. */
 		if Verbose {
-			traceWriter = os.Stdout
-			infoWriter = os.Stdout
-			warningWriter = os.Stdout
-			errorWriter = os.Stderr
+			Trace = log.New(os.Stdout, traceStr, flags)
+			Info = log.New(os.Stdout, infoStr, flags)
+			Warning = log.New(os.Stdout, warnStr, flags)
+			Error = log.New(os.Stderr, errorStr, flags)
 		} else {
-			traceWriter = ioutil.Discard
-			infoWriter = ioutil.Discard
-			warningWriter = ioutil.Discard
-			errorWriter = os.Stderr
+			Trace = &NopLogger{}
+			Info = &NopLogger{}
+			Warning = &NopLogger{}
+			Error = log.New(os.Stderr, errorStr, flags)
 		}
 	}
+}
 
-	Trace = log.New(traceWriter,
-		"[TRACE]: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
+/* Interface that wraps the log.Logger struct so we can implement a custom nop Logger. */
+type logger interface {
+	Fatal(v ...interface{})
+	Fatalf(format string, v ...interface{})
+	Fatalln(v ...interface{})
+	Flags() int
+	Output(calldepth int, s string) error
+	Panic(v ...interface{})
+	Panicf(format string, v ...interface{})
+	Panicln(v ...interface{})
+	Prefix() string
+	Print(v ...interface{})
+	Printf(format string, v ...interface{})
+	Println(v ...interface{})
+	SetFlags(flag int)
+	SetOutput(w io.Writer)
+	SetPrefix(prefix string)
+}
 
-	Info = log.New(infoWriter,
-		"[INFO]: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
+type NopLogger struct {
+}
 
-	Warning = log.New(warningWriter,
-		"[WARNING]: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
+func (l *NopLogger) Fatal(v ...interface{}) {
+	// noop
+}
 
-	Error = log.New(errorWriter,
-		"[ERROR]: ",
-		log.Ldate|log.Ltime|log.Lshortfile)
+func (l *NopLogger) Fatalf(format string, v ...interface{}) {
+	// noop
+}
+
+func (l *NopLogger) Fatalln(v ...interface{}) {
+	// noop
+}
+
+func (l *NopLogger) Flags() int {
+	// noop
+	return 0
+}
+
+func (l *NopLogger) Output(calldepth int, s string) error {
+	// noop
+	return nil
+}
+
+func (l *NopLogger) Panic(v ...interface{}) {
+	// noop
+}
+
+func (l *NopLogger) Panicf(format string, v ...interface{}) {
+	// noop
+}
+
+func (l *NopLogger) Panicln(v ...interface{}) {
+	// noop
+}
+
+func (l *NopLogger) Prefix() string {
+	// noop
+	return ""
+}
+
+func (l *NopLogger) Print(v ...interface{}) {
+	// noop
+}
+
+func (l *NopLogger) Printf(format string, v ...interface{}) {
+	// noop
+}
+
+func (l *NopLogger) Println(v ...interface{}) {
+	// noop
+}
+
+func (l *NopLogger) SetFlags(flag int) {
+	// noop
+}
+
+func (l *NopLogger) SetOutput(w io.Writer) {
+	// noop
+}
+
+func (l *NopLogger) SetPrefix(prefix string) {
+	// noop
 }
