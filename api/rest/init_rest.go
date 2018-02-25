@@ -134,17 +134,17 @@ func cacheMiddleware(next http.Handler) http.Handler {
 			sumStr := hex.EncodeToString(sum[:len(sum)])
 			if eTagHash != "" {
 				if eTagHash == sumStr {
-					w.Header().Set("Cache-Control", "no-cache")
+					//w.Header().Set("Cache-Control", "no-cache")
 					w.WriteHeader(http.StatusNotModified)
 					w.Write([]byte(""))
 				} else {
-					w.Header().Set("Cache-Control", "no-cache")
+					//w.Header().Set("Cache-Control", "no-cache")
 					w.Header().Set("Etag", sumStr)
 					w.WriteHeader(rec.Code)
 					w.Write(body)
 				}
 			} else {
-				w.Header().Set("Cache-Control", "no-cache")
+				//w.Header().Set("Cache-Control", "no-cache")
 				w.Header().Set("Etag", sumStr)
 				w.WriteHeader(rec.Code)
 				w.Write(body)

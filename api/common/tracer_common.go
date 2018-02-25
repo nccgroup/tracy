@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"strings"
 	"tracy/api/store"
 	"tracy/api/types"
 	"tracy/log"
@@ -37,7 +38,9 @@ func GetTracer(tracerID uint) ([]byte, error) {
 	var tracer types.Tracer
 	if err = store.DB.First(&tracer, tracerID).Error; err == nil {
 		log.Trace.Printf("Successfully got the following tracer: %+v", tracer)
-		ret, err = json.Marshal(tracer)
+		if ret, err = json.Marshal(tracer); err == nil {
+			ret = []byte(strings.Replace(string(ret), "\\", "\\\\", -1))
+		}
 	}
 
 	if err != nil {
@@ -49,15 +52,30 @@ func GetTracer(tracerID uint) ([]byte, error) {
 
 /*GetTracers is the common functionality to get all the tracers from database.
  * This function has been separated so both HTTP and websocket servers can use it. */
-func GetTracers() ([]byte, error) {
+func GetTracers(tracerStringOnly bool) ([]byte, error) {
 	log.Trace.Printf("Getting all the tracers.")
 	var ret []byte
 	var err error
 
-	requests := make([]types.Request, 0)
-	if err = store.DB.Preload("Tracers").Find(&requests).Error; err == nil {
-		log.Trace.Printf("Successfully got the tracers: %+v", requests)
-		ret, err = json.Marshal(requests)
+	if !tracerStringOnly {
+		requests := make([]types.Request, 0)
+		if err = store.DB.Preload("Tracers").Find(&requests).Error; err == nil {
+			log.Trace.Printf("Successfully got the tracers: %+v", requests)
+			ret, err = json.Marshal(requests)
+		}
+	} else {
+		requests := make([]types.Request, 0)
+		if err = store.DB.Preload("Tracers").Find(&requests).Error; err == nil {
+			log.Trace.Printf("Successfully got the tracers: %+v", requests)
+			var tracerStrings []string
+			for _, request := range requests {
+				for _, tracer := range request.Tracers {
+					tracerStrings = append(tracerStrings, tracer.TracerPayload)
+				}
+			}
+
+			ret, err = json.Marshal(tracerStrings)
+		}
 	}
 
 	if err != nil {

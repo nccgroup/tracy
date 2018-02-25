@@ -35,13 +35,20 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 func GetTracers(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError
-
 	var err error
-	if ret, err = common.GetTracers(); err != nil {
+
+	filter := r.FormValue("filter")
+	if filter == "TracerPayloads" {
+		if ret, err = common.GetTracers(true); err == nil {
+			status = http.StatusOK
+		}
+	} else if ret, err = common.GetTracers(false); err == nil {
+		status = http.StatusOK
+	}
+
+	if err != nil {
 		ret = ServerError(err)
 		log.Error.Println(err)
-	} else {
-		status = http.StatusOK
 	}
 
 	w.WriteHeader(status)

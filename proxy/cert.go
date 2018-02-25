@@ -82,7 +82,7 @@ func generateCert(host string, cert tls.Certificate) (tls.Certificate, error, Ke
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
-			Organization: []string{"Test Co"},
+			Organization: []string{"Tracy the Tracer"},
 		},
 		NotBefore: notBefore,
 		NotAfter:  notAfter,

@@ -1,7 +1,7 @@
 /* Helper function for updating the list of tracers that have been added. */
 function refreshTracerList(onFinished) {
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", `http://${restServer}/tracers`, true);
+    xhr.open("GET", `http://${restServer}/tracers?filter=TracerPayloads`, true);
     xhr.onreadystatechange = onFinished;
     xhr.send();
 }
@@ -23,7 +23,7 @@ function requestHandler(domEvents) {
     refreshTracerList(function() {
         if (this.readyState == XMLHttpRequest.DONE) {
             /* Parse the tracers. */
-            var requests = JSON.parse(this.responseText);
+            var tracerPayloads = JSON.parse(this.responseText);
             /* A filtered list of DOM events based on if the event has a tracer in it. Each DOM event can have multiple tracer
              * strings. */
             var filteredEvents = [];
@@ -35,20 +35,14 @@ function requestHandler(domEvents) {
                 var tracersPerDomEvent = [];
 
                 /* The request is a batched list of DOM events. Iterate through each of them looking for a tracer string. */
-                for (var request in requests) {
-                    for (var tracer in requests[request]["Tracers"]) {
-                        var tracerString =
-                            requests[request]["Tracers"][tracer][
-                                "TracerPayload"
-                            ];
-
-                        /* If a tracer was found, make sure all the event data is proper and add it to the list of tracers found for this event.
+                for (var id in tracerPayloads) {
+                    let tracerPayload = tracerPayloads[id];
+                    /* If a tracer was found, make sure all the event data is proper and add it to the list of tracers found for this event.
                          * Continue to the rest of the recorded. */
-                        var tracerLocation = domEvent.msg.indexOf(tracerString);
-                        if (tracerLocation != -1) {
-                            /* Add this location data to the list of tracers per DOM event. */
-                            tracersPerDomEvent.push(tracerString);
-                        }
+                    var tracerLocation = domEvent.msg.indexOf(tracerPayload);
+                    if (tracerLocation != -1) {
+                        /* Add this location data to the list of tracers per DOM event. */
+                        tracersPerDomEvent.push(tracerPayload);
                     }
                 }
 
@@ -89,9 +83,6 @@ function requestHandler(domEvents) {
         }
     });
 }
-
-/* Global list of DOM writes. Periodically, this will be sent to the background thread and cleared. */
-var jobs = [];
 
 /* Routes messages from the extension to various functions on the background. */
 function messageRouter(message, sender, sendResponse) {
@@ -142,14 +133,11 @@ function addJobToQueue(message, sender, sendResponse) {
     jobs.push(message);
 }
 
-//TODO: make this configurable
-const DELAY = 0.05;
-
-/* Start processing jobs. */
-chrome.alarms.create({ delayInMinutes: DELAY });
+/* Global list of DOM writes. Periodically, this will be sent to the background thread and cleared. */
+var jobs = [];
 
 /* Process all the jobs in the current queue. */
-chrome.alarms.onAlarm.addListener(function(alarm) {
+function processDomEvents() {
     /* If there are no new jobs, continue. */
     if (jobs.length > 0) {
         /* Send any jobs off to the API server. */
@@ -158,10 +146,11 @@ chrome.alarms.onAlarm.addListener(function(alarm) {
         /* Clear out the jobs. */
         jobs = [];
     }
-
-    /* Trigger another alarm after the jobs are cleared. */
-    chrome.alarms.create({ delayInMinutes: DELAY });
-});
+    /* Trigger another timeout after the jobs are cleared. */
+    setTimeout(processDomEvents, 3000);
+}
+/* Start processing jobs. */
+setTimeout(processDomEvents, 3000);
 
 /* Any time the page sends a message to the extension, the above handler should take care of it. */
 chrome.runtime.onMessage.addListener(messageRouter);
