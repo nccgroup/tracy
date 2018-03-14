@@ -16,7 +16,8 @@ class TracerTable extends Component {
 		this.formatRowSeverity = this.formatRowSeverity.bind(this);
 
 		this.state = {
-			tracers: []
+			tracers: [],
+			selectedTracer: {}
 		};
 	}
 
@@ -37,6 +38,7 @@ class TracerTable extends Component {
 		/* Create the HTTP GET request to the /tracers API endpoint. */
 		var req = new XMLHttpRequest();
 		req.open("GET", "http://localhost:8081/tracers", true);
+		//req.setRequestHeader("X-Tracy", "NOTOUCHY");
 		req.onreadystatechange = this.setTracers;
 		req.send();
 	}
@@ -68,6 +70,17 @@ class TracerTable extends Component {
 					tracers,
 					this.props.tracerFilters
 				);
+
+				// There might be an update to the selected row's RawRequest element.
+				for (var i = parsedTracers.length - 1; i >= 0; i--) {
+					if (parsedTracers[i].TracerPayload === this.state.selectedTracer.TracerPayload) {
+						if (parsedTracers[i].RawRequest !== this.state.selectedTracer.RawRequest) {
+							this.onRowSelect(parsedTracers[i], true, null);
+							break;
+						}
+					}
+				}
+
 
 				this.setState({
 					tracers: parsedTracers
@@ -180,6 +193,9 @@ class TracerTable extends Component {
 
 	onRowSelect(row, isSelected, e) {
 		this.props.handleTracerSelection(row, isSelected);
+		this.setState({
+			selectedTracer: row
+		})
 	}
 
 	render() {

@@ -52,12 +52,12 @@ func GetTracer(tracerID uint) ([]byte, error) {
 
 /*GetTracers is the common functionality to get all the tracers from database.
  * This function has been separated so both HTTP and websocket servers can use it. */
-func GetTracers(tracerStringOnly bool) ([]byte, error) {
+func GetTracers(payloadsOnly bool) ([]byte, error) {
 	log.Trace.Printf("Getting all the tracers.")
 	var ret []byte
 	var err error
 
-	if !tracerStringOnly {
+	if !payloadsOnly {
 		requests := make([]types.Request, 0)
 		if err = store.DB.Preload("Tracers").Find(&requests).Error; err == nil {
 			log.Trace.Printf("Successfully got the tracers: %+v", requests)

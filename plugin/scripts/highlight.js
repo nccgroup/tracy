@@ -111,15 +111,31 @@ function registerLongPauseHandler(e) {
 					var listElement = document.createElement("li");
 
 					listElement.addEventListener("mousedown", el => {
-						console.log("listElemtn mouseup", el);
-						console.log("target", e);
-						/* Add the tracer string template. */
-						e.target.value =
-							e.target.value + el.currentTarget.innerText;
-
-						/* If the user uses the drop down for the first element, toggle the box on. */
-						toggleEnabled(e.target);
-						tagMenu.parentNode.removeChild(tagMenu);
+						var payload;
+						if (
+							el.target.innerText.toLowerCase().startsWith("gen")
+						) {
+							generateTracerPayload(el.target.innerText)
+								.then(res => res.json())
+								.then(res => {
+									console.log(res);
+									/* Add the tracer string template. */
+									e.target.value =
+										e.target.value +
+										res.Tracers[0].TracerPayload;
+									/* If the user uses the drop down for the first element, toggle the box on. */
+									toggleEnabled(e.target);
+									tagMenu.parentNode.removeChild(tagMenu);
+								})
+								.catch(error => console.error("Error:", error));
+						} else {
+							/* Add the tracer string template. */
+							e.target.value =
+								e.target.value + el.currentTarget.innerText;
+							/* If the user uses the drop down for the first element, toggle the box on. */
+							toggleEnabled(e.target);
+							tagMenu.parentNode.removeChild(tagMenu);
+						}
 					});
 
 					listElement.classList.add("highlight-on-hover");
@@ -142,6 +158,20 @@ function registerLongPauseHandler(e) {
 	}
 }
 
+/* Helper function to make an API request to generate a tracer payload from a tracer string. */
+function generateTracerPayload(tracerString) {
+	return fetch(
+		`http://127.0.0.1:8081/tracers/generate?tracer_string=${tracerString}&url=${
+			document.location
+		}`,
+		{
+			headers: {
+				"X-TRACY": "NOTOUCHY"
+			}
+		}
+	);
+}
+
 /* Register a click handler on an input element. */
 function registerClickHandler(tag) {
 	/* If the input element has an input class name, we have already added the event listener. */
@@ -152,7 +182,6 @@ function registerClickHandler(tag) {
 
 /* on mouseUp listener on whole window to capture all mouse up events */
 document.addEventListener("mousedown", function(e) {
-	console.log("global mousedown");
 	var menuElement = document.getElementById("tag-menu");
 
 	if (menuElement != null) {

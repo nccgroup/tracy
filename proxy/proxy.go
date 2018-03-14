@@ -13,6 +13,7 @@ import (
 	"net/http/httputil"
 	"strings"
 	"tracy/api/common"
+	"tracy/api/store"
 	"tracy/api/types"
 	"tracy/configure"
 	"tracy/log"
@@ -100,37 +101,74 @@ func handleConnection(client net.Conn) {
 		defer client.Close()
 	}
 
-	/* Search through the request for the tracer keyword. */
-	tracers, err := replaceTracers(request)
-
-	if err != nil {
-		/* If there was an error replacing the tracers, fail fast and leave. */
-		log.Error.Println(err)
-		return
-	}
-
-	/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
-	 * server API call because it will trigger a recursion. */
-	go func() {
-		if !configure.ServerInWhitelist(host) && len(tracers) > 0 {
+	// This custom header is used to tell tracy to not do any swapping of values.
+	if !configure.ServerInWhitelist(host) && request.Header.Get("X-TRACY") == "" {
+		// Look for tracers that might have been generated out of band using the API.
+		// Do this by checking if there exists a tracer, but we have no record of which
+		// request it came from.
+		go func() {
 			dump, err := httputil.DumpRequest(request, true)
 			if err == nil {
-				req := types.Request{
-					RawRequest:    string(dump),
-					RequestURL:    request.Host + request.RequestURI,
-					RequestMethod: request.Method,
-					Tracers:       tracers,
-				}
+				dumpStr := string(dump)
+				log.Error.Println(dumpStr)
+				var tracersBytes []byte
+				tracersBytes, err = common.GetTracers(false)
+				if err == nil {
+					var requests []types.Request
+					err = json.Unmarshal(tracersBytes, &requests)
+					if err == nil {
+						for _, req := range requests {
+							for _, tracer := range req.Tracers {
+								if strings.Contains(dumpStr, tracer.TracerPayload) && req.RawRequest == "GENERATED" {
+									req.RawRequest = dumpStr
+									req.RequestMethod = request.Method
 
-				/* Use the API to add each tracer events to their corresponding tracer. */
-				_, err = common.AddTracer(req)
+									//Update the record
+									err = store.DB.Save(&req).Error
+								}
+							}
+						}
+					}
+				}
 			}
 
 			if err != nil {
 				log.Error.Println(err)
 			}
+		}()
+
+		/* Search through the request for the tracer keyword. */
+		tracers, err := replaceTracers(request)
+
+		if err != nil {
+			/* If there was an error replacing the tracers, fail fast and leave. */
+			log.Error.Println(err)
+			return
 		}
-	}()
+
+		/* Check if the host is the tracer API server. We don't want to trigger anything if we accidentally proxied a tracer
+		 * server API call because it will trigger a recursion. */
+		go func() {
+			if !configure.ServerInWhitelist(host) && len(tracers) > 0 {
+				dump, err := httputil.DumpRequest(request, true)
+				if err == nil {
+					req := types.Request{
+						RawRequest:    string(dump),
+						RequestURL:    request.Host + request.RequestURI,
+						RequestMethod: request.Method,
+						Tracers:       tracers,
+					}
+
+					/* Use the API to add each tracer events to their corresponding tracer. */
+					_, err = common.AddTracer(req)
+				}
+
+				if err != nil {
+					log.Error.Println(err)
+				}
+			}
+		}()
+	}
 
 	var server net.Conn
 

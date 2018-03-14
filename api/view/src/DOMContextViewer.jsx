@@ -160,7 +160,9 @@ class DOMContextViewer extends Component {
 		if (tracerID) {
 			var req = new Request(
 				`http://127.0.0.1:8081/tracers/${tracerID}/events`,
-				{ method: "GET" }
+				{ method: "GET",
+				// headers: { "X-Tracy": "NOTOUCHY"} 
+			}
 			);
 
 			fetch(req)

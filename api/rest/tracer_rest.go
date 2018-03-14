@@ -91,7 +91,7 @@ func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 	if len(tracerString) != 0 {
 		requestURL := r.Form.Get("url")
 		if len(requestURL) != 0 {
-			_, payload, err := proxy.TransformTracerString([]byte(tracerString))
+			id, payload, err := proxy.TransformTracerString([]byte(tracerString))
 			if err == nil {
 				//TODO: should collect more information about the location of where
 				// it was generated. generating a tracer like this loses information
@@ -103,18 +103,25 @@ func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 					RequestURL:    requestURL,
 					Tracers: []types.Tracer{
 						types.Tracer{
-							TracerPayload: string(payload),
+							TracerPayload: id,
 							TracerString:  tracerString,
 						},
 					},
 				}
 
-				if ret, err = common.AddTracer(genTracer); err != nil {
+				if _, err = common.AddTracer(genTracer); err != nil {
 					ret = ServerError(err)
-					log.Error.Println(err)
 				} else {
 					status = http.StatusOK
+					// AddTracer will only store the randon ID and not any special characters that we
+					// need to add to the textfield.
+					genTracer.Tracers[0].TracerPayload = string(payload)
+					ret, err = json.Marshal(genTracer)
 				}
+			}
+
+			if err != nil {
+				log.Error.Println(err)
 			}
 		}
 	}

@@ -69,7 +69,8 @@ func Configure() {
 		corsOptions := []handlers.CORSOption{
 			handlers.AllowedOriginValidator(func(a string) bool {
 				return true
-			})}
+			}),
+			handlers.AllowedHeaders([]string{"X-TRACY"})}
 
 		//Additional server features rest server
 		//restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
