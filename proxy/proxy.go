@@ -110,7 +110,6 @@ func handleConnection(client net.Conn) {
 			dump, err := httputil.DumpRequest(request, true)
 			if err == nil {
 				dumpStr := string(dump)
-				log.Error.Println(dumpStr)
 				var tracersBytes []byte
 				tracersBytes, err = common.GetTracers(false)
 				if err == nil {

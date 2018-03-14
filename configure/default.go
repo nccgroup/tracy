@@ -3,16 +3,21 @@ package configure
 /*DefaultConfig is the default configuration that is used when a configuration file is not found. */
 const DefaultConfig = `{
   "tracers": {
-  	"{{XSS}}": "\"'<[[ID]]>",
-  	"{{PLAIN}}": "[[ID]]",
-    "{{XSSJSON}}": "\\\"'<[[ID]]>"
+    "zzXSSzz": "\"'<[[ID]]>",
+    "zzPLAINzz": "[[ID]]",
+    "zzXSSJSONzz": "\\\"'<[[ID]]>",
+    "GEN-XSS": "\"'<[[ID]]>",
+    "GEN-PLAIN": "[[ID]]",
+    "GEN-XSSJSON": "\\\"'<[[ID]]>"
    },
-  "default-tracer": "{{PLAIN}}",
+  "default-tracer": "zzPLAINzz",
   "server-whitelist": [
   	"localhost:8081",
     "127.0.0.1:8081",
     "localhost:3000",
-    "127.0.0.1:3000"
+    "127.0.0.1:3000",
+    "127.0.0.1:6001",
+    "localhost:6001"
   ],
   "tracer-server": "127.0.0.1:8081",
   "proxy-server": "127.0.0.1:7777",
