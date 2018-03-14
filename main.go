@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 	"tracy/api/common"
 	"tracy/api/rest"
 	"tracy/api/store"
@@ -68,7 +69,12 @@ func main() {
 		fmt.Printf("done.\n")
 	}
 
-	//openbrowser("http://localhost:8081")
+	autoLaunch, err := configure.ReadConfig("auto-launch")
+	if err != nil {
+		log.Error.Fatal(err.Error())
+	}
+
+	processAutoLaunch(autoLaunch.(string))
 
 	/* Waiting for the user to close the program. */
 	signalChan := make(chan os.Signal, 1)
@@ -148,6 +154,27 @@ func init() {
 		log.Error.Println(err)
 		log.Error.Println(string(certsJSON))
 	}
+}
+
+func processAutoLaunch(option string) {
+	switch option {
+	case "default":
+		openbrowser("http://localhost:8081")
+	case "off":
+		return
+	default:
+		var cmd *exec.Cmd
+		optionArray := strings.Split(option, " ")
+		if len(optionArray) == 1 {
+			cmd = exec.Command(optionArray[0])
+		} else if len(optionArray) > 1 {
+			cmd = exec.Command(optionArray[0], optionArray[1:]...)
+		} else {
+			return
+		}
+		cmd.Run()
+	}
+
 }
 
 //Taken from here https://gist.github.com/hyg/9c4afcd91fe24316cbf0
