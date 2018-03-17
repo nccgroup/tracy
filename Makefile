@@ -36,6 +36,7 @@ fmt:
 	cd - >/dev/null
 
 test:
+	rm -rf ./vendor
 	go test ./...
 
 lint:

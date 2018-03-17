@@ -42,6 +42,22 @@ class DetailsViewer extends Component {
 				</Row>
 			);
 		} else {
+			let lang;
+			let data;
+			try {
+				data = JSON.stringify(
+					JSON.parse(this.props.event.RawEvent),
+					null,
+					"  "
+				);
+				lang = "json";
+			} catch (e) {
+				data = this.props.event.RawEvent;
+				lang = "html";
+				console.log(e);
+			}
+
+			console.log("Lang: ", lang);
 			ret = (
 				<Row id="details-views" className="details-viewer">
 					<Col md={6} className="left-bottom-column">
@@ -54,10 +70,10 @@ class DetailsViewer extends Component {
 					</Col>
 					<Col md={6} className="right-bottom-column">
 						<HighlightedElement
-							data={this.props.event.RawEvent}
+							data={data}
 							highlightString={this.props.tracer.TracerPayload}
 							eventID={this.props.event.RawEventIndex}
-							lang="html"
+							lang={lang}
 						/>
 					</Col>
 				</Row>

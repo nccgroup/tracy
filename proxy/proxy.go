@@ -106,8 +106,9 @@ func handleConnection(client net.Conn) {
 		// Look for tracers that might have been generated out of band using the API.
 		// Do this by checking if there exists a tracer, but we have no record of which
 		// request it came from.
+		dump, err := httputil.DumpRequest(request, true)
+		method := request.Method
 		go func() {
-			dump, err := httputil.DumpRequest(request, true)
 			if err == nil {
 				dumpStr := string(dump)
 				var tracersBytes []byte
@@ -120,7 +121,7 @@ func handleConnection(client net.Conn) {
 							for _, tracer := range req.Tracers {
 								if strings.Contains(dumpStr, tracer.TracerPayload) && req.RawRequest == "GENERATED" {
 									req.RawRequest = dumpStr
-									req.RequestMethod = request.Method
+									req.RequestMethod = method
 
 									//Update the record
 									err = store.DB.Save(&req).Error

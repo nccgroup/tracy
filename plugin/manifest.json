@@ -3,9 +3,9 @@
   "description":
     "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
   "version": "0.1",
-  "permissions": ["activeTab", "<all_urls>", "storage"],
+  "permissions": ["activeTab", "<all_urls>", "storage", "nativeMessaging"],
   "background": {
-    "scripts": ["scripts/background.js"],
+    "scripts": ["scripts/background.js", "scripts/binary-integration.js"],
     "persistent": true
   },
   "content_scripts": [
@@ -19,14 +19,27 @@
     }
   ],
   "browser_action": {
-    "default_title": "Tracy"
+    "default_title": "Tracy",
+    "default_icon": "images/tracy_svg.svg"
   },
-  "web_accessible_resources": ["scripts/method-hooking.js", "images/laddy.png"],
+  "web_accessible_resources": [
+    "scripts/method-hooking.js",
+    "images/tracy_svg.svg"
+  ],
   "manifest_version": 2,
   "options_ui": {
     "page": "html/options.html",
     "browser_style": true,
     "chrome_style": true,
     "open_in_tab": false
+  },
+  "applications": {
+    "gecko": {
+      "id": "tracyplugin@tracy.com"
+    }
+  },
+  "icons": {
+    "48": "images/tracy_svg.svg",
+    "96": "images/tracy_svg.svg"
   }
 }

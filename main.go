@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/exec"
@@ -25,7 +24,6 @@ import (
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-var memprofile = flag.Bool("memprofile", false, "start a memory profile server")
 
 func main() {
 	if *cpuprofile != "" {
@@ -60,14 +58,6 @@ func main() {
 		log.Error.Fatal(rest.RestServer.ListenAndServe())
 	}()
 	fmt.Printf("done!\n")
-
-	if *memprofile {
-		fmt.Printf("\tmemory server...")
-		go func() {
-			log.Error.Fatal(http.ListenAndServe("localhost:6060", nil))
-		}()
-		fmt.Printf("done.\n")
-	}
 
 	autoLaunch, err := configure.ReadConfig("auto-launch")
 	if err != nil {
@@ -174,7 +164,6 @@ func processAutoLaunch(option string) {
 		}
 		cmd.Run()
 	}
-
 }
 
 //Taken from here https://gist.github.com/hyg/9c4afcd91fe24316cbf0
