@@ -15,14 +15,25 @@ import (
 func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	log.Trace.Printf("Adding the following tracer event: %+v, tracer: %+v", event, tracer)
 	var ret []byte
-	var err error
 
-	if event.DOMContexts, err = getDomContexts(event, tracer); err == nil {
-		event.RawEvent = gohtml.Format(event.RawEvent)
-		if err = store.DB.Create(&event).Error; err == nil {
-			log.Trace.Printf("Successfully added the tracer event to the database.")
-			ret, err = json.Marshal(event)
+	// Check if the event is valid JSON.
+	var data interface{}
+	err := json.Unmarshal([]byte(event.RawEvent), data)
+	if err != nil {
+		// It's not valid JSON. Assume it is HTML.
+		if event.DOMContexts, err = getDomContexts(event, tracer); err == nil {
+			event.RawEvent = gohtml.Format(event.RawEvent)
 		}
+	} else {
+		// Pretty-print the JSON data.
+		var ind []byte
+		ind, err = json.MarshalIndent(data, "", "  ")
+		event.RawEvent = string(ind)
+	}
+
+	if err = store.DB.Create(&event).Error; err == nil {
+		log.Trace.Printf("Successfully added the tracer event to the database.")
+		ret, err = json.Marshal(event)
 	}
 
 	if err != nil {
@@ -107,7 +118,7 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					HTMLNodeType:     n.Parent.Data,
 					HTMLLocationType: types.Text,
 					EventContext:     gohtml.Format(n.Data),
-					Severity:         0,
+					Severity:         sev,
 				})
 		} else if n.Type == html.DocumentNode || n.Type == html.ElementNode || n.Type == html.DoctypeNode {
 			log.Trace.Printf("Found Tracer in DomNode. Parent Node: %s, Data: %s", n.Parent.Data, n.Data)
@@ -117,6 +128,15 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					sev = 1
 				}
 			}
+
+			// Element nodes .Data text is the tag name. If we have a tracer in the tag
+			// name and its not in the HTTP response, its vulnerable to XSS.
+			if n.Type == html.ElementNode {
+				if tracerEvent.EventType != "response" {
+					sev = 3
+				}
+			}
+
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
 					TracerEventID:    tracerEvent.ID,
@@ -158,9 +178,21 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 		}
 
 		if strings.Contains(a.Val, tracer) {
+			// Getting cases for JavaScript protocol and on handlers
+			attrs := []string{"href", "on"}
+
 			if tracerEvent.EventType != "response" {
 				sev = 1
 			}
+
+			for _, v := range attrs {
+				if strings.HasPrefix(v, a.Key) {
+					// If the attribute is one of the above known issues, might be vulnerable.
+					sev = 2
+					break
+				}
+			}
+
 			*tracerLocations = append(*tracerLocations,
 				types.DOMContext{
 					TracerEventID:    tracerEvent.ID,

@@ -6,13 +6,13 @@ var disabledClass = "disabled-input";
 /* Inline CSS object. */
 var inlineCSS = {
 	"background-image":
-		"url('" + chrome.runtime.getURL("/images/laddy.png") + "')",
+		"url('" + chrome.runtime.getURL("/images/tracy_svg.svg") + "')",
 	"background-repeat": "no-repeat",
 	"background-attachment": "scroll",
 	"background-size": "16px 18px",
 	"background-position": "98% 50%",
 	cursor: "pointer",
-	border: "solid red"
+	border: "solid #67baaf"
 };
 
 /* Check if an element is marked as disabled or is hidden. */
@@ -221,14 +221,14 @@ function registerChangeHandler(tag) {
 function toggleOn(tag) {
 	tag.classList.remove(disabledClass);
 	tag.classList.add(enabledClass);
-	tag.style["border"] = "solid green";
+	tag.style["border"] = "solid #67baaf";
 }
 
 /* Toggle an element off. */
 function toggleOff(tag) {
 	tag.classList.add(disabledClass);
 	tag.classList.remove(enabledClass);
-	tag.style["border"] = "solid red";
+	tag.style["border"] = "solid #67baaf";
 }
 
 /* Toggle the disabled and enabled class names on input fields. */

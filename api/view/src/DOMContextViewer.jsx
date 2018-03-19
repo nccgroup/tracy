@@ -145,6 +145,19 @@ class DOMContextViewer extends Component {
 					};
 				}.bind(this)
 			);
+		} else {
+			return {
+				ID: event.ID,
+				HTMLLocationType: "",
+				HTMLNodeType: "",
+				EventContext: "",
+				RawEvent: event.RawEvent,
+				RawEventIndex: event.ID,
+				EventType: event.EventType,
+				EventHost: this.parseHost(event.EventURL),
+				EventPath: this.parsePath(event.EventURL),
+				Severity: ""
+			};
 		}
 
 		return ret;
@@ -160,9 +173,10 @@ class DOMContextViewer extends Component {
 		if (tracerID) {
 			var req = new Request(
 				`http://127.0.0.1:8081/tracers/${tracerID}/events`,
-				{ method: "GET",
-				// headers: { "X-Tracy": "NOTOUCHY"} 
-			}
+				{
+					method: "GET"
+					// headers: { "X-Tracy": "NOTOUCHY"}
+				}
 			);
 
 			fetch(req)

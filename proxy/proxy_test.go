@@ -23,26 +23,26 @@ Connection: close
 `
 
 //If you update this test don't forgot to update the content link
-var requestDataTags = `POST /test?echo={{XSS}} HTTP/1.1
+var requestDataTags = `POST /test?echo=zzXSSzz HTTP/1.1
 Host: test.com
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
 Accept-Language: en-US,en;q=0.5
 Accept-Encoding: gzip, deflate, br
-Content-Length: 91
+Content-Length: 29
 Content-Type: text/plain
 Connection: close
 Pragma: no-cache
 Cache-Control: no-cache
 
-test={{XSS}}&f={{ffff}&%7B%7BXSS%7D%7D&fff={{PLAIN}}&jjj=%7B%7BX&{{ddd}}&fdfd=%7B%7BX%7D%7D`
+test1=zzXSSzz&test2=zzPLAINzz`
 
 func TestAddTracersBodyWithNoTags(t *testing.T) {
 	numTracers, err := testAddTracersBodyHelper(requestDataNoTags)
 	if err != nil {
 		t.Fatalf("tried to read parse but got the following error: %+v", err)
 	} else if numTracers != 0 {
-		t.Fatalf("Failed to find tracers")
+		t.Fatalf("Failed to find tracers %d", numTracers)
 	}
 }
 
@@ -50,8 +50,8 @@ func TestAddTracersBodyWithTags(t *testing.T) {
 	numTracers, err := testAddTracersBodyHelper(requestDataTags)
 	if err != nil {
 		t.Fatalf("tried to read parse but got the following error: %+v", err)
-	} else if numTracers != 3 {
-		t.Fatalf("Failed to find tracers")
+	} else if numTracers != 2 {
+		t.Fatalf("Failed to find tracers, %d", numTracers)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestAddTracersQueryTags(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to insert Tracers with error: %+v", err)
 	} else if numTracers != 1 { //1 is the number of exspected tracers
-		t.Fatal("Failed to find all Tracers")
+		t.Fatalf("Failed to find all Tracers %d", numTracers)
 	}
 }
 

@@ -87,7 +87,7 @@ func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 		// start value URL encoded.
 		for _, tracerString := range labels {
 			if i+len(tracerString) <= len(data) && bytes.Compare(data[i:i+len(tracerString)], tracerString) == 0 {
-				log.Trace.Printf("Found a tracer string: %s")
+				log.Trace.Printf("Found a tracer string: %s", tracerString)
 				// From here on, tracerString will hold the contents that we think is
 				// a tracer string but really it could be anything that just starts with
 				// whatever was configured by start-payload in the configuration file.
