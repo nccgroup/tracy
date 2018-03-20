@@ -27,6 +27,7 @@ import (
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func main() {
+
 	if *cpuprofile != "" {
 		defer pprof.StopCPUProfile()
 	}
@@ -45,13 +46,13 @@ func main() {
 	if err != nil {
 		log.Error.Fatal(err)
 	}
-	log.PrintCyan(fmt.Sprintf("Proxy server:\t%s\n", ps.(string)))
+	log.PrintCyan(fmt.Sprintf("Proxy server:\t%s%s", ps.(string), log.NewLine()))
 
 	/* Serve it. Block here so the program doesn't close. */
 	go func() {
 		log.Error.Fatal(rest.ConfigServer.ListenAndServe())
 	}()
-	log.PrintCyan(fmt.Sprintf("Config server:\t%s\n", "127.0.0.1:6666"))
+	log.PrintCyan(fmt.Sprintf("Config server:\t%s%s", "127.0.0.1:6666", log.NewLine()))
 
 	/* Serve it. Block here so the program doesn't close. */
 	go func() {
@@ -61,7 +62,7 @@ func main() {
 	if err != nil {
 		log.Error.Fatal(err)
 	}
-	log.PrintCyan(fmt.Sprintf("Tracer server:\t%s\n", ts.(string)))
+	log.PrintCyan(fmt.Sprintf("Tracer server:\t%s%s", ts.(string), log.NewLine()))
 
 	autoLaunch, err := configure.ReadConfig("auto-launch")
 	if err != nil {
@@ -201,9 +202,9 @@ func openbrowser(url string) {
 //Helper function to ask the user where to sideload the extension.
 func getSideloadLocation() {
 	for {
-		browser := install.Input("Which browser are you using? Firefox or Chrome (F/c): ")
+		browser := install.Input("Which browser are you using with Tracy? Firefox or Chrome (F/c): ")
 		switch strings.ToLower(string(browser[0])) {
-		case "f", "\n":
+		case "f", "\r", "\n":
 			install.Firefox()
 			return
 		case "c":

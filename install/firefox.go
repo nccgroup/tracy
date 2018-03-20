@@ -30,7 +30,7 @@ func Firefox() {
 	}
 
 	dPath := filepath.Join(cuser.HomeDir, `/Library/Application Support/Mozilla/Extensions/`)
-	wPath := filepath.Join(cuser.HomeDir, `AppData\Roaming\Mozilla\Firefox\Profiles\Extensions\`)
+	wPath := filepath.Join(os.Getenv("APPDATA"), `\Mozilla\Firefox\Profiles\`)
 	lPath := filepath.Join(cuser.HomeDir, `.Mozilla/firefox/`)
 
 	var defaultPath string
@@ -46,42 +46,52 @@ func Firefox() {
 	}
 
 	var path string
+DONE:
 	for {
-		path = Input(fmt.Sprintf("Where should the tracy extension be installed for Firefox (default: %s)?", defaultPath))
-		if len(strings.Trim(path, " \n")) == 0 {
+		answer := Input(fmt.Sprintf("Where should the tracy extension be installed for Firefox (default: %s)?", defaultPath))
+		switch strings.ToLower(string(answer[0])) {
+		case "", "\r", "\n":
+			path = defaultPath
 			if runtime.GOOS == "linux" {
 				// Looks like there might be a case where 'Mozilla' is capitalized for some home directories.
 				_, lerr := os.Stat(filepath.Join(cuser.HomeDir, ".mozilla"))
 				_, uerr := os.Stat(filepath.Join(cuser.HomeDir, ".Mozilla"))
 				if lerr == nil && uerr != nil {
 					path = strings.Replace(defaultPath, "Mozilla", "mozilla", 1)
-					break
+					break DONE
 				} else if lerr != nil && uerr != nil {
 					//they both weren't there.
-					log.PrintRed("Are you sure this is the correct path? It doesn't look like firefox is installed on this machine. Try to install it before continuing.\n")
+					log.PrintRed("Are you sure this is the correct path? It doesn't look like firefox is installed on this machine. Try to install it before continuing." + log.NewLine())
 				} else {
 					// This indicates they have both. This probably shouldn't happen,
 					// but in case it does, just pick the lower case one.
 					path = strings.Replace(defaultPath, "Mozilla", "mozilla", 1)
-					break
+					break DONE
 				}
+			} else {
+				break DONE
 			}
-		} else {
-			path = defaultPath
+		default:
+			path = answer
+			break DONE
 		}
 	}
 
-	if fPath := getFirefoxExtensionPath(path); path != "" {
+	if fPath := getFirefoxExtensionPath(path); fPath != "" {
 		if validateInstallationPath(fPath, ExtensionName) {
-			configure.UpdateConfig("installation-path", filepath.Join(path, ExtensionName))
+			configure.UpdateConfig("installation-path", filepath.Join(fPath, ExtensionName))
 			log.PrintGreen(`Try opening Firefox and granting tracy permission to be side-loaded:
-1. Open Firefox and navigate to "about:addons". 
+1. Open Firefox and navigate to "about:addons".
 2. Click the "Enable" button on the right of the page.
 3. If Tracy is not one the listed add-ons, try refreshing the page. Also, double check the installation path is correct.
 `)
 			err = exec.Command("firefox", "about:addons").Start()
 			if err != nil {
-				log.PrintRed("Couldn't open Firefox for you. Open Firefox and navigate to \"about:addons\"")
+				// Try to execute it from the default installation path.
+				err = exec.Command("C:\\Program Files\\Mozilla Firefox\\firefox", "about:addons").Start()
+				if err != nil {
+					log.PrintRed("Couldn't open Firefox for you. Open Firefox and navigate to \"about:addons\"" + log.NewLine())
+				}
 			}
 		} else {
 			log.Error.Fatalf("Doesn't look like the path %s doesn't work.", path)
@@ -146,7 +156,7 @@ func validateInstallationPath(dir, extName string) bool {
 				r, err := zip.OpenReader(filepath.Join(dir, f.Name()))
 				if err != nil {
 					// Doesn't think the file is a ZIP. Recoverable
-					log.PrintRed(fmt.Sprintf("Found a non-compressable tracy file (%s). Maybe a corrupted old extension? Skipping.\n",
+					log.PrintRed(fmt.Sprintf("Found a non-compressable tracy file (%s). Maybe a corrupted old extension? Skipping."+log.NewLine(),
 						filepath.Join(dir, f.Name())))
 					continue
 				}
@@ -191,8 +201,8 @@ func validateInstallationPath(dir, extName string) bool {
 		} else if fver > max {
 			// The extension is out of date. Need to update before they continue.
 			confirm := Input(fmt.Sprintf("Looks like the version that is already installed is behind (cur: %f, latest: %d). In order to use the latest version of Tracy, we need to update the extension. Is this ok? (Y/n)", max, version))
-			switch strings.Trim(strings.ToLower(confirm), " ") {
-			case "", "y":
+			switch strings.ToLower(string(confirm[0])) {
+			case "\r", "\n", "y":
 				ioutil.WriteFile(filepath.Join(dir, extName), plugin.FirefoxBinary, os.ModePerm)
 				log.PrintGreen("Installed!")
 				ret = true
@@ -202,15 +212,15 @@ func validateInstallationPath(dir, extName string) bool {
 				log.PrintRed("Didn't understand your answer. Please type 'y' or 'n'")
 			}
 		} else if fver == max {
-			log.PrintGreen(fmt.Sprintf("O cool. You already have version %s installed. Hoot!\n", version.(string)))
+			log.PrintGreen(fmt.Sprintf("O cool. You already have version %s installed. Hoot!%s", version.(string), log.NewLine()))
 			ret = true
 		}
 	} else {
 		if os.IsNotExist(err) {
 			for {
 				confirm := Input(fmt.Sprintf("%s doesn't exist yet. Are you sure that is the location you want to install? (y/N)", dir))
-				switch strings.ToLower(strings.Trim(confirm, " \n")) {
-				case "", "n":
+				switch strings.ToLower(string(confirm[0])) {
+				case "\r", "\n", "n":
 					log.PrintRed("Quiting. Check your Firefox installation path and try again.")
 					log.Error.Fatal("..")
 					goto end
