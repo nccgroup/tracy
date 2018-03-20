@@ -88,13 +88,10 @@ func init() {
 	)
 	// Database file. Allows the user to change the location of the SQLite database file.
 	flag.StringVar(&DatabaseFile, "database", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
-	flag.StringVar(&DatabaseFile, "d", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
 	// Cache file for certificates.
 	flag.StringVar(&CertCacheFile, "certificate-cache", filepath.Join(TracyPath, certCacheFileDefault), certCacheFileUsage)
-	flag.StringVar(&CertCacheFile, "cc", filepath.Join(TracyPath, certCacheFileDefault), certCacheFileUsage+"(shorthand)")
 	// If you want to use the web UI, but don't want to compile all the assets
 	flag.BoolVar(&DebugUI, "debug-ui", false, debugUIUsage)
-	flag.BoolVar(&DebugUI, "du", false, debugUIUsage+"(shorthand)")
 }
 
 /*ProxyServer configures the TCP listener based on the user's configuration. */
@@ -168,10 +165,11 @@ func ConfigurationListener(initial map[string]interface{}) {
 			}
 		case write := <-AppConfigWriteChannel:
 			configuration[write.key] = write.val
-			write.resp <- true
-			//TODO: rewrite the configuration file here.
+			err := writeConf(configuration, TracyPath)
+			if err != nil {
+				log.Warning.Println(err)
+			}
 		case app := <-AppConfigAppendChannel:
-			//TODO: rewrite the configuration file here.
 			switch v := app.val.(type) {
 			case map[string]string:
 				for key, val := range v {
@@ -180,18 +178,31 @@ func ConfigurationListener(initial map[string]interface{}) {
 			case string:
 				configuration[app.key] = append(configuration[app.key].([]string), v)
 			}
+			err := writeConf(configuration, TracyPath)
+			if err != nil {
+				log.Warning.Println(err)
+			}
 		case all := <-AppConfigAllChannel:
 			all.resp <- configuration
 		}
 	}
 }
 
+// Helper function to rewrite the configuration file based on a map.
+func writeConf(configuration map[string]interface{}, path string) error {
+	confStr, ret := json.MarshalIndent(configuration, "", "  ")
+	if ret == nil {
+		ioutil.WriteFile(filepath.Join(path, "tracy.json"), confStr, os.ModePerm)
+	}
+
+	return ret
+}
+
 /*UpdateConfig updates the global configuration of the running application. */
 func UpdateConfig(k string, v interface{}) {
 	write := &WriteConfigCmd{
-		key:  k,
-		val:  v,
-		resp: make(chan bool),
+		key: k,
+		val: v,
 	}
 	AppConfigWriteChannel <- write
 }

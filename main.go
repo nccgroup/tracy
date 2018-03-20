@@ -19,6 +19,7 @@ import (
 	"tracy/api/store"
 	"tracy/api/types"
 	"tracy/configure"
+	"tracy/install"
 	"tracy/log"
 	"tracy/proxy"
 )
@@ -29,9 +30,6 @@ func main() {
 	if *cpuprofile != "" {
 		defer pprof.StopCPUProfile()
 	}
-
-	fmt.Printf("Starting:\n")
-	fmt.Printf("\tproxy...")
 	/* Start the proxy. */
 	go func() {
 		/* Open a TCP listener. */
@@ -43,21 +41,27 @@ func main() {
 		/* Serve it. This will block until the user closes the program. */
 		proxy.ListenAndServe(ln)
 	}()
-	fmt.Printf("done.\n")
+	ps, err := configure.ReadConfig("proxy-server")
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+	log.PrintCyan(fmt.Sprintf("Proxy server:\t%s\n", ps.(string)))
 
-	fmt.Printf("\tconfig server...")
 	/* Serve it. Block here so the program doesn't close. */
 	go func() {
 		log.Error.Fatal(rest.ConfigServer.ListenAndServe())
 	}()
-	fmt.Printf("done.\n")
+	log.PrintCyan(fmt.Sprintf("Config server:\t%s\n", "127.0.0.1:6666"))
 
-	fmt.Printf("\ttracer server...")
 	/* Serve it. Block here so the program doesn't close. */
 	go func() {
 		log.Error.Fatal(rest.RestServer.ListenAndServe())
 	}()
-	fmt.Printf("done!\n")
+	ts, err := configure.ReadConfig("tracer-server")
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+	log.PrintCyan(fmt.Sprintf("Tracer server:\t%s\n", ts.(string)))
 
 	autoLaunch, err := configure.ReadConfig("auto-launch")
 	if err != nil {
@@ -144,6 +148,15 @@ func init() {
 		log.Error.Println(err)
 		log.Error.Println(string(certsJSON))
 	}
+
+	path, err := configure.ReadConfig("installation-path")
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+	if _, err := os.Stat(path.(string)); path.(string) == "" || os.IsNotExist(err) {
+		// Looks like the installation-path has not been set or is outdated.
+		getSideloadLocation()
+	}
 }
 
 func processAutoLaunch(option string) {
@@ -183,5 +196,21 @@ func openbrowser(url string) {
 	if err != nil {
 		log.Error.Fatal(err)
 	}
+}
 
+//Helper function to ask the user where to sideload the extension.
+func getSideloadLocation() {
+	for {
+		browser := install.Input("Which browser are you using? Firefox or Chrome (F/c): ")
+		switch strings.ToLower(string(browser[0])) {
+		case "f", "\n":
+			install.Firefox()
+			return
+		case "c":
+			//install.Chrome()
+			log.PrintRed("Chrome is currently not supported.\n")
+		default:
+			log.PrintRed("Unsupported browser choice.\n")
+		}
+	}
 }

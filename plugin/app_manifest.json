@@ -1,7 +1,0 @@
-{
-	"name": "tracy",
-	"description": "Tracy golang binary",
-	"path": "/home/jacob/.tracy/tracy",
-	"type": "stdio",
-	"allowed_extensions": ["tracyplugin@tracy.com"]
-}

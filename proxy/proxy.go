@@ -66,6 +66,10 @@ func handleConnection(client net.Conn) {
 	if request.Method == http.MethodConnect {
 		/* Try to upgrade the `CONNECT` request to a TLS connection with the configured certificate. */
 		client, isHTTPS, err = upgradeConnectionTLS(client, host)
+		if err == io.EOF {
+			return
+		}
+
 		if err != nil {
 			log.Error.Println(err)
 			return

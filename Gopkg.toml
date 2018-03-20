@@ -31,3 +31,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/yosssi/gohtml"
+
+[[constraint]]
+  name = "github.com/fatih/color"
+  version = "1.6.0"

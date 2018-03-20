@@ -23,7 +23,9 @@ const DefaultConfig = `{
   "proxy-server": "127.0.0.1:7777",
   "auto-fill": false,
   "filters": [],
+  "installation-path": "",
   "auto-launch": "default",
   "public-key-loc": "%s",
-  "private-key-loc": "%s"
+  "private-key-loc": "%s",
+  "version": "0.1"
 }`

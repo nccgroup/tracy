@@ -54,10 +54,8 @@ class DetailsViewer extends Component {
 			} catch (e) {
 				data = this.props.event.RawEvent;
 				lang = "html";
-				console.log(e);
 			}
 
-			console.log("Lang: ", lang);
 			ret = (
 				<Row id="details-views" className="details-viewer">
 					<Col md={6} className="left-bottom-column">
