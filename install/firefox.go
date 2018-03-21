@@ -88,8 +88,15 @@ DONE:
 			err = exec.Command("firefox", "about:addons").Start()
 			if err != nil {
 				// Try to execute it from the default installation path.
-				err = exec.Command("C:\\Program Files\\Mozilla Firefox\\firefox", "about:addons").Start()
-				if err != nil {
+				if runtime.GOOS == "windows" {
+					err = exec.Command("C:\\Program Files\\Mozilla Firefox\\firefox", "about:addons").Start()
+					if err != nil {
+						err = exec.Command("C:\\Program Files (x86)\\Mozilla Firefox\\firefox", "about:addons").Start()
+						if err != nil {
+							log.PrintRed("Couldn't open Firefox for you. Open Firefox and navigate to \"about:addons\"" + log.NewLine())
+						}
+					}
+				} else {
 					log.PrintRed("Couldn't open Firefox for you. Open Firefox and navigate to \"about:addons\"" + log.NewLine())
 				}
 			}
