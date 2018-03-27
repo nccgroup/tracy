@@ -150,6 +150,7 @@ func init() {
 		log.Error.Println(string(certsJSON))
 	}
 
+	/* TODO: need to work on how to sideload Chrome.
 	path, err := configure.ReadConfig("installation-path")
 	if err != nil {
 		log.Error.Fatal(err)
@@ -157,7 +158,7 @@ func init() {
 	if _, err := os.Stat(path.(string)); path.(string) == "" || os.IsNotExist(err) {
 		// Looks like the installation-path has not been set or is outdated.
 		getSideloadLocation()
-	}
+	}*/
 }
 
 func processAutoLaunch(option string) {

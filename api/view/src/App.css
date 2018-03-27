@@ -24,13 +24,14 @@ div.right-bottom-column,
 div.left-bottom-column,
 div.right-top-column,
 div.left-top-column {
+  height: 100%;
   padding: 9.5px;
   border: solid #39464e 1px;
 }
 
 div.right-top-column,
 div.left-top-column {
-  height: 30vh;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -197,6 +198,7 @@ body {
 }
 
 .details-viewer {
+  height: 100%;
   background-color: #282c34;
   margin-top: 0px;
 }
@@ -249,14 +251,27 @@ pre.raw-request,
 pre.raw-data {
   background-color: inherit;
   color: #e6e6e8;
-  height: 65vh;
+  height: 100%;
   overflow-wrap: break-word;
   word-break: break-word;
   white-space: pre-wrap;
 }
 
 div.container {
-  margin-left: 10px;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+
+div.raw-row {
+  height: 65vh;
+}
+
+div.raw-column {
+  height: 100%;
+}
+
+div.tables-row {
+  height: 30vh;
 }
 
 div.header .button-active {
@@ -265,6 +280,10 @@ div.header .button-active {
 
 div.header .filter-container {
   padding-left: 1px;
+}
+
+div.header {
+  max-height: 5vh;
 }
 
 .glyphicon-refresh-animate {

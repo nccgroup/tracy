@@ -103,7 +103,7 @@ class App extends Component {
 						</Col>
 						<Col md={4} />
 					</Row>
-					<Row>
+					<Row className="tables-row">
 						<Col md={6} className="left-top-column">
 							<TracerTable
 								tracerFilters={tracerFilters}
@@ -121,8 +121,8 @@ class App extends Component {
 							/>
 						</Col>
 					</Row>
-					<Row>
-						<Col md={12}>
+					<Row className="raw-row">
+						<Col className="raw-column" md={12}>
 							<DetailsViewer
 								tracer={this.state.tracer}
 								event={this.state.event}
