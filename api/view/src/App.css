@@ -29,6 +29,14 @@ div.left-top-column {
   border: solid #39464e 1px;
 }
 
+.filter-inactive {
+  color: red;
+}
+
+.filter-active {
+  color: green;
+}
+
 div.right-top-column,
 div.left-top-column {
   height: 100%;

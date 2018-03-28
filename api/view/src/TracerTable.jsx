@@ -73,14 +73,19 @@ class TracerTable extends Component {
 
 				// There might be an update to the selected row's RawRequest element.
 				for (var i = parsedTracers.length - 1; i >= 0; i--) {
-					if (parsedTracers[i].TracerPayload === this.state.selectedTracer.TracerPayload) {
-						if (parsedTracers[i].RawRequest !== this.state.selectedTracer.RawRequest) {
+					if (
+						parsedTracers[i].TracerPayload ===
+						this.state.selectedTracer.TracerPayload
+					) {
+						if (
+							parsedTracers[i].RawRequest !==
+							this.state.selectedTracer.RawRequest
+						) {
 							this.onRowSelect(parsedTracers[i], true, null);
 							break;
 						}
 					}
 				}
-
 
 				this.setState({
 					tracers: parsedTracers
@@ -195,7 +200,7 @@ class TracerTable extends Component {
 		this.props.handleTracerSelection(row, isSelected);
 		this.setState({
 			selectedTracer: row
-		})
+		});
 	}
 
 	render() {

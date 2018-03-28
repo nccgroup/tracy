@@ -5,6 +5,7 @@ import FilterColumn from "./FilterColumn";
 import DOMContextViewer from "./DOMContextViewer";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
+import Navbar from "react-bootstrap/lib/Navbar";
 
 class App extends Component {
 	constructor(props) {
@@ -56,19 +57,19 @@ class App extends Component {
 	}
 
 	render() {
-		const contextKeys = [
+		const contextFilterKeys = [
 			"responses",
 			"exploitable",
 			"archivedContexts",
 			"text"
 		];
 
-		const tracerKeys = ["archivedTracers", "inactive"];
+		const tracerFilterKeys = ["archivedTracers", "inactive"];
 
 		const contextFilters = Object.keys(this.state)
 			.filter(
 				function(n) {
-					return contextKeys.includes(n) && this.state[n];
+					return contextFilterKeys.includes(n) && this.state[n];
 				}.bind(this)
 			)
 			.map(
@@ -80,7 +81,7 @@ class App extends Component {
 		const tracerFilters = Object.keys(this.state)
 			.filter(
 				function(n) {
-					return tracerKeys.includes(n) && this.state[n];
+					return tracerFilterKeys.includes(n) && this.state[n];
 				}.bind(this)
 			)
 			.map(
@@ -93,15 +94,19 @@ class App extends Component {
 			<Row>
 				<Col md={12} className="container">
 					<Row className="header">
-						<Col md={4} className="filter-container">
-							<FilterColumn
-								handleChange={this.handleFilterChange}
-							/>
-						</Col>
-						<Col md={4}>
-							<div className="title">Tracy</div>
-						</Col>
-						<Col md={4} />
+						<Navbar inverse collapseOnSelect>
+							<Navbar.Header>
+								<Navbar.Brand>
+									<a href="#brand">Tracy</a>
+								</Navbar.Brand>
+								<Navbar.Toggle />
+							</Navbar.Header>
+							<Navbar.Collapse>
+								<FilterColumn
+									handleFilterChange={this.handleFilterChange}
+								/>
+							</Navbar.Collapse>
+						</Navbar>
 					</Row>
 					<Row className="tables-row">
 						<Col md={6} className="left-top-column">

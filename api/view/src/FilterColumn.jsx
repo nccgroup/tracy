@@ -1,15 +1,8 @@
 import React, { Component } from "react";
 import FilterButton from "./FilterButton";
+import Nav from "react-bootstrap/lib/Nav";
 
 class FilterColumn extends Component {
-	constructor(props) {
-		super(props);
-
-		this.isInLocalStorage = this.isInLocalStorage.bind(this);
-		this.filterArchivedTracers = this.filterArchivedTracers.bind(this);
-		this.filterArchivedContexts = this.filterArchivedContexts.bind(this);
-	}
-
 	// Helper to see if an element is in localStorage.
 	isInLocalStorage(key, ID) {
 		var ret;
@@ -22,7 +15,7 @@ class FilterColumn extends Component {
 	}
 
 	// filterResponses filters out events that have the event type of response.
-	filterResponse(context) {
+	filterResponses(context) {
 		return context.EventType.toLowerCase() !== "response";
 	}
 
@@ -48,42 +41,37 @@ class FilterColumn extends Component {
 
 	render() {
 		return (
-			<div className="filter-column">
+			<Nav pullRight>
 				<FilterButton
-					value="responses"
-					description="HTTP Responses"
-					handleChange={this.props.handleChange}
-					filter={this.filterResponse}
-				/>
-				<FilterButton
-					value="text"
-					description="setInnerText Events"
-					handleChange={this.props.handleChange}
+					name="text"
+					eventKey={1}
+					imgType="glyph"
+					img="text-size"
+					handleChange={this.props.handleFilterChange}
 					filter={this.filterTextNodes}
+					description="Filter out text nodes"
 				/>
 				<FilterButton
-					value="inactive"
-					description="Tracers Without Events"
-					handleChange={this.props.handleChange}
-					filter={this.filterInactive}
+					name="responses"
+					eventKey={2}
+					imgType="icon"
+					img="reply"
+					handleChange={this.props.handleFilterChange}
+					filter={this.filterResponses}
+					description="Filter out HTTP responses"
 				/>
-			</div>
+				<FilterButton
+					name="inactive"
+					eventKey={3}
+					imgType="glyph"
+					img="filter"
+					handleChange={this.props.handleFilterChange}
+					filter={this.filterInactive}
+					description="Filter out inactive tracers"
+				/>
+			</Nav>
 		);
 	}
 }
-
-/* Not really sure if I want these filters anymore. Archives weren't that useful
-				<FilterButton
-					value="archivedContexts"
-					description="Archived Contexts"
-					handleChange={this.props.handleChange}
-					filter={this.filterArchivedContexts}
-				/>
-				<FilterButton
-					value="archivedTracers"
-					description="Archived Tracers"
-					handleChange={this.props.handleChange}
-					filter={this.filterArchivedTracers}
-				/> */
 
 export default FilterColumn;

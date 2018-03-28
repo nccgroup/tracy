@@ -1,4 +1,8 @@
 import React, { Component } from "react";
+import Glyphicon from "react-bootstrap/lib/Glyphicon";
+import FontAwesomeIcon from "@fortawesome/react-fontawesome";
+import NavItem from "react-bootstrap/lib/NavItem";
+
 class FilterButton extends Component {
 	constructor(props) {
 		super(props);
@@ -12,8 +16,8 @@ class FilterButton extends Component {
 
 	componentDidMount() {
 		// If the value is in localStorage, we need to enable the filter.
-		if (this.get(this.props.value)) {
-			this.handleClick(this.props.value);
+		if (this.get(this.props.name)) {
+			this.handleClick(this.props.name);
 		}
 	}
 
@@ -85,20 +89,20 @@ class FilterButton extends Component {
 	}
 
 	handleClick(evt) {
-		var value = {};
+		let value;
 		try {
-			value = evt.target.value;
+			value = evt.currentTarget.id;
 		} catch (e) {
 			value = evt;
 		}
 		const toggle = !this.state.enabled;
 		if (!toggle) {
 			this.props.handleChange(value, false);
-			this.remove(this.props.value);
+			this.remove(value);
 		} else {
 			this.props.handleChange(value, this.props.filter);
 			// Since the filter is enabled, add it to localStorage to be saved on refresh
-			this.store(this.props.value);
+			this.store(value);
 		}
 
 		this.setState(function(prevState) {
@@ -109,28 +113,29 @@ class FilterButton extends Component {
 	}
 
 	render() {
-		return (
-			<button
-				type="button"
-				className={this.state.enabled ? "button-active" : null}
-				id={this.props.value}
-				onClick={this.handleClick}
-			>
-				{this.props.description}
-			</button>
-		);
+		let img = "";
+		let className = this.state.enabled
+			? "filter-active"
+			: "filter-inactive";
+		if (this.props.imgType === "icon") {
+			img = (
+				<FontAwesomeIcon className={className} icon={this.props.img} />
+			);
+		} else if (this.props.imgType === "glyph") {
+			img = <Glyphicon className={className} glyph={this.props.img} />;
+		}
 
-		// <div
-		// 	className="filter-button"><input
-		// 		type="checkbox"
-		//     	id={this.props.value}
-		//     	value={this.props.value}
-		// 		onChange={this.handleChange}
-		//     	checked={checked}></input>
-		//     <label
-		//     	className="filter-button-label">
-		// 		{this.props.description}
-		// 	</label></div>
+		return (
+			<NavItem
+				id={this.props.name}
+				title={this.props.description}
+				onClick={this.handleClick}
+				eventKey={this.props.eventKey}
+				href="#"
+			>
+				{img}
+			</NavItem>
+		);
 	}
 }
 
