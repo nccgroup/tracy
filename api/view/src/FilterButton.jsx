@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import Glyphicon from "react-bootstrap/lib/Glyphicon";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
-import NavItem from "react-bootstrap/lib/NavItem";
 
 class FilterButton extends Component {
 	constructor(props) {
@@ -126,7 +125,8 @@ class FilterButton extends Component {
 		}
 
 		return (
-			<NavItem
+			<div
+				className="filter-button"
 				id={this.props.name}
 				title={this.props.description}
 				onClick={this.handleClick}
@@ -134,7 +134,7 @@ class FilterButton extends Component {
 				href="#"
 			>
 				{img}
-			</NavItem>
+			</div>
 		);
 	}
 }

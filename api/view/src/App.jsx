@@ -2,10 +2,10 @@ import React, { Component } from "react";
 import TracerTable from "./TracerTable";
 import DetailsViewer from "./DetailsViewer";
 import FilterColumn from "./FilterColumn";
-import DOMContextViewer from "./DOMContextViewer";
+import Logo from "./Logo";
+import TracerEventsTable from "./TracerEventsTable";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
-import Navbar from "react-bootstrap/lib/Navbar";
 
 class App extends Component {
 	constructor(props) {
@@ -89,24 +89,20 @@ class App extends Component {
 					return this.state[n];
 				}.bind(this)
 			);
-
 		return (
 			<Row>
 				<Col md={12} className="container">
 					<Row className="header">
-						<Navbar inverse collapseOnSelect>
-							<Navbar.Header>
-								<Navbar.Brand>
-									<a href="#brand">Tracy</a>
-								</Navbar.Brand>
-								<Navbar.Toggle />
-							</Navbar.Header>
-							<Navbar.Collapse>
-								<FilterColumn
-									handleFilterChange={this.handleFilterChange}
-								/>
-							</Navbar.Collapse>
-						</Navbar>
+						<Col md={2} className="brand">
+							<Logo width={25} />
+							<span className="logo-title">tracy</span>
+						</Col>
+						<Col md={5} />
+						<Col md={5}>
+							<FilterColumn
+								handleFilterChange={this.handleFilterChange}
+							/>
+						</Col>
 					</Row>
 					<Row className="tables-row">
 						<Col md={6} className="left-top-column">
@@ -118,7 +114,7 @@ class App extends Component {
 							/>
 						</Col>
 						<Col md={6} className="right-top-column">
-							<DOMContextViewer
+							<TracerEventsTable
 								events={this.state.events}
 								tracer={this.state.tracer}
 								handleEventSelection={this.handleEventSelection}

@@ -206,7 +206,7 @@ class TracerTable extends Component {
 	render() {
 		const thStyle = {
 			fontSize: "small",
-			backgroundColor: "#20262E",
+			backgroundColor: "#282c34",
 			color: "white",
 			borderWidth: "0"
 		};
@@ -249,7 +249,7 @@ class TracerTable extends Component {
 					dataSort={true}
 					expandable={false}
 				>
-					ID
+					id
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="RequestMethod"
@@ -258,7 +258,7 @@ class TracerTable extends Component {
 					width="75"
 					expandable={false}
 				>
-					Method
+					method
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="RequestURL"
@@ -274,7 +274,7 @@ class TracerTable extends Component {
 					thStyle={thStyle}
 					expandable={false}
 				>
-					Path
+					path
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="TracerString"
@@ -283,7 +283,7 @@ class TracerTable extends Component {
 					thStyle={thStyle}
 					expandable={false}
 				>
-					Tracer String
+					tracer string
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="TracerPayload"
@@ -292,7 +292,7 @@ class TracerTable extends Component {
 					thStyle={thStyle}
 					expandable={false}
 				>
-					Tracer Payload
+					tracer payload
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="OverallSeverity"
@@ -301,7 +301,7 @@ class TracerTable extends Component {
 					thStyle={thStyle}
 					width="50"
 				>
-					Overall Severity
+					overall severity
 				</TableHeaderColumn>
 			</BootstrapTable>
 		);

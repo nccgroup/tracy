@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import FilterButton from "./FilterButton";
-import Nav from "react-bootstrap/lib/Nav";
+import Col from "react-bootstrap/lib/Col";
+import Row from "react-bootstrap/lib/Row";
 
 class FilterColumn extends Component {
 	// Helper to see if an element is in localStorage.
@@ -41,35 +42,42 @@ class FilterColumn extends Component {
 
 	render() {
 		return (
-			<Nav pullRight>
-				<FilterButton
-					name="text"
-					eventKey={1}
-					imgType="glyph"
-					img="text-size"
-					handleChange={this.props.handleFilterChange}
-					filter={this.filterTextNodes}
-					description="Filter out text nodes"
-				/>
-				<FilterButton
-					name="responses"
-					eventKey={2}
-					imgType="icon"
-					img="reply"
-					handleChange={this.props.handleFilterChange}
-					filter={this.filterResponses}
-					description="Filter out HTTP responses"
-				/>
-				<FilterButton
-					name="inactive"
-					eventKey={3}
-					imgType="glyph"
-					img="filter"
-					handleChange={this.props.handleFilterChange}
-					filter={this.filterInactive}
-					description="Filter out inactive tracers"
-				/>
-			</Nav>
+			<Row className="filter-buttons">
+				<Col md={9} />
+				<Col md={1}>
+					<FilterButton
+						name="text"
+						eventKey={1}
+						imgType="glyph"
+						img="text-size"
+						handleChange={this.props.handleFilterChange}
+						filter={this.filterTextNodes}
+						description="filter innerText DOM writes"
+					/>
+				</Col>
+				<Col md={1}>
+					<FilterButton
+						name="responses"
+						eventKey={2}
+						imgType="icon"
+						img="reply"
+						handleChange={this.props.handleFilterChange}
+						filter={this.filterResponses}
+						description="filter HTTP responses"
+					/>
+				</Col>
+				<Col md={1}>
+					<FilterButton
+						name="inactive"
+						eventKey={3}
+						imgType="glyph"
+						img="filter"
+						handleChange={this.props.handleFilterChange}
+						filter={this.filterInactive}
+						description="filter tracers without events"
+					/>
+				</Col>
+			</Row>
 		);
 	}
 }

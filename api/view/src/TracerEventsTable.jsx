@@ -6,7 +6,7 @@ import "bootstrap/dist/css/bootstrap-theme.min.css";
 import Col from "react-bootstrap/lib/Col";
 import FormGroup from "react-bootstrap/lib/FormGroup";
 
-class DOMContextViewer extends Component {
+class TracerEventsTable extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -219,7 +219,7 @@ class DOMContextViewer extends Component {
 	render() {
 		const thStyle = {
 			fontSize: "small",
-			backgroundColor: "#20262E",
+			backgroundColor: "#282c34",
 			color: "white",
 			borderWidth: "0"
 		};
@@ -273,7 +273,7 @@ class DOMContextViewer extends Component {
 						dataSort={true}
 						expandable={false}
 					>
-						ID
+						id
 					</TableHeaderColumn>
 					<TableHeaderColumn
 						dataField="EventHost"
@@ -282,7 +282,7 @@ class DOMContextViewer extends Component {
 						expandable={false}
 						editable={{ readOnly: true }}
 					>
-						Host
+						host
 					</TableHeaderColumn>
 					<TableHeaderColumn
 						dataField="EventPath"
@@ -291,7 +291,7 @@ class DOMContextViewer extends Component {
 						expandable={false}
 						editable={{ readOnly: true }}
 					>
-						Path
+						path
 					</TableHeaderColumn>
 					<TableHeaderColumn
 						dataField="HTMLLocationType"
@@ -301,7 +301,7 @@ class DOMContextViewer extends Component {
 						expandable={false}
 						editable={{ readOnly: true }}
 					>
-						Location Type
+						location type
 					</TableHeaderColumn>
 					<TableHeaderColumn
 						dataField="HTMLNodeType"
@@ -311,7 +311,7 @@ class DOMContextViewer extends Component {
 						expandable={false}
 						editable={{ readOnly: true }}
 					>
-						Node Type
+						node type
 					</TableHeaderColumn>
 					<TableHeaderColumn
 						dataField="EventType"
@@ -321,7 +321,7 @@ class DOMContextViewer extends Component {
 						expandable={false}
 						editable={{ readOnly: true }}
 					>
-						Event Type
+						event type
 					</TableHeaderColumn>
 					<TableHeaderColumn
 						dataField="EventContext"
@@ -330,7 +330,7 @@ class DOMContextViewer extends Component {
 						expandable={false}
 						editable={{ readOnly: true }}
 					>
-						Event Context
+						event context
 					</TableHeaderColumn>
 					<TableHeaderColumn
 						dataField="Severity"
@@ -340,7 +340,7 @@ class DOMContextViewer extends Component {
 						expandable={false}
 						editable={{ type: "textarea" }}
 					>
-						Severity
+						severity
 					</TableHeaderColumn>
 				</BootstrapTable>
 			);
@@ -350,4 +350,4 @@ class DOMContextViewer extends Component {
 	}
 }
 
-export default DOMContextViewer;
+export default TracerEventsTable;
