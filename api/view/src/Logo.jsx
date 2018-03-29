@@ -6,6 +6,7 @@ class Logo extends Component {
 			<img
 				alt="tracy-mascot"
 				className="logo"
+				title="hoot!"
 				style={{ width: this.props.width + "px" }}
 				src="data:image/svg+xml;base64,PHN2ZyBpZD0nTGF5ZXJfMScgZGF0YS1uYW1lPSdMYXllciAxJyB4bWxucz0naHR0cDovL3d3dy53
 My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyMzIuOCAyOTkuNyc+PGRlZnM+PHN0eWxlPi5j

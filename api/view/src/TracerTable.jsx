@@ -266,7 +266,7 @@ class TracerTable extends Component {
 					thStyle={thStyle}
 					expandable={false}
 				>
-					Host
+					host
 				</TableHeaderColumn>
 				<TableHeaderColumn
 					dataField="RequestPath"
