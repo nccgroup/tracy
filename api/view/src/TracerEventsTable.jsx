@@ -1,17 +1,18 @@
 import React, { Component } from "react";
-import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "react-bootstrap-table/dist/react-bootstrap-table.min.css";
 import "bootstrap/dist/css/bootstrap-theme.min.css";
 import Col from "react-bootstrap/lib/Col";
 import FormGroup from "react-bootstrap/lib/FormGroup";
+import ReactTable from "react-table";
+import "react-table/react-table.css";
 
 class TracerEventsTable extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
 			events: [],
-			loading: false
+			loading: false,
+			selectedEvent: {}
 		};
 
 		this.requestEvents = this.requestEvents.bind(this);
@@ -30,8 +31,11 @@ class TracerEventsTable extends Component {
 		return severity[row.Severity];
 	}
 
-	onRowSelect(row, isSelected, e) {
-		this.props.handleEventSelection(row, isSelected);
+	onRowSelect(row) {
+		this.props.handleEventSelection(row);
+		this.setState({
+			selectedEvent: row
+		});
 	}
 
 	componentDidMount() {
@@ -217,31 +221,6 @@ class TracerEventsTable extends Component {
 	}
 
 	render() {
-		const thStyle = {
-			fontSize: "small",
-			backgroundColor: "#282c34",
-			color: "white",
-			borderWidth: "0"
-		};
-		const tableStyle = {
-			borderRadius: "0px"
-		};
-		const bodyStyle = {};
-		const containerStyle = {};
-
-		const options = {
-			defaultSortName: "Severity",
-			defaultSortOrder: "desc"
-		};
-
-		const selectRow = {
-			mode: "radio",
-			clickToSelect: true,
-			hideSelectColumn: true, // enable hide selection column.
-			onSelect: this.onRowSelect,
-			className: "row-selected"
-		};
-
 		let ret;
 		if (this.state.loading) {
 			ret = (
@@ -252,97 +231,71 @@ class TracerEventsTable extends Component {
 				</FormGroup>
 			);
 		} else {
+			let onRowSelect = this.onRowSelect;
 			ret = (
-				<BootstrapTable
+				<ReactTable
 					data={this.state.events}
-					options={options}
-					trClassName={this.formatRowSeverity}
-					selectRow={selectRow}
-					containerStyle={containerStyle}
-					tableStyle={tableStyle}
-					bodyStyle={bodyStyle}
-					scrollTop={"Bottom"}
-					condensed
-				>
-					<TableHeaderColumn
-						dataField="ID"
-						isKey={true}
-						width="50"
-						dataAlign="center"
-						thStyle={thStyle}
-						dataSort={true}
-						expandable={false}
-					>
-						id
-					</TableHeaderColumn>
-					<TableHeaderColumn
-						dataField="EventHost"
-						thStyle={thStyle}
-						dataSort={true}
-						expandable={false}
-						editable={{ readOnly: true }}
-					>
-						host
-					</TableHeaderColumn>
-					<TableHeaderColumn
-						dataField="EventPath"
-						thStyle={thStyle}
-						dataSort={true}
-						expandable={false}
-						editable={{ readOnly: true }}
-					>
-						path
-					</TableHeaderColumn>
-					<TableHeaderColumn
-						dataField="HTMLLocationType"
-						thStyle={thStyle}
-						dataSort={true}
-						width="115"
-						expandable={false}
-						editable={{ readOnly: true }}
-					>
-						location type
-					</TableHeaderColumn>
-					<TableHeaderColumn
-						dataField="HTMLNodeType"
-						thStyle={thStyle}
-						dataSort={true}
-						width="75"
-						expandable={false}
-						editable={{ readOnly: true }}
-					>
-						node type
-					</TableHeaderColumn>
-					<TableHeaderColumn
-						dataField="EventType"
-						thStyle={thStyle}
-						dataSort={true}
-						width="75"
-						expandable={false}
-						editable={{ readOnly: true }}
-					>
-						event type
-					</TableHeaderColumn>
-					<TableHeaderColumn
-						dataField="EventContext"
-						thStyle={thStyle}
-						dataSort={true}
-						expandable={false}
-						editable={{ readOnly: true }}
-					>
-						event context
-					</TableHeaderColumn>
-					<TableHeaderColumn
-						dataField="Severity"
-						thStyle={thStyle}
-						dataSort={true}
-						width="50"
-						expandable={false}
-						editable={{ type: "textarea" }}
-					>
-						severity
-					</TableHeaderColumn>
-				</BootstrapTable>
+					columns={[
+						{ Header: "id", accessor: "ID", width: 30 },
+						{ Header: "host", accessor: "EventHost" },
+						{ Header: "path", accessor: "EventPath" },
+						{
+							Header: "location type",
+							accessor: "HTMLLocationType"
+						},
+						{ Header: "node type", accessor: "HTMLNodeType" },
+						{
+							Header: "event type",
+							accessor: "EventType",
+							width: 30
+						},
+						{ Header: "severity", accessor: "Severity" }
+					]}
+					getTrProps={(state, rowInfo, column, instance) => {
+						if (rowInfo) {
+							let classname = "";
+							switch (rowInfo.row._original.Severity) {
+								case 1:
+									classname = "suspicious";
+									break;
+								case 2:
+									classname = "probable";
+									break;
+								case 3:
+									classname = "exploitable";
+									break;
+								default:
+									classname = "unexploitable";
+							}
+
+							if (
+								rowInfo.row.ID === this.state.selectedEvent.ID
+							) {
+								classname += " row-selected";
+							}
+
+							return {
+								onClick: (e, handleOriginal) => {
+									onRowSelect(rowInfo.row);
+
+									if (handleOriginal) {
+										handleOriginal();
+									}
+								},
+								className: classname
+							};
+						} else {
+							return {};
+						}
+					}}
+					defaultSorted={[
+						{
+							id: "id",
+							desc: true
+						}
+					]}
+					defaultPageSize={100}
+				/>
 			);
 		}
 

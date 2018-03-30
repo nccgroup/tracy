@@ -47,7 +47,6 @@ class FilterColumn extends Component {
 				<Col md={1}>
 					<FilterButton
 						name="text"
-						eventKey={1}
 						imgType="glyph"
 						img="text-size"
 						handleChange={this.props.handleFilterChange}
@@ -58,7 +57,6 @@ class FilterColumn extends Component {
 				<Col md={1}>
 					<FilterButton
 						name="responses"
-						eventKey={2}
 						imgType="icon"
 						img="reply"
 						handleChange={this.props.handleFilterChange}
@@ -69,7 +67,6 @@ class FilterColumn extends Component {
 				<Col md={1}>
 					<FilterButton
 						name="inactive"
-						eventKey={3}
 						imgType="glyph"
 						img="filter"
 						handleChange={this.props.handleFilterChange}

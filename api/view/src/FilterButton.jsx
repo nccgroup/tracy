@@ -130,7 +130,6 @@ class FilterButton extends Component {
 				id={this.props.name}
 				title={this.props.description}
 				onClick={this.handleClick}
-				eventKey={this.props.eventKey}
 				href="#"
 			>
 				{img}

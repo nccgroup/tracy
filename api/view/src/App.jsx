@@ -29,29 +29,20 @@ class App extends Component {
 	}
 
 	/* Called whenever a new tracer row is selected. */
-	handleTracerSelection(nTracer, isSelected) {
-		if (isSelected) {
+	handleTracerSelection(nTracer) {
+		if (nTracer.ID !== this.state.tracer.ID) {
 			this.setState({
 				tracer: nTracer,
-				event: {}
-			});
-		} else {
-			this.setState({
-				tracer: {},
 				event: {}
 			});
 		}
 	}
 
 	/* Called whenever a new event is select. */
-	handleEventSelection(nEvent, isSelected) {
-		if (isSelected) {
+	handleEventSelection(nEvent) {
+		if (nEvent.ID !== this.state.event.ID) {
 			this.setState({
 				event: nEvent
-			});
-		} else {
-			this.setState({
-				event: {}
 			});
 		}
 	}

@@ -31,7 +31,7 @@ class DetailsViewer extends Component {
 					<Col md={6} className="left-bottom-column">
 						<HighlightedElement
 							highlightString={this.props.tracer.TracerPayload}
-							data={this.props.tracer.RawRequest}
+							data={this.props.tracer._original.RawRequest}
 							eventID={-1}
 							lang="http"
 						/>
@@ -52,17 +52,16 @@ class DetailsViewer extends Component {
 				);
 				lang = "json";
 			} catch (e) {
-				data = this.props.event.RawEvent;
+				data = this.props.event._original.RawEvent;
 				lang = "html";
 			}
-
 			ret = (
 				<Row id="details-views" className="details-viewer">
 					<Col md={6} className="left-bottom-column">
 						<HighlightedElement
 							highlightString={this.props.tracer.TracerPayload}
 							eventID={-1}
-							data={this.props.tracer.RawRequest}
+							data={this.props.tracer._original.RawRequest}
 							lang="http"
 						/>
 					</Col>
@@ -70,7 +69,7 @@ class DetailsViewer extends Component {
 						<HighlightedElement
 							data={data}
 							highlightString={this.props.tracer.TracerPayload}
-							eventID={this.props.event.RawEventIndex}
+							eventID={this.props.event._original.RawEventIndex}
 							lang={lang}
 						/>
 					</Col>

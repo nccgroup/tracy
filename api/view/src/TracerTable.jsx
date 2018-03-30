@@ -1,9 +1,7 @@
 import React, { Component } from "react";
 import "./App.css";
-import { BootstrapTable, TableHeaderColumn } from "react-bootstrap-table";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "react-bootstrap-table/dist/react-bootstrap-table.min.css";
-import "bootstrap/dist/css/bootstrap-theme.min.css";
+import ReactTable from "react-table";
+import "react-table/react-table.css";
 
 class TracerTable extends Component {
 	constructor(props) {
@@ -81,15 +79,20 @@ class TracerTable extends Component {
 							parsedTracers[i].RawRequest !==
 							this.state.selectedTracer.RawRequest
 						) {
-							this.onRowSelect(parsedTracers[i], true, null);
+							this.onRowSelect(parsedTracers[i]);
 							break;
 						}
 					}
 				}
 
-				this.setState({
-					tracers: parsedTracers
-				});
+				if (
+					JSON.stringify(this.state.tracers) !==
+					JSON.stringify(parsedTracers)
+				) {
+					this.setState({
+						tracers: parsedTracers
+					});
+				}
 			} catch (e) {
 				// Probably an error with parsing the JSON.
 				console.error(e);
@@ -196,114 +199,78 @@ class TracerTable extends Component {
 		return severity[row.OverallSeverity];
 	}
 
-	onRowSelect(row, isSelected, e) {
-		this.props.handleTracerSelection(row, isSelected);
+	onRowSelect(row) {
+		this.props.handleTracerSelection(row);
 		this.setState({
 			selectedTracer: row
 		});
 	}
 
 	render() {
-		const thStyle = {
-			fontSize: "small",
-			backgroundColor: "#282c34",
-			color: "white",
-			borderWidth: "0"
-		};
-		const tableStyle = {
-			borderRadius: "0px"
-		};
-		const bodyStyle = {};
-		const containerStyle = {};
-		const options = {
-			defaultSortName: "ID",
-			defaultSortOrder: "desc"
-		};
-
-		const selectRow = {
-			mode: "radio",
-			clickToSelect: true,
-			hideSelectColumn: true, // enable hide selection column.
-			onSelect: this.onRowSelect,
-			className: "row-selected"
-		};
-
+		let onRowSelect = this.onRowSelect;
 		return (
-			<BootstrapTable
+			<ReactTable
 				data={this.state.tracers}
-				options={options}
-				trClassName={this.formatRowSeverity}
-				selectRow={selectRow}
-				containerStyle={containerStyle}
-				tableStyle={tableStyle}
-				bodyStyle={bodyStyle}
-				scrollTop={"Bottom"}
-				condensed
-			>
-				<TableHeaderColumn
-					dataField="ID"
-					width="50"
-					isKey={true}
-					dataAlign="center"
-					thStyle={thStyle}
-					dataSort={true}
-					expandable={false}
-				>
-					id
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="RequestMethod"
-					dataSort={true}
-					thStyle={thStyle}
-					width="75"
-					expandable={false}
-				>
-					method
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="RequestURL"
-					dataSort={true}
-					thStyle={thStyle}
-					expandable={false}
-				>
-					host
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="RequestPath"
-					dataSort={true}
-					thStyle={thStyle}
-					expandable={false}
-				>
-					path
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="TracerString"
-					width="125"
-					dataSort={true}
-					thStyle={thStyle}
-					expandable={false}
-				>
-					tracer string
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="TracerPayload"
-					width="125"
-					dataSort={true}
-					thStyle={thStyle}
-					expandable={false}
-				>
-					tracer payload
-				</TableHeaderColumn>
-				<TableHeaderColumn
-					dataField="OverallSeverity"
-					dataSort={true}
-					expandable={false}
-					thStyle={thStyle}
-					width="50"
-				>
-					overall severity
-				</TableHeaderColumn>
-			</BootstrapTable>
+				columns={[
+					{ Header: "id", accessor: "ID", width: 30 },
+					{
+						Header: "method",
+						accessor: "RequestMethod",
+						width: 40
+					},
+					{ Header: "host", accessor: "RequestURL" },
+					{ Header: "path", accessor: "RequestPath" },
+					{ Header: "tracer string", accessor: "TracerString" },
+					{ Header: "tracer payload", accessor: "TracerPayload" },
+					{
+						Header: "severity",
+						accessor: "OverallSeverity",
+						width: 30
+					}
+				]}
+				getTrProps={(state, rowInfo, column, instance) => {
+					if (rowInfo) {
+						let classname = "";
+						switch (rowInfo.row._original.OverallSeverity) {
+							case 1:
+								classname = "suspicious";
+								break;
+							case 2:
+								classname = "probable";
+								break;
+							case 3:
+								classname = "exploitable";
+								break;
+							default:
+								classname = "unexploitable";
+						}
+
+						if (rowInfo.row.ID === this.state.selectedTracer.ID) {
+							classname += " row-selected";
+						}
+
+						return {
+							onClick: (e, handleOriginal) => {
+								onRowSelect(rowInfo.row);
+
+								if (handleOriginal) {
+									handleOriginal();
+								}
+							},
+							className: classname
+						};
+					} else {
+						return {};
+					}
+				}}
+				defaultSorted={[
+					{
+						id: "id",
+						desc: true
+					}
+				]}
+				defaultPageSize={100}
+			/>
 		);
 	}
 }

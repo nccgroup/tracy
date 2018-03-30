@@ -196,9 +196,38 @@ body {
   overflow: hidden;
 }
 
+div.rt-tr {
+  height: 18px;
+  padding: 0px;
+  font-size: small;
+}
+.ReactTable .rt-th,
+.ReactTable .rt-td {
+  padding: 0px !important;
+}
+
+.ReactTable .rt-thead .rt-resizable-header-content {
+  text-align: left;
+  font-weight: bold;
+  color: white;
+}
+
+.ReactTable .rt-thead .rt-th.-sort-desc,
+.ReactTable .rt-thead .rt-td.-sort-desc {
+  -webkit-box-shadow: inset 0 -3px 0 0 #67baaf !important;
+  box-shadow: inset 0 -3px 0 0 #67baaf !important;
+}
+
+.ReactTable .rt-thead .rt-th.-sort-asc,
+.ReactTable .rt-thead .rt-td.-sort-asc {
+  -webkit-box-shadow: inset 0 3px 0 0 #67baaf !important;
+  box-shadow: inset 0 3px 0 0 #67baaf !important;
+}
+
 td,
 th,
 code,
+div,
 span.logo-title {
   font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
 }
