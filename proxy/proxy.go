@@ -286,7 +286,9 @@ func handleConnection(client net.Conn) {
 			}
 
 			if err != nil {
-				log.Error.Println(err)
+				if !strings.Contains(err.Error(), "UNIQUE") {
+					log.Error.Println(err)
+				}
 			}
 		}
 	}()

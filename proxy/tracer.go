@@ -19,9 +19,10 @@ import (
 func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 	/* Search the query string for any tags that need to be replaced with tracer strings and replace them. */
 	rstring, ret := replaceTracerStrings([]byte(req.URL.RawQuery))
+
 	/* Write the new query string to the request. */
 	req.URL.RawQuery = string(rstring)
-	req.RequestURI = string(rstring)
+	req.RequestURI = req.URL.Path + "?" + string(rstring)
 
 	/* Create tracer structs out of the generated tracer strings. */
 	for i := 0; i < len(ret); i++ {

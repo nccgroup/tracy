@@ -186,8 +186,9 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 			}
 
 			for _, v := range attrs {
-				if strings.HasPrefix(v, a.Key) {
+				if strings.HasPrefix(v, a.Key) && strings.HasPrefix(tracer, a.Val) {
 					// If the attribute is one of the above known issues, might be vulnerable.
+
 					sev = 2
 					break
 				}

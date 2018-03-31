@@ -22,9 +22,10 @@ func addEventHelper(tracer types.Tracer, tracerEvent types.TracerEvent) (int, []
 	var ret []byte
 	var err error
 	if ret, err = common.AddEvent(tracer, tracerEvent); err != nil {
-		log.Error.Println(err)
 		if strings.Contains(err.Error(), "UNIQUE") {
 			status = http.StatusConflict
+		} else {
+			log.Error.Println(err)
 		}
 	} else {
 		log.Trace.Printf("Successfully added the tracer event: %v", string(ret))
