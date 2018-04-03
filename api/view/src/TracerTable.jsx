@@ -145,7 +145,6 @@ class TracerTable extends Component {
 
 	/* Helper  to return the path from a URL string. */
 	parsePath(url) {
-		console.log("Parsing URL:", url);
 		var ret = "";
 
 		// In case the url has a protocol, remove it.
