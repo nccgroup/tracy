@@ -20,7 +20,12 @@
   ],
   "browser_action": {
     "default_title": "Tracy",
-    "default_icon": "images/tracy_48x48.jpg"
+    "default_icon": {
+      "16": "images/tracy_16x16.png",
+      "48": "images/tracy_48x48.png",
+      "96": "images/tracy_96x96.png",
+      "128": "images/tracy_128x128.png"
+    }
   },
   "web_accessible_resources": [
     "scripts/method-hooking.js",
@@ -29,17 +34,13 @@
   "manifest_version": 2,
   "options_ui": {
     "page": "html/options.html",
-    "browser_style": true,
     "chrome_style": true,
     "open_in_tab": false
   },
-  "applications": {
-    "gecko": {
-      "id": "tracyplugin@tracy.com"
-    }
-  },
   "icons": {
-    "48": "images/tracy_48x48.jpg",
-    "96": "images/tracy_48x48.jpg"
+    "16": "images/tracy_16x16.png",
+    "48": "images/tracy_48x48.png",
+    "96": "images/tracy_96x96.png",
+    "128": "images/tracy_128x128.png"
   }
 }
