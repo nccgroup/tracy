@@ -236,20 +236,31 @@ class TracerEventsTable extends Component {
 				<ReactTable
 					data={this.state.events}
 					columns={[
-						{ Header: "id", accessor: "ID", width: 30 },
-						{ Header: "host", accessor: "EventHost" },
-						{ Header: "path", accessor: "EventPath" },
 						{
-							Header: "location type",
-							accessor: "HTMLLocationType"
-						},
-						{ Header: "node type", accessor: "HTMLNodeType" },
-						{
-							Header: "event type",
-							accessor: "EventType",
-							width: 30
-						},
-						{ Header: "severity", accessor: "Severity" }
+							Header: "observed outputs",
+							columns: [
+								{ Header: "id", accessor: "ID", width: 30 },
+								{ Header: "host", accessor: "EventHost" },
+								{ Header: "path", accessor: "EventPath" },
+								{
+									Header: "location type",
+									accessor: "HTMLLocationType"
+								},
+								{
+									Header: "node type",
+									accessor: "HTMLNodeType"
+								},
+								{
+									Header: "event type",
+									accessor: "EventType"
+								},
+								{
+									Header: "severity",
+									accessor: "Severity",
+									width: 30
+								}
+							]
+						}
 					]}
 					getTrProps={(state, rowInfo, column, instance) => {
 						if (rowInfo) {

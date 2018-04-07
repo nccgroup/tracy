@@ -2,8 +2,9 @@ import React, { Component } from "react";
 import TracerTable from "./TracerTable";
 import DetailsViewer from "./DetailsViewer";
 import FilterColumn from "./FilterColumn";
-import Logo from "./Logo";
+import TracyLogo from "./TracyLogo";
 import TracerEventsTable from "./TracerEventsTable";
+import InstallLinks from "./InstallLinks";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
 
@@ -85,7 +86,7 @@ class App extends Component {
 				<Col md={12} className="container">
 					<Row className="header">
 						<Col md={2} className="brand">
-							<Logo width={25} />
+							<TracyLogo width={25} />
 							<span className="logo-title">tracy</span>
 						</Col>
 						<Col md={5} />
@@ -119,6 +120,23 @@ class App extends Component {
 								tracer={this.state.tracer}
 								event={this.state.event}
 							/>
+						</Col>
+					</Row>
+					<Row className="link-row">
+						<Col md={6}>
+							<span>raw request</span>
+						</Col>
+						<Col md={5}>
+							<span>raw output</span>
+						</Col>
+						<Col md={1}>
+							<Row>
+								<Col md={7} />
+								<Col md={3}>
+									<InstallLinks />
+								</Col>
+								<Col md={2} />
+							</Row>
 						</Col>
 					</Row>
 				</Col>

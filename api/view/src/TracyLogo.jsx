@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 
-class Logo extends Component {
+class TracyLogo extends Component {
 	render() {
 		return (
 			<img
@@ -48,4 +48,4 @@ LTMyLjNoMzIuM1Y5Ny41WicvPjwvc3ZnPgo="
 	}
 }
 
-export default Logo;
+export default TracyLogo;

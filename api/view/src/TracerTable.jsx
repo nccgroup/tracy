@@ -212,20 +212,31 @@ class TracerTable extends Component {
 			<ReactTable
 				data={this.state.tracers}
 				columns={[
-					{ Header: "id", accessor: "ID", width: 30 },
 					{
-						Header: "method",
-						accessor: "RequestMethod",
-						width: 40
-					},
-					{ Header: "host", accessor: "RequestURL" },
-					{ Header: "path", accessor: "RequestPath" },
-					{ Header: "tracer string", accessor: "TracerString" },
-					{ Header: "tracer payload", accessor: "TracerPayload" },
-					{
-						Header: "severity",
-						accessor: "OverallSeverity",
-						width: 30
+						Header: "injection points",
+						columns: [
+							{ Header: "id", accessor: "ID", width: 30 },
+							{
+								Header: "method",
+								accessor: "RequestMethod",
+								width: 40
+							},
+							{ Header: "host", accessor: "RequestURL" },
+							{ Header: "path", accessor: "RequestPath" },
+							{
+								Header: "tracer string",
+								accessor: "TracerString"
+							},
+							{
+								Header: "tracer payload",
+								accessor: "TracerPayload"
+							},
+							{
+								Header: "severity",
+								accessor: "OverallSeverity",
+								width: 30
+							}
+						]
 					}
 				]}
 				getTrProps={(state, rowInfo, column, instance) => {

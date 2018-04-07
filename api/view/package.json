@@ -32,5 +32,12 @@
   },
   "devDependencies": {
     "babel-core": "^6.26.0"
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "webextensions": true,
+      "node": true
+    }
   }
 }

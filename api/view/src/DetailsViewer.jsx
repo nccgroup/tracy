@@ -34,6 +34,7 @@ class DetailsViewer extends Component {
 							data={this.props.tracer._original.RawRequest}
 							eventID={-1}
 							lang="http"
+							title="raw request"
 						/>
 					</Col>
 					<Col md={6} className="right-bottom-column">
@@ -63,6 +64,7 @@ class DetailsViewer extends Component {
 							eventID={-1}
 							data={this.props.tracer._original.RawRequest}
 							lang="http"
+							title="raw request"
 						/>
 					</Col>
 					<Col md={6} className="right-bottom-column">
@@ -71,6 +73,7 @@ class DetailsViewer extends Component {
 							highlightString={this.props.tracer.TracerPayload}
 							eventID={this.props.event._original.RawEventIndex}
 							lang={lang}
+							title="raw output"
 						/>
 					</Col>
 				</Row>

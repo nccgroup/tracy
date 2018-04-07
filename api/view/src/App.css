@@ -5,6 +5,11 @@
   margin-right: 5%;
 }
 
+span.raw-title {
+  position: absolute;
+  bottom: 0;
+}
+
 .tracer-heading {
   margin-left: 5%;
   margin-right: 5%;
@@ -27,6 +32,7 @@ div.left-top-column {
   height: 100%;
   padding: 9.5px;
   border: solid #39464e 1px;
+  border-bottom: none;
 }
 
 .filter-inactive {
@@ -228,7 +234,7 @@ td,
 th,
 code,
 div,
-span.logo-title {
+span {
   font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
@@ -306,7 +312,7 @@ div.container {
 }
 
 div.raw-row {
-  height: 65vh;
+  height: 60vh;
 }
 
 div.raw-column {
@@ -362,4 +368,8 @@ div.loading-spinner-child {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
+}
+
+input.install-button {
+  width: 50px;
 }
