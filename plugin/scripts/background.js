@@ -124,6 +124,9 @@ function configQuery(message, sender, sendResponse) {
             case "default-tracer":
                 sendResponse(defaultTracer);
                 break;
+            case "enabled":
+                sendResponse(enabled);
+                break;
         }
     }
 }
@@ -139,7 +142,7 @@ var jobs = [];
 /* Process all the jobs in the current queue. */
 function processDomEvents() {
     /* If there are no new jobs, continue. */
-    if (jobs.length > 0) {
+    if (enabled && jobs.length > 0) {
         /* Send any jobs off to the API server. */
         requestHandler(JSON.parse(JSON.stringify(jobs)));
 
@@ -154,7 +157,25 @@ setTimeout(processDomEvents, 3000);
 
 /* Any time the page sends a message to the extension, the above handler should take care of it. */
 chrome.runtime.onMessage.addListener(messageRouter);
+chrome.browserAction.onClicked.addListener(function(tab) {
+    enabled = !enabled;
+    if (!enabled) {
+        chrome.browserAction.setIcon({
+            path: {
+                16: "images/tracy_16x16_x.png"
+            }
+        });
+    } else {
+        chrome.browserAction.setIcon({
+            path: {
+                16: "images/tracy_16x16.png"
+            }
+        });
+    }
+});
 
+// Configuration defaults
 var restServer = "127.0.0.1:443";
-var tracerStringTypes = ["blah", "blah"];
-var defaultTracer = "blah";
+var tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
+var defaultTracer = "";
+var enabled = true;
