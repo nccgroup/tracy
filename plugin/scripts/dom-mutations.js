@@ -7,7 +7,6 @@
     },
     enabled => {
       if (enabled) {
-        console.log("Plugin is enabled");
         chrome.runtime.sendMessage({
           "message-type": "refresh"
         });

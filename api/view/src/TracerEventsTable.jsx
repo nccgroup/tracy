@@ -178,8 +178,8 @@ class TracerEventsTable extends Component {
 			var req = new Request(
 				`http://127.0.0.1:8081/tracers/${tracerID}/events`,
 				{
-					method: "GET"
-					// headers: { "X-Tracy": "NOTOUCHY"}
+					method: "GET",
+					headers: { Hoot: "!" }
 				}
 			);
 

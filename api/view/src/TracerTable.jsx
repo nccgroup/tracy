@@ -36,7 +36,7 @@ class TracerTable extends Component {
 		/* Create the HTTP GET request to the /tracers API endpoint. */
 		var req = new XMLHttpRequest();
 		req.open("GET", "http://localhost:8081/tracers", true);
-		//req.setRequestHeader("X-Tracy", "NOTOUCHY");
+		req.setRequestHeader("Hoot", "!");
 		req.onreadystatechange = this.setTracers;
 		req.send();
 	}

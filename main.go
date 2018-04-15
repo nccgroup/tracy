@@ -19,7 +19,6 @@ import (
 	"tracy/api/store"
 	"tracy/api/types"
 	"tracy/configure"
-	"tracy/install"
 	"tracy/log"
 	"tracy/proxy"
 )
@@ -149,16 +148,6 @@ func init() {
 		log.Error.Println(err)
 		log.Error.Println(string(certsJSON))
 	}
-
-	/* TODO: need to work on how to sideload Chrome.
-	path, err := configure.ReadConfig("installation-path")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-	if _, err := os.Stat(path.(string)); path.(string) == "" || os.IsNotExist(err) {
-		// Looks like the installation-path has not been set or is outdated.
-		getSideloadLocation()
-	}*/
 }
 
 func processAutoLaunch(option string) {
@@ -197,22 +186,5 @@ func openbrowser(url string) {
 	}
 	if err != nil {
 		log.Error.Fatal(err)
-	}
-}
-
-//Helper function to ask the user where to sideload the extension.
-func getSideloadLocation() {
-	for {
-		browser := install.Input("Which browser are you using with Tracy? Firefox or Chrome (F/c): ")
-		switch strings.ToLower(string(browser[0])) {
-		case "f", "\r", "\n":
-			install.Firefox()
-			return
-		case "c":
-			//install.Chrome()
-			log.PrintRed("Chrome is currently not supported.\n")
-		default:
-			log.PrintRed("Unsupported browser choice.\n")
-		}
 	}
 }

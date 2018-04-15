@@ -2,6 +2,7 @@
 function refreshTracerList(onFinished) {
     var xhr = new XMLHttpRequest();
     xhr.open("GET", `http://${restServer}/tracers?filter=TracerPayloads`, true);
+    xhr.setRequestHeader("Hoot", "!");
     xhr.onreadystatechange = onFinished;
     xhr.send();
 }
@@ -10,6 +11,7 @@ function refreshTracerList(onFinished) {
 function bulkAddEvents(events) {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", `http://${restServer}/tracers/events/bulk`, true);
+    xhr.setRequestHeader("Hoot", "!");
     xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
     var eventsStr = JSON.stringify(events);
     xhr.send(eventsStr);
@@ -104,7 +106,7 @@ function messageRouter(message, sender, sendResponse) {
 /* Refreshes the configuration. */
 function refreshConfig(message, sender, sendResponse) {
     //TODO: make this a file. This config server is dumb and will break when we have this work for server mode
-    fetch("http://127.0.0.1:6001/config")
+    fetch("http://127.0.0.1:6001/config", { headers: { Hoot: "!" } })
         .then(res => res.json())
         .then(res => {
             tracerStringTypes = Object.keys(res["tracers"]);

@@ -68,13 +68,42 @@ func Configure() {
 	} else {
 		corsOptions := []handlers.CORSOption{
 			handlers.AllowedOriginValidator(func(a string) bool {
-				return true
+				hp := ""
+				if hs := strings.Split(a, "//"); len(hs) == 1 {
+					hp = hs[0]
+				} else {
+					hp = hs[1]
+				}
+
+				p := "80"
+				h := ""
+				if hps := strings.Split(hp, ":"); len(hps) > 1 {
+					p = hps[1]
+					h = hps[0]
+				} else {
+					h = hps[0]
+				}
+
+				ret := false
+				if h == "localhost" || h == "127.0.0.1" {
+					if p == "3000" {
+						ret = true // debug port
+					} else if cp, err := configure.ReadConfig("tracer-server"); err == nil {
+						cps := strings.Split(cp.(string), ":")
+						// If the configured port is equal to port that sent the request.
+						if len(cps) == 2 && cps[1] == p {
+							ret = true
+						}
+					}
+				}
+
+				return ret
 			}),
-			handlers.AllowedHeaders([]string{"X-TRACY"})}
+			handlers.AllowedHeaders([]string{"X-TRACY", "Hoot"})}
 
 		//Additional server features rest server
-		//restHandler := handlers.CompressHandlerLevel(RestRouter, gzip.BestCompression)
 		restHandler := handlers.CORS(corsOptions...)(RestRouter)
+		restHandler = customHeaderMiddleware(restHandler)
 		restHandler = applicationJSONMiddleware(restHandler)
 		restHandler = cacheMiddleware(restHandler)
 
@@ -88,8 +117,8 @@ func Configure() {
 		}
 
 		//Additional server features for configuration server
-		//configHandler := handlers.CompressHandlerLevel(ConfigRouter, gzip.BestCompression)
 		configHandler := handlers.CORS(corsOptions...)(ConfigRouter)
+		configHandler = customHeaderMiddleware(configHandler)
 		configHandler = applicationJSONMiddleware(configHandler)
 		configHandler = cacheMiddleware(configHandler)
 
@@ -135,17 +164,14 @@ func cacheMiddleware(next http.Handler) http.Handler {
 			sumStr := hex.EncodeToString(sum[:len(sum)])
 			if eTagHash != "" {
 				if eTagHash == sumStr {
-					//w.Header().Set("Cache-Control", "no-cache")
 					w.WriteHeader(http.StatusNotModified)
 					w.Write([]byte(""))
 				} else {
-					//w.Header().Set("Cache-Control", "no-cache")
 					w.Header().Set("Etag", sumStr)
 					w.WriteHeader(rec.Code)
 					w.Write(body)
 				}
 			} else {
-				//w.Header().Set("Cache-Control", "no-cache")
 				w.Header().Set("Etag", sumStr)
 				w.WriteHeader(rec.Code)
 				w.Write(body)
@@ -153,6 +179,22 @@ func cacheMiddleware(next http.Handler) http.Handler {
 		} else {
 			w.WriteHeader(rec.Code)
 			w.Write(body)
+		}
+	})
+}
+
+func customHeaderMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// They are navigating to the root of the server, it is just the UI, so allow them.
+		if (r.URL.String() == "/" || strings.HasPrefix(r.URL.String(), "/static")) ||
+			// They are making a request to the actual web application (not a DNS rebinding issue.), and they were able to set the Hoot header, so allow them.
+			((strings.Split(r.Host, ":")[0] == "localhost" || strings.Split(r.Host, ":")[0] == "127.0.0.1") && r.Header.Get("Hoot") != "") ||
+			// They are making an OPTIONS request
+			strings.ToLower(r.Method) == "options" {
+			next.ServeHTTP(w, r)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("No hoot header or incorrect host header..."))
 		}
 	})
 }

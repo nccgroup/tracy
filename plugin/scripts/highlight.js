@@ -166,6 +166,7 @@ function generateTracerPayload(tracerString) {
 		}`,
 		{
 			headers: {
+				Hoot: "!",
 				"X-TRACY": "NOTOUCHY"
 			}
 		}
