@@ -24,6 +24,7 @@ bins:
 
 # Build the view and static assets into a Go file
 view:
+	npm --prefix ${GOPATH}/src/${PROJECT_NAME}/api/view install; \
 	npm --prefix ${GOPATH}/src/${PROJECT_NAME}/api/view run build; \
 	cd ${GOPATH}/src/${PROJECT_NAME}/api/view/; \
 	go-bindata-assetfs -pkg rest ./build/...; \
@@ -51,9 +52,5 @@ build-deps:
 	go get github.com/karalabe/xgo; \
 	go get github.com/jteeuwen/go-bindata/...; \
 	go get github.com/elazarl/go-bindata-assetfs/...
-	
-# Install the dependencies for a developer.
-dev-deps:
-	go get github.com/golang/dep/cmd/dep
 
 .PHONY: all bins view test fmt build-deps dev-deps
