@@ -6,7 +6,7 @@ const DefaultConfig = `{
     "zzPLAINzz": "[[ID]]",
     "zzXSSzz": "\\\"'<[[ID]]>",
     "GEN-XSS": "\\\"'<[[ID]]>",
-    "GEN-PLAIN": "[[ID]]",
+    "GEN-PLAIN": "[[ID]]"
    },
   "default-tracer": "zzPLAINzz",
   "server-whitelist": [
