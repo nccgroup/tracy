@@ -2,12 +2,13 @@ package common
 
 import (
 	"encoding/json"
-	"github.com/yosssi/gohtml"
-	"golang.org/x/net/html"
 	"strings"
 	"tracy/api/store"
 	"tracy/api/types"
 	"tracy/log"
+
+	"github.com/yosssi/gohtml"
+	"golang.org/x/net/html"
 )
 
 /*AddEvent is the common functionality to add an event to the database. This function
@@ -21,7 +22,7 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	err := json.Unmarshal([]byte(event.RawEvent), data)
 	if err != nil {
 		// It's not valid JSON. Assume it is HTML.
-		if event.DOMContexts, err = getDomContexts(event, tracer); err == nil {
+		if event.EventType != "text" && event.DOMContexts, err = getDomContexts(event, tracer); err == nil {
 			event.RawEvent = gohtml.Format(event.RawEvent)
 		}
 	} else {
