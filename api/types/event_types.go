@@ -9,7 +9,7 @@ type TracerEvent struct {
 	gorm.Model
 	TracerID    uint         `json:"TracerID"    gorm:"not null;index;unique_index:idx_event_collision"`
 	RawEventID  uint         `json:"RawEventID"  gorm:"not null;unique_index:idx_event_collision"`
-	RawEvent    string       `json:"RawEvent"  	 gorm:"-"`
+	RawEvent    string       `json:"RawEvent"  	 sql:"-"`
 	EventURL    string       `json:"EventURL"    gorm:"not null; unique_index:idx_event_collision"`
 	EventType   string       `json:"EventType"   gorm:"not null"`
 	DOMContexts []DOMContext `json:"DOMContexts"`

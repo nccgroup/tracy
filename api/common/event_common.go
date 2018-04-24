@@ -27,6 +27,8 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 		}
 	}
 
+	event.RawEvent = ""
+
 	if err = store.DB.Create(&event).Error; err == nil {
 		log.Trace.Printf("Successfully added the tracer event to the database.")
 		ret, err = json.Marshal(event)
@@ -37,6 +39,21 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	}
 
 	return ret, err
+}
+
+func AddEventData(eventData string) uint {
+	var rawEvent types.RawEvent
+	err := json.Unmarshal([]byte(eventData), eventData)
+	if err != nil {
+		eventData = gohtml.Format(eventData)
+	} else {
+		ind, _ := json.MarshalIndent(eventData, "", "  ")
+		eventData = string(ind)
+	}
+
+	/* We need to check if the data is already there */
+	store.DB.FirstOrCreate(&rawEvent, types.RawEvent{RawData: eventData})
+	return rawEvent.ID
 }
 
 /*GetEvents is the common functionality for getting all the events for a given tracer ID. */

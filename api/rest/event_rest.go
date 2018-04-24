@@ -12,7 +12,6 @@ import (
 	"tracy/log"
 
 	"github.com/gorilla/mux"
-	"github.com/yosssi/gohtml"
 )
 
 /* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.
@@ -37,22 +36,6 @@ func addEventHelper(tracer types.Tracer, tracerEvent types.TracerEvent) (int, []
 	return status, ret
 }
 
-func addEventDataHelper(eventData string) uint {
-	var rawEvent types.RawEvent
-	err := json.Unmarshal([]byte(eventData), eventData)
-	if err != nil {
-		eventData = gohtml.Format(eventData)
-	} else {
-		ind, _ := json.MarshalIndent(eventData, "", "  ")
-		eventData = string(ind)
-	}
-
-	/* We need to check if the data is already there */
-	store.DB.FirstOrCreate(&rawEvent, types.RawEvent{RawData: eventData})
-	fmt.Println(rawEvent)
-	return rawEvent.ID
-}
-
 /*AddEvent adds a tracer event to the tracer specified in the URL. */
 func AddEvent(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
@@ -63,7 +46,7 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&tracerEvent); err == nil {
 		log.Trace.Printf("Parsed the following tracer from the request: %+v", tracerEvent)
 		/* Add tracer event data*/
-		tracerEvent.RawEventID = addEventDataHelper(tracerEvent.RawEvent)
+		tracerEvent.RawEventID = common.AddEventData(tracerEvent.RawEvent)
 
 		/* Add the tracer event. */
 		var tracerID uint64
@@ -114,7 +97,7 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 		count := 0
 
 		for _, tracerEvent := range bulkTracerEvent {
-			tracerEvent.TracerEvent.RawEventID = addEventDataHelper(tracerEvent.TracerEvent.RawEvent)
+			tracerEvent.TracerEvent.RawEventID = common.AddEventData(tracerEvent.TracerEvent.RawEvent)
 			/* For each of the tracer strings that were found in the DOM event, find the tracer they are associated with
 			 * and add an event to it. */
 			for _, tracerPayload := range tracerEvent.TracerPayloads {

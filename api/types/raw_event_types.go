@@ -8,5 +8,4 @@ import (
 type RawEvent struct {
 	gorm.Model
 	RawData string `json:"RawData" gorm:"not null"`
-	events  []TracerEvent
 }
