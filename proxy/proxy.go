@@ -269,9 +269,16 @@ func handleConnection(client net.Conn) {
 							url := request.Host + request.RequestURI
 							tracers := findTracersInResponseBody(string(b), url, requests)
 							/* Use the API to add each tracer events to their corresponding tracer. */
+
+							var tracerDataID uint
+							if len(tracers) > 0 {
+								tracerDataID = common.AddEventData(string(b))
+							}
+
 							for _, tracer := range tracers {
 								for _, event := range tracer.TracerEvents {
 									//TODO: should probably make a bulk add events function
+									event.RawEventID = tracerDataID
 									_, err = common.AddEvent(tracer, event)
 								}
 							}
