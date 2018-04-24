@@ -1,10 +1,11 @@
 package store
 
 import (
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"tracy/api/types"
 	"tracy/log"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 /*DB is the one global used to gain access to the database from this package.
@@ -29,7 +30,8 @@ func Open(path string, logMode bool) error {
 		&types.TracerEvent{},
 		&types.DOMContext{},
 		&types.Request{},
-		&types.Label{})
+		&types.Label{},
+		&types.RawEvent{})
 
 	/* We want to disable the goroutine thread pool that is used by default since this application doesn't need it and will
 	 * cause performance issues. https://stackoverflow.com/questions/35804884/sqlite-concurrent-writing-performance */

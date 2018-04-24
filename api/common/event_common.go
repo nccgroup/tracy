@@ -22,14 +22,9 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	err := json.Unmarshal([]byte(event.RawEvent), data)
 	if err != nil {
 		// It's not valid JSON. Assume it is HTML.
-		if event.EventType != "text" && event.DOMContexts, err = getDomContexts(event, tracer); err == nil {
-			event.RawEvent = gohtml.Format(event.RawEvent)
+		if event.EventType != "text" {
+			event.DOMContexts, err = getDomContexts(event, tracer)
 		}
-	} else {
-		// Pretty-print the JSON data.
-		var ind []byte
-		ind, err = json.MarshalIndent(data, "", "  ")
-		event.RawEvent = string(ind)
 	}
 
 	if err = store.DB.Create(&event).Error; err == nil {
