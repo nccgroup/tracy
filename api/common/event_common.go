@@ -16,7 +16,7 @@ import (
 func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	log.Trace.Printf("Adding the following tracer event: %+v, tracer: %+v", event, tracer)
 	var ret []byte
-
+	tracer.TracerEvents = nil //HACK: This is a hack to make this work. The proxy server users this list to send to this function but if this list is filled out here it will do a double inseart. We don't want that and this is the easist way to fix it for now
 	// Check if the event is valid JSON.
 	var data interface{}
 	err := json.Unmarshal([]byte(event.RawEvent), data)
