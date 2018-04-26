@@ -16,18 +16,16 @@ import (
 func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	log.Trace.Printf("Adding the following tracer event: %+v, tracer: %+v", event, tracer)
 	var ret []byte
-	tracer.TracerEvents = nil //HACK: This is a hack to make this work. The proxy server users this list to send to this function but if this list is filled out here it will do a double inseart. We don't want that and this is the easist way to fix it for now
+	var err error
+	//tracer.TracerEvents = nil //HACK: This is a hack to make this work. The proxy server users this list to send to this function but if this list is filled out here it will do a double inseart. We don't want that and this is the easist way to fix it for now
 	// Check if the event is valid JSON.
 	var data interface{}
-	err := json.Unmarshal([]byte(event.RawEvent), data)
-	if err != nil {
+	if err = json.Unmarshal([]byte(event.RawEvent.Data), data); err != nil && event.EventType != "text" {
 		// It's not valid JSON. Assume it is HTML.
-		if event.EventType != "text" {
-			event.DOMContexts, err = getDomContexts(event, tracer)
-		}
+		event.DOMContexts, err = getDomContexts(event, tracer)
 	}
 
-	event.RawEvent = ""
+	event.RawEvent.Data = ""
 
 	if err = store.DB.Create(&event).Error; err == nil {
 		log.Trace.Printf("Successfully added the tracer event to the database.")
@@ -52,7 +50,7 @@ func AddEventData(eventData string) uint {
 	}
 
 	/* We need to check if the data is already there */
-	store.DB.FirstOrCreate(&rawEvent, types.RawEvent{RawData: eventData})
+	store.DB.FirstOrCreate(&rawEvent, types.RawEvent{Data: eventData})
 	return rawEvent.ID
 }
 
@@ -64,6 +62,10 @@ func GetEvents(tracerID uint) ([]byte, error) {
 
 	tracerEvents := make([]types.TracerEvent, 0)
 	if err = store.DB.Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err == nil {
+		//for i := 0; i < len(tracerEvents); i++ {
+		//rawTracerEvent := types.RawEvent{}
+		//store.DB.Model(&tracerEvents).Related(&rawTracerEvent)
+		//}
 		log.Trace.Printf("Successfully got the tracer events: %+v", tracerEvents)
 		ret, err = json.Marshal(tracerEvents)
 	}
@@ -84,7 +86,7 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 	var doc *html.Node
 	var sev uint = 0
 	var ret *uint = &sev
-	doc, err = html.Parse(strings.NewReader(tracerEvent.RawEvent))
+	doc, err = html.Parse(strings.NewReader(tracerEvent.RawEvent.Data))
 	if err == nil {
 		// There are two places that will be calling this function. In one place, the API
 		// string doesn't send the tracer string with its request, so we need to fetch it.
@@ -101,13 +103,17 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 		log.Trace.Printf("Got the following DOM contexts from the event: %+v", contexts)
 
 		// Update the tracer with the highest severity
+		tracer.TracerEventsLength += 1
 		if *ret > tracer.OverallSeverity {
 			log.Trace.Println("The severity changed: %+v, %d", tracer, *ret)
 			tracer.OverallSeverity = *ret
+			// Also, increase the tracer event length by 1
+			err = store.DB.Model(&tracer).Updates(map[string]interface{}{
+				"overall_severity":     *ret,
+				"tracer_events_length": tracer.TracerEventsLength}).Error
+		} else {
+			err = store.DB.Model(&tracer).Update("tracer_events_length", tracer.TracerEventsLength).Error
 		}
-		// Also, increase the tracer event length by 1
-		tracer.TracerEventsLength += 1
-		err = store.DB.Save(&tracer).Error
 	}
 
 Error:
