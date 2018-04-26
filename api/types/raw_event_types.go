@@ -4,8 +4,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-/*RawEvent is a payload type that can be used by the extension. */
+/*RawEvent is a structure for holding raw event data such as HTTP responses or DOM. */
 type RawEvent struct {
 	gorm.Model
-	RawData string `json:"RawData" gorm:"not null"`
+	Data string `json:"RawData" gorm:"not null"`
 }
