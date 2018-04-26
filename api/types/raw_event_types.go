@@ -7,5 +7,5 @@ import (
 /*RawEvent is a structure for holding raw event data such as HTTP responses or DOM. */
 type RawEvent struct {
 	gorm.Model
-	Data string `json:"RawData" gorm:"not null"`
+	Data string `json:"Data" gorm:"not null;unique_data:data_collision"`
 }

@@ -170,8 +170,7 @@ func findTracersInResponseBody(response string, url string, requests []types.Req
 				log.Trace.Printf("Found a tracer! %s", tracer.TracerPayload)
 				//TODO: should we create multiple events if a tracer shows up multiple times in a response?
 				event := types.TracerEvent{
-					TracerID: tracer.ID,
-					//RawEvent:  response,
+					TracerID:  tracer.ID,
 					EventURL:  url,
 					EventType: "response",
 				}

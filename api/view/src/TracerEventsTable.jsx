@@ -140,7 +140,7 @@ class TracerEventsTable extends Component {
 							locationTypes[context.HTMLLocationType],
 						HTMLNodeType: context.HTMLNodeType,
 						EventContext: context.EventContext,
-						RawEvent: event.RawEvent,
+						RawEvent: event.RawEvent.Data,
 						RawEventIndex: idx,
 						EventType: event.EventType,
 						EventHost: this.parseHost(event.EventURL),
