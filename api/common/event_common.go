@@ -62,11 +62,20 @@ func GetEvents(tracerID uint) ([]byte, error) {
 
 	tracerEvents := make([]types.TracerEvent, 0)
 	if err = store.DB.Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err == nil {
-		//for i := 0; i < len(tracerEvents); i++ {
-		//rawTracerEvent := types.RawEvent{}
-		//store.DB.Model(&tracerEvents).Related(&rawTracerEvent)
-		//}
-		log.Trace.Printf("Successfully got the tracer events: %+v", tracerEvents)
+		cache := make(map[uint]types.RawEvent, 0)
+		for i := 0; i < len(tracerEvents); i++ {
+			if cachedEvent, ok := cache[tracerEvents[i].RawEventID]; ok {
+				tracerEvents[i].RawEvent = cachedEvent
+				log.Trace.Printf("Cache hit when querying for unique raw requests.")
+			} else {
+				rawTracerEvent := types.RawEvent{}
+				store.DB.Model(&tracerEvents[i]).Related(&rawTracerEvent)
+				tracerEvents[i].RawEvent = rawTracerEvent
+				// Add the event to the cache so we don't have to look it up again
+				cache[uint(i)] = rawTracerEvent
+			}
+		}
+		log.Trace.Printf("Successfully got the tracer event: %+v\n\n", tracerEvents)
 		ret, err = json.Marshal(tracerEvents)
 	}
 

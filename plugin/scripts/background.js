@@ -67,7 +67,9 @@ function requestHandler(domEvents) {
                     if (tracersPerDomEvent.length > 0) {
                         var event = {
                             TracerEvent: {
-                                RawEvent: domEvent.msg,
+                                RawEvent: {
+                                    Data: domEvent.msg
+                                },
                                 EventURL: encodeURI(domEvent.location),
                                 EventType: domEvent.type
                             },
