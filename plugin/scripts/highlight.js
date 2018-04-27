@@ -81,7 +81,13 @@ function isNearLeftEdge(element, event) {
 	let rightEdge = element.getBoundingClientRect().right - offset.left;
 	let mouseClickPosition = event.pageX - offset.left;
 
-	if (mouseClickPosition / rightEdge * 100 > 65) {
+	let buttonWidth = element.getBoundingClientRect().width * .30;
+
+	if (buttonWidth > 50){
+		buttonWidth = 50;
+	}
+
+	if (rightEdge - mouseClickPosition < buttonWidth) {
 		ret = true;
 	}
 
