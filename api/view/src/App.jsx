@@ -81,6 +81,7 @@ class App extends Component {
 					return this.state[n];
 				}.bind(this)
 			);
+
 		return (
 			<Row>
 				<Col md={12} className="container">
