@@ -214,11 +214,17 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 			}
 
 			for _, v := range attrs {
-				if strings.HasPrefix(v, a.Key) && strings.HasPrefix(tracer, a.Val) {
-					// If the attribute is one of the above known issues, might be vulnerable.
-
+				// If the href starts with a tracer string, need to look for javascript:
+				if v == "href" {
+					if strings.HasPrefix(tracer, a.Val) {
+						sev = 2
+					} else {
+						// href with user-supplied values is still interesting
+						sev = 1
+					}
+				} else if strings.HasPrefix(v, a.Key) {
+					// for on handlers, these are very interesting
 					sev = 2
-					break
 				}
 			}
 

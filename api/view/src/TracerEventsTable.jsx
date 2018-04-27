@@ -150,17 +150,19 @@ class TracerEventsTable extends Component {
 				}.bind(this)
 			);
 		} else {
+			console.log(event);
+			// If there are no DOMContexts, it is most likely an HTTP response.
 			return {
 				ID: event.ID,
-				HTMLLocationType: "",
-				HTMLNodeType: "",
-				EventContext: "",
-				RawEvent: event.RawEvent,
-				RawEventIndex: event.ID,
+				HTMLLocationType: "n/a",
+				HTMLNodeType: "n/a",
+				EventContext: "n/a",
+				RawEvent: event.RawEvent.Data,
+				RawEventIndex: 0, // this isn't really correct. there could be a case where there are two of the same tracer in an HTTP response
 				EventType: event.EventType,
 				EventHost: this.parseHost(event.EventURL),
 				EventPath: this.parsePath(event.EventURL),
-				Severity: ""
+				Severity: 0
 			};
 		}
 
