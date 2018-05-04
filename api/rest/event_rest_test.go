@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/yosssi/gohtml"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -60,8 +59,6 @@ func TestAddEvent(t *testing.T) {
 			/* Validate the response gave us back the event we added. */
 			if got.ID != 1 {
 				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
-			} else if got.RawEvent != gohtml.Format(data) {
-				err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", got.RawEvent, data)
 			} else if got.EventURL != location {
 				err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.EventURL, location)
 			} else if got.EventType != eventType {
@@ -112,8 +109,6 @@ func TestAddEvent(t *testing.T) {
 				/* Make sure the data we inserted was also the data we received back from the database. */
 				if event.ID != 1 {
 					err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", event.ID, 1)
-				} else if event.RawEvent != gohtml.Format(data) {
-					err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", event.RawEvent, data)
 				} else if event.EventURL != location {
 					err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", event.EventURL, location)
 				} else if event.EventType != eventType {
@@ -203,10 +198,6 @@ func TestDuplicateEvent(t *testing.T) {
 			/* Validate the response gave us back the event we added. */
 			if got.ID != 1 {
 				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
-			} else if got.RawEvent != gohtml.Format(data) {
-				err = fmt.Errorf("addTracerEvent returned the wrong body data. Got %+v, but expected %+v", got.RawEvent, data)
-			} else if got.EventURL != location {
-				err = fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.EventURL, location)
 			} else if got.EventType != eventType {
 				err = fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType, eventType)
 			} else if len(got.DOMContexts) == 0 {
