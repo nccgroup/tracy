@@ -46,8 +46,8 @@ func generateRootCA(path string) {
 	}
 
 	notBefore := time.Now()
-
-	notAfter := notBefore.Add(10000000000000000)
+	// Certificate validity set to one year.
+	notAfter := notBefore.AddDate(1, 0, 0)
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
