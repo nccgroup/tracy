@@ -91,7 +91,7 @@ func TestAddTracersQueryTags(t *testing.T) {
 	numTracers, err := testAddTracerQueryHelper(requestDataTags)
 	if err != nil {
 		t.Fatalf("Failed to insert Tracers with error: %+v", err)
-	} else if numTracers != 1 { //1 is the number of exspected tracers
+	} else if numTracers != 1 { //1 is the number of expected tracers
 		t.Fatalf("Failed to find all Tracers %d", numTracers)
 	}
 }
