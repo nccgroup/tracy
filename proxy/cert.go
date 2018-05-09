@@ -70,14 +70,15 @@ type CertCacheEntry struct {
 	Certs KeyPairBytes
 }
 
-func generateCert(host string, cert tls.Certificate) (tls.Certificate, error, KeyPairBytes) {
+func generateCert(host string, cert tls.Certificate) (tls.Certificate, KeyPairBytes, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return tls.Certificate{}, err, KeyPairBytes{}
+		return tls.Certificate{}, KeyPairBytes{}, err
 	}
 	notBefore := time.Now()
-	notAfter := notBefore.Add(10000000000000000)
+	// Certificate validity set to one year.
+	notAfter := notBefore.AddDate(1, 0, 0)
 
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
@@ -96,23 +97,29 @@ func generateCert(host string, cert tls.Certificate) (tls.Certificate, error, Ke
 
 	certs, err := x509.ParseCertificates(cert.Certificate[0])
 	if err != nil {
-		return tls.Certificate{}, err, KeyPairBytes{}
+		return tls.Certificate{}, KeyPairBytes{}, err
 	}
 
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return tls.Certificate{}, KeyPairBytes{}, err
+	}
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, certs[0], priv.Public(), cert.PrivateKey)
 	if err != nil {
-		return tls.Certificate{}, err, KeyPairBytes{}
+		return tls.Certificate{}, KeyPairBytes{}, err
 	}
 
 	b, err := x509.MarshalECPrivateKey(priv)
+	if err != nil {
+		return tls.Certificate{}, KeyPairBytes{}, err
+	}
 	newCer, err := tls.X509KeyPair(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes}), pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: b}))
 
 	keyPairBytes := KeyPairBytes{
 		KeyPEM:  b,
 		CertPEM: derBytes,
 	}
-	return newCer, err, keyPairBytes
+	return newCer, keyPairBytes, err
 }
 
 func SetCertCache(cache map[string]tls.Certificate) {
@@ -157,7 +164,7 @@ func certCache(cacheChan chan *cacheRequest, cache map[string]tls.Certificate) {
 			r.resp <- newCer
 		} else {
 			log.Trace.Printf("Cache miss for %s...\n", r.host)
-			newCer, err, cacheEntry = generateCert(r.host, configure.SigningCertificate)
+			newCer, cacheEntry, err = generateCert(r.host, configure.SigningCertificate)
 
 			if err != nil {
 				log.Error.Println(err)
@@ -165,8 +172,7 @@ func certCache(cacheChan chan *cacheRequest, cache map[string]tls.Certificate) {
 			} else {
 				go func() {
 					// Write the entry to the cache file
-					err := writeCertCacheFile(cacheEntry, r.host, configure.CertCacheFile)
-					if err != nil {
+					if err := writeCertCacheFile(cacheEntry, r.host, configure.CertCacheFile); err != nil {
 						log.Error.Println(err)
 					}
 				}()
