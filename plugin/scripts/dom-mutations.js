@@ -1,4 +1,3 @@
-
 chrome.runtime.sendMessage({
   "message-type": "refresh"
 });
@@ -12,11 +11,15 @@ var observer = new MutationObserver(function(mutations) {
     if (mutation.addedNodes.length > 0) {
       mutation.addedNodes.forEach(function(node) {
         /* Check to see if a node is a child of the parentNode if so don't add it because we already have that data */
-        if (parentNode == null || !parentNode.contains(node)) {
+        if (parentNode === null || !parentNode.contains(node)) {
           /* The only supported DOM types that we care about are `DOM` (1) and `text` (3). */
-          if (node.nodeType == 1) {
+          if (node.nodeType === 1) {
             /* In the case of a DOM type, check all the node's children for input fields. Use this as a chance
          * to restyle new inputs that were not caught earlier. */
+            if (parentNode !== null) {
+              console.log("parent node", parentNode.outerHTML.substring(0, 10));
+            }
+            console.log("node", node.outerHTML.substring(0, 10));
             parentNode = node;
             chrome.runtime.sendMessage({
               "message-type": "job",

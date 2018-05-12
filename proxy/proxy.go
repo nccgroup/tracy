@@ -265,21 +265,19 @@ func handleConnection(client net.Conn) {
 					err = json.Unmarshal(requestsJSON, &requests)
 					if err == nil {
 						if len(requests) != 0 {
-							log.Trace.Printf("Need to parse the following %d requests for tracer strings: %+v", len(requests), requests)
+							log.Error.Printf("Need to parse the following %d requests for tracer strings: %+v", len(requests), requests)
 							url := request.Host + request.RequestURI
 							tracers := findTracersInResponseBody(string(b), url, requests)
 							/* Use the API to add each tracer events to their corresponding tracer. */
 
-							var tracerDataID uint
 							if len(tracers) > 0 {
-								tracerDataID = common.AddEventData(string(b))
-							}
-
-							for _, tracer := range tracers {
-								for _, event := range tracer.TracerEvents {
-									//TODO: should probably make a bulk add events function
-									event.RawEventID = tracerDataID
-									_, err = common.AddEvent(tracer, event)
+								rawEvent := common.AddEventData(string(b))
+								for _, tracer := range tracers {
+									for _, event := range tracer.TracerEvents {
+										//TODO: should probably make a bulk add events function
+										event.RawEventID = rawEvent.ID
+										_, err = common.AddEvent(tracer, event)
+									}
 								}
 							}
 

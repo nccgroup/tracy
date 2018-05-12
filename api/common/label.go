@@ -15,6 +15,7 @@ func AddLabel(label types.Label) ([]byte, error) {
 
 	if err = store.DB.Create(&label).Error; err == nil {
 		log.Trace.Printf("Successfully added the label to the database: %+v", label)
+		updateSubscribers(label)
 		ret, err = json.Marshal(label)
 	} else {
 		log.Warning.Printf(err.Error())
