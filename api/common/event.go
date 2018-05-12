@@ -14,7 +14,7 @@ import (
 /*AddEvent is the common functionality to add an event to the database. This function
  * has been separated so both HTTP and websocket servers can use it. */
 func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
-	log.Trace.Printf("Adding the following tracer event: %+v, tracer: %+v", event, tracer)
+	log.Error.Printf("Adding the following tracer event: %d, tracer: %d", event.ID, tracer.ID)
 	var ret []byte
 	var err error
 	//tracer.TracerEvents = nil //HACK: This is a hack to make this work. The proxy server users this list to send to this function but if this list is filled out here it will do a double inseart. We don't want that and this is the easist way to fix it for now
@@ -25,10 +25,9 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 		event.DOMContexts, err = getDomContexts(event, tracer)
 	}
 
-	event.RawEvent.Data = ""
-
 	if err = store.DB.Create(&event).Error; err == nil {
-		log.Trace.Printf("Successfully added the tracer event to the database.")
+		log.Error.Printf("Successfully added the tracer event to the database.")
+		updateSubscribers(event)
 		ret, err = json.Marshal(event)
 	}
 
@@ -39,7 +38,7 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	return ret, err
 }
 
-func AddEventData(eventData string) uint {
+func AddEventData(eventData string) types.RawEvent {
 	var rawEvent types.RawEvent
 	err := json.Unmarshal([]byte(eventData), eventData)
 	if err != nil {
@@ -51,7 +50,7 @@ func AddEventData(eventData string) uint {
 
 	/* We need to check if the data is already there */
 	store.DB.FirstOrCreate(&rawEvent, types.RawEvent{Data: eventData})
-	return rawEvent.ID
+	return rawEvent
 }
 
 /*GetEvents is the common functionality for getting all the events for a given tracer ID. */
@@ -114,14 +113,17 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 		// Update the tracer with the highest severity
 		tracer.TracerEventsLength += 1
 		if *ret > tracer.OverallSeverity {
-			log.Trace.Println("The severity changed: %+v, %d", tracer, *ret)
+			log.Error.Printf("The severity changed: %+v, %d", tracer, *ret)
 			tracer.OverallSeverity = *ret
 			// Also, increase the tracer event length by 1
 			err = store.DB.Model(&tracer).Updates(map[string]interface{}{
 				"overall_severity":     *ret,
 				"tracer_events_length": tracer.TracerEventsLength}).Error
+			updateSubscribers(tracer)
 		} else {
+			log.Error.Printf("The events length changed changed: %+v, %d", tracer, *ret)
 			err = store.DB.Model(&tracer).Update("tracer_events_length", tracer.TracerEventsLength).Error
+			updateSubscribers(tracer)
 		}
 	}
 
