@@ -43,11 +43,6 @@ function requestHandler(domEvents) {
                          * Continue to the rest of the recorded. */
                     var tracerLocation = domEvent.msg.indexOf(tracerPayload);
                     if (tracerLocation != -1) {
-                        console.log(
-                            "tracer location: ",
-                            tracerLocation,
-                            tracerPayload
-                        );
                         /* Add this location data to the list of tracers per DOM event. */
                         tracersPerDomEvent.push(tracerPayload);
                     }
