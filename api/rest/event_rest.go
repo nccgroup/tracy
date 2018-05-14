@@ -100,7 +100,6 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 		for _, tracerEvent := range bulkTracerEvent {
 			rawEvent := common.AddEventData(tracerEvent.TracerEvent.RawEvent.Data)
 			tracerEvent.TracerEvent.RawEventID = rawEvent.ID
-			tracerEvent.TracerEvent.RawEvent = rawEvent
 
 			/* For each of the tracer strings that were found in the DOM event, find the tracer they are associated with
 			 * and add an event to it. */

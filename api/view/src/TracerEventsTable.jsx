@@ -150,7 +150,6 @@ class TracerEventsTable extends Component {
 				}.bind(this)
 			);
 		} else {
-			console.log(event);
 			// If there are no DOMContexts, it is most likely an HTTP response.
 			return {
 				ID: event.ID,
