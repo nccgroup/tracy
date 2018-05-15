@@ -32,7 +32,7 @@ class FilterColumn extends Component {
 
 	// filterInactive filters out tracers that have no events or contexts.
 	filterInactive(tracer) {
-		return tracer.TracerEventsLength > 0;
+		return tracer.HasTracerEvents;
 	}
 
 	// filterTextNodes filters our events that are text nodes.

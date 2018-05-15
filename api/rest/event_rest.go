@@ -18,7 +18,7 @@ import (
  * Returns the HTTP status and the return value. */
 func addEventHelper(tracer types.Tracer, tracerEvent types.TracerEvent) (int, []byte) {
 	tracerEvent.TracerID = tracer.ID
-	log.Error.Printf("Adding a tracer event: %d", tracerEvent.ID)
+	log.Trace.Printf("Adding a tracer event: %d", tracerEvent.ID)
 	status := http.StatusInternalServerError
 	var ret []byte
 	var err error
@@ -48,6 +48,7 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 		/* Add tracer event data*/
 		rawEvent := common.AddEventData(tracerEvent.RawEvent.Data)
 		tracerEvent.RawEventID = rawEvent.ID
+		tracerEvent.RawEvent = rawEvent
 
 		/* Add the tracer event. */
 		var tracerID uint64
@@ -100,6 +101,7 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 		for _, tracerEvent := range bulkTracerEvent {
 			rawEvent := common.AddEventData(tracerEvent.TracerEvent.RawEvent.Data)
 			tracerEvent.TracerEvent.RawEventID = rawEvent.ID
+			tracerEvent.TracerEvent.RawEvent = rawEvent
 
 			/* For each of the tracer strings that were found in the DOM event, find the tracer they are associated with
 			 * and add an event to it. */
