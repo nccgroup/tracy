@@ -8,22 +8,23 @@ import (
 	"tracy/log"
 )
 
-var subscribers map[int]subscriber
+var subscribers map[int]*subscriber
 var updateChan chan interface{}
-var addSubChan chan subscriber
+var addSubChan chan *subscriber
+var changeSubChan chan []int
 var removeSubChan chan int
 
 type subscriber struct {
 	KeyChan chan int
 	Sock    *websocket.Conn
-	Events  []int
+	Tracer  uint
 }
 
 /*AddSubscriber takes a websocket connection and adds it to the list of subscribers.
  *New events that happen in package common get pushed these events. */
 func AddSubscriber(conn *websocket.Conn) int {
 	c := make(chan int, 1)
-	addSubChan <- subscriber{c, conn, make([]int, 0)}
+	addSubChan <- &subscriber{c, conn, 0}
 	return <-c
 }
 
@@ -32,14 +33,22 @@ func RemoveSubscriber(key int) {
 	removeSubChan <- key
 }
 
+/*ChangeTracer changes the tracer to send event updates for. */
+func ChangeTracer(key, tracer int) {
+	changeSubChan <- []int{key, tracer}
+}
+
 /*UpdateSubscribers sends an update to all the subscribers. */
-func updateSubscribers(update interface{}) {
+func UpdateSubscribers(update interface{}) {
 	updateChan <- update
 }
 
 func router() {
 	for {
 		select {
+		case change := <-changeSubChan:
+			log.Error.Println("Change tracer")
+			subscribers[change[0]].Tracer = uint(change[1])
 		case add := <-addSubChan:
 			log.Error.Println("Adding a subscriber")
 			key := rand.Intn(1000)
@@ -52,26 +61,38 @@ func router() {
 			log.Error.Println("Updating the subscribers")
 			for _, sub := range subscribers {
 				switch u := update.(type) {
-				case types.Tracer, types.Request:
-					log.Error.Printf("it was a tracer")
+				case types.Tracer:
+					if err := sub.Sock.WriteJSON(types.TracerWebSocket{u}); err != nil {
+						log.Error.Println(err)
+					}
+				case types.Request:
+					if err := sub.Sock.WriteJSON(types.RequestWebSocket{u}); err != nil {
+						log.Error.Println(err)
+					}
 				case types.TracerEvent:
-					log.Error.Printf("it was a tracer event")
+					// Only send event updates for the subscribed tracer.
+					if u.TracerID == sub.Tracer {
+						if err := sub.Sock.WriteJSON(types.TracerEventsWebSocket{u}); err != nil {
+							log.Error.Println(err)
+						}
+					}
 				default:
 					log.Error.Printf("not sure what it was: %T", u)
-				}
-				if err := sub.Sock.WriteJSON(update); err != nil {
-					log.Error.Println(err)
+					continue
 				}
 			}
 		}
+
+		log.Error.Printf("Current state of subscribers: %+v\n", subscribers)
 	}
 }
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	updateChan = make(chan interface{}, 10)
-	addSubChan = make(chan subscriber, 10)
+	addSubChan = make(chan *subscriber, 10)
 	removeSubChan = make(chan int, 10)
-	subscribers = make(map[int]subscriber, 25)
+	changeSubChan = make(chan []int, 10)
+	subscribers = make(map[int]*subscriber, 25)
 	go router()
 }

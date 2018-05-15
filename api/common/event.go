@@ -14,7 +14,7 @@ import (
 /*AddEvent is the common functionality to add an event to the database. This function
  * has been separated so both HTTP and websocket servers can use it. */
 func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
-	log.Error.Printf("Adding the following tracer event: %d, tracer: %d", event.ID, tracer.ID)
+	log.Trace.Printf("Adding the following tracer event: %d, tracer: %d", event.ID, tracer.ID)
 	var ret []byte
 	var err error
 
@@ -26,11 +26,13 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	}
 
 	// We've already added the raw event to get a valid raw event ID, so remove it here so the following create doesn't try to add it again.
+	copy := event
 	event.RawEvent = types.RawEvent{}
 	if err = store.DB.Create(&event).Error; err == nil {
 		log.Error.Printf("Successfully added the tracer event to the database.")
-		updateSubscribers(event)
-		ret, err = json.Marshal(event)
+		copy.ID = event.ID
+		UpdateSubscribers(copy)
+		ret, err = json.Marshal(copy)
 	}
 
 	if err != nil {
@@ -113,16 +115,14 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 				goto Error
 			}
 		}
+		old := tracer.HasTracerEvents
 
 		/* Find all instances of the string string and record their appropriate contexts.*/
 		getTracerLocation(doc, &contexts, tracer.TracerPayload, tracerEvent, ret)
 		log.Trace.Printf("Got the following DOM contexts from the event: %+v", contexts)
 
-		var l uint = uint(len(contexts))
-		if l > 0 {
-			// Update the tracer's events length appropriately
-			tracer.TracerEventsLength += l
-
+		if len(contexts) > 0 {
+			tracer.HasTracerEvents = true
 			// Update the tracer with the highest severity
 			if *ret > tracer.OverallSeverity {
 				log.Error.Printf("The severity changed: %+v, %d", tracer, *ret)
@@ -130,15 +130,23 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 
 				// Also, increase the tracer event length by 1
 				err = store.DB.Model(&tracer).Updates(map[string]interface{}{
-					"overall_severity":     *ret,
-					"tracer_events_length": tracer.TracerEventsLength,
+					"overall_severity": *ret,
 				}).Error
-			} else {
-				log.Error.Printf("The events length changed changed: %+v, %d", tracer, *ret)
-				err = store.DB.Model(&tracer).Update("tracer_events_length", tracer.TracerEventsLength).Error
+
 			}
 
-			updateSubscribers(tracer)
+			// If we used to have no events, change that now.
+			if !old {
+				log.Error.Printf("The events length changed changed: %+v, %d", tracer, *ret)
+				err = store.DB.Model(&tracer).Update("has_tracer_events", tracer.HasTracerEvents).Error
+			}
+
+			// If either of the above cases happened, alert the subscribers of the changes to the tracer. */
+			if !old || *ret > tracer.OverallSeverity {
+				log.Error.Println("updating subscribers")
+				UpdateSubscribers(tracer)
+			}
+
 		}
 	}
 

@@ -39,7 +39,7 @@ func Configure() {
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(GetTracer)
 	RestRouter.Methods("GET").Path("/tracers").HandlerFunc(GetTracers)
 	/* Define route for websocket handler. */
-	RestRouter.Methods("GET").Path("/ws/tracers").HandlerFunc(WebSocket)
+	RestRouter.Methods("GET").Path("/ws").HandlerFunc(WebSocket)
 
 	/* Define our RESTful routes for tracer events. Tracer events are indexed by their
 	 * corresponding tracer ID. */

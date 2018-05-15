@@ -129,6 +129,9 @@ func handleConnection(client net.Conn) {
 
 									//Update the record
 									err = store.DB.Save(&req).Error
+									if err == nil {
+										common.UpdateSubscribers(req)
+									}
 								}
 							}
 						}
@@ -139,6 +142,7 @@ func handleConnection(client net.Conn) {
 			if err != nil {
 				log.Error.Println(err)
 			}
+
 		}()
 
 		/* Search through the request for the tracer keyword. */
@@ -277,6 +281,7 @@ func handleConnection(client net.Conn) {
 									for _, event := range tracer.TracerEvents {
 										//TODO: should probably make a bulk add events function
 										event.RawEventID = rawEvent.ID
+										event.RawEvent = rawEvent
 										_, err = common.AddEvent(tracer, event)
 									}
 								}

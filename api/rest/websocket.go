@@ -28,9 +28,12 @@ func WebSocket(w http.ResponseWriter, r *http.Request) {
 		})
 
 		for {
-			var msg []uint
+			var msg []int
 			if err = conn.ReadJSON(&msg); err == nil {
 				log.Error.Printf("Message from socket: %+v", msg)
+				if len(msg) == 1 {
+					common.ChangeTracer(key, msg[0])
+				}
 			} else {
 				conn.Close()
 				break
