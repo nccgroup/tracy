@@ -93,7 +93,7 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 	finalRet := make([]byte, 0)
 	bulkTracerEvent := []types.TracerEventBulk{}
 	if err := json.NewDecoder(r.Body).Decode(&bulkTracerEvent); err == nil {
-		log.Error.Printf("Adding tracer events: %+v", bulkTracerEvent)
+		log.Trace.Printf("Adding tracer events: %+v", bulkTracerEvent)
 
 		/* Count the number of successful events that were added. */
 		count := 0

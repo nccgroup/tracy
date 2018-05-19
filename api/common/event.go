@@ -29,7 +29,6 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	copy := event
 	event.RawEvent = types.RawEvent{}
 	if err = store.DB.Create(&event).Error; err == nil {
-		log.Error.Printf("Successfully added the tracer event to the database.")
 		copy.ID = event.ID
 		UpdateSubscribers(copy)
 		ret, err = json.Marshal(copy)
@@ -123,13 +122,17 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 
 		if len(contexts) > 0 {
 			tracer.HasTracerEvents = true
+			c := tracer
+			c.TracerEvents = make([]types.TracerEvent, 0)
+
 			// Update the tracer with the highest severity
 			if *ret > tracer.OverallSeverity {
-				log.Error.Printf("The severity changed: %+v, %d", tracer, *ret)
+				log.Trace.Printf("The severity changed: %+v, %d", tracer, *ret)
 				tracer.OverallSeverity = *ret
+				c.OverallSeverity = *ret
 
 				// Also, increase the tracer event length by 1
-				err = store.DB.Model(&tracer).Updates(map[string]interface{}{
+				err = store.DB.Model(&c).Updates(map[string]interface{}{
 					"overall_severity": *ret,
 				}).Error
 
@@ -137,13 +140,14 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 
 			// If we used to have no events, change that now.
 			if !old {
-				log.Error.Printf("The events length changed changed: %+v, %d", tracer, *ret)
-				err = store.DB.Model(&tracer).Update("has_tracer_events", tracer.HasTracerEvents).Error
+				log.Trace.Printf("The events length changed changed: %+v, %d", tracer, *ret)
+				err = store.DB.Model(&c).Updates(map[string]interface{}{
+					"has_tracer_events": tracer.HasTracerEvents,
+				}).Error
 			}
 
 			// If either of the above cases happened, alert the subscribers of the changes to the tracer. */
-			if !old || *ret > tracer.OverallSeverity {
-				log.Error.Println("updating subscribers")
+			if !old || *ret == tracer.OverallSeverity {
 				UpdateSubscribers(tracer)
 			}
 

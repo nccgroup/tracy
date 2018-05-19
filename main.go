@@ -14,10 +14,8 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strings"
-	"tracy/api/common"
 	"tracy/api/rest"
 	"tracy/api/store"
-	"tracy/api/types"
 	"tracy/configure"
 	"tracy/log"
 	"tracy/proxy"
@@ -46,12 +44,6 @@ func main() {
 		log.Error.Fatal(err)
 	}
 	log.PrintCyan(fmt.Sprintf("Proxy server:\t%s%s", ps.(string), log.NewLine()))
-
-	/* Serve it. Block here so the program doesn't close. */
-	go func() {
-		log.Error.Fatal(rest.ConfigServer.ListenAndServe())
-	}()
-	log.PrintCyan(fmt.Sprintf("Config server:\t%s%s", "127.0.0.1:6666", log.NewLine()))
 
 	/* Serve it. Block here so the program doesn't close. */
 	go func() {
@@ -104,21 +96,6 @@ func init() {
 
 	// Initialize the rest routes
 	rest.Configure()
-
-	//TODO: decide if we want to add labels to the database or just keep in them in a configuration file
-	/* Add the configured labels to the database. */
-	tracers, err := configure.ReadConfig("tracers")
-	if err != nil {
-		log.Error.Fatal(err.Error())
-	}
-	for k, v := range tracers.(map[string]interface{}) {
-		label := types.Label{
-			TracerString:  k,
-			TracerPayload: v.(string),
-		}
-
-		common.AddLabel(label)
-	}
 
 	// Instantiate the certificate cache
 	certsJSON, err := ioutil.ReadFile(configure.CertCacheFile)

@@ -15,14 +15,11 @@ var upgrader = websocket.Upgrader{
 
 /*WebSocket is the websocket handler for our API. */
 func WebSocket(w http.ResponseWriter, r *http.Request) {
-	log.Error.Println("hit websocket")
 	var err error
 	var conn *websocket.Conn
 	if conn, err = upgrader.Upgrade(w, r, nil); err == nil {
-		log.Error.Println("upgraded the socket")
 		key := common.AddSubscriber(conn)
 		conn.SetCloseHandler(func(code int, text string) error {
-			log.Error.Printf("Closing the socket: %s", text)
 			common.RemoveSubscriber(key)
 			return nil
 		})
@@ -30,7 +27,6 @@ func WebSocket(w http.ResponseWriter, r *http.Request) {
 		for {
 			var msg []int
 			if err = conn.ReadJSON(&msg); err == nil {
-				log.Error.Printf("Message from socket: %+v", msg)
 				if len(msg) == 1 {
 					common.ChangeTracer(key, msg[0])
 				}
@@ -49,6 +45,5 @@ func WebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func checkOrigin(r *http.Request) bool {
-	log.Error.Println("checking the origin")
 	return true
 }

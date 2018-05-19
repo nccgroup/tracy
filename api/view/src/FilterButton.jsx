@@ -1,8 +1,8 @@
-import React, { Component } from "react";
+import React, { PureComponent } from "react";
 import Glyphicon from "react-bootstrap/lib/Glyphicon";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 
-class FilterButton extends Component {
+class FilterButton extends PureComponent {
 	constructor(props) {
 		super(props);
 

@@ -117,7 +117,7 @@ class App extends Component {
 	}
 
 	/* Format all the event contexts into their corresponding columns. */
-	formatEvent(event) {
+	formatEvent(event, eidx) {
 		// Enum to human-readable structure to translate the various DOM contexts.
 		const locationTypes = {
 			0: "attribute name",
@@ -130,15 +130,14 @@ class App extends Component {
 		var ret = [];
 		if (event.DOMContexts && event.DOMContexts.length > 0) {
 			ret = event.DOMContexts.map(
-				function(context, idx) {
+				function(context, cidx) {
 					return {
-						ID: event.ID + context.ID,
 						HTMLLocationType:
 							locationTypes[context.HTMLLocationType],
 						HTMLNodeType: context.HTMLNodeType,
 						EventContext: context.EventContext,
 						RawEvent: event.RawEvent.Data,
-						RawEventIndex: idx,
+						RawEventIndex: cidx,
 						EventType: event.EventType,
 						EventHost: this.parseHost(event.EventURL),
 						EventPath: this.parsePath(event.EventURL),
@@ -149,7 +148,6 @@ class App extends Component {
 		} else {
 			// If there are no DOMContexts, it is most likely an HTTP response.
 			return {
-				ID: event.ID,
 				HTMLLocationType: "n/a",
 				HTMLNodeType: "n/a",
 				EventContext: "n/a",
@@ -163,6 +161,13 @@ class App extends Component {
 		}
 
 		return ret;
+	}
+
+	/* Given an event, give it an ID. */
+	enumerate(event, id) {
+		event.ID = id + 1;
+
+		return event;
 	}
 
 	formatRowSeverity(row, rowIdx) {
@@ -189,30 +194,12 @@ class App extends Component {
 			.catch(error => console.error("Error:", error))
 			.then(response => {
 				try {
-					const parsedTracers = this.parseVisibleTracers(response);
-
-					// There might be an update to the selected row's RawRequest element.
-					for (var i = parsedTracers.length - 1; i >= 0; i--) {
-						if (
-							parsedTracers[i].TracerPayload ===
-							this.state.tracer.TracerPayload
-						) {
-							if (
-								parsedTracers[i].RawRequest !==
-								this.state.tracer.RawRequest
-							) {
-								this.handleTracerSelection(parsedTracers[i]);
-								break;
-							}
-						}
-					}
-
 					if (
 						JSON.stringify(this.state.tracers) !==
-						JSON.stringify(parsedTracers)
+						JSON.stringify(response)
 					) {
 						this.setState({
-							tracers: parsedTracers
+							tracers: response
 						});
 					}
 				} catch (e) {
@@ -238,12 +225,8 @@ class App extends Component {
 				.then(response => response.json())
 				.catch(error => console.error("Error:", error))
 				.then(response => {
-					let parsedEvents = this.parseVisibleEvents(response);
-					// Need to check this race condition. There is a chance that when
-					// this request returns, the tracer ID might have changed already.
-					// If that is the case, we need to not render the results.
 					this.setState({
-						events: parsedEvents
+						events: response
 					});
 				});
 		}
@@ -264,7 +247,8 @@ class App extends Component {
 
 	parseVisibleEvents(events) {
 		const parsedEvents = [].concat
-			.apply([], events.map(n => this.formatEvent(n)))
+			.apply([], events.map(this.formatEvent.bind(this)))
+			.map(this.enumerate)
 			.filter(n => n);
 
 		const contextFilterKeys = [
@@ -292,7 +276,7 @@ class App extends Component {
 	handleTracerSelection(nTracer) {
 		if (nTracer.ID !== this.state.tracer.ID) {
 			this.setState({
-				tracer: nTracer,
+				tracer: nTracer._original,
 				event: {}
 			});
 
@@ -304,7 +288,7 @@ class App extends Component {
 	handleEventSelection(nEvent) {
 		if (nEvent.ID !== this.state.event.ID) {
 			this.setState({
-				event: nEvent
+				event: nEvent._original
 			});
 		}
 	}
@@ -312,16 +296,13 @@ class App extends Component {
 	handleNewTracer(nTracer) {
 		let data = JSON.parse(nTracer.data)["Tracer"];
 		this.setState((prevState, props) => {
-			let match = prevState.tracers.filter(n => n.ID === data.ID);
+			let match = [].concat
+				.apply([], prevState.tracers.map(n => n.Tracers))
+				.filter(n => n.ID === data.ID);
 			if (match.length === 1) {
+				match = match[0];
 				Object.keys(data).map(n => {
-					const requestKeys = [
-						"RawRequest",
-						"RequestMethod",
-						"RequestURL",
-						"RequestPath"
-					];
-					if (data[n] !== match[0][n] && !requestKeys.includes(n)) {
+					if (data[n] !== match[n]) {
 						match[n] = data[n];
 						return n;
 					}
@@ -337,20 +318,32 @@ class App extends Component {
 
 	handleNewRequest(nRequest) {
 		let data = JSON.parse(nRequest.data)["Request"];
-		let parsed = this.parseVisibleTracers([data])[0];
 		this.setState((prevState, props) => {
-			let match = prevState.tracers.filter(n => n.ID === parsed.ID);
+			let match = prevState.tracers.filter(n => n.ID === data.ID);
 			if (match.length === 1) {
 				match = match[0];
-				Object.keys(parsed).map(n => {
-					if (parsed[n] !== match[n]) {
-						match[n] = parsed[n];
+				Object.keys(data).map(n => {
+					if (data[n] !== match[n]) {
+						match[n] = data[n];
+
+						//If the key was the RawRequest, we need to update the currently selected tracer
+						//with this value as well.
+						if (n === "RawRequest") {
+							//If the matched request has a tracer that is currently selected...
+							let selected = match.Tracers.filter(
+								m => m.ID === prevState.tracer.ID
+							);
+							if (selected.length === 1) {
+								console.log("Updating selected event");
+								prevState.tracer.RawRequest = data[n];
+							}
+						}
 						return n;
 					}
 					return null;
 				});
 			} else {
-				prevState.tracers.push(parsed);
+				prevState.tracers.push(data);
 			}
 			return prevState;
 		});
@@ -358,22 +351,19 @@ class App extends Component {
 
 	handleNewEvent(nEvent) {
 		let data = JSON.parse(nEvent.data)["TracerEvent"];
-		let parsed = this.parseVisibleEvents([data])[0];
-		console.log(parsed);
 		this.setState((prevState, props) => {
-			let match = prevState.events.filter(n => n.ID === parsed.ID);
+			let match = prevState.events.filter(n => n.ID === data.ID);
 			if (match.length === 1) {
-				console.log(match[0]);
 				match = match[0];
-				Object.keys(parsed).map(n => {
-					if (parsed[n] !== match[n]) {
-						match[n] = parsed[n];
+				Object.keys(data).map(n => {
+					if (data[n] !== match[n]) {
+						match[n] = data[n];
 						return n;
 					}
 					return null;
 				});
 			} else {
-				prevState.events.push(parsed);
+				prevState.events.push(data);
 			}
 			return prevState;
 		});
@@ -402,7 +392,9 @@ class App extends Component {
 					<Row className="tables-row">
 						<Col md={6} className="left-top-column">
 							<TracerTable
-								tracers={this.state.tracers}
+								tracers={this.parseVisibleTracers(
+									this.state.tracers
+								)}
 								handleTracerSelection={
 									this.handleTracerSelection
 								}
@@ -410,7 +402,9 @@ class App extends Component {
 						</Col>
 						<Col md={6} className="right-top-column">
 							<TracerEventsTable
-								events={this.state.events}
+								events={this.parseVisibleEvents(
+									this.state.events
+								)}
 								tracer={this.state.tracer}
 								handleEventSelection={this.handleEventSelection}
 							/>

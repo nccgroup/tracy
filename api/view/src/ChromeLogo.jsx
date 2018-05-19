@@ -9,6 +9,12 @@ class ChromeLogo extends Component {
 			"_blank"
 		);
 	}
+
+	/* This is a static component, it should never need to be rerendered. */
+	shouldComponentUpdate(nextProps, nextState) {
+		return false;
+	}
+
 	render() {
 		return (
 			<input
