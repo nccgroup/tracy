@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { PureComponent } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/css/bootstrap-theme.min.css";
 import Col from "react-bootstrap/lib/Col";
@@ -6,12 +6,12 @@ import FormGroup from "react-bootstrap/lib/FormGroup";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 
-class TracerEventsTable extends Component {
+class TracerEventsTable extends PureComponent {
 	constructor(props) {
 		super(props);
 		this.state = {
 			loading: false,
-			selectedEvent: {}
+			selectedEventID: -1
 		};
 
 		this.onRowSelect = this.onRowSelect.bind(this);
@@ -20,7 +20,7 @@ class TracerEventsTable extends Component {
 	onRowSelect(row) {
 		this.props.handleEventSelection(row);
 		this.setState({
-			selectedEvent: row
+			selectedEventID: row.ID
 		});
 	}
 
@@ -92,7 +92,7 @@ class TracerEventsTable extends Component {
 					getTrProps={(state, rowInfo, column, instance) => {
 						if (rowInfo) {
 							let classname = "";
-							switch (rowInfo.row._original.Severity) {
+							switch (rowInfo.row.Severity) {
 								case 1:
 									classname = "suspicious";
 									break;
@@ -106,9 +106,7 @@ class TracerEventsTable extends Component {
 									classname = "unexploitable";
 							}
 
-							if (
-								rowInfo.row.ID === this.state.selectedEvent.ID
-							) {
+							if (rowInfo.row.ID === this.state.selectedEventID) {
 								classname += " row-selected";
 							}
 

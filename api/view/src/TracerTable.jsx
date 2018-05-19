@@ -1,23 +1,23 @@
-import React, { Component } from "react";
+import React, { PureComponent } from "react";
 import "./App.css";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 
-class TracerTable extends Component {
+class TracerTable extends PureComponent {
 	constructor(props) {
 		super(props);
 
 		this.onRowSelect = this.onRowSelect.bind(this);
 
 		this.state = {
-			selectedTracer: {}
+			selectedTracerID: -1
 		};
 	}
 
 	onRowSelect(row) {
 		this.props.handleTracerSelection(row);
 		this.setState({
-			selectedTracer: row
+			selectedTracerID: row.ID
 		});
 	}
 
@@ -57,7 +57,7 @@ class TracerTable extends Component {
 				getTrProps={(state, rowInfo, column, instance) => {
 					if (rowInfo) {
 						let classname = "";
-						switch (rowInfo.row._original.OverallSeverity) {
+						switch (rowInfo.row.OverallSeverity) {
 							case 1:
 								classname = "suspicious";
 								break;
@@ -71,7 +71,7 @@ class TracerTable extends Component {
 								classname = "unexploitable";
 						}
 
-						if (rowInfo.row.ID === this.state.selectedTracer.ID) {
+						if (rowInfo.row.ID === this.state.selectedTracerID) {
 							classname += " row-selected";
 						}
 

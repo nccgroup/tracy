@@ -21,16 +21,9 @@ var RestServer *http.Server
 /*RestRouter is the router used to map all API functionality. Exposed for testing. */
 var RestRouter *mux.Router
 
-/*ConfigServer is the hardcoded HTTP server that is mainly used by the extension to query the config. */
-var ConfigServer *http.Server
-
-/*ConfigRouter is the router used to map the configuration functionality. Exposed for testing. */
-var ConfigRouter *mux.Router
-
 /*Configure is a helper that configures all the HTTP routes and their corresponding handler. */
 func Configure() {
 	RestRouter = mux.NewRouter()
-	ConfigRouter = mux.NewRouter()
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
 	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracers)
 	RestRouter.Methods("GET").Path("/tracers/generate").HandlerFunc(GenerateTracer)
@@ -47,10 +40,8 @@ func Configure() {
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}/events").HandlerFunc(GetEvents)
 	RestRouter.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(AddEvents)
 
-	/* Define RESTful routes for labels. */
-	RestRouter.Methods("POST").Path("/labels").HandlerFunc(AddLabel)
-	RestRouter.Methods("GET").Path("/labels").HandlerFunc(GetLabels)
-	RestRouter.Methods("GET").Path("/labels/{labelID}").HandlerFunc(GetLabel)
+	/* Define routes for config. */
+	RestRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
 
 	/* The base application page. Don't use the compiled assets unless in production. */
 	if v := flag.Lookup("test.v"); v != nil || configure.DebugUI {
@@ -58,9 +49,6 @@ func Configure() {
 	} else {
 		RestRouter.PathPrefix("/").Handler(http.FileServer(assetFS()))
 	}
-
-	/* Define routes for config. */
-	ConfigRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
 
 	/* Create the server. */
 	addr, err := configure.ReadConfig("tracer-server")
@@ -112,21 +100,6 @@ func Configure() {
 		RestServer = &http.Server{
 			Handler: restHandler,
 			Addr:    addr.(string),
-			// Good practice: enforce timeouts for servers you create!
-			WriteTimeout: 15 * time.Second,
-			ReadTimeout:  15 * time.Second,
-			ErrorLog:     log.Error.(*l.Logger),
-		}
-
-		//Additional server features for configuration server
-		configHandler := handlers.CORS(corsOptions...)(ConfigRouter)
-		configHandler = customHeaderMiddleware(configHandler)
-		configHandler = applicationJSONMiddleware(configHandler)
-		configHandler = cacheMiddleware(configHandler)
-
-		ConfigServer = &http.Server{
-			Handler: configHandler,
-			Addr:    "127.0.0.1:6001", // hardcoded configuration server so the web client knows where to get the configuration settings from
 			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,

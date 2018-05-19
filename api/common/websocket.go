@@ -47,18 +47,14 @@ func router() {
 	for {
 		select {
 		case change := <-changeSubChan:
-			log.Error.Println("Change tracer")
 			subscribers[change[0]].Tracer = uint(change[1])
 		case add := <-addSubChan:
-			log.Error.Println("Adding a subscriber")
 			key := rand.Intn(1000)
 			subscribers[key] = add
 			add.KeyChan <- key
 		case remove := <-removeSubChan:
-			log.Error.Println("Removing a subscriber")
 			delete(subscribers, remove)
 		case update := <-updateChan:
-			log.Error.Println("Updating the subscribers")
 			for _, sub := range subscribers {
 				switch u := update.(type) {
 				case types.Tracer:
@@ -82,8 +78,6 @@ func router() {
 				}
 			}
 		}
-
-		log.Error.Printf("Current state of subscribers: %+v\n", subscribers)
 	}
 }
 

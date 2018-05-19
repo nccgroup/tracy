@@ -1,9 +1,9 @@
-import React, { Component } from "react";
+import React, { PureComponent } from "react";
 import FilterButton from "./FilterButton";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
 
-class FilterColumn extends Component {
+class FilterColumn extends PureComponent {
 	// Helper to see if an element is in localStorage.
 	isInLocalStorage(key, ID) {
 		var ret;
