@@ -113,10 +113,16 @@ func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 					ret = ServerError(err)
 				} else {
 					status = http.StatusOK
-					// AddTracer will only store the randon ID and not any special characters that we
-					// need to add to the textfield.
-					genTracer.Tracers[0].TracerPayload = string(payload)
-					ret, err = json.Marshal(genTracer)
+					// AddTracer will only store the random ID and not any special characters that we
+					// need to add to the text field. Therefore, we need to make a deep copy
+					// of our generated tracer since it contains reference types that we need to
+					// modify. If we don't deep copy before they are modified, we get a race condition.
+					c := genTracer
+					ct := genTracer.Tracers[0]
+					c.Tracers = make([]types.Tracer, len(genTracer.Tracers))
+					c.Tracers[0] = ct
+					c.Tracers[0].TracerPayload = string(payload)
+					ret, err = json.Marshal(c)
 				}
 			}
 

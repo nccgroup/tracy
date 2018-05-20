@@ -15,11 +15,7 @@ var observer = new MutationObserver(function(mutations) {
           /* The only supported DOM types that we care about are `DOM` (1) and `text` (3). */
           if (node.nodeType === 1) {
             /* In the case of a DOM type, check all the node's children for input fields. Use this as a chance
-         * to restyle new inputs that were not caught earlier. */
-            if (parentNode !== null) {
-              console.log("parent node", parentNode.outerHTML.substring(0, 10));
-            }
-            console.log("node", node.outerHTML.substring(0, 10));
+             * to restyle new inputs that were not caught earlier. */
             parentNode = node;
             chrome.runtime.sendMessage({
               "message-type": "job",
