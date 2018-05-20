@@ -318,6 +318,7 @@ class App extends Component {
 
 	handleNewRequest(nRequest) {
 		let data = JSON.parse(nRequest.data)["Request"];
+		console.log("[REQUEST]:", data);
 		this.setState((prevState, props) => {
 			let match = prevState.tracers.filter(n => n.ID === data.ID);
 			if (match.length === 1) {
@@ -329,6 +330,7 @@ class App extends Component {
 						//If the key was the RawRequest, we need to update the currently selected tracer
 						//with this value as well.
 						if (n === "RawRequest") {
+							console.log("[RAWREQUEST]:", data);
 							//If the matched request has a tracer that is currently selected...
 							let selected = match.Tracers.filter(
 								m => m.ID === prevState.tracer.ID
