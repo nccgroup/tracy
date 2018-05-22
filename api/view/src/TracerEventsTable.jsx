@@ -30,6 +30,7 @@ class TracerEventsTable extends Component {
 	}
 
 	render() {
+		console.log("[RENDER]");
 		let ret;
 		if (this.props.loading) {
 			ret = (

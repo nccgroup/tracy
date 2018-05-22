@@ -51,6 +51,7 @@ class WebSocketRouter extends Component {
 	onReceive(event) {
 		switch (Object.keys(JSON.parse(event.data))[0]) {
 			case "Tracer":
+				console.log("[NEWTRACER]", event);
 				this.props.handleNewTracer(event);
 				break;
 			case "Request":
