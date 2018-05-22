@@ -1,8 +1,8 @@
-import React, { PureComponent } from "react";
+import React, { Component } from "react";
 import Glyphicon from "react-bootstrap/lib/Glyphicon";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 
-class FilterButton extends PureComponent {
+class FilterButton extends Component {
 	constructor(props) {
 		super(props);
 
@@ -11,6 +11,15 @@ class FilterButton extends PureComponent {
 		};
 
 		this.handleClick = this.handleClick.bind(this);
+	}
+
+	shouldComponentUpdate(nextProps, nextState) {
+		let ret = false;
+		if (nextState.enabled !== this.state.enabled) {
+			ret = true;
+		}
+
+		return ret;
 	}
 
 	componentDidMount() {

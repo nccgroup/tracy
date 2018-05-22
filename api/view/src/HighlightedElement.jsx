@@ -64,7 +64,7 @@ class HighlightedElement extends PureComponent {
 						parent.appendChild(postSpan);
 
 						highlightIndex++;
-						if (highlightIndex === this.props.eventID) {
+						if (highlightIndex === this.props.highlightOffset) {
 							styledSpan.scrollIntoView();
 						}
 					} else if (
@@ -91,7 +91,7 @@ class HighlightedElement extends PureComponent {
 						sibling.appendChild(postSpan);
 
 						highlightIndex++;
-						if (highlightIndex === this.props.eventID) {
+						if (highlightIndex === this.props.highlightOffset) {
 							styledSpan.scrollIntoView();
 						}
 					} else {

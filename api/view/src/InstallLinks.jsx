@@ -4,7 +4,7 @@ import ChromeLogo from "./ChromeLogo";
 
 class InstallLinks extends Component {
 	/* This is a static component that should never update. */
-	shouldComponentUpdate(prevProps, prevState) {
+	shouldComponentUpdate(nextProps, nextState) {
 		return false;
 	}
 	render() {

@@ -76,7 +76,7 @@ class WebSocketRouter extends Component {
 			var subscribe = [this.props.tracer.ID];
 			this.state.ws.send(JSON.stringify(subscribe));
 		}
-		return <span>Status: {status}</span>;
+		return <span>websocket status: {status}</span>;
 	}
 }
 

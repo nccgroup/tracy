@@ -1,22 +1,25 @@
 import React, { Component } from "react";
 import TracerTable from "./TracerTable";
 import DetailsViewer from "./DetailsViewer";
-import FilterColumn from "./FilterColumn";
-import TracyLogo from "./TracyLogo";
+import Header from "./Header";
 import TracerEventsTable from "./TracerEventsTable";
 import WebSocketRouter from "./WebSocketRouter";
-import InstallLinks from "./InstallLinks";
+import Footer from "./Footer";
 import Col from "react-bootstrap/lib/Col";
+import FilterColumn from "./FilterColumn";
 import Row from "react-bootstrap/lib/Row";
 
 class App extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			tracers: [],
-			tracer: {},
-			events: [],
-			event: {},
+			ptracers: [], //formatted tracers
+			tracers: [], //raw tracers
+			tracer: {}, //currently selected tracer
+			pevents: [], //formatted events
+			events: [], //raw events
+			event: {}, //currently selected tracers
+			loading: false, //loading status
 			filters: {
 				inactive: false,
 				responses: false,
@@ -181,7 +184,7 @@ class App extends Component {
 		return severity[row.OverallSeverity];
 	}
 
-	/* getTracers makes an XMLHTTPRequest to the tracers/events API to get the latest set of events. */
+	/* Gets the bulk tracers via an HTTP GET request. */
 	getTracers() {
 		/* Create the HTTP GET request to the /tracers API endpoint. */
 		var req = new Request(`http://127.0.0.1:8081/tracers`, {
@@ -199,7 +202,11 @@ class App extends Component {
 						JSON.stringify(response)
 					) {
 						this.setState({
-							tracers: response
+							tracers: response,
+							ptracers: this.parseVisibleTracers(
+								response,
+								this.state.filters
+							)
 						});
 					}
 				} catch (e) {
@@ -209,6 +216,7 @@ class App extends Component {
 			});
 	}
 
+	/* Gets the bulk events via an HTTP GET request. */
 	getTracerEvents(tracerID = this.state.tracer.ID) {
 		// By default, the app starts with non of the tracers selected. Don't make a
 		// request in this case.
@@ -226,48 +234,92 @@ class App extends Component {
 				.catch(error => console.error("Error:", error))
 				.then(response => {
 					this.setState({
-						events: response
+						events: response,
+						pevents: this.parseVisibleEvents(
+							response,
+							this.state.filters
+						),
+						loading: false
 					});
 				});
 		}
 	}
 
-	parseVisibleTracers(requests) {
-		const parsedTracers = [].concat
-			.apply([], requests.map(n => this.formatRequest(n)))
-			.filter(n => n);
+	/* Converts raw tracers into tracers that can be read by the table. */
+	parseVisibleTracers(requests = [], sfilters = {}) {
+		let ret = [];
+		if (requests.length > 0) {
+			const parsedTracers = [].concat
+				.apply([], requests.map(n => this.formatRequest(n)))
+				.filter(n => n);
 
-		const tracerFilterKeys = ["archivedTracers", "inactive"];
-		// Apply filters from the filter column component.
-		let filters = Object.keys(this.state.filters).filter(
-			n => this.state.filters[n] && tracerFilterKeys.includes(n)
-		);
-		return filters.reduce((accum, cur) => accum.filter(cur), parsedTracers);
+			const tracerFilterKeys = ["archivedTracers", "inactive"];
+			// Apply filters from the filter column component.
+			const filters = Object.keys(sfilters).filter(
+				n => sfilters[n] && tracerFilterKeys.includes(n)
+			);
+
+			ret = filters.reduce((accum, cur) => {
+				return accum.filter(sfilters[cur]);
+			}, parsedTracers);
+		}
+		return ret;
 	}
 
-	parseVisibleEvents(events) {
-		const parsedEvents = [].concat
-			.apply([], events.map(this.formatEvent.bind(this)))
-			.map(this.enumerate)
-			.filter(n => n);
+	/* Converts raw events into events that can be read by the table. */
+	parseVisibleEvents(events = [], sfilters = {}) {
+		let ret = [];
+		if (events.length > 0) {
+			const parsedEvents = [].concat
+				.apply([], events.map(this.formatEvent.bind(this)))
+				.map(this.enumerate)
+				.filter(n => n);
 
+			const contextFilterKeys = [
+				"responses",
+				"exploitable",
+				"archivedContexts",
+				"text"
+			];
+
+			// Apply filters from the filter column component.
+			const filters = Object.keys(sfilters).filter(
+				n => sfilters[n] && contextFilterKeys.includes(n)
+			);
+
+			ret = filters.reduce((accum, cur) => {
+				return accum.filter(sfilters[cur]);
+			}, parsedEvents);
+		}
+		return ret;
+	}
+
+	/* Called whenever one of the filter buttons is toggled. */
+	handleFilterChange(evt, filter) {
 		const contextFilterKeys = [
 			"responses",
 			"exploitable",
 			"archivedContexts",
 			"text"
 		];
-		// Apply filters from the filter column component.
-		let filters = Object.keys(this.state.filters).filter(
-			n => this.state.filters[n] && contextFilterKeys.includes(n)
-		);
-		return filters.reduce((accum, cur) => accum.filter(cur), parsedEvents);
-	}
-
-	/* Called whenever one of the filter buttons is toggled. */
-	handleFilterChange(evt, filter) {
+		const tracerFilterKeys = ["archivedTracers", "inactive"];
 		this.setState((prevState, props) => {
+			//Change the filter
 			prevState.filters[evt] = filter;
+
+			//Apply the filters
+			if (contextFilterKeys.includes(evt)) {
+				prevState.pevents = this.parseVisibleEvents(
+					prevState.events,
+					prevState.filters
+				);
+			} else if (tracerFilterKeys.includes(evt)) {
+				prevState.ptracers = this.parseVisibleTracers(
+					prevState.tracers,
+					prevState.filters
+				);
+			}
+
 			return prevState;
 		});
 	}
@@ -277,6 +329,9 @@ class App extends Component {
 		if (nTracer.ID !== this.state.tracer.ID) {
 			this.setState({
 				tracer: nTracer._original,
+				loading: true,
+				events: [],
+				pevents: [],
 				event: {}
 			});
 
@@ -293,6 +348,7 @@ class App extends Component {
 		}
 	}
 
+	/*handleNewTracer handles websocket messages that report new tracers. */
 	handleNewTracer(nTracer) {
 		let data = JSON.parse(nTracer.data)["Tracer"];
 		this.setState((prevState, props) => {
@@ -316,9 +372,9 @@ class App extends Component {
 		});
 	}
 
+	/*handleNewRequest handles websocket messages that report new requests. */
 	handleNewRequest(nRequest) {
 		let data = JSON.parse(nRequest.data)["Request"];
-		console.log("[REQUEST]:", data);
 		this.setState((prevState, props) => {
 			let match = prevState.tracers.filter(n => n.ID === data.ID);
 			if (match.length === 1) {
@@ -330,7 +386,6 @@ class App extends Component {
 						//If the key was the RawRequest, we need to update the currently selected tracer
 						//with this value as well.
 						if (n === "RawRequest") {
-							console.log("[RAWREQUEST]:", data);
 							//If the matched request has a tracer that is currently selected...
 							let selected = match.Tracers.filter(
 								m => m.ID === prevState.tracer.ID
@@ -351,6 +406,7 @@ class App extends Component {
 		});
 	}
 
+	/*handleNewEvent handles websocket messages that report a new event for the currently selected tracer. */
 	handleNewEvent(nEvent) {
 		let data = JSON.parse(nEvent.data)["TracerEvent"];
 		this.setState((prevState, props) => {
@@ -371,6 +427,7 @@ class App extends Component {
 		});
 	}
 
+	/* When the app loads, make an HTTP request for the latest set of tracers. */
 	componentDidMount() {
 		this.getTracers();
 	}
@@ -380,10 +437,7 @@ class App extends Component {
 			<Row>
 				<Col md={12} className="container">
 					<Row className="header">
-						<Col md={2} className="brand">
-							<TracyLogo width={25} />
-							<span className="logo-title">tracy</span>
-						</Col>
+						<Header width={2} />
 						<Col md={5} />
 						<Col md={5}>
 							<FilterColumn
@@ -394,9 +448,8 @@ class App extends Component {
 					<Row className="tables-row">
 						<Col md={6} className="left-top-column">
 							<TracerTable
-								tracers={this.parseVisibleTracers(
-									this.state.tracers
-								)}
+								tracers={this.state.ptracers}
+								selectedTracerID={this.state.tracer.ID}
 								handleTracerSelection={
 									this.handleTracerSelection
 								}
@@ -404,10 +457,14 @@ class App extends Component {
 						</Col>
 						<Col md={6} className="right-top-column">
 							<TracerEventsTable
-								events={this.parseVisibleEvents(
-									this.state.events
-								)}
+								selectedEventID={
+									Object.keys(this.state.event).length === 0
+										? -1
+										: this.state.event.ID
+								}
+								events={this.state.pevents}
 								tracer={this.state.tracer}
+								loading={this.state.loading}
 								handleEventSelection={this.handleEventSelection}
 							/>
 						</Col>
@@ -420,29 +477,13 @@ class App extends Component {
 							/>
 						</Col>
 					</Row>
-					<Row className="link-row">
-						<Col md={6}>
-							<span>raw request</span>
-						</Col>
-						<Col md={5}>
-							<span>raw output</span>
-						</Col>
-						<Col md={1}>
-							<Row>
-								<Col md={5} />
-								<Col md={5}>
-									<WebSocketRouter
-										handleNewTracer={this.handleNewTracer}
-										handleNewRequest={this.handleNewRequest}
-										handleNewEvent={this.handleNewEvent}
-										tracer={this.state.tracer}
-									/>
-									<InstallLinks />
-								</Col>
-								<Col md={2} />
-							</Row>
-						</Col>
-					</Row>
+					<Footer />
+					<WebSocketRouter
+						handleNewTracer={this.handleNewTracer}
+						handleNewRequest={this.handleNewRequest}
+						handleNewEvent={this.handleNewEvent}
+						tracer={this.state.tracer}
+					/>
 				</Col>
 			</Row>
 		);
