@@ -24,7 +24,7 @@ function restoreOptions() {
   chrome.storage.local.get(
     {
       restHost: "localhost",
-      restPort: 8080
+      restPort: 8081
     },
     function(res) {
       document.getElementById("rest-host").value = res.restHost;

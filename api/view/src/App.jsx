@@ -364,10 +364,8 @@ class App extends Component {
 					}
 					return null;
 				});
-			} else {
-				prevState.tracers.push(data);
 			}
-
+			prevState.ptracers = this.parseVisibleTracers(prevState.tracers);
 			return prevState;
 		});
 	}
@@ -391,7 +389,6 @@ class App extends Component {
 								m => m.ID === prevState.tracer.ID
 							);
 							if (selected.length === 1) {
-								console.log("Updating selected event");
 								prevState.tracer.RawRequest = data[n];
 							}
 						}
@@ -401,6 +398,9 @@ class App extends Component {
 				});
 			} else {
 				prevState.tracers.push(data);
+				prevState.ptracers = this.parseVisibleTracers(
+					prevState.tracers
+				);
 			}
 			return prevState;
 		});
@@ -422,6 +422,7 @@ class App extends Component {
 				});
 			} else {
 				prevState.events.push(data);
+				prevState.pevents = this.parseVisibleEvents(prevState.events);
 			}
 			return prevState;
 		});

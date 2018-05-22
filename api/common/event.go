@@ -124,7 +124,7 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 			tracer.HasTracerEvents = true
 			c := tracer
 			c.TracerEvents = make([]types.TracerEvent, 0)
-
+			newSev := false
 			// Update the tracer with the highest severity
 			if *ret > tracer.OverallSeverity {
 				log.Trace.Printf("The severity changed: %+v, %d", tracer, *ret)
@@ -135,7 +135,7 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 				err = store.DB.Model(&c).Updates(map[string]interface{}{
 					"overall_severity": *ret,
 				}).Error
-
+				newSev = true
 			}
 
 			// If we used to have no events, change that now.
@@ -146,8 +146,7 @@ func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types
 				}).Error
 			}
 
-			// If either of the above cases happened, alert the subscribers of the changes to the tracer. */
-			if !old || *ret == tracer.OverallSeverity {
+			if !old || newSev {
 				UpdateSubscribers(tracer)
 			}
 
