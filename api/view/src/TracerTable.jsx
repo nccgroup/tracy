@@ -1,24 +1,29 @@
-import React, { PureComponent } from "react";
+import React, { Component } from "react";
 import "./App.css";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 
-class TracerTable extends PureComponent {
+class TracerTable extends Component {
 	constructor(props) {
 		super(props);
 
 		this.onRowSelect = this.onRowSelect.bind(this);
-
-		this.state = {
-			selectedTracerID: -1
-		};
 	}
 
 	onRowSelect(row) {
 		this.props.handleTracerSelection(row);
-		this.setState({
-			selectedTracerID: row.ID
-		});
+	}
+
+	shouldComponentUpdate(nextProps, nextState) {
+		let ret = false;
+		if (
+			(!this.props.tracer && nextProps.tracers) ||
+			nextProps.tracers.length !== this.props.tracers.length ||
+			nextProps.selectedTracerID !== this.props.selectedTracerID
+		) {
+			ret = true;
+		}
+		return ret;
 	}
 
 	render() {
@@ -71,7 +76,7 @@ class TracerTable extends PureComponent {
 								classname = "unexploitable";
 						}
 
-						if (rowInfo.row.ID === this.state.selectedTracerID) {
+						if (rowInfo.row.ID === this.props.selectedTracerID) {
 							classname += " row-selected";
 						}
 
@@ -95,7 +100,7 @@ class TracerTable extends PureComponent {
 						desc: true
 					}
 				]}
-				defaultPageSize={100}
+				defaultPageSize={25}
 			/>
 		);
 	}

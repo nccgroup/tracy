@@ -1,4 +1,4 @@
-import React, { PureComponent } from "react";
+import React, { Component } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/css/bootstrap-theme.min.css";
 import Col from "react-bootstrap/lib/Col";
@@ -6,50 +6,32 @@ import FormGroup from "react-bootstrap/lib/FormGroup";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 
-class TracerEventsTable extends PureComponent {
+class TracerEventsTable extends Component {
 	constructor(props) {
 		super(props);
-		this.state = {
-			loading: false,
-			selectedEventID: -1
-		};
-
 		this.onRowSelect = this.onRowSelect.bind(this);
 	}
 
 	onRowSelect(row) {
 		this.props.handleEventSelection(row);
-		this.setState({
-			selectedEventID: row.ID
-		});
 	}
 
-	isEmpty(obj) {
-		return Object.keys(obj).length === 0 && obj.constructor === Object;
-	}
-
-	componentWillReceiveProps(nextProps) {
+	shouldComponentUpdate(nextProps, nextState) {
+		let ret = false;
 		if (
-			(!this.isEmpty(nextProps.tracer) &&
-				this.isEmpty(this.props.tracer)) ||
-			(!this.isEmpty(nextProps.tracer) &&
-				!this.isEmpty(this.props.tracer) &&
-				nextProps.tracer.ID !== this.props.tracer.ID)
+			nextProps.selectedEventID !== this.props.selectedEventID ||
+			nextProps.events.length !== this.props.events.length ||
+			nextProps.loading !== this.props.loading
 		) {
-			// If the tracerID changed, trigger a request right away. Don't repeat here.
-			this.setState({
-				loading: true
-			});
-		} else {
-			this.setState({
-				loading: false
-			});
+			ret = true;
 		}
+
+		return ret;
 	}
 
 	render() {
 		let ret;
-		if (this.state.loading) {
+		if (this.props.loading) {
 			ret = (
 				<FormGroup className="loading-spinner-parent">
 					<Col md={12} className="loading-spinner-child text-center">
@@ -106,7 +88,7 @@ class TracerEventsTable extends PureComponent {
 									classname = "unexploitable";
 							}
 
-							if (rowInfo.row.ID === this.state.selectedEventID) {
+							if (rowInfo.row.ID === this.props.selectedEventID) {
 								classname += " row-selected";
 							}
 
@@ -130,7 +112,7 @@ class TracerEventsTable extends PureComponent {
 							desc: true
 						}
 					]}
-					defaultPageSize={100}
+					defaultPageSize={25}
 				/>
 			);
 		}
