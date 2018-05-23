@@ -17,7 +17,7 @@ func AddTracer(request types.Request) ([]byte, error) {
 	var err error
 
 	if err = store.DB.Create(&request).Error; err == nil {
-		log.Trace.Printf("Successfully added the tracer to the database.")
+		UpdateSubscribers(request)
 		ret, err = json.Marshal(request)
 	}
 

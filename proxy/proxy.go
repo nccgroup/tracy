@@ -129,6 +129,9 @@ func handleConnection(client net.Conn) {
 
 									//Update the record
 									err = store.DB.Save(&req).Error
+									if err == nil {
+										common.UpdateSubscribers(req)
+									}
 								}
 							}
 						}
@@ -139,6 +142,7 @@ func handleConnection(client net.Conn) {
 			if err != nil {
 				log.Error.Println(err)
 			}
+
 		}()
 
 		/* Search through the request for the tracer keyword. */
@@ -265,21 +269,21 @@ func handleConnection(client net.Conn) {
 					err = json.Unmarshal(requestsJSON, &requests)
 					if err == nil {
 						if len(requests) != 0 {
-							log.Trace.Printf("Need to parse the following %d requests for tracer strings: %+v", len(requests), requests)
 							url := request.Host + request.RequestURI
 							tracers := findTracersInResponseBody(string(b), url, requests)
 							/* Use the API to add each tracer events to their corresponding tracer. */
 
-							var tracerDataID uint
 							if len(tracers) > 0 {
-								tracerDataID = common.AddEventData(string(b))
-							}
-
-							for _, tracer := range tracers {
-								for _, event := range tracer.TracerEvents {
-									//TODO: should probably make a bulk add events function
-									event.RawEventID = tracerDataID
-									_, err = common.AddEvent(tracer, event)
+								/* We have to do this first so that we can get the ID of the raw event
+								 * and insert it with the event structure. */
+								rawEvent := common.AddEventData(string(b))
+								for _, tracer := range tracers {
+									for _, event := range tracer.TracerEvents {
+										//TODO: should probably make a bulk add events function
+										event.RawEventID = rawEvent.ID
+										event.RawEvent = rawEvent
+										_, err = common.AddEvent(tracer, event)
+									}
 								}
 							}
 
