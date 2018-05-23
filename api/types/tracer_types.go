@@ -21,5 +21,5 @@ type Tracer struct {
 	TracerPayload       string        `json:"TracerPayload" gorm:"not null;index;unique_index:idx_tracer_string"` // the payload tracy convert the string into
 	TracerLocationType  uint          `json:"TracerLocationType" gorm:"not null"`
 	TracerLocationIndex uint          `json:"TracerLocationIndex"` // what is the index or where the tracer was located in the request
-	TracerEventsLength  uint          `json:"TracerEventsLength" gorm:"not null"`
+	HasTracerEvents     bool          `json:"HasTracerEvents" gorm:"not null"`
 }

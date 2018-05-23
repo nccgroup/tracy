@@ -7,6 +7,11 @@ class FirefoxLogo extends Component {
 			"_blank"
 		);
 	}
+
+	/* This is a static component that should never update. */
+	shouldComponentUpdate(nextProps, nextState) {
+		return false;
+	}
 	render() {
 		return (
 			<input

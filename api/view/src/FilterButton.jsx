@@ -13,6 +13,15 @@ class FilterButton extends Component {
 		this.handleClick = this.handleClick.bind(this);
 	}
 
+	shouldComponentUpdate(nextProps, nextState) {
+		let ret = false;
+		if (nextState.enabled !== this.state.enabled) {
+			ret = true;
+		}
+
+		return ret;
+	}
+
 	componentDidMount() {
 		// If the value is in localStorage, we need to enable the filter.
 		if (this.get(this.props.name)) {

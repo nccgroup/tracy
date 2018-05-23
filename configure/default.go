@@ -13,9 +13,7 @@ const DefaultConfig = `{
   	"localhost:8081",
     "127.0.0.1:8081",
     "localhost:3000",
-    "127.0.0.1:3000",
-    "127.0.0.1:6001",
-    "localhost:6001"
+    "127.0.0.1:3000"
   ],
   "tracer-server": "127.0.0.1:8081",
   "proxy-server": "127.0.0.1:7777",

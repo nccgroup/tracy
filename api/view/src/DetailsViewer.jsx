@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
-import HighlightedElement from "./HighlightedElement";
+import EventDetails from "./EventDetails";
+import TracerDetails from "./TracerDetails";
 
 /* View used to show the raw request and the events for the selected tracer row. */
 class DetailsViewer extends Component {
@@ -29,12 +30,9 @@ class DetailsViewer extends Component {
 			ret = (
 				<Row id="details-views" className="details-viewer">
 					<Col md={6} className="left-bottom-column">
-						<HighlightedElement
+						<TracerDetails
+							data={this.props.tracer.RawRequest}
 							highlightString={this.props.tracer.TracerPayload}
-							data={this.props.tracer._original.RawRequest}
-							eventID={-1}
-							lang="http"
-							title="raw request"
 						/>
 					</Col>
 					<Col md={6} className="right-bottom-column">
@@ -53,27 +51,23 @@ class DetailsViewer extends Component {
 				);
 				lang = "json";
 			} catch (e) {
-				data = this.props.event._original.RawEvent;
+				data = this.props.event.RawEvent;
 				lang = "html";
 			}
 			ret = (
 				<Row id="details-views" className="details-viewer">
-					<Col md={6} className="left-bottom-column">
-						<HighlightedElement
+					<Col md={6} className="right-bottom-column">
+						<TracerDetails
+							data={this.props.tracer.RawRequest}
 							highlightString={this.props.tracer.TracerPayload}
-							eventID={-1}
-							data={this.props.tracer._original.RawRequest}
-							lang="http"
-							title="raw request"
 						/>
 					</Col>
 					<Col md={6} className="right-bottom-column">
-						<HighlightedElement
+						<EventDetails
 							data={data}
 							highlightString={this.props.tracer.TracerPayload}
-							eventID={this.props.event._original.RawEventIndex}
+							highlightOffset={this.props.event.RawEventIndex}
 							lang={lang}
-							title="raw output"
 						/>
 					</Col>
 				</Row>

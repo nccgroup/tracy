@@ -21,16 +21,9 @@ var RestServer *http.Server
 /*RestRouter is the router used to map all API functionality. Exposed for testing. */
 var RestRouter *mux.Router
 
-/*ConfigServer is the hardcoded HTTP server that is mainly used by the extension to query the config. */
-var ConfigServer *http.Server
-
-/*ConfigRouter is the router used to map the configuration functionality. Exposed for testing. */
-var ConfigRouter *mux.Router
-
 /*Configure is a helper that configures all the HTTP routes and their corresponding handler. */
 func Configure() {
 	RestRouter = mux.NewRouter()
-	ConfigRouter = mux.NewRouter()
 	/* Define our RESTful routes for tracers. Tracers are indexed by their database ID. */
 	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracers)
 	RestRouter.Methods("GET").Path("/tracers/generate").HandlerFunc(GenerateTracer)
@@ -38,6 +31,8 @@ func Configure() {
 
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(GetTracer)
 	RestRouter.Methods("GET").Path("/tracers").HandlerFunc(GetTracers)
+	/* Define route for websocket handler. */
+	RestRouter.Methods("GET").Path("/ws").HandlerFunc(WebSocket)
 
 	/* Define our RESTful routes for tracer events. Tracer events are indexed by their
 	 * corresponding tracer ID. */
@@ -45,10 +40,8 @@ func Configure() {
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}/events").HandlerFunc(GetEvents)
 	RestRouter.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(AddEvents)
 
-	/* Define RESTful routes for labels. */
-	RestRouter.Methods("POST").Path("/labels").HandlerFunc(AddLabel)
-	RestRouter.Methods("GET").Path("/labels").HandlerFunc(GetLabels)
-	RestRouter.Methods("GET").Path("/labels/{labelID}").HandlerFunc(GetLabel)
+	/* Define routes for config. */
+	RestRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
 
 	/* The base application page. Don't use the compiled assets unless in production. */
 	if v := flag.Lookup("test.v"); v != nil || configure.DebugUI {
@@ -56,9 +49,6 @@ func Configure() {
 	} else {
 		RestRouter.PathPrefix("/").Handler(http.FileServer(assetFS()))
 	}
-
-	/* Define routes for config. */
-	ConfigRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
 
 	/* Create the server. */
 	addr, err := configure.ReadConfig("tracer-server")
@@ -115,21 +105,6 @@ func Configure() {
 			ReadTimeout:  15 * time.Second,
 			ErrorLog:     log.Error.(*l.Logger),
 		}
-
-		//Additional server features for configuration server
-		configHandler := handlers.CORS(corsOptions...)(ConfigRouter)
-		configHandler = customHeaderMiddleware(configHandler)
-		configHandler = applicationJSONMiddleware(configHandler)
-		configHandler = cacheMiddleware(configHandler)
-
-		ConfigServer = &http.Server{
-			Handler: configHandler,
-			Addr:    "127.0.0.1:6001", // hardcoded configuration server so the web client knows where to get the configuration settings from
-			// Good practice: enforce timeouts for servers you create!
-			WriteTimeout: 15 * time.Second,
-			ReadTimeout:  15 * time.Second,
-			ErrorLog:     log.Error.(*l.Logger),
-		}
 	}
 }
 
@@ -137,7 +112,7 @@ func Configure() {
 func applicationJSONMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// The root path and its assets are not application/json
-		if strings.HasPrefix(r.RequestURI, "/labels") || strings.HasPrefix(r.RequestURI, "/tracers") {
+		if strings.HasPrefix(r.RequestURI, "/labels") || strings.HasPrefix(r.RequestURI, "/tracers") || strings.HasPrefix(r.RequestURI, "/ws") {
 			w.Header().Set("Content-Type", "application/json")
 		}
 		next.ServeHTTP(w, r)
@@ -147,38 +122,43 @@ func applicationJSONMiddleware(next http.Handler) http.Handler {
 /* Helper for adding caching to get requests that haven't changed. */
 func cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rec := httptest.NewRecorder()
-		next.ServeHTTP(rec, r)
+		// Don't want to cache stuff from the websocket
+		if !strings.HasPrefix(r.RequestURI, "/ws") {
+			rec := httptest.NewRecorder()
+			next.ServeHTTP(rec, r)
 
-		// We copy the original headers first.
-		for k, v := range rec.Header() {
-			w.Header()[k] = v
-		}
+			// We copy the original headers first.
+			for k, v := range rec.Header() {
+				w.Header()[k] = v
+			}
 
-		// Only want to cache response request by HTTP GET requests.
-		body := rec.Body.Bytes()
-		if r.Method == http.MethodGet {
-			// Check if the request is cached
-			eTagHash := r.Header.Get("If-None-Match")
-			sum := sha1.Sum(body)
-			sumStr := hex.EncodeToString(sum[:len(sum)])
-			if eTagHash != "" {
-				if eTagHash == sumStr {
-					w.WriteHeader(http.StatusNotModified)
-					w.Write([]byte(""))
+			// Only want to cache response request by HTTP GET requests.
+			body := rec.Body.Bytes()
+			if r.Method == http.MethodGet {
+				// Check if the request is cached
+				eTagHash := r.Header.Get("If-None-Match")
+				sum := sha1.Sum(body)
+				sumStr := hex.EncodeToString(sum[:len(sum)])
+				if eTagHash != "" {
+					if eTagHash == sumStr {
+						w.WriteHeader(http.StatusNotModified)
+						w.Write([]byte(""))
+					} else {
+						w.Header().Set("Etag", sumStr)
+						w.WriteHeader(rec.Code)
+						w.Write(body)
+					}
 				} else {
 					w.Header().Set("Etag", sumStr)
 					w.WriteHeader(rec.Code)
 					w.Write(body)
 				}
 			} else {
-				w.Header().Set("Etag", sumStr)
 				w.WriteHeader(rec.Code)
 				w.Write(body)
 			}
 		} else {
-			w.WriteHeader(rec.Code)
-			w.Write(body)
+			next.ServeHTTP(w, r)
 		}
 	})
 }
@@ -187,6 +167,8 @@ func customHeaderMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// They are navigating to the root of the server, it is just the UI, so allow them.
 		if (r.URL.String() == "/" || strings.HasPrefix(r.URL.String(), "/static")) ||
+			// They are connecting over a websocket
+			strings.HasPrefix(r.URL.String(), "/ws") ||
 			// They are making a request to the actual web application (not a DNS rebinding issue.), and they were able to set the Hoot header, so allow them.
 			((strings.Split(r.Host, ":")[0] == "localhost" || strings.Split(r.Host, ":")[0] == "127.0.0.1") && r.Header.Get("Hoot") != "") ||
 			// They are making an OPTIONS request

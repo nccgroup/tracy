@@ -9,222 +9,30 @@ import "react-table/react-table.css";
 class TracerEventsTable extends Component {
 	constructor(props) {
 		super(props);
-		this.state = {
-			events: [],
-			loading: false,
-			selectedEvent: {}
-		};
-
-		this.requestEvents = this.requestEvents.bind(this);
 		this.onRowSelect = this.onRowSelect.bind(this);
-	}
-
-	formatRowSeverity(row, rowIdx) {
-		// Enum to human-readable structure to translate the different severity ratings.
-		const severity = {
-			0: "unexploitable",
-			1: "suspicious",
-			2: "probable",
-			3: "exploitable"
-		};
-
-		return severity[row.Severity];
 	}
 
 	onRowSelect(row) {
 		this.props.handleEventSelection(row);
-		this.setState({
-			selectedEvent: row
-		});
 	}
 
-	componentDidMount() {
-		// When component mounts, begin polling for events.
-		this.requestEvents(true);
-	}
-
-	isEmpty(obj) {
-		return Object.keys(obj).length === 0 && obj.constructor === Object;
-	}
-
-	componentWillReceiveProps(nextProps) {
+	shouldComponentUpdate(nextProps, nextState) {
+		let ret = false;
 		if (
-			(!this.isEmpty(nextProps.tracer) &&
-				this.isEmpty(this.props.tracer)) ||
-			(!this.isEmpty(nextProps.tracer) &&
-				!this.isEmpty(this.props.tracer) &&
-				nextProps.tracer.ID !== this.props.tracer.ID)
+			nextProps.selectedEventID !== this.props.selectedEventID ||
+			nextProps.events.length !== this.props.events.length ||
+			nextProps.loading !== this.props.loading
 		) {
-			// If the tracerID changed, trigger a request right away. Don't repeat here.
-			this.setState({
-				loading: true
-			});
-			this.requestEvents(false, nextProps.tracer.ID);
-		}
-
-		// This happens when the tracer table selects a new row.
-		if (this.isEmpty(nextProps.tracer)) {
-			this.setState({
-				events: []
-			});
-		}
-	}
-
-	/* Helper  to return the path from a URL string. */
-	parsePath(url) {
-		var ret = "";
-
-		// In case the url has a protocol, remove it.
-		var protocolSplit = url.split("://");
-		var withoutProtocol;
-		if (protocolSplit.length > 1) {
-			withoutProtocol = protocolSplit[1];
-		} else {
-			withoutProtocol = protocolSplit[0];
-		}
-
-		var host = withoutProtocol.split("?")[0];
-		var pathIndex = host.indexOf("/");
-		if (pathIndex !== -1) {
-			ret = host.substring(pathIndex, host.length);
-		} else {
-			ret = "/";
+			ret = true;
 		}
 
 		return ret;
-	}
-
-	/* Helper  to return the hostname from a URL string. */
-	parseHost(url) {
-		var ret;
-
-		// In case the url has a protocol, remove it.
-		var protocolSplit = url.split("://");
-		var withoutProtocol;
-		if (protocolSplit.length > 1) {
-			withoutProtocol = protocolSplit[1];
-		} else {
-			withoutProtocol = protocolSplit[0];
-		}
-
-		var host = withoutProtocol.split("?")[0];
-		var pathIndex = host.indexOf("/");
-
-		if (pathIndex !== -1) {
-			ret = host.substring(0, pathIndex);
-		} else {
-			ret = host;
-		}
-
-		return ret;
-	}
-
-	/* Format all the event contexts into their corresponding columns. */
-	formatEvent(event) {
-		// Enum to human-readable structure to translate the various DOM contexts.
-		const locationTypes = {
-			0: "attribute name",
-			1: "text",
-			2: "node name",
-			3: "attribute value",
-			4: "comment block"
-		};
-
-		var ret = [];
-		if (event.DOMContexts && event.DOMContexts.length > 0) {
-			ret = event.DOMContexts.map(
-				function(context, idx) {
-					return {
-						ID: event.ID + context.ID,
-						HTMLLocationType:
-							locationTypes[context.HTMLLocationType],
-						HTMLNodeType: context.HTMLNodeType,
-						EventContext: context.EventContext,
-						RawEvent: event.RawEvent.Data,
-						RawEventIndex: idx,
-						EventType: event.EventType,
-						EventHost: this.parseHost(event.EventURL),
-						EventPath: this.parsePath(event.EventURL),
-						Severity: context.Severity
-					};
-				}.bind(this)
-			);
-		} else {
-			console.log(event);
-			// If there are no DOMContexts, it is most likely an HTTP response.
-			return {
-				ID: event.ID,
-				HTMLLocationType: "n/a",
-				HTMLNodeType: "n/a",
-				EventContext: "n/a",
-				RawEvent: event.RawEvent.Data,
-				RawEventIndex: 0, // this isn't really correct. there could be a case where there are two of the same tracer in an HTTP response
-				EventType: event.EventType,
-				EventHost: this.parseHost(event.EventURL),
-				EventPath: this.parsePath(event.EventURL),
-				Severity: 0
-			};
-		}
-
-		return ret;
-	}
-
-	requestEvents(
-		repeat,
-		tracerID = this.props.tracer.ID,
-		timingInterval = 1500
-	) {
-		// By default, the app starts with non of the tracers selected. Don't make a
-		// request in this case.
-		if (tracerID) {
-			var req = new Request(
-				`http://127.0.0.1:8081/tracers/${tracerID}/events`,
-				{
-					method: "GET",
-					headers: { Hoot: "!" }
-				}
-			);
-
-			fetch(req)
-				.then(response => response.json())
-				.catch(error => console.error("Error:", error))
-				.then(response => {
-					const nEvents = [].concat.apply(
-						[],
-						response.map(this.formatEvent.bind(this))
-					);
-
-					const filteredEvents = this.props.contextFilters.reduce(
-						(accum, cur) => accum.filter(cur),
-						nEvents
-					);
-
-					// Need to check this race condition. There is a chance that when
-					// this request returns, the tracer ID might have changed already.
-					// If that is the case, we need to not render the results.
-					if (this.props.tracer.ID === tracerID) {
-						this.setState({
-							events: filteredEvents,
-							loading: false
-						});
-					}
-				});
-		}
-		// Set the next timeout if the repeat parameter is set
-		if (repeat) {
-			setTimeout(
-				function() {
-					// Continue to make requests
-					this.requestEvents(true);
-				}.bind(this),
-				timingInterval
-			);
-		}
 	}
 
 	render() {
+		console.log("[RENDER]");
 		let ret;
-		if (this.state.loading) {
+		if (this.props.loading) {
 			ret = (
 				<FormGroup className="loading-spinner-parent">
 					<Col md={12} className="loading-spinner-child text-center">
@@ -236,7 +44,7 @@ class TracerEventsTable extends Component {
 			let onRowSelect = this.onRowSelect;
 			ret = (
 				<ReactTable
-					data={this.state.events}
+					data={this.props.events}
 					columns={[
 						{
 							Header: "observed outputs",
@@ -267,7 +75,7 @@ class TracerEventsTable extends Component {
 					getTrProps={(state, rowInfo, column, instance) => {
 						if (rowInfo) {
 							let classname = "";
-							switch (rowInfo.row._original.Severity) {
+							switch (rowInfo.row.Severity) {
 								case 1:
 									classname = "suspicious";
 									break;
@@ -281,9 +89,7 @@ class TracerEventsTable extends Component {
 									classname = "unexploitable";
 							}
 
-							if (
-								rowInfo.row.ID === this.state.selectedEvent.ID
-							) {
+							if (rowInfo.row.ID === this.props.selectedEventID) {
 								classname += " row-selected";
 							}
 
@@ -307,7 +113,7 @@ class TracerEventsTable extends Component {
 							desc: true
 						}
 					]}
-					defaultPageSize={100}
+					defaultPageSize={25}
 				/>
 			);
 		}
