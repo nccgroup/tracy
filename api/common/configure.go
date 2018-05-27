@@ -2,7 +2,7 @@ package common
 
 import (
 	"encoding/json"
-	"tracy/configure"
+	"github.com/nccgroup/tracy/configure"
 )
 
 /*GetConfig is the common functionality for getting the global configuration. */

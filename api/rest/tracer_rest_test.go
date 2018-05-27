@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/nccgroup/tracy/api/types"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"tracy/api/types"
 )
 
 /* Testing addTracer with httptest. POST /tracers */

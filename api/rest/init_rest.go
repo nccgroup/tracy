@@ -6,13 +6,13 @@ import (
 	"flag"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
 	l "log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"time"
-	"tracy/configure"
-	"tracy/log"
 )
 
 /*RestServer is the HTTP server that serves all the API. */

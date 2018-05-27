@@ -6,17 +6,17 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
+	"github.com/nccgroup/tracy/api/common"
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"strings"
-	"tracy/api/common"
-	"tracy/api/store"
-	"tracy/api/types"
-	"tracy/configure"
-	"tracy/log"
 )
 
 /*ListenAndServe waits and listens for TCP connections and proxies them. */
