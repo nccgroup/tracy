@@ -1,8 +1,8 @@
 package rest
 
 import (
+	"github.com/nccgroup/tracy/api/common"
 	"net/http"
-	"tracy/api/common"
 )
 
 /*GetConfig gets the global configuration for the application. */

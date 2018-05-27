@@ -8,13 +8,13 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"github.com/nccgroup/tracy/log"
 	l "log"
 	"math/big"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
-	"tracy/log"
 )
 
 var SigningCertificate tls.Certificate

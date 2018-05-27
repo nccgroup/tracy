@@ -1,12 +1,12 @@
 package rest
 
 import (
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/configure"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
-	"tracy/api/store"
-	"tracy/configure"
 )
 
 /* A function that takes a slice of RequestTestPairs. Each pair has a request and a

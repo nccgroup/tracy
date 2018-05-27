@@ -6,7 +6,7 @@ COMMIT=$(shell git rev-parse HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 
 # Symlink into GOPATH
-PROJECT_NAME=tracy
+PROJECT_NAME=github.com/nccgroup/tracy
 BUILD_DIR=${GOPATH}/src/${PROJECT_NAME}
 CURRENT_DIR=$(shell pwd)
 BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})

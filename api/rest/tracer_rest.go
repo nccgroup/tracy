@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 
 	"github.com/gorilla/mux"
+	"github.com/nccgroup/tracy/api/common"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/log"
+	"github.com/nccgroup/tracy/proxy"
 	"net/http"
 	"strconv"
-	"tracy/api/common"
-	"tracy/api/types"
-	"tracy/log"
-	"tracy/proxy"
 )
 
 /*AddTracers decodes an HTTP request to add a new tracer(s) to the database. */
