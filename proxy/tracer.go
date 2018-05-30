@@ -3,15 +3,15 @@ package proxy
 import (
 	"bytes"
 	"fmt"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-	"tracy/api/types"
-	"tracy/configure"
-	"tracy/log"
 )
 
 /* Helper function for searching for tracer tags in query parameters and body and replacing them with randomly generated

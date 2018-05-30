@@ -1,8 +1,8 @@
 package store
 
 import (
-	"tracy/api/types"
-	"tracy/log"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/log"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
