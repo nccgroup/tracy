@@ -6,6 +6,11 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"github.com/nccgroup/tracy/api/rest"
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
+	"github.com/nccgroup/tracy/proxy"
 	"io/ioutil"
 	_ "net/http/pprof"
 	"os"
@@ -14,11 +19,6 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strings"
-	"tracy/api/rest"
-	"tracy/api/store"
-	"tracy/configure"
-	"tracy/log"
-	"tracy/proxy"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")

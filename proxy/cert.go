@@ -10,6 +10,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -17,8 +19,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"tracy/configure"
-	"tracy/log"
 )
 
 /* Upgrade a TLS connection if the proxy receives a 'CONNECT' action from the connection. */

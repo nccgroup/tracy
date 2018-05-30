@@ -2,10 +2,10 @@ package common
 
 import (
 	"encoding/json"
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/log"
 	"strings"
-	"tracy/api/store"
-	"tracy/api/types"
-	"tracy/log"
 
 	"github.com/yosssi/gohtml"
 	"golang.org/x/net/html"

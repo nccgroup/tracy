@@ -3,13 +3,13 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/nccgroup/tracy/api/common"
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/log"
 	"net/http"
 	"strconv"
 	"strings"
-	"tracy/api/common"
-	"tracy/api/store"
-	"tracy/api/types"
-	"tracy/log"
 
 	"github.com/gorilla/mux"
 )

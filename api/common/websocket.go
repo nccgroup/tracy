@@ -2,10 +2,10 @@ package common
 
 import (
 	"github.com/gorilla/websocket"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/log"
 	"math/rand"
 	"time"
-	"tracy/api/types"
-	"tracy/log"
 )
 
 var subscribers map[int]*subscriber

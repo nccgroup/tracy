@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/nccgroup/tracy/api/types"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
-	"tracy/api/types"
 )
 
 var requestDataNoTags = `GET /api/v1/action/ HTTP/1.1

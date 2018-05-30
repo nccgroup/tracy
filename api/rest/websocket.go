@@ -2,9 +2,9 @@ package rest
 
 import (
 	"github.com/gorilla/websocket"
+	"github.com/nccgroup/tracy/api/common"
+	"github.com/nccgroup/tracy/log"
 	"net/http"
-	"tracy/api/common"
-	"tracy/log"
 )
 
 var upgrader = websocket.Upgrader{
