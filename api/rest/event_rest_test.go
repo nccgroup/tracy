@@ -7,6 +7,7 @@ import (
 	"github.com/nccgroup/tracy/api/types"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -25,7 +26,7 @@ func TestAddEvent(t *testing.T) {
 		addTracerURL     = "http://127.0.0.1:8081/tracers"
 		rawRequest       = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
 		addTracerPayload = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerPayload": "%s"}]}`, rawRequest, URL, method, tracerString)
-		eventString      = fmt.Sprintf(`{"RawEvent": "%s", "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
+		eventString      = fmt.Sprintf(`{"RawEvent": {"Data": "%s"}, "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
 	)
 
 	/* ADDING A TRACER */
@@ -69,8 +70,8 @@ func TestAddEvent(t *testing.T) {
 				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.DOMContexts[0].HTMLNodeType)
 			} else if got.DOMContexts[0].HTMLLocationType != 1 {
 				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", got.DOMContexts[0].HTMLLocationType)
-			} else if got.DOMContexts[0].EventContext != "blahblah" {
-				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'", got.DOMContexts[0].EventContext)
+			} else if strings.Trim(got.DOMContexts[0].EventContext, " ") != "blahblah" {
+				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got '%s', but expected 'blahblah'", strings.Trim(got.DOMContexts[0].EventContext, " "))
 			} else if got.DOMContexts[0].ID != 1 {
 				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", got.DOMContexts[0].ID)
 			}
@@ -123,8 +124,8 @@ func TestAddEvent(t *testing.T) {
 
 					if context.TracerEventID != got[0].ID {
 						err = fmt.Errorf("addTraceEvent returned the wrong tracer event ID. Got %d, but expected %d", context.TracerEventID, got[0].ID)
-					} else if context.EventContext != "blahblah" {
-						err = fmt.Errorf("addTraceEvent returned the wrong event context. Got %s, but expected %s", context.EventContext, "blahblah")
+					} else if strings.TrimSpace(context.EventContext) != "blahblah" {
+						err = fmt.Errorf("addTraceEvent returned the wrong event context. Got '%s', but expected %s", strings.TrimSpace(context.EventContext), "blahblah")
 					} else if context.HTMLLocationType != 1 {
 						err = fmt.Errorf("addTraceEvent returned the wrong location type. Got %d, but expected 1", context.HTMLLocationType)
 					} else if context.HTMLNodeType != "a" {
@@ -164,7 +165,7 @@ func TestDuplicateEvent(t *testing.T) {
 		addTracerURL     = "http://127.0.0.1:8081/tracers"
 		rawRequest       = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
 		addTracerPayload = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerPayload": "%s"}]}`, rawRequest, URL, method, tracerString)
-		eventString      = fmt.Sprintf(`{"RawEvent": "%s", "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
+		eventString      = fmt.Sprintf(`{"RawEvent": {"Data": "%s"}, "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
 	)
 
 	/* ADDING A TRACER */
@@ -206,8 +207,8 @@ func TestDuplicateEvent(t *testing.T) {
 				err = fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.DOMContexts[0].HTMLNodeType)
 			} else if got.DOMContexts[0].HTMLLocationType != 1 {
 				err = fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", got.DOMContexts[0].HTMLLocationType)
-			} else if got.DOMContexts[0].EventContext != "blahblah" {
-				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got %s, but expected 'blahblah'", got.DOMContexts[0].EventContext)
+			} else if strings.TrimSpace(got.DOMContexts[0].EventContext) != "blahblah" {
+				err = fmt.Errorf("addTracerEvent returned the wrong context data. Got '%s', but expected 'blahblah'", strings.TrimSpace(got.DOMContexts[0].EventContext))
 			} else if got.DOMContexts[0].ID != 1 {
 				err = fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", got.DOMContexts[0].ID)
 			}
