@@ -90,7 +90,7 @@ function refreshConfig(message, sender, sendResponse) {
     chrome.storage.local.get(
         {
             restHost: "localhost",
-            restPort: 8080
+            restPort: 8081
         },
         function(res) {
             console.log("Got the settings from the chrome extension: ", res);
