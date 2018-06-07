@@ -13,7 +13,11 @@
       "matches": ["<all_urls>"],
       "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*"],
       "all_frames": true,
-      "js": ["scripts/highlight.js", "scripts/dom-mutations.js"],
+      "js": [
+        "scripts/highlight.js",
+        "scripts/dom-mutations.js",
+        "scripts/method-hooking-injector.js"
+      ],
       "css": ["css/dropdown.css"],
       "run_at": "document_start"
     }
