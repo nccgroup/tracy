@@ -16,20 +16,20 @@ function bulkAddEvents(events) {
 function requestHandler(domEvents) {
     /* A filtered list of DOM events based on if the event has a tracer in it. Each DOM event can have multiple tracer
      * strings. */
-    var filteredEvents = [];
+    let filteredEvents = [];
 
     /* For each DOM write, search for all the tracer strings and collect their location. */
-    for (var domEventKey in domEvents) {
-        var domEvent = domEvents[domEventKey];
+    for (let domEventKey in domEvents) {
+        const domEvent = domEvents[domEventKey];
         /* Each DOM write could have many tracer strings in it. Group these together. */
-        var tracersPerDomEvent = [];
+        let tracersPerDomEvent = [];
 
         /* The request is a batched list of DOM events. Iterate through each of them looking for a tracer string. */
-        for (var id in tracerPayloads) {
-            let tracerPayload = tracerPayloads[id];
+        for (let id in tracerPayloads) {
+            const tracerPayload = tracerPayloads[id];
             /* If a tracer was found, make sure all the event data is proper and add it to the list of tracers found for this event.
              * Continue to the rest of the recorded. */
-            var tracerLocation = domEvent.msg.indexOf(tracerPayload);
+            const tracerLocation = domEvent.msg.indexOf(tracerPayload);
             if (tracerLocation != -1) {
                 /* Add this location data to the list of tracers per DOM event. */
                 tracersPerDomEvent.push(tracerPayload);
@@ -70,7 +70,9 @@ function requestHandler(domEvents) {
 
 /* Routes messages from the extension to various functions on the background. */
 function messageRouter(message, sender, sendResponse) {
+    console.log("[MESSAGEROUTER]");
     if (message && message["message-type"]) {
+        console.log("message", message);
         switch (message["message-type"]) {
             case "job":
                 addJobToQueue(message, sender, sendResponse);
@@ -90,10 +92,9 @@ function refreshConfig(message, sender, sendResponse) {
     chrome.storage.local.get(
         {
             restHost: "localhost",
-            restPort: 8080
+            restPort: 8081
         },
         function(res) {
-            console.log("Got the settings from the chrome extension: ", res);
             restServer = res.restHost + ":" + res.restPort;
             fetch(`http://${restServer}/config`, { headers: { Hoot: "!" } })
                 .then(res => res.json())
@@ -168,13 +169,13 @@ function addJobToQueue(message, sender, sendResponse) {
 }
 
 /* Global list of DOM writes. Periodically, this will be sent to the background thread and cleared. */
-var jobs = [];
+let jobs = [];
 
 /* Process all the jobs in the current queue. */
 function processDomEvents() {
     /* If there are no new jobs, continue. */
     if (enabled) {
-        let p = JSON.parse(JSON.stringify(jobs));
+        const p = JSON.parse(JSON.stringify(jobs));
         /* Clear out the jobs. */
         jobs = [];
         /* Send any jobs off to the API server. */
@@ -202,9 +203,9 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 });
 
 // Configuration defaults
-var restServer = "127.0.0.1:443";
-var tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
-var defaultTracer = "";
-var tracerPayloads = [];
-var enabled = true;
-var ws = null;
+let restServer = "127.0.0.1:443";
+let tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
+let defaultTracer = "";
+let tracerPayloads = [];
+let enabled = true;
+let ws = null;
