@@ -30,7 +30,6 @@ func Open(path string, logMode bool) error {
 		&types.TracerEvent{},
 		&types.DOMContext{},
 		&types.Request{},
-		&types.Label{},
 		&types.RawEvent{})
 
 	/* We want to disable the goroutine thread pool that is used by default since this application doesn't need it and will

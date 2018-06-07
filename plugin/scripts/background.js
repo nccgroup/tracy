@@ -70,11 +70,11 @@ function requestHandler(domEvents) {
 
 /* Routes messages from the extension to various functions on the background. */
 function messageRouter(message, sender, sendResponse) {
-    console.log("[MESSAGEROUTER]");
     if (message && message["message-type"]) {
-        console.log("message", message);
         switch (message["message-type"]) {
             case "job":
+                if (message.type == "innerHTML")
+                    console.log("message", message);
                 addJobToQueue(message, sender, sendResponse);
                 break;
             case "config":
