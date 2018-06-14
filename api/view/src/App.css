@@ -25,6 +25,22 @@ span.raw-title {
   color: white;
 }
 
+div.websocket {
+  padding-top: 10px;
+}
+
+span.connecting {
+  margin-right: 10px;
+}
+
+span.connected {
+  color: #64b448;
+}
+
+span.disconnected {
+  color: #ff9994;
+}
+
 div.right-bottom-column,
 div.left-bottom-column,
 div.right-top-column,

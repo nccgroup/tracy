@@ -39,7 +39,7 @@ func WebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		log.Error.Println(err)
+		log.Trace.Println(err)
 	}
 
 }

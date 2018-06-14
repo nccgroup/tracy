@@ -186,6 +186,7 @@ class App extends Component {
 
 	/* Gets the bulk tracers via an HTTP GET request. */
 	getTracers() {
+		//TODO: make configurable
 		/* Create the HTTP GET request to the /tracers API endpoint. */
 		var req = new Request(`http://127.0.0.1:8081/tracers`, {
 			method: "GET",
@@ -194,7 +195,7 @@ class App extends Component {
 
 		fetch(req)
 			.then(response => response.json())
-			.catch(error => console.error("Error:", error))
+			.catch(error => setTimeout(this.getTracers, 1500)) // If the API isn't up, retry until it comes up
 			.then(response => {
 				try {
 					if (
@@ -218,6 +219,7 @@ class App extends Component {
 
 	/* Gets the bulk events via an HTTP GET request. */
 	getTracerEvents(tracerID = this.state.tracer.ID) {
+		// TODO: make configurable
 		// By default, the app starts with non of the tracers selected. Don't make a
 		// request in this case.
 		if (tracerID) {
@@ -231,7 +233,7 @@ class App extends Component {
 
 			fetch(req)
 				.then(response => response.json())
-				.catch(error => console.error("Error:", error))
+				.catch(error => setTimeout(this.getTracerEvents, 1500)) // If the API isn't up, retry until it comes up
 				.then(response => {
 					this.setState({
 						events: response,
@@ -441,9 +443,24 @@ class App extends Component {
 						<Header width={2} />
 						<Col md={5} />
 						<Col md={5}>
-							<FilterColumn
-								handleFilterChange={this.handleFilterChange}
-							/>
+							<Row>
+								<Col md={5} />
+								<Col md={5}>
+									<WebSocketRouter
+										handleNewTracer={this.handleNewTracer}
+										handleNewRequest={this.handleNewRequest}
+										handleNewEvent={this.handleNewEvent}
+										tracer={this.state.tracer}
+									/>
+								</Col>
+								<Col md={2}>
+									<FilterColumn
+										handleFilterChange={
+											this.handleFilterChange
+										}
+									/>
+								</Col>
+							</Row>
 						</Col>
 					</Row>
 					<Row className="tables-row">
@@ -479,12 +496,6 @@ class App extends Component {
 						</Col>
 					</Row>
 					<Footer />
-					<WebSocketRouter
-						handleNewTracer={this.handleNewTracer}
-						handleNewRequest={this.handleNewRequest}
-						handleNewEvent={this.handleNewEvent}
-						tracer={this.state.tracer}
-					/>
 				</Col>
 			</Row>
 		);
