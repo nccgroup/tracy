@@ -8,62 +8,61 @@ class WebSocketRouter extends Component {
 			ws: null,
 			isOpen: false
 		};
-		this.onReceive = this.onReceive.bind(this);
-		this.onClose = this.onClose.bind(this);
-		this.onError = this.onError.bind(this);
-		this.onOpen = this.onOpen.bind(this);
+
+		this.connectToWebSocket = this.connectToWebSocket.bind(this);
 	}
 
 	componentDidMount() {
-		let ws = new WebSocket("ws://localhost:8081/ws");
-		ws.onmessage = this.onReceive;
-		ws.onopen = this.onOpen;
-		ws.onerror = this.onError;
-		ws.onclose = this.onClose;
+		this.connectToWebSocket();
+	}
 
-		this.setState({
-			ws: ws
-		});
+	connectToWebSocket() {
+		//TODO: need to make this configurable.
+		let ws = new WebSocket("ws://localhost:8081/ws");
+
+		ws.onmessage = function(event) {
+			switch (Object.keys(JSON.parse(event.data))[0]) {
+				case "Tracer":
+					this.props.handleNewTracer(event);
+					break;
+				case "Request":
+					this.props.handleNewRequest(event);
+					break;
+				case "TracerEvent":
+					this.props.handleNewEvent(event);
+					break;
+				default:
+					console.log("WebSocket message: ", event.data);
+					break;
+			}
+		}.bind(this);
+
+		ws.onopen = function() {
+			this.setState({
+				isOpen: true,
+				ws: ws
+			});
+		}.bind(this);
+
+		ws.onclose = function() {
+			this.setState({
+				isOpen: false,
+				ws: null
+			});
+
+			setTimeout(this.connectToWebSocket, 1500);
+		}.bind(this);
 	}
 
 	shouldComponentUpdate(nextProps, nextState) {
 		let ret = false;
-		if (nextProps.tracer.ID !== this.props.tracer.ID) {
+		if (
+			nextProps.tracer.ID !== this.props.tracer.ID ||
+			nextState.isOpen !== this.state.isOpen
+		) {
 			ret = true;
 		}
 		return ret;
-	}
-
-	onOpen() {
-		this.setState({
-			isOpen: true
-		});
-	}
-
-	onError(err) {}
-
-	onClose() {
-		this.setState({
-			isOpen: false
-		});
-	}
-
-	onReceive(event) {
-		switch (Object.keys(JSON.parse(event.data))[0]) {
-			case "Tracer":
-				console.log("[NEWTRACER]", event);
-				this.props.handleNewTracer(event);
-				break;
-			case "Request":
-				this.props.handleNewRequest(event);
-				break;
-			case "TracerEvent":
-				this.props.handleNewEvent(event);
-				break;
-			default:
-				console.log("WebSocket message: ", event.data);
-				break;
-		}
 	}
 
 	render() {
@@ -73,11 +72,24 @@ class WebSocketRouter extends Component {
 			this.state.ws.readyState !== this.state.ws.CLOSED &&
 			this.state.isOpen
 		) {
+			// If we have a websocket connection, send a subscription notice
+			// which channel we want to receive events for.
 			status = "connected";
-			var subscribe = [this.props.tracer.ID];
+			const subscribe = [this.props.tracer.ID];
 			this.state.ws.send(JSON.stringify(subscribe));
 		}
-		return <span>websocket status: {status}</span>;
+
+		const spinner = (
+			<span className="connecting glyphicon glyphicon-refresh glyphicon-refresh-animate">
+				{" "}
+			</span>
+		);
+		return (
+			<div className="websocket">
+				{status === "disconnected" ? spinner : ""}
+				websocket status: <span className={`${status}`}>{status}</span>
+			</div>
+		);
 	}
 }
 

@@ -7,7 +7,11 @@ function bulkAddEvents(events) {
         },
         method: "POST",
         body: JSON.stringify(events)
-    }).catch(err => console.error(err));
+    }).catch(err =>
+        setTimeout(function() {
+            bulkAddEvents(events);
+        }, 1500)
+    );
 }
 
 /* Handler function for events triggered from the web page. Events should contain a list of DOM events. This handler
@@ -73,8 +77,6 @@ function messageRouter(message, sender, sendResponse) {
     if (message && message["message-type"]) {
         switch (message["message-type"]) {
             case "job":
-                if (message.type == "innerHTML")
-                    console.log("message", message);
                 addJobToQueue(message, sender, sendResponse);
                 break;
             case "config":
@@ -122,6 +124,7 @@ function refreshConfig(message, sender, sendResponse) {
 function websocketConnect() {
     if (!ws) {
         ws = new WebSocket(`ws://${restServer}/ws`);
+
         ws.onmessage = function(event) {
             let req = JSON.parse(event.data);
             switch (Object.keys(req)[0]) {
@@ -136,8 +139,9 @@ function websocketConnect() {
                     break;
             }
         };
-        ws.onerror = function(event) {
-            console.error(event);
+
+        ws.onclose = function() {
+            setTimeout(websocketConnect, 1500); // Attempt to reconnect when the socket closes.
         };
     }
 }

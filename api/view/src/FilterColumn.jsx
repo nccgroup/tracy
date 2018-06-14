@@ -43,7 +43,6 @@ class FilterColumn extends Component {
 	render() {
 		return (
 			<Row className="filter-buttons">
-				<Col md={9} />
 				<Col md={1}>
 					<FilterButton
 						name="text"
