@@ -59,7 +59,6 @@ function registerLongPauseHandler(e) {
 							generateTracerPayload(el.target.innerText)
 								.then(res => res.json())
 								.then(res => {
-									console.log(res);
 									/* Add the tracer string template. */
 									e.target.value =
 										e.target.value +
