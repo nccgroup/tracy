@@ -41,6 +41,24 @@ span.disconnected {
   color: #ff9994;
 }
 
+.ReactTable .rt-tbody .rt-tr-group {
+  border: none !important;
+}
+
+.ReactTable {
+  border: none !important;
+}
+
+.ReactTable .rt-thead.-header {
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.ReactTable .rt-thead.-headerGroups {
+  background: none !important;
+  border-bottom: none !important;
+}
+
 div.right-bottom-column,
 div.left-bottom-column,
 div.right-top-column,
@@ -49,6 +67,31 @@ div.left-top-column {
   padding: 9.5px;
   border: solid #39464e 1px;
   border-bottom: none;
+}
+
+div.right-bottom-column {
+  border-bottom: 0px;
+  border-bottom: solid #39464e 1px !important;
+  border-right: 0px;
+}
+
+div.left-bottom-column {
+  border-bottom: solid #39464e 1px !important;
+  border-right: 0px;
+  border-left: 0px;
+}
+
+div.right-top-column {
+  border-bottom: 0px;
+  border-right: 0px;
+  border-top: 2px !important;
+}
+
+div.left-top-column {
+  border-right: 0px;
+  border-top: 0px;
+  border-bottom: 0px;
+  border-left: 0px;
 }
 
 .filter-inactive {
@@ -121,6 +164,11 @@ div.react-bs-table-bordered {
 
 .glyphicon {
   cursor: pointer;
+}
+
+div.link-row {
+  height: 5vh;
+  background-color: #1c2128;
 }
 
 .blinker {
@@ -237,13 +285,13 @@ div.rt-tr {
 .ReactTable .rt-thead .rt-th.-sort-desc,
 .ReactTable .rt-thead .rt-td.-sort-desc {
   -webkit-box-shadow: inset 0 -3px 0 0 #67baaf !important;
-  box-shadow: inset 0 -3px 0 0 #67baaf !important;
+  box-shadow: inset 0 -2px 0 0 #67baaf !important;
 }
 
 .ReactTable .rt-thead .rt-th.-sort-asc,
 .ReactTable .rt-thead .rt-td.-sort-asc {
   -webkit-box-shadow: inset 0 3px 0 0 #67baaf !important;
-  box-shadow: inset 0 3px 0 0 #67baaf !important;
+  box-shadow: inset 0 2px 0 0 #67baaf !important;
 }
 
 td,

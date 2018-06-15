@@ -65,8 +65,7 @@ class TracerEventsTable extends Component {
 								},
 								{
 									Header: "severity",
-									accessor: "Severity",
-									width: 30
+									accessor: "Severity"
 								}
 							]
 						}

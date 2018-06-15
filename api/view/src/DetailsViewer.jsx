@@ -7,40 +7,30 @@ import TracerDetails from "./TracerDetails";
 /* View used to show the raw request and the events for the selected tracer row. */
 class DetailsViewer extends Component {
 	render() {
-		var ret;
-		const helpTracer =
-			"Click one of the tracers above to list all of its destinations on the right.";
-		const helpEvent =
-			"Click one of the tracer events above to see the tracer's destination.";
-		if (this.isEmpty(this.props.event) && this.isEmpty(this.props.tracer)) {
-			ret = (
-				<Row id="details-views" className="details-viewer">
-					<Col md={6} className="left-bottom-column">
-						<pre className="raw-data">{helpTracer}</pre>
-					</Col>
-					<Col md={6} className="right-bottom-column">
-						<pre className="raw-data">{helpEvent}</pre>
-					</Col>
-				</Row>
+		let leftColumn = (
+			<pre className="raw-data">
+				Click one of the tracers above to list all of its destinations
+				on the right.
+			</pre>
+		);
+
+		let rightColumn = (
+			<pre className="raw-data">
+				Click one of the tracer events above to see the tracer's
+				destination.
+			</pre>
+		);
+
+		if (!this.isEmpty(this.props.tracer)) {
+			leftColumn = (
+				<TracerDetails
+					data={this.props.tracer.RawRequest}
+					highlightString={this.props.tracer.TracerPayload}
+				/>
 			);
-		} else if (
-			!this.isEmpty(this.props.tracer) &&
-			this.isEmpty(this.props.event)
-		) {
-			ret = (
-				<Row id="details-views" className="details-viewer">
-					<Col md={6} className="left-bottom-column">
-						<TracerDetails
-							data={this.props.tracer.RawRequest}
-							highlightString={this.props.tracer.TracerPayload}
-						/>
-					</Col>
-					<Col md={6} className="right-bottom-column">
-						<pre className="raw-data">{helpEvent}</pre>
-					</Col>
-				</Row>
-			);
-		} else {
+		}
+
+		if (!this.isEmpty(this.props.event)) {
 			let lang;
 			let data;
 			try {
@@ -54,27 +44,27 @@ class DetailsViewer extends Component {
 				data = this.props.event.RawEvent;
 				lang = "html";
 			}
-			ret = (
-				<Row id="details-views" className="details-viewer">
-					<Col md={6} className="right-bottom-column">
-						<TracerDetails
-							data={this.props.tracer.RawRequest}
-							highlightString={this.props.tracer.TracerPayload}
-						/>
-					</Col>
-					<Col md={6} className="right-bottom-column">
-						<EventDetails
-							data={data}
-							highlightString={this.props.tracer.TracerPayload}
-							highlightOffset={this.props.event.RawEventIndex}
-							lang={lang}
-						/>
-					</Col>
-				</Row>
+
+			rightColumn = (
+				<EventDetails
+					data={data}
+					highlightString={this.props.tracer.TracerPayload}
+					highlightOffset={this.props.event.RawEventIndex}
+					lang={lang}
+				/>
 			);
 		}
 
-		return ret;
+		return (
+			<Row id="details-views" className="details-viewer">
+				<Col md={6} className="left-bottom-column">
+					{leftColumn}
+				</Col>
+				<Col md={6} className="right-bottom-column">
+					{rightColumn}
+				</Col>
+			</Row>
+		);
 	}
 
 	isEmpty(obj) {
