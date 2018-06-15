@@ -38,8 +38,7 @@ class TracerTable extends Component {
 							{ Header: "id", accessor: "ID", width: 30 },
 							{
 								Header: "method",
-								accessor: "RequestMethod",
-								width: 40
+								accessor: "RequestMethod"
 							},
 							{ Header: "host", accessor: "RequestURL" },
 							{ Header: "path", accessor: "RequestPath" },
@@ -53,8 +52,7 @@ class TracerTable extends Component {
 							},
 							{
 								Header: "severity",
-								accessor: "OverallSeverity",
-								width: 30
+								accessor: "OverallSeverity"
 							}
 						]
 					}
