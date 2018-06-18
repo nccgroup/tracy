@@ -17,6 +17,7 @@ import (
 	"time"
 )
 
+/*SigningCertificate is the certificate used to sign all the certificates created on-the-fly when intercepting traffic. */
 var SigningCertificate tls.Certificate
 
 /*Certificates loads the local certificate pairs if they exist or generates new ones on the fly. */

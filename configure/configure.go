@@ -74,7 +74,6 @@ func init() {
 	/* Create the configuration channel listener to synchronize configuration changes. */
 	AppConfigReadChannel = make(chan *ReadConfigCmd, 10)
 	AppConfigWriteChannel = make(chan *WriteConfigCmd, 10)
-	AppConfigAppendChannel = make(chan *AppendConfigCmd, 10)
 	AppConfigAllChannel = make(chan *AllConfigCmd, 10)
 	go ConfigurationListener(configData.(map[string]interface{}))
 
@@ -122,13 +121,6 @@ type WriteConfigCmd struct {
 	resp chan bool
 }
 
-/*AppendConfigCmd is a channel operation used to append configuration data. */
-type AppendConfigCmd struct {
-	key  string
-	val  interface{}
-	resp chan bool
-}
-
 /*AllConfigCmd is a channel operation used to read all of the configuration data. */
 type AllConfigCmd struct {
 	resp chan map[string]interface{}
@@ -141,9 +133,6 @@ var AppConfigReadChannel chan *ReadConfigCmd
 /*AppConfigWriteChannel is used to push changes to any subscribers within the application that
  * are dependent on those configurations. */
 var AppConfigWriteChannel chan *WriteConfigCmd
-
-/*AppConfigAppendChannel is used to append items to list configuration options. */
-var AppConfigAppendChannel chan *AppendConfigCmd
 
 /*AppConfigAllChannel is used to get the entire data structure of configuration options. */
 var AppConfigAllChannel chan *AllConfigCmd
@@ -165,19 +154,6 @@ func ConfigurationListener(initial map[string]interface{}) {
 			}
 		case write := <-AppConfigWriteChannel:
 			configuration[write.key] = write.val
-			err := writeConf(configuration, TracyPath)
-			if err != nil {
-				log.Warning.Println(err)
-			}
-		case app := <-AppConfigAppendChannel:
-			switch v := app.val.(type) {
-			case map[string]string:
-				for key, val := range v {
-					configuration[app.key].(map[string]string)[key] = val
-				}
-			case string:
-				configuration[app.key] = append(configuration[app.key].([]string), v)
-			}
 			err := writeConf(configuration, TracyPath)
 			if err != nil {
 				log.Warning.Println(err)
@@ -222,16 +198,6 @@ func ReadConfig(k string) (interface{}, error) {
 	}
 
 	return resp, err
-}
-
-/*AppendConfig read the global configuration of the running application. */
-func AppendConfig(k string, v interface{}) {
-	app := &AppendConfigCmd{
-		key:  k,
-		val:  v,
-		resp: make(chan bool),
-	}
-	AppConfigAppendChannel <- app
 }
 
 /*ReadAllConfig reads all of the global configuration settings. */

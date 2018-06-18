@@ -35,7 +35,3 @@
 [[constraint]]
   branch = "master"
   name = "github.com/gorilla/websocket"
-
-[[constraint]]
-  name = "github.com/fatih/color"
-  version = "1.6.0"

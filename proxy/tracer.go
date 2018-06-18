@@ -70,7 +70,7 @@ func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 	}
 
 	var labels [][]byte
-	for s, _ := range labelsConfig.(map[string]interface{}) {
+	for s := range labelsConfig.(map[string]interface{}) {
 		labels = append(labels, []byte(s))
 		labels = append(labels, []byte(url.QueryEscape(s)))
 	}

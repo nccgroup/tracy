@@ -60,11 +60,13 @@ func upgradeConnectionTLS(conn net.Conn, host string) (net.Conn, bool, error) {
 	return clientConn, true, nil
 }
 
+/*KeyPairBytes is a byte representation of the certificate and private key for specific host's signed certificate. This is serialized in a cache file to be reused when the program terminates. */
 type KeyPairBytes struct {
 	CertPEM []byte `json:"CertPEM"`
 	KeyPEM  []byte `json:"KeyPEM"`
 }
 
+/*CertCacheEntry is an entry in the certificate cache. It contains the host and the KeyPairBytes that was used to generate the certificate. */
 type CertCacheEntry struct {
 	Host  string `json:"Host"`
 	Certs KeyPairBytes
@@ -122,6 +124,7 @@ func generateCert(host string, cert tls.Certificate) (tls.Certificate, KeyPairBy
 	return newCer, keyPairBytes, err
 }
 
+/*SetCertCache initializes the certificate cache and starts the go routine that serves the cache requests. */
 func SetCertCache(cache map[string]tls.Certificate) {
 	cacheChan = make(chan *cacheRequest, 10)
 	go certCache(cacheChan, cache)
