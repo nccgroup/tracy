@@ -4,8 +4,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/log"
-	"math/rand"
-	"time"
 )
 
 var subscribers map[int]*subscriber
@@ -44,14 +42,15 @@ func UpdateSubscribers(update interface{}) {
 }
 
 func router() {
+	id := 0
 	for {
 		select {
 		case change := <-changeSubChan:
 			subscribers[change[0]].Tracer = uint(change[1])
 		case add := <-addSubChan:
-			key := rand.Intn(1000)
-			subscribers[key] = add
-			add.KeyChan <- key
+			subscribers[id] = add
+			add.KeyChan <- id
+			id += 1
 		case remove := <-removeSubChan:
 			delete(subscribers, remove)
 		case update := <-updateChan:
@@ -82,7 +81,6 @@ func router() {
 }
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
 	updateChan = make(chan interface{}, 10)
 	addSubChan = make(chan *subscriber, 10)
 	removeSubChan = make(chan int, 10)

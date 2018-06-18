@@ -36,5 +36,5 @@ func TestGetAllConfig(t *testing.T) {
 	tests := make([]RequestTestPair, 1)
 	getReqTest := RequestTestPair{getReq, getTest}
 	tests[0] = getReqTest
-	ConfigTestHelper(tests, t)
+	ServerTestHelper(tests, t)
 }

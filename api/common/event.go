@@ -22,7 +22,7 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	var data interface{}
 	if err = json.Unmarshal([]byte(event.RawEvent.Data), data); err != nil && event.EventType != "text" {
 		// It's not valid JSON. Assume it is HTML.
-		event.DOMContexts, err = getDomContexts(event, tracer)
+		event.DOMContexts, err = getDOMContexts(event, tracer)
 	}
 
 	// We've already added the raw event to get a valid raw event ID, so remove it here so the following create doesn't try to add it again.
@@ -94,15 +94,15 @@ func GetEvents(tracerID uint) ([]byte, error) {
 	return ret, err
 }
 
-/*addDomContext is the common functionality for adding data to the event context table. */
-func getDomContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types.DOMContext, error) {
-	log.Trace.Printf("Adding the event context for %+v", tracerEvent)
+// getDomContexts searches through a tracer event and finds all of tracer occurrences
+// specified by `tracer`.
+func getDOMContexts(tracerEvent types.TracerEvent, tracer types.Tracer) ([]types.DOMContext, error) {
 	var err error
 	var contexts []types.DOMContext
 
 	var doc *html.Node
-	var sev uint = 0
-	var ret *uint = &sev
+	var sev uint
+	ret := &sev
 	doc, err = html.Parse(strings.NewReader(tracerEvent.RawEvent.Data))
 	if err == nil {
 		// There are two places that will be calling this function. In one place, the API
@@ -164,7 +164,7 @@ Error:
 /* Helper function that recursively traverses the DOM notes and records any context
  * surrounding a particular string. */
 func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer string, tracerEvent types.TracerEvent, highest *uint) {
-	var sev uint = 0
+	var sev uint
 	if strings.Contains(n.Data, tracer) {
 		if n.Type == html.TextNode {
 			log.Trace.Printf("Found Tracer in TextNode. Parent Node: %s, Data: %s", n.Parent.Data, n.Data)

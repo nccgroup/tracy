@@ -4,10 +4,12 @@ import (
 	"runtime"
 )
 
-var CachedNewLine string
+/*CachedNewLine is newline to use in log messages for the OS of choice. */
+var cachedNewLine string
 
+/*NewLine returns a string representing the new line for the specific OS. */
 func NewLine() string {
-	if CachedNewLine == "" {
+	if cachedNewLine == "" {
 		switch runtime.GOOS {
 		case "linux", "darwin":
 			return "\n"
@@ -17,6 +19,6 @@ func NewLine() string {
 			return "\n"
 		}
 	} else {
-		return CachedNewLine
+		return cachedNewLine
 	}
 }

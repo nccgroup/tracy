@@ -43,7 +43,7 @@ func main() {
 	if err != nil {
 		log.Error.Fatal(err)
 	}
-	log.PrintCyan(fmt.Sprintf("Proxy server:\t%s%s", ps.(string), log.NewLine()))
+	fmt.Printf("Proxy server:\t%s%s", ps.(string), log.NewLine())
 
 	/* Serve it. Block here so the program doesn't close. */
 	go func() {
@@ -53,7 +53,7 @@ func main() {
 	if err != nil {
 		log.Error.Fatal(err)
 	}
-	log.PrintCyan(fmt.Sprintf("Tracer server:\t%s%s", ts.(string), log.NewLine()))
+	fmt.Printf("Tracer server:\t%s%s", ts.(string), log.NewLine())
 
 	autoLaunch, err := configure.ReadConfig("auto-launch")
 	if err != nil {
@@ -130,7 +130,11 @@ func init() {
 func processAutoLaunch(option string) {
 	switch option {
 	case "default":
-		openbrowser("http://localhost:8081")
+		s, err := configure.ReadConfig("tracer-server")
+		if err != nil {
+			log.Error.Fatal(err.Error())
+		}
+		openbrowser(fmt.Sprintf("http://%s", s))
 	case "off":
 		return
 	default:
