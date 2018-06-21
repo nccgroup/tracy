@@ -50,7 +50,7 @@ func router() {
 		case add := <-addSubChan:
 			subscribers[id] = add
 			add.KeyChan <- id
-			id += 1
+			id++
 		case remove := <-removeSubChan:
 			delete(subscribers, remove)
 		case update := <-updateChan:
