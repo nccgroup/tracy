@@ -282,6 +282,11 @@ func handleConnection(client net.Conn) {
 										//TODO: should probably make a bulk add events function
 										event.RawEventID = rawEvent.ID
 										event.RawEvent = rawEvent
+
+										//if err = store.DB.First(&tracer, "id = ?", event.TracerID).Error; err != nil {
+										//	log.Error.Println(err)
+										//	return
+										//}
 										_, err = common.AddEvent(tracer, event)
 									}
 								}
