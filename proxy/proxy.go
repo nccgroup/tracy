@@ -276,18 +276,22 @@ func handleConnection(client net.Conn) {
 							if len(tracers) > 0 {
 								/* We have to do this first so that we can get the ID of the raw event
 								 * and insert it with the event structure. */
-								rawEvent := common.AddEventData(string(b))
-								for _, tracer := range tracers {
-									for _, event := range tracer.TracerEvents {
-										//TODO: should probably make a bulk add events function
-										event.RawEventID = rawEvent.ID
-										event.RawEvent = rawEvent
 
-										//if err = store.DB.First(&tracer, "id = ?", event.TracerID).Error; err != nil {
-										//	log.Error.Println(err)
-										//	return
-										//}
-										_, err = common.AddEvent(tracer, event)
+								var rawEvent types.RawEvent
+								if rawEvent, err = common.AddEventData(string(b)); err == nil {
+									for _, tracer := range tracers {
+										for _, event := range tracer.TracerEvents {
+											//TODO: should probably make a bulk add events function
+											event.RawEventID = rawEvent.ID
+											event.RawEvent = rawEvent
+
+											//TODO: need to test this.
+											if err = store.DB.First(&tracer, "id = ?", event.TracerID).Error; err != nil {
+												log.Error.Println(err)
+												return
+											}
+											_, err = common.AddEvent(tracer, event)
+										}
 									}
 								}
 							}
