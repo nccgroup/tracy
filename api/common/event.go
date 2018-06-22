@@ -37,6 +37,9 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 		return ret, err
 	}
 
+	// We update the subscribers with the copy instead of the event because
+	// we don't want to erase the already recorded events that client might
+	// be showing.
 	copy.ID = event.ID
 	UpdateSubscribers(copy)
 	if ret, err = json.Marshal(copy); err != nil {
@@ -47,82 +50,8 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	return ret, nil
 }
 
-// AddEventData adds a raw event if it's the first of that type of event,
-// Otherwise, it returns the first event that looks like it. It also tags
-// the raw data as either HTML or JSON.
-func AddEventData(eventData string) types.RawEvent {
-	var (
-		re   types.RawEvent
-		err  error
-		e    string
-		f    uint
-		data interface{}
-	)
-
-	// Test if data is HTML or JSON by attempting to unmarshal the string as a
-	// JSON string. If it fails, it is most likely HTML.
-	// TODO: might be good in the future to infer from the content type
-	// TODO: header.
-	if err = json.Unmarshal([]byte(eventData), &data); err != nil {
-		e = gohtml.Format(eventData)
-		f = types.HTML
-	} else {
-		var ind []byte
-		ind, err = json.MarshalIndent(eventData, "", "  ")
-		if err != nil {
-			log.Error.Print(err)
-			return re
-		}
-		e = string(ind)
-		f = types.JSON
-	}
-
-	// We need to check if the data is already there.
-	if err = store.DB.FirstOrCreate(&re, types.RawEvent{Data: e, Format: f}).Error; err != nil {
-		log.Error.Printf("Wasn't able to create a raw event: %+v", re)
-	}
-
-	return re
-}
-
-// GetEvents is the common functionality for getting all the events for a given
-// tracer ID from the database.
-func GetEvents(tracerID uint) ([]byte, error) {
-	var (
-		ret []byte
-		err error
-	)
-
-	tracerEvents := make([]types.TracerEvent, 0)
-	if err = store.DB.Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err != nil {
-		log.Warning.Print(err)
-		return ret, err
-	}
-
-	cache := make(map[uint]types.RawEvent, 0)
-	var i uint
-	l := uint(len(tracerEvents))
-	for i = 0; i < l; i++ {
-		if cachedEvent, ok := cache[tracerEvents[i].RawEventID]; ok {
-			tracerEvents[i].RawEvent = cachedEvent
-		} else {
-			rawTracerEvent := types.RawEvent{}
-			store.DB.Model(&tracerEvents[i]).Related(&rawTracerEvent)
-			tracerEvents[i].RawEvent = rawTracerEvent
-			// Add the event to the cache so we don't have to look it up again.
-			cache[i] = rawTracerEvent
-		}
-	}
-
-	if ret, err = json.Marshal(tracerEvents); err != nil {
-		log.Warning.Print(err)
-	}
-
-	return ret, err
-}
-
-// getDomContexts searches through the raw tracer event and finds all of tracer
-// occurrences specified by the tracer passed in.
+// getDomContexts searches through the raw tracer event that should be HTML and
+// finds all of tracer occurrences specified by the tracer passed in.
 func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMContext, error) {
 	var (
 		contexts []types.DOMContext
@@ -138,16 +67,6 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 		return contexts, err
 	}
 
-	// There are two places that will be calling this function. In one place, the API
-	// string doesn't send the tracer string with its request, so we need to fetch it.
-	// Otherwise, the tracer struct should have it already and we don't need to make
-	// another db call.
-	if tracer.TracerPayload == "" {
-		if err = store.DB.First(&tracer, "id = ?", event.TracerID).Error; err != nil {
-			log.Warning.Print(err)
-			return contexts, err
-		}
-	}
 	old := tracer.HasTracerEvents
 
 	// Find all instances of the string string and record their appropriate contexts.
@@ -307,4 +226,77 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		getTracerLocation(c, tracerLocations, tracer, tracerEvent, highest)
 	}
+}
+
+// AddEventData adds a raw event if it's the first of that type of event,
+// Otherwise, it returns the first event that looks like it. It also tags
+// the raw data as either HTML or JSON.
+func AddEventData(eventData string) (types.RawEvent, error) {
+	var (
+		re   types.RawEvent
+		err  error
+		e    string
+		f    uint
+		data interface{}
+	)
+
+	// Test if data is HTML or JSON by attempting to unmarshal the string as a
+	// JSON string. If it fails, it is most likely HTML.
+	// TODO: might be good in the future to infer from the content type
+	// TODO: header.
+	if err = json.Unmarshal([]byte(eventData), &data); err != nil {
+		e = gohtml.Format(eventData)
+		f = types.HTML
+	} else {
+		var ind []byte
+		ind, err = json.MarshalIndent(eventData, "", "  ")
+		if err != nil {
+			log.Warning.Print(err)
+			return re, err
+		}
+		e = string(ind)
+		f = types.JSON
+	}
+
+	// We need to check if the data is already there.
+	if err = store.DB.FirstOrCreate(&re, types.RawEvent{Data: e, Format: f}).Error; err != nil {
+		log.Warning.Printf("Wasn't able to create a raw event: %+v", re)
+		return re, err
+	}
+
+	return re, nil
+}
+
+// GetEvents is the common functionality for getting all the events for a given
+// tracer ID from the database.
+func GetEvents(tracerID uint) ([]byte, error) {
+	var (
+		ret []byte
+		err error
+	)
+
+	var tracerEvents []types.TracerEvent
+	if err = store.DB.Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err != nil {
+		log.Warning.Print(err)
+		return ret, err
+	}
+
+	cache := make(map[int]types.RawEvent, 0)
+	for k, v := range tracerEvents {
+		if cachedEvent, ok := cache[int(v.RawEventID)]; ok {
+			v.RawEvent = cachedEvent
+		} else {
+			rawTracerEvent := types.RawEvent{}
+			store.DB.Model(&v).Related(&rawTracerEvent)
+			tracerEvents[k].RawEvent = rawTracerEvent
+			// Add the event to the cache so we don't have to look it up again.
+			cache[k] = rawTracerEvent
+		}
+	}
+
+	if ret, err = json.Marshal(tracerEvents); err != nil {
+		log.Warning.Print(err)
+	}
+
+	return ret, err
 }
