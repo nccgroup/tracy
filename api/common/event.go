@@ -44,10 +44,9 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	UpdateSubscribers(copy)
 	if ret, err = json.Marshal(copy); err != nil {
 		log.Warning.Print(err)
-		return ret, err
 	}
 
-	return ret, nil
+	return ret, err
 }
 
 // getDomContexts searches through the raw tracer event that should be HTML and
@@ -56,7 +55,7 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 	var (
 		contexts []types.DOMContext
 		sev      uint
-		ret      *uint = &sev
+		sevp     *uint = &sev
 	)
 
 	// Parse the event as an HTML document so we can inspect the DOM for where
@@ -70,15 +69,15 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 	old := tracer.HasTracerEvents
 
 	// Find all instances of the string string and record their appropriate contexts.
-	getTracerLocation(doc, &contexts, tracer.TracerPayload, event, ret)
+	getTracerLocation(doc, &contexts, tracer.TracerPayload, event, sevp)
 
 	if len(contexts) == 0 {
 		return contexts, nil
 	}
 
-	// All text events from the plugin will be unexploitable.
+	// All text events from the plugin will most likely be unexploitable.
 	if event.EventType != "text" {
-		*ret = 0
+		*sevp = 0
 	}
 
 	tracer.HasTracerEvents = true
@@ -87,13 +86,13 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 	newSev := false
 
 	// Update the tracer with the highest severity.
-	if *ret > tracer.OverallSeverity {
-		tracer.OverallSeverity = *ret
-		c.OverallSeverity = *ret
+	if *sevp > tracer.OverallSeverity {
+		tracer.OverallSeverity = *sevp
+		c.OverallSeverity = *sevp
 
 		// Also, increase the tracer event length by 1
 		err = store.DB.Model(&c).Updates(map[string]interface{}{
-			"overall_severity": *ret,
+			"overall_severity": *sevp,
 		}).Error
 		newSev = true
 	}
@@ -114,7 +113,7 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 	return contexts, err
 }
 
-// Helper function that recursively traverses the DOM notes and records any context
+// Helper function that recursively traverses the DOM nodes and records any context
 // surrounding a particular string.
 // TODO: consider moving the severity rating stuff out of this function so we can
 // clean it up a bit.
@@ -174,49 +173,33 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 		if strings.Contains(a.Key, tracer) {
 			if tracerEvent.EventType != "response" {
 				sev = 3
-			}
-			*tracerLocations = append(*tracerLocations,
-				types.DOMContext{
-					TracerEventID:    tracerEvent.ID,
-					HTMLNodeType:     n.Data,
-					HTMLLocationType: types.Attr,
-					EventContext:     a.Key,
-					Severity:         sev,
-				})
-		}
-
-		if strings.Contains(a.Val, tracer) {
-			// Getting cases for JavaScript protocol and on handlers.
-			attrs := []string{"href", "on"}
-
-			if tracerEvent.EventType != "response" {
+			} else {
 				sev = 1
 			}
+		} else if strings.Contains(a.Val, tracer) {
+			// By default, user-input inside an attribute value is interesting.
+			sev = 1
 
-			for _, v := range attrs {
+			// HTTP responses don't mean as much.
+			if tracerEvent.EventType != "response" {
 				// If the href starts with a tracer string, need to look for JavaScript:
-				if v == "href" {
-					if strings.HasPrefix(tracer, a.Val) {
-						sev = 2
-					} else {
-						// href with user-supplied values is still interesting
-						sev = 1
-					}
-				} else if strings.HasPrefix(v, a.Key) {
+				if a.Key == "href" && strings.HasPrefix(a.Val, tracer) {
+					sev = 2
+				} else if strings.HasPrefix(a.Key, "on") {
 					// for on handlers, these are very interesting
 					sev = 2
 				}
 			}
-
-			*tracerLocations = append(*tracerLocations,
-				types.DOMContext{
-					TracerEventID:    tracerEvent.ID,
-					HTMLNodeType:     n.Data,
-					HTMLLocationType: types.AttrVal,
-					EventContext:     a.Val,
-					Severity:         sev,
-				})
 		}
+
+		*tracerLocations = append(*tracerLocations,
+			types.DOMContext{
+				TracerEventID:    tracerEvent.ID,
+				HTMLNodeType:     n.Data,
+				HTMLLocationType: types.AttrVal,
+				EventContext:     a.Val,
+				Severity:         sev,
+			})
 	}
 
 	if sev > *highest {
