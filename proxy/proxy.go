@@ -116,7 +116,7 @@ func handleConnection(client net.Conn) {
 			if err == nil {
 				dumpStr := string(dump)
 				var tracersBytes []byte
-				tracersBytes, err = common.GetTracers(false)
+				tracersBytes, err = common.GetTracers()
 				if err == nil {
 					var requests []types.Request
 					err = json.Unmarshal(tracersBytes, &requests)
@@ -263,7 +263,7 @@ func handleConnection(client net.Conn) {
 			if err == nil {
 				/* Get a current list of the tracers so they can be searched for. */
 				var requestsJSON []byte
-				requestsJSON, err = common.GetTracers(false)
+				requestsJSON, err = common.GetTracers()
 				if err == nil {
 					requests := []types.Request{}
 					err = json.Unmarshal(requestsJSON, &requests)
@@ -276,13 +276,22 @@ func handleConnection(client net.Conn) {
 							if len(tracers) > 0 {
 								/* We have to do this first so that we can get the ID of the raw event
 								 * and insert it with the event structure. */
-								rawEvent := common.AddEventData(string(b))
-								for _, tracer := range tracers {
-									for _, event := range tracer.TracerEvents {
-										//TODO: should probably make a bulk add events function
-										event.RawEventID = rawEvent.ID
-										event.RawEvent = rawEvent
-										_, err = common.AddEvent(tracer, event)
+
+								var rawEvent types.RawEvent
+								if rawEvent, err = common.AddEventData(string(b)); err == nil {
+									for _, tracer := range tracers {
+										for _, event := range tracer.TracerEvents {
+											//TODO: should probably make a bulk add events function
+											event.RawEventID = rawEvent.ID
+											event.RawEvent = rawEvent
+
+											//TODO: need to test this.
+											if err = store.DB.First(&tracer, "id = ?", event.TracerID).Error; err != nil {
+												log.Error.Println(err)
+												return
+											}
+											_, err = common.AddEvent(tracer, event)
+										}
 									}
 								}
 							}

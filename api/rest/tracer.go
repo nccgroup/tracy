@@ -37,12 +37,7 @@ func GetTracers(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusInternalServerError
 	var err error
 
-	filter := r.FormValue("filter")
-	if filter == "TracerPayloads" {
-		if ret, err = common.GetTracers(true); err == nil {
-			status = http.StatusOK
-		}
-	} else if ret, err = common.GetTracers(false); err == nil {
+	if ret, err = common.GetTracers(); err == nil {
 		status = http.StatusOK
 	}
 

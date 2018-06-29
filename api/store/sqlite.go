@@ -5,6 +5,8 @@ import (
 	"github.com/nccgroup/tracy/log"
 
 	"github.com/jinzhu/gorm"
+
+	// Blank import used to initialize the register the sqlite database driver.
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 

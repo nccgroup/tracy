@@ -42,9 +42,9 @@ func init() {
 	flag.StringVar(&outFile, "o", outFileDefault, outputFileUsage+"(shorthand)")
 
 	/* Defaults for tests. */
-	Trace = log.New(os.Stdout, traceStr, flags)
-	Info = log.New(os.Stdout, infoStr, flags)
-	Warning = log.New(os.Stdout, warnStr, flags)
+	Trace = &NopLogger{}
+	Info = &NopLogger{}
+	Warning = &NopLogger{}
 	Error = log.New(os.Stderr, errorStr, flags)
 }
 
