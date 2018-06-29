@@ -25,12 +25,9 @@ release binary and run it:
 $ ./tracy-linux-amd64
 ```
 
-Then, install the browser extension with Firefox or Chrome using one of the following links:
+Then, install the browser extension with [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tracyplugin/) or [Chrome](https://chrome.google.com/webstore/detail/tracy/lcgbimfijafcjjijgjoodgpblgmkckhn).
 
-[firefox](https://addons.mozilla.org/en-US/firefox/addon/tracyplugin/)<br>
-[chrome](https://chrome.google.com/webstore/detail/tracy/lcgbimfijafcjjijgjoodgpblgmkckhn)
-
-Once tracy is running and the plugin is installed, install the certificate into your browser's certificate store (the certifcate is located in `~/.tracy/`) and configure your browser to use the proxy(the default proxy address is localhost on port 7777) 
+Once `tracy` is running and the plugin is installed, install the generated certificate into your browser's certificate store (the certifcate is located in `~/.tracy/`) and configure your browser to use the `tracy` proxy (localhost:7777) 
 
 *Note:* The `tracy` binary and browser extension work together. Running one without the other 
 will result in unexpected behavior.
