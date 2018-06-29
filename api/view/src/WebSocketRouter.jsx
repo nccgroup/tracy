@@ -17,6 +17,7 @@ class WebSocketRouter extends Component {
 	}
 
 	connectToWebSocket() {
+		console.error("Connecting to websocket");
 		//TODO: need to make this configurable.
 		let ws = new WebSocket("ws://localhost:8081/ws");
 

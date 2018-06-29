@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-/*GetConfig gets the global configuration for the application. */
+// GetConfig gets the global configuration for the application.
 func GetConfig(w http.ResponseWriter, r *http.Request) {
 	ret := []byte("{}")
 	status := http.StatusInternalServerError

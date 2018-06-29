@@ -4,14 +4,14 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-/* Constants used to track the tracer string location type. */
+// Constants used to track the tracer string location type.
 const (
 	Header = iota
 	QueryParam
 	Body
 )
 
-/*Tracer is a marker for input into the application. This will be used to find outputs. */
+// Tracer is a marker for input into the application. This will be used to find outputs.
 type Tracer struct {
 	gorm.Model
 	TracerString        string        `json:"TracerString" gorm:"not null;index"` // the tracer string used by the user (e.g. {{XSS}})
