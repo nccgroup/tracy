@@ -55,7 +55,7 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 	var (
 		contexts []types.DOMContext
 		sev      uint
-		sevp     *uint = &sev
+		sevp     = &sev
 		err      error
 		doc      *html.Node
 	)

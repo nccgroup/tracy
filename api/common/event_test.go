@@ -163,7 +163,7 @@ func testSeverity(t *testing.T, tp, rd string, expected uint) {
 		ts         = "zzPLAINzz"
 		evts       = false
 		loc   uint = types.Body
-		sev   uint = 0
+		sev   uint
 		i     uint = 50
 		meth       = "GET"
 		url        = "normandy.cdn.mozilla.net"
@@ -252,7 +252,7 @@ func testAddEventPayload(t *testing.T, tp, rd string, expected uint) {
 		ts         = "zzPLAINzz"
 		evts       = false
 		loc   uint = types.Body
-		sev   uint = 0
+		sev   uint
 		i     uint = 50
 		meth       = "GET"
 		url        = "normandy.cdn.mozilla.net"

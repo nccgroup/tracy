@@ -3,11 +3,18 @@ package rest
 import (
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/configure"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+/* Used to order request and their corresponding tests. */
+type RequestTestPair struct {
+	Request *http.Request
+	Test    func(*httptest.ResponseRecorder, *testing.T) error
+}
 
 /* A function that takes a slice of RequestTestPairs. Each pair has a request and a
  * test function. Each request is submitted and the corresponding test is run on the

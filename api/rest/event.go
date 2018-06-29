@@ -14,138 +14,138 @@ import (
 	"github.com/gorilla/mux"
 )
 
-/* Helper function used by AddEvent and AddEvents to add an event to the tracer specified.
- * Returns the HTTP status and the return value. */
+// addEventHelper is used by AddEvent and AddEvents to add an event to the tracer
+// specified. It returns the HTTP status and the return value.
 func addEventHelper(tracer types.Tracer, tracerEvent types.TracerEvent) (int, []byte) {
 	tracerEvent.TracerID = tracer.ID
-	log.Trace.Printf("Adding a tracer event: %d", tracerEvent.ID)
-	status := http.StatusInternalServerError
-	var ret []byte
-	var err error
-	if ret, err = common.AddEvent(tracer, tracerEvent); err != nil {
+	status := http.StatusOK
+	ret, err := common.AddEvent(tracer, tracerEvent)
+	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE") {
 			status = http.StatusConflict
 		} else {
-			log.Error.Println(err)
+			status = http.StatusInternalServerError
+			log.Error.Print(err)
 		}
-	} else {
-		log.Trace.Printf("Successfully added the tracer event: %v", string(ret))
-		status = http.StatusOK
 	}
 
 	return status, ret
 }
 
-/*AddEvent adds a tracer event to the tracer specified in the URL. */
+// AddEvent adds a tracer event to the tracer specified in the URL.
 func AddEvent(w http.ResponseWriter, r *http.Request) {
-	ret := []byte("{}")
-	status := http.StatusInternalServerError
-	vars := mux.Vars(r)
-	tracerEvent := types.TracerEvent{}
-	var err error
-	if err = json.NewDecoder(r.Body).Decode(&tracerEvent); err == nil {
-		log.Trace.Printf("Parsed the following tracer from the request: %+v", tracerEvent)
-		/* Add tracer event data*/
-		var rawEvent types.RawEvent
-		if rawEvent, err = common.AddEventData(tracerEvent.RawEvent.Data); err == nil {
-
-			tracerEvent.RawEventID = rawEvent.ID
-			tracerEvent.RawEvent = rawEvent
-
-			/* Add the tracer event. */
-			var tracerID uint64
-			if tracerID, err = strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {
-				log.Trace.Printf("Parsed the following tracer ID from the route: %d", tracerID)
-				tracer := types.Tracer{}
-				if err = store.DB.First(&tracer, "id = ?", tracerID).Error; err != nil {
-					log.Error.Println(err)
-					return
-				}
-				status, ret = addEventHelper(tracer, tracerEvent)
-			}
-		}
+	var tracerEvent types.TracerEvent
+	if err := json.NewDecoder(r.Body).Decode(&tracerEvent); err != nil {
+		returnError(w, err)
+		return
 	}
 
+	rawEvent, err := common.AddEventData(tracerEvent.RawEvent.Data)
 	if err != nil {
-		log.Error.Println(err)
+		returnError(w, err)
+		return
 	}
 
-	w.WriteHeader(status)
-	w.Write(ret)
-}
-
-/*GetEvents gets all the events associated with a tracer ID. */
-func GetEvents(w http.ResponseWriter, r *http.Request) {
-	ret := []byte("{}")
 	vars := mux.Vars(r)
-	status := http.StatusInternalServerError
-
-	if tracerID, err := strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {
-		if ret, err = common.GetEvents(uint(tracerID)); err != nil {
-			ret = ServerError(err)
-			log.Error.Println(err)
-		} else {
-			status = http.StatusOK
-		}
-	} else {
-		log.Error.Println(err)
+	tracerIDs, ok := vars["tracerID"]
+	if !ok {
+		returnError(w, fmt.Errorf("No tracerID variable found in the path"))
+		return
 	}
 
+	tracerEvent.RawEventID = rawEvent.ID
+	tracerEvent.RawEvent = rawEvent
+	tracerID, err := strconv.ParseUint(tracerIDs, 10, 32)
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+
+	var tracer types.Tracer
+	if err := store.DB.First(&tracer, "id = ?", tracerID).Error; err != nil {
+		returnError(w, err)
+		return
+	}
+
+	status, ret := addEventHelper(tracer, tracerEvent)
 	w.WriteHeader(status)
 	w.Write(ret)
 }
 
-/*AddEvents adds multiple tracer events to the tracer specified in the URL. */
+// GetEvents gets all the events associated with a tracer ID.
+func GetEvents(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tracerID, err := strconv.ParseUint(vars["tracerID"], 10, 32)
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+
+	ret, err := common.GetEvents(uint(tracerID))
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(ret)
+}
+
+// AddEvents adds multiple tracer events to the tracer specified in the URL.
 func AddEvents(w http.ResponseWriter, r *http.Request) {
-	finalStatus := http.StatusOK
-	finalRet := make([]byte, 0)
-	bulkTracerEvent := []types.TracerEventBulk{}
-	if err := json.NewDecoder(r.Body).Decode(&bulkTracerEvent); err == nil {
-		log.Trace.Printf("Adding tracer events: %+v", bulkTracerEvent)
+	var bulkTracerEvent []types.TracerEventBulk
+	if err := json.NewDecoder(r.Body).Decode(&bulkTracerEvent); err != nil {
+		returnError(w, err)
+		return
+	}
 
-		/* Count the number of successful events that were added. */
-		count := 0
+	var (
+		// Count the number of successful events that were added.
+		count       uint
+		finalStatus = http.StatusOK
+		finalRet    []byte
+		rawEvent    types.RawEvent
+		err         error
+	)
+	for _, tracerEvent := range bulkTracerEvent {
+		if rawEvent, err = common.AddEventData(tracerEvent.TracerEvent.RawEvent.Data); err != nil {
+			log.Error.Print(err)
+			continue
+		}
 
-		for _, tracerEvent := range bulkTracerEvent {
-			var rawEvent types.RawEvent
-			if rawEvent, err = common.AddEventData(tracerEvent.TracerEvent.RawEvent.Data); err == nil {
+		tracerEvent.TracerEvent.RawEventID = rawEvent.ID
+		tracerEvent.TracerEvent.RawEvent = rawEvent
 
-				tracerEvent.TracerEvent.RawEventID = rawEvent.ID
-				tracerEvent.TracerEvent.RawEvent = rawEvent
+		// For each of the tracer strings that were found in the DOM event, find
+		// the tracer they are associated with and add an event to it.
+		for _, tracerPayload := range tracerEvent.TracerPayloads {
+			var tracer types.Tracer
+			if err = store.DB.First(&tracer, "tracer_payload = ?", tracerPayload).Error; err != nil {
+				// If there was an error getting the tracer, fail fast and continue
+				// to the next one.
+				log.Error.Println(err)
+				continue
+			}
+			// Add the tracer event.
+			status, ret := addEventHelper(tracer, tracerEvent.TracerEvent)
 
-				/* For each of the tracer strings that were found in the DOM event, find the tracer they are associated with
-				 * and add an event to it. */
-				for _, tracerPayload := range tracerEvent.TracerPayloads {
-					var tracer types.Tracer
-					if err := store.DB.First(&tracer, "tracer_payload = ?", tracerPayload).Error; err != nil {
-						/* If there was an error getting the tracer, fail fast and continue to the next one. */
-						log.Error.Println(err)
-						continue
-					}
-					/* Add the tracer event. */
-					status, ret := addEventHelper(tracer, tracerEvent.TracerEvent)
-
-					/* If any of them fail, the whole request status fails. */
-					if status == http.StatusInternalServerError {
-						finalStatus = http.StatusInternalServerError
-						/* Only returns the error for the last failed event addition. */
-						finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
-					} else if status == http.StatusConflict && finalStatus != http.StatusInternalServerError {
-						finalStatus = http.StatusConflict
-						finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
-					} else {
-						count = count + 1
-					}
-				}
+			// If any of them fail, the whole request status fails.
+			if status == http.StatusInternalServerError {
+				finalStatus = http.StatusInternalServerError
+				// Only returns the error for the last failed event addition.
+				finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
+			} else if status == http.StatusConflict && finalStatus != http.StatusInternalServerError {
+				finalStatus = http.StatusConflict
+				finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
+			} else {
+				count++
 			}
 		}
 
-		if len(finalRet) == 0 {
-			finalRet = []byte(fmt.Sprintf(`{"Status":"Success", "Count":"%d"}`, count))
-		}
-	} else {
-		finalStatus = http.StatusInternalServerError
-		log.Error.Println(err)
+	}
+
+	if len(finalRet) == 0 {
+		finalRet = []byte(fmt.Sprintf(`{"Status":"Success", "Count":"%d"}`, count))
 	}
 
 	w.WriteHeader(finalStatus)
