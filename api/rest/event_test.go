@@ -17,7 +17,7 @@ func TestAddEvent(t *testing.T) {
 
 	var (
 		tracerString     = "blahblah"
-		data             = "dahdata<a>blahblah</a>"
+		data             = "<a>blahblah</a>"
 		URL              = "http://example.com"
 		location         = "dahlocation"
 		method           = "GET"

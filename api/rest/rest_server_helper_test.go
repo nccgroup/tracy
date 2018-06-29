@@ -27,7 +27,7 @@ func ServerTestHelper(tests []RequestTestPair, t *testing.T) {
 	/* Delete any existing database entries */
 	configure.DeleteDatabase(db)
 	/* Open the database because the init method from main.go won't trigger. */
-	store.Open(db, true)
+	store.Open(db, false)
 
 	for _, pair := range tests {
 		/* For each request/test combo:
@@ -39,7 +39,7 @@ func ServerTestHelper(tests []RequestTestPair, t *testing.T) {
 		RestRouter.ServeHTTP(rr, pair.Request)
 		err := pair.Test(rr, t)
 		if err != nil {
-			t.Errorf("the following request, %+v, did not pass it's test: %+v. Request body: %s", pair.Request, err, rr.Body.String())
+			t.Errorf("the following request did not pass it's test: %+v. Request body: %s", err, rr.Body.String())
 			break
 		}
 	}

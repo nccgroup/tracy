@@ -42,23 +42,31 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusInternalServerError
 	vars := mux.Vars(r)
 	tracerEvent := types.TracerEvent{}
-
-	if err := json.NewDecoder(r.Body).Decode(&tracerEvent); err == nil {
+	var err error
+	if err = json.NewDecoder(r.Body).Decode(&tracerEvent); err == nil {
 		log.Trace.Printf("Parsed the following tracer from the request: %+v", tracerEvent)
 		/* Add tracer event data*/
-		rawEvent := common.AddEventData(tracerEvent.RawEvent.Data)
-		tracerEvent.RawEventID = rawEvent.ID
-		tracerEvent.RawEvent = rawEvent
+		var rawEvent types.RawEvent
+		if rawEvent, err = common.AddEventData(tracerEvent.RawEvent.Data); err == nil {
 
-		/* Add the tracer event. */
-		var tracerID uint64
-		if tracerID, err = strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {
-			log.Trace.Printf("Parsed the following tracer ID from the route: %d", tracerID)
-			tracer := types.Tracer{}
-			tracer.ID = uint(tracerID)
-			status, ret = addEventHelper(tracer, tracerEvent)
+			tracerEvent.RawEventID = rawEvent.ID
+			tracerEvent.RawEvent = rawEvent
+
+			/* Add the tracer event. */
+			var tracerID uint64
+			if tracerID, err = strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {
+				log.Trace.Printf("Parsed the following tracer ID from the route: %d", tracerID)
+				tracer := types.Tracer{}
+				if err = store.DB.First(&tracer, "id = ?", tracerID).Error; err != nil {
+					log.Error.Println(err)
+					return
+				}
+				status, ret = addEventHelper(tracer, tracerEvent)
+			}
 		}
-	} else {
+	}
+
+	if err != nil {
 		log.Error.Println(err)
 	}
 
@@ -99,32 +107,35 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 		count := 0
 
 		for _, tracerEvent := range bulkTracerEvent {
-			rawEvent := common.AddEventData(tracerEvent.TracerEvent.RawEvent.Data)
-			tracerEvent.TracerEvent.RawEventID = rawEvent.ID
-			tracerEvent.TracerEvent.RawEvent = rawEvent
+			var rawEvent types.RawEvent
+			if rawEvent, err = common.AddEventData(tracerEvent.TracerEvent.RawEvent.Data); err == nil {
 
-			/* For each of the tracer strings that were found in the DOM event, find the tracer they are associated with
-			 * and add an event to it. */
-			for _, tracerPayload := range tracerEvent.TracerPayloads {
-				var tracer types.Tracer
-				if err := store.DB.First(&tracer, "tracer_payload = ?", tracerPayload).Error; err != nil {
-					/* If there was an error getting the tracer, fail fast and continue to the next one. */
-					log.Error.Println(err)
-					continue
-				}
-				/* Add the tracer event. */
-				status, ret := addEventHelper(tracer, tracerEvent.TracerEvent)
+				tracerEvent.TracerEvent.RawEventID = rawEvent.ID
+				tracerEvent.TracerEvent.RawEvent = rawEvent
 
-				/* If any of them fail, the whole request status fails. */
-				if status == http.StatusInternalServerError {
-					finalStatus = http.StatusInternalServerError
-					/* Only returns the error for the last failed event addition. */
-					finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
-				} else if status == http.StatusConflict && finalStatus != http.StatusInternalServerError {
-					finalStatus = http.StatusConflict
-					finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
-				} else {
-					count = count + 1
+				/* For each of the tracer strings that were found in the DOM event, find the tracer they are associated with
+				 * and add an event to it. */
+				for _, tracerPayload := range tracerEvent.TracerPayloads {
+					var tracer types.Tracer
+					if err := store.DB.First(&tracer, "tracer_payload = ?", tracerPayload).Error; err != nil {
+						/* If there was an error getting the tracer, fail fast and continue to the next one. */
+						log.Error.Println(err)
+						continue
+					}
+					/* Add the tracer event. */
+					status, ret := addEventHelper(tracer, tracerEvent.TracerEvent)
+
+					/* If any of them fail, the whole request status fails. */
+					if status == http.StatusInternalServerError {
+						finalStatus = http.StatusInternalServerError
+						/* Only returns the error for the last failed event addition. */
+						finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
+					} else if status == http.StatusConflict && finalStatus != http.StatusInternalServerError {
+						finalStatus = http.StatusConflict
+						finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
+					} else {
+						count = count + 1
+					}
 				}
 			}
 		}
