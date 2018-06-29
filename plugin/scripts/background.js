@@ -40,29 +40,33 @@ function requestHandler(domEvents) {
             }
         }
 
-        /* Sanity check the data we are expecting is in the message. */
-        if (!domEvent.msg) {
-            console.error("The DOM event msg field was not set properly.");
-        } else if (!domEvent.location) {
-            console.error("The DOM event location field was not set properly.");
-        } else if (!domEvent.type) {
-            console.error("The DOM event type field was not set properly.");
-        } else {
-            /* After collecting all the tracers per DOM event, add this DOM event to the list of filtered DOM events that
-             * will be submitted in bulk to the event API. */
-            if (tracersPerDomEvent.length > 0) {
-                var event = {
-                    TracerEvent: {
-                        RawEvent: {
-                            Data: domEvent.msg
-                        },
-                        EventURL: encodeURI(domEvent.location),
-                        EventType: domEvent.type
-                    },
-                    TracerPayloads: tracersPerDomEvent
-                };
-                filteredEvents.push(event);
+        /* After collecting all the tracers per DOM event, add this DOM event to the list of filtered DOM events that
+         * will be submitted in bulk to the event API. */
+        if (tracersPerDomEvent.length > 0) {
+            /* Sanity check the data we are expecting is in the message. */
+            if (!domEvent.msg) {
+                console.error("The DOM event msg field was not set properly.");
+                return;
+            } else if (!domEvent.location) {
+                console.error(
+                    "The DOM event location field was not set properly."
+                );
+                return;
+            } else if (!domEvent.type) {
+                console.error("The DOM event type field was not set properly.");
+                return;
             }
+            const event = {
+                TracerEvent: {
+                    RawEvent: {
+                        Data: domEvent.msg
+                    },
+                    EventURL: encodeURI(domEvent.location),
+                    EventType: domEvent.type
+                },
+                TracerPayloads: tracersPerDomEvent
+            };
+            filteredEvents.push(event);
         }
     }
 
@@ -83,14 +87,14 @@ function messageRouter(message, sender, sendResponse) {
                 configQuery(message, sender, sendResponse);
                 break;
             case "refresh":
-                refreshConfig(message, sender, sendResponse);
+                refreshConfig(false);
                 break;
         }
     }
 }
 
 /* Refreshes the configuration. */
-function refreshConfig(message, sender, sendResponse) {
+function refreshConfig(wsConnect) {
     chrome.storage.local.get(
         {
             restHost: "localhost",
@@ -106,44 +110,52 @@ function refreshConfig(message, sender, sendResponse) {
                     defaultTracer = res["default-tracer"];
                 });
 
-            fetch(`http://${restServer}/tracers?filter=TracerPayloads`, {
+            fetch(`http://${restServer}/tracers`, {
                 headers: { Hoot: "!" }
             })
                 .then(res => res.json())
                 .catch(error => console.error("Error:", error))
                 .then(res => {
-                    tracerPayloads = res;
+                    return [].concat.apply(
+                        null,
+                        res.map(r => {
+                            [].concat(
+                                r.Tracers.map(t => {
+                                    return t.TracerPayload;
+                                })
+                            );
+                        })
+                    );
                 });
 
-            websocketConnect();
+            if (wsConnect) {
+                websocketConnect();
+            }
         }
     );
 }
 
 /* Connect to the websocket endpoint so we don't have to poll for new tracer strings. */
 function websocketConnect() {
-    if (!ws) {
-        ws = new WebSocket(`ws://${restServer}/ws`);
+    const nws = new WebSocket(`ws://${restServer}/ws`);
+    nws.addEventListener("message", function(event) {
+        let req = JSON.parse(event.data);
+        switch (Object.keys(req)[0]) {
+            case "Request":
+                req.Request.Tracers.map(t => {
+                    if (!tracerPayloads.includes(t.TracerPayload)) {
+                        tracerPayloads.push(t.TracerPayload);
+                    }
+                });
+                break;
+            default:
+                break;
+        }
+    });
 
-        ws.onmessage = function(event) {
-            let req = JSON.parse(event.data);
-            switch (Object.keys(req)[0]) {
-                case "Request":
-                    req.Request.Tracers.map(t => {
-                        if (!tracerPayloads.includes(t.TracerPayload)) {
-                            tracerPayloads.push(t.TracerPayload);
-                        }
-                    });
-                    break;
-                default:
-                    break;
-            }
-        };
-
-        ws.onclose = function() {
-            setTimeout(websocketConnect, 1500); // Attempt to reconnect when the socket closes.
-        };
-    }
+    nws.addEventListener("close", function() {
+        setTimeout(websocketConnect, 1500); // Attempt to reconnect when the socket closes.
+    });
 }
 
 /* Query the configuration. */
@@ -167,7 +179,7 @@ function configQuery(message, sender, sendResponse) {
 function addJobToQueue(message, sender, sendResponse) {
     // If it is the first job added, set a timer to process the jobs.
     if (jobs.length === 0) {
-        setTimeout(processDomEvents, 3000);
+        setTimeout(processDomEvents, 2000);
     }
     jobs.push(message);
 }
@@ -212,4 +224,4 @@ let tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
 let defaultTracer = "";
 let tracerPayloads = [];
 let enabled = true;
-let ws = null;
+refreshConfig(true);

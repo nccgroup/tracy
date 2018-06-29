@@ -57,7 +57,10 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 			if tracerID, err = strconv.ParseUint(vars["tracerID"], 10, 32); err == nil {
 				log.Trace.Printf("Parsed the following tracer ID from the route: %d", tracerID)
 				tracer := types.Tracer{}
-				tracer.ID = uint(tracerID)
+				if err = store.DB.First(&tracer, "id = ?", tracerID).Error; err != nil {
+					log.Error.Println(err)
+					return
+				}
 				status, ret = addEventHelper(tracer, tracerEvent)
 			}
 		}
