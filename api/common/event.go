@@ -56,12 +56,13 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 		contexts []types.DOMContext
 		sev      uint
 		sevp     *uint = &sev
+		err      error
+		doc      *html.Node
 	)
 
 	// Parse the event as an HTML document so we can inspect the DOM for where
 	// user-input was output.
-	doc, err := html.Parse(strings.NewReader(event.RawEvent.Data))
-	if err != nil {
+	if doc, err = html.Parse(strings.NewReader(event.RawEvent.Data)); err != nil {
 		log.Warning.Print(err)
 		return contexts, err
 	}
@@ -76,7 +77,7 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 	}
 
 	// All text events from the plugin will most likely be unexploitable.
-	if event.EventType != "text" {
+	if event.EventType == "text" {
 		*sevp = 0
 	}
 
@@ -119,6 +120,14 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 // clean it up a bit.
 func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer string, tracerEvent types.TracerEvent, highest *uint) {
 	var sev uint
+
+	// Just in case the HTML doesn't have a parent, we don't want to dereference a
+	// a nil pointer
+	if n.Parent == nil {
+		n.Parent = &html.Node{
+			Data: "",
+		}
+	}
 	if strings.Contains(n.Data, tracer) {
 		if n.Type == html.TextNode {
 			*tracerLocations = append(*tracerLocations,
@@ -130,7 +139,6 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					Severity:         sev,
 				})
 		} else if n.Type == html.DocumentNode || n.Type == html.ElementNode || n.Type == html.DoctypeNode {
-
 			if n.Parent.Data == "script" {
 				if tracerEvent.EventType != "response" {
 					sev = 1
@@ -154,7 +162,8 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					Severity:         sev,
 				})
 		} else {
-			//TODO: although, we should care about these cases, there could be a case where the comment could be broken out of
+			// TODO: although, we should care about these cases, there could be a
+			// case where the comment could be broken out of
 			if tracerEvent.EventType != "response" {
 				sev = 1
 			}
@@ -167,6 +176,10 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					Severity:         sev,
 				})
 		}
+
+		if sev > *highest {
+			*highest = sev
+		}
 	}
 
 	for _, a := range n.Attr {
@@ -176,6 +189,15 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 			} else {
 				sev = 1
 			}
+
+			*tracerLocations = append(*tracerLocations,
+				types.DOMContext{
+					TracerEventID:    tracerEvent.ID,
+					HTMLNodeType:     n.Data,
+					HTMLLocationType: types.Attr,
+					EventContext:     a.Val,
+					Severity:         sev,
+				})
 		} else if strings.Contains(a.Val, tracer) {
 			// By default, user-input inside an attribute value is interesting.
 			sev = 1
@@ -190,20 +212,20 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					sev = 2
 				}
 			}
+
+			*tracerLocations = append(*tracerLocations,
+				types.DOMContext{
+					TracerEventID:    tracerEvent.ID,
+					HTMLNodeType:     n.Data,
+					HTMLLocationType: types.AttrVal,
+					EventContext:     a.Val,
+					Severity:         sev,
+				})
 		}
 
-		*tracerLocations = append(*tracerLocations,
-			types.DOMContext{
-				TracerEventID:    tracerEvent.ID,
-				HTMLNodeType:     n.Data,
-				HTMLLocationType: types.AttrVal,
-				EventContext:     a.Val,
-				Severity:         sev,
-			})
-	}
-
-	if sev > *highest {
-		*highest = sev
+		if sev > *highest {
+			*highest = sev
+		}
 	}
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -216,18 +238,17 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 // the raw data as either HTML or JSON.
 func AddEventData(eventData string) (types.RawEvent, error) {
 	var (
-		re   types.RawEvent
-		err  error
-		e    string
-		f    uint
-		data interface{}
+		re  types.RawEvent
+		err error
+		e   string
+		f   uint
 	)
 
 	// Test if data is HTML or JSON by attempting to unmarshal the string as a
 	// JSON string. If it fails, it is most likely HTML.
 	// TODO: might be good in the future to infer from the content type
 	// TODO: header.
-	if err = json.Unmarshal([]byte(eventData), &data); err != nil {
+	if ok := json.Valid([]byte(eventData)); !ok {
 		e = gohtml.Format(eventData)
 		f = types.HTML
 	} else {
@@ -254,11 +275,11 @@ func AddEventData(eventData string) (types.RawEvent, error) {
 // tracer ID from the database.
 func GetEvents(tracerID uint) ([]byte, error) {
 	var (
-		ret []byte
-		err error
+		ret          []byte
+		err          error
+		tracerEvents []types.TracerEvent
 	)
 
-	var tracerEvents []types.TracerEvent
 	if err = store.DB.Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err != nil {
 		log.Warning.Print(err)
 		return ret, err

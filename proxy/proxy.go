@@ -116,7 +116,7 @@ func handleConnection(client net.Conn) {
 			if err == nil {
 				dumpStr := string(dump)
 				var tracersBytes []byte
-				tracersBytes, err = common.GetTracers(false)
+				tracersBytes, err = common.GetTracers()
 				if err == nil {
 					var requests []types.Request
 					err = json.Unmarshal(tracersBytes, &requests)
@@ -263,7 +263,7 @@ func handleConnection(client net.Conn) {
 			if err == nil {
 				/* Get a current list of the tracers so they can be searched for. */
 				var requestsJSON []byte
-				requestsJSON, err = common.GetTracers(false)
+				requestsJSON, err = common.GetTracers()
 				if err == nil {
 					requests := []types.Request{}
 					err = json.Unmarshal(requestsJSON, &requests)

@@ -63,7 +63,7 @@ func TestAddEventOneContext(t *testing.T) {
 	testAddEventPayload(t, tp, rd, 1)
 }
 
-func TestAddEventSameLead(t *testing.T) {
+func TestAddEventSameLeaf(t *testing.T) {
 	tp := "lkasdmfasd"
 	rd := `<b>` + tp + ` ` + tp + `</b>`
 	testAddEventPayload(t, tp, rd, 1)
@@ -357,27 +357,4 @@ func databaseInit() {
 	configure.DeleteDatabase(db)
 	/* Open the database because the init method from main.go won't trigger. */
 	store.Open(db, false)
-}
-
-func validTracer(t *testing.T, e types.Tracer, ts, tp string, evts bool, loc, sev, i uint) {
-	if e.TracerString != ts {
-		t.Fatal("Got the wrong tracer string.")
-	}
-	// This is an odd check because of how JSON marshalling and unmarshalling works.
-	// It keeps converting special characters into their unicode representation, which
-	// causes this to fail. Commenting out until I can get a unified way to test the
-	// payloads are equivalent.
-	//if e.TracerPayload != tp {
-	//	t.Fatalf("Got the wrong tracer payload. Expected %s, got %s", tp, e.TracerPayload)
-	//}
-
-	if e.HasTracerEvents != evts {
-		t.Fatal("Got the wrong events status.")
-	}
-	if e.TracerLocationType != types.Body {
-		t.Fatal("Got the wrong location type.")
-	}
-	if e.TracerLocationIndex != i {
-		t.Fatal("Got the wrong location index")
-	}
 }
