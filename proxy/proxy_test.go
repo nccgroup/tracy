@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/nccgroup/tracy/api/types"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/nccgroup/tracy/api/types"
 )
 
 var requestDataNoTags = `GET /api/v1/action/ HTTP/1.1
@@ -50,8 +51,19 @@ func TestAddTracersBodyWithTags(t *testing.T) {
 	numTracers, err := testAddTracersBodyHelper(requestDataTags)
 	if err != nil {
 		t.Fatalf("tried to read parse but got the following error: %+v", err)
-	} else if numTracers != 2 {
+	} else if numTracers != 3 {
 		t.Fatalf("Failed to find tracers, %d", numTracers)
+	}
+}
+
+func BenchmarkTracersBodyWithTags(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		numTracers, err := testAddTracersBodyHelper(requestDataTags)
+		if err != nil {
+			b.Fatalf("tried to read parse but got the following error: %+v", err)
+		} else if numTracers != 3 {
+			b.Fatalf("Failed to find tracers, %d", numTracers)
+		}
 	}
 }
 
@@ -61,15 +73,17 @@ func testAddTracersBodyHelper(requestDataString string) (int, error) {
 		return 0, err
 	}
 
-	requestData, err := ioutil.ReadAll(request.Body)
+	addedTracers, err := replaceTracers(request)
 	if err != nil {
 		return 0, err
 	}
 
-	newRequest, addedTracers := replaceTracerStrings(requestData)
-
+	requestData, err := ioutil.ReadAll(request.Body)
+	if err != nil {
+		return 0, err
+	}
 	for _, addedTracer := range addedTracers {
-		i := bytes.Index(newRequest, []byte(addedTracer.TracerPayload))
+		i := bytes.Index(append([]byte(request.URL.RawQuery), requestData...), []byte(addedTracer.TracerPayload))
 		if i == -1 {
 			return 0, fmt.Errorf("Could not find Tracer")
 		}
