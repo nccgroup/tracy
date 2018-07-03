@@ -2,3 +2,4 @@
 vendor/*
 bin/*
 tracer/rest/bindata_assetfs.go
+flymake*

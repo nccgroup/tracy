@@ -6,40 +6,40 @@ import (
 	"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
-	"github.com/nccgroup/tracy/api/common"
-	"github.com/nccgroup/tracy/api/store"
-	"github.com/nccgroup/tracy/api/types"
-	"github.com/nccgroup/tracy/configure"
-	"github.com/nccgroup/tracy/log"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"strings"
+
+	"github.com/nccgroup/tracy/api/common"
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
 )
 
-/*ListenAndServe waits and listens for TCP connections and proxies them. */
+// ListenAndServe waits and listens for TCP connections and proxies them.
 func ListenAndServe(ln net.Listener) {
-	/* Never stop listening for TCP connections. */
+	var (
+		conn  net.Conn
+		error err
+	)
 	for {
-		/* Block until a TCP connection comes in. */
-		conn, err := ln.Accept()
-
-		if err == nil {
-			/* Pass case. Proxy the connection on a separate goroutine and go back to listening. */
-			go handleConnection(conn)
-		} else {
+		conn, err = ln.Accept()
+		if err != nil {
 			log.Error.Println(err)
+			continue
 		}
 
-		/* Log the current status and any errors. Errors don't fail fast. Errors happen and can be recovered from. */
-		log.Trace.Printf("Handled connection %+v.", conn)
+		go handleConnection(conn)
 	}
 }
 
-/* Helper function that handles any TCP connections to the proxy. Client refers to the client making the connection to the
- * proxy. Server refers to the actual server they are attempting to connect to after going through the proxy. */
+// handleConnection handles any TCP connections to the proxy. Client refers to
+// the client making the connection to the proxy. Server refers to the actual
+// server they are attempting to connect to after going through the proxy.
 func handleConnection(client net.Conn) {
 	/* Read a request structure from the TCP connection. */
 	request, err := http.ReadRequest(bufio.NewReader(client))
@@ -116,6 +116,8 @@ func handleConnection(client net.Conn) {
 			if err == nil {
 				dumpStr := string(dump)
 				var tracersBytes []byte
+				// TODO: probably should change this to a websocket notifier so that we don't have to do this
+				// database lookup.
 				tracersBytes, err = common.GetTracers()
 				if err == nil {
 					var requests []types.Request

@@ -16,18 +16,19 @@ import (
 var DB *gorm.DB
 
 // Open the database and create the tables if they aren't already created.
-//Errors indicate something incorrectly happened while
+// Errors indicate something incorrectly happened while
 // connecting. Don't forget to close this DB when finished using it.
 func Open(path string, logMode bool) error {
-	db, err := gorm.Open("sqlite3", path)
-	if err != nil {
-		log.Error.Printf(err.Error())
+	var err error
+	if DB, err = gorm.Open("sqlite3", path); err != nil {
+		log.Error.Fatal(err)
+		return err
 	}
 
-	db.Exec("PRAGMA foreign_keys = ON")
-	db.Exec("PRAGMA journal_mode = WAL")
-	db.LogMode(logMode)
-	db.AutoMigrate(
+	DB.Exec("PRAGMA foreign_keys = ON")
+	DB.Exec("PRAGMA journal_mode = WAL")
+	DB.LogMode(logMode)
+	DB.AutoMigrate(
 		&types.Tracer{},
 		&types.TracerEvent{},
 		&types.DOMContext{},
@@ -38,10 +39,6 @@ func Open(path string, logMode bool) error {
 	// We want to disable the goroutine thread pool that is used by default since
 	// this application doesn't need it and will cause performance issues.
 	// https://stackoverflow.com/questions/35804884/sqlite-concurrent-writing-performance.
-	db.DB().SetMaxOpenConns(1)
-
-	// Return the database and nil, indicating we made a sound connection
-	DB = db
-
-	return err
+	DB.DB().SetMaxOpenConns(1)
+	return nil
 }

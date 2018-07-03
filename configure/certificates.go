@@ -8,20 +8,22 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"github.com/nccgroup/tracy/log"
-	l "log"
 	"math/big"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/nccgroup/tracy/log"
 )
 
-/*SigningCertificate is the certificate used to sign all the certificates created on-the-fly when intercepting traffic. */
+// SigningCertificate is the certificate used to sign all the certificates
+// created on-the-fly when intercepting traffic.
 var SigningCertificate tls.Certificate
 
-/*Certificates loads the local certificate pairs if they exist or generates new ones on the fly. */
-func Certificates() tls.Certificate {
+// Certificates loads the local certificate pairs if they exist or generates new
+// ones on-the-fly.
+func Certificates() {
 	publicKey, err := ReadConfig("public-key-loc")
 	if err != nil {
 		log.Error.Fatal(err)
@@ -30,20 +32,21 @@ func Certificates() tls.Certificate {
 	if err != nil {
 		log.Error.Fatal(err)
 	}
-	cer, err := tls.LoadX509KeyPair(publicKey.(string), privateKey.(string))
+	SigningCertificate, err = tls.LoadX509KeyPair(publicKey.(string), privateKey.(string))
 	if err != nil {
-		/* Cannot continue if the application doesn't have a valid certificate for TLS connections. Fail fast. */
-		log.Error.Fatalf("Failed to parse certificate: %s", err.Error())
+		// Cannot continue if the application doesn't have a valid
+		// certificate for TLS connections.
+		log.Error.Fatalf("failed to parse certificate: %v", err)
 	}
-
-	SigningCertificate = cer
-	return cer
 }
 
+// generateRootCA generates a root certificate authority used to sign
+// certificates that are generated on-the-fly for each host the browser
+// visits while Tracy intercepts traffic.
 func generateRootCA(path string) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		log.Error.Fatalf("Can not generate Private Key: %s", err)
+		log.Error.Fatalf("can not generate Private Key: %v", err)
 	}
 
 	notBefore := time.Now()
@@ -70,12 +73,12 @@ func generateRootCA(path string) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, priv.Public(), priv)
 	if err != nil {
-		l.Fatalf("Failed to create certificate: %s", err)
+		log.Error.Fatalf("failed to create certificate: %v", err)
 	}
 
 	certOut, err := os.Create(filepath.Join(path, "cert.pem"))
 	if err != nil {
-		l.Fatalf("failed to open cert.pem for writing: %s", err)
+		log.Error.Fatalf("failed to open cert.pem for writing: %v", err)
 	}
 
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
@@ -83,13 +86,13 @@ func generateRootCA(path string) {
 
 	keyOut, err := os.OpenFile(filepath.Join(path, "key.pem"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		l.Fatalf("failed to open key.pem for writing: %s", err)
+		log.Error.Fatalf("failed to open key.pem for writing: %v", err)
 		return
 	}
 
 	b, err := x509.MarshalECPrivateKey(priv)
 	if err != nil {
-		l.Fatalf("Failed to get private key bytes: %s", err)
+		log.Error.Fatalf("failed to get private key bytes: %v", err)
 		return
 	}
 

@@ -15,22 +15,24 @@ import (
 	"github.com/nccgroup/tracy/log"
 )
 
-/* Helper function for searching for tracer tags in query parameters and body and replacing them with randomly generated
- * tracer string. Also, it submits the generated tracers to the API. This should be moved out, though. */
+// replaceTracers searches for tracer strings in HTTP query parameters and bodies
+// and replaces them with randomly generated tracer payloads. Also, it submits
+// the generated tracers to the API.
 func replaceTracers(req *http.Request) ([]types.Tracer, error) {
-	/* Search the query string for any tags that need to be replaced with tracer strings and replace them. */
+	// Search the query string for any tags that need to be replaced with
+	// tracer strings and replace them.
 	rstring, tracers := replaceTracerStrings([]byte(req.URL.RawQuery))
 
-	/* Write the new query string to the request. */
+	// Write the new query string to the request.
 	req.URL.RawQuery = string(rstring)
 	req.RequestURI = req.URL.Path + "?" + string(rstring)
 
-	/* Create tracer structs out of the generated tracer strings. */
+	// Create tracer structs out of the generated tracer strings.
 	for i := range tracers {
 		tracers[i].TracerLocationType = types.QueryParam
 	}
 
-	/* Read the HTTP request body. */
+	// Read the HTTP request body.
 	requestData, err := ioutil.ReadAll(req.Body)
 
 	if err != nil {
@@ -39,24 +41,25 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 
 	defer req.Body.Close()
 
-	/* Search the body for any tags that need to be replaced with tracer strings and replace them. */
+	// Search the body for any tags that need to be replaced with tracer
+	// strings and replace them.
 	rstring, rtracers := replaceTracerStrings(requestData)
 	for _, t := range rtracers {
 		t.TracerLocationType = types.Body
 		tracers = append(tracers, t)
 	}
 
-	/* Write the new body to the request. */
+	// Write the new body to the request.
 	req.Body = ioutil.NopCloser(bytes.NewReader(rstring))
-	/* Update the size of the request based on the replaced body. */
+	// Update the size of the request based on the replaced body.
 	req.ContentLength = int64(len(rstring))
 	return tracers, err
 
 }
 
-/* Helper function to replace any tracer strings in the request
- * with tracer payloads. Returns the replaced body along with a list of
- * tracers used to replace the tracer strings. */
+// replaceTracerStrings replaces any tracer strings in a slice of bytes
+// with tracer payloads. Returns the replaced slicey along with a list of
+// tracers used to replace the tracer strings. */
 func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 	var replacedTracers []types.Tracer
 
@@ -74,7 +77,6 @@ func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 	for _, tracerString := range labels {
 		index := bytes.Index(data, tracerString)
 		for index != -1 {
-			log.Trace.Printf("Found a tracer string: %s", tracerString)
 			tracerPayload, tracerBytes, err := TransformTracerString(tracerString)
 			if err != nil {
 				log.Error.Println("There must be something wrong with configuration file syncing properly.")
@@ -97,12 +99,11 @@ func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 			index = bytes.Index(data, tracerString)
 		}
 	}
-	log.Trace.Printf("New Body Value: %s %d", string(data), len(data))
 	return data, replacedTracers
 }
 
-/*TransformTracerString is a helper function that returns a random string that is used to track the tracer and the actual payload
- * as a slice of bytes. */
+// TransformTracerString returns a random string that is used to track the
+// tracer and the actual payload as a slice of bytes.
 func TransformTracerString(tracerString []byte) (string, []byte, error) {
 	idTag := "[[ID]]"
 	unescapedTag, err := url.QueryUnescape(string(tracerString))
@@ -124,12 +125,11 @@ func TransformTracerString(tracerString []byte) (string, []byte, error) {
 	return "", nil, fmt.Errorf("There were no tracers that matched: %s", string(tracerString))
 }
 
-/*FindTracersInResponseBody is a helper function for finding tracer strings in
- * the response body of an HTTP request. */
+// FindTracersInResponseBody finds tracer strings in the response body of an HTTP request.
 func findTracersInResponseBody(response string, url string, requests []types.Request) []types.Tracer {
 	tracers := make([]types.Tracer, 0)
 
-	/* For each of the tracers, look for the tracer's tracer string in the response. */
+	// For each of the tracers, look for the tracer's tracer string in the response.
 	for _, request := range requests {
 		for _, tracer := range request.Tracers {
 			if strings.Contains(response, tracer.TracerPayload) {
@@ -148,19 +148,20 @@ func findTracersInResponseBody(response string, url string, requests []types.Req
 }
 
 func init() {
-	/* When the package is loaded, seed the random number generator. */
+	// When the package is loaded, seed the random number generator.
 	rand.Seed(time.Now().UnixNano())
 }
 
-/* Helper function for generating random tracer strings. */
+// generateRandomTracerString generats random tracer strings.
 func generateRandomTracerString() []byte {
 	return randStringBytes(10)
 }
 
-//Note: now it will only make strings with low case tags. This might be a problem if there is a lot of random text on the page .
+// Note: now it will only make strings with low case tags. This might be a problem
+// if there is a lot of random text on the page .
 const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-/*RandStringBytes returns random string bytes based on size. */
+// randStringBytes returns random string bytes based on size.
 func randStringBytes(n int) []byte {
 	b := make([]byte, n)
 	for i := range b {
