@@ -2,11 +2,12 @@ package common
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/log"
-	"math/rand"
-	"time"
 )
 
 // ServerError is the common function for logging an internal server error and
@@ -18,7 +19,7 @@ func ServerError(err error) []byte {
 		ErrorMsg: err.Error(),
 	}
 
-	if errd := store.DB.Create(&errs).Error; err != nil {
+	if errd := store.DB.Create(&errs).Error; errd != nil {
 		log.Error.Print(errd)
 	}
 

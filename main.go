@@ -6,11 +6,6 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
-	"github.com/nccgroup/tracy/api/rest"
-	"github.com/nccgroup/tracy/api/store"
-	"github.com/nccgroup/tracy/configure"
-	"github.com/nccgroup/tracy/log"
-	"github.com/nccgroup/tracy/proxy"
 	"io/ioutil"
 	_ "net/http/pprof"
 	"os"
@@ -19,6 +14,12 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strings"
+
+	"github.com/nccgroup/tracy/api/rest"
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
+	"github.com/nccgroup/tracy/proxy"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -28,32 +29,34 @@ func main() {
 	if *cpuprofile != "" {
 		defer pprof.StopCPUProfile()
 	}
-	/* Start the proxy. */
+	// Start the proxy.
 	go func() {
-		/* Open a TCP listener. */
+		// Open a TCP listener.
 		ln := configure.ProxyServer()
 
-		/* TODO: move to the init stuff, this isn't really a configuration. Load the configured certificates. */
+		// TODO: move to the init stuff, this isn't really a configuration.
+		// Load the configured certificates.
 		configure.Certificates()
 
-		/* Serve it. This will block until the user closes the program. */
+		// Serve it. This will block until the user closes the program.
 		proxy.ListenAndServe(ln)
 	}()
+
 	ps, err := configure.ReadConfig("proxy-server")
 	if err != nil {
 		log.Error.Fatal(err)
 	}
-	fmt.Printf("Proxy server:\t%s%s", ps.(string), log.NewLine())
+	fmt.Printf("Proxy server:\t%s%s", ps.(string), log.NewLine)
 
-	/* Serve it. Block here so the program doesn't close. */
 	go func() {
 		log.Error.Fatal(rest.RestServer.ListenAndServe())
 	}()
+
 	ts, err := configure.ReadConfig("tracer-server")
 	if err != nil {
 		log.Error.Fatal(err)
 	}
-	fmt.Printf("Tracer server:\t%s%s", ts.(string), log.NewLine())
+	fmt.Printf("Tracer server:\t%s%s", ts.(string), log.NewLine)
 
 	autoLaunch, err := configure.ReadConfig("auto-launch")
 	if err != nil {
@@ -62,13 +65,14 @@ func main() {
 
 	processAutoLaunch(autoLaunch.(string))
 
-	/* Waiting for the user to close the program. */
+	// Wait for the user to close the program.
 	signalChan := make(chan os.Signal, 1)
 	cleanupDone := make(chan bool)
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
 		for _ = range signalChan {
 			fmt.Println("Ctrl+C pressed. Shutting down...")
+			store.DB.Close()
 			cleanupDone <- true
 		}
 	}()
@@ -76,63 +80,74 @@ func main() {
 }
 
 func init() {
-	// Parse the flags. Have to parse them hear since other package initialize command line
+	// Parse the flags. Have to parse them hear since other package
+	// initialize command line.
 	flag.Parse()
+
+	// Set up the logging based on the user command line flags.
+	log.Configure()
 
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			panic(err)
+			log.Error.Fatal(err)
 		}
 		pprof.StartCPUProfile(f)
 	}
 
-	// Set up the logging based on the user command line flags
-	log.Configure()
-	// Open the database
+	// Open the database.
 	if err := store.Open(configure.DatabaseFile, log.Verbose); err != nil {
 		log.Error.Fatal(err.Error())
 	}
 
-	// Initialize the rest routes
+	// Initialize the HTTP routes.
 	rest.Configure()
 
-	// Instantiate the certificate cache
+	// Instantiate the certificate cache.
 	certsJSON, err := ioutil.ReadFile(configure.CertCacheFile)
 	if err != nil {
 		certsJSON = []byte("[]")
-		// Can recover from this. Simply make a cache file and instantiate an empty cache.
+		// Can recover from this. Simply make a cache file and
+		// instantiate an empty cache.
 		ioutil.WriteFile(configure.CertCacheFile, certsJSON, os.ModePerm)
 	}
 
-	certs := []proxy.CertCacheEntry{}
-	if err := json.Unmarshal(certsJSON, &certs); err == nil {
-		cache := make(map[string]tls.Certificate)
-		for _, cert := range certs {
-			keyPEM := cert.Certs.KeyPEM
-			certPEM := cert.Certs.CertPEM
+	var certs []proxy.CertCacheEntry
+	if err := json.Unmarshal(certsJSON, &certs); err != nil {
+		log.Error.Print(err)
+		return
+	}
 
-			cachedCert, err := tls.X509KeyPair(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certPEM}), pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyPEM}))
-			if err != nil {
-				log.Error.Println(err)
-			}
+	cache := make(map[string]tls.Certificate)
+	for _, cert := range certs {
+		keyPEM := cert.Certs.KeyPEM
+		certPEM := cert.Certs.CertPEM
 
-			cache[cert.Host] = cachedCert
+		cachedCert, err := tls.X509KeyPair(
+			pem.EncodeToMemory(&pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: certPEM}),
+			pem.EncodeToMemory(&pem.Block{
+				Type:  "EC PRIVATE KEY",
+				Bytes: keyPEM}))
+
+		if err != nil {
+			log.Error.Println(err)
+			continue
 		}
 
-		proxy.SetCertCache(cache)
-	} else {
-		log.Error.Println(err)
-		log.Error.Println(string(certsJSON))
+		cache[cert.Host] = cachedCert
 	}
+	proxy.SetCertCache(cache)
 }
 
+// processAutoLaunch launchs whatever browser they have configured.
 func processAutoLaunch(option string) {
 	switch option {
 	case "default":
 		s, err := configure.ReadConfig("tracer-server")
 		if err != nil {
-			log.Error.Fatal(err.Error())
+			log.Error.Print(err)
 		}
 		openbrowser(fmt.Sprintf("http://%s", s))
 	case "off":
@@ -151,7 +166,8 @@ func processAutoLaunch(option string) {
 	}
 }
 
-//Taken from here https://gist.github.com/hyg/9c4afcd91fe24316cbf0
+// openBrowser opens the default browser the user has configured.
+// Taken from here https://gist.github.com/hyg/9c4afcd91fe24316cbf0
 func openbrowser(url string) {
 	var err error
 
@@ -165,7 +181,8 @@ func openbrowser(url string) {
 	default:
 		err = fmt.Errorf("unsupported platform")
 	}
+
 	if err != nil {
-		log.Error.Fatal(err)
+		log.Error.Print(err)
 	}
 }
