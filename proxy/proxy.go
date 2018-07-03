@@ -23,8 +23,8 @@ import (
 // ListenAndServe waits and listens for TCP connections and proxies them.
 func ListenAndServe(ln net.Listener) {
 	var (
-		conn  net.Conn
-		error err
+		conn net.Conn
+		err  error
 	)
 	for {
 		conn, err = ln.Accept()
