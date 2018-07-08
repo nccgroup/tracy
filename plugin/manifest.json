@@ -26,7 +26,7 @@
     "default_title": "Tracy",
     "default_icon": {
       "16": "images/tracy_16x16.png",
-      "48": "images/tracy_48x48.png",
+p      "48": "images/tracy_48x48.png",
       "96": "images/tracy_96x96.png",
       "128": "images/tracy_128x128.png"
     }

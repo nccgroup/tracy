@@ -1,13 +1,14 @@
 package rest
 
 import (
-	"github.com/nccgroup/tracy/api/store"
-	"github.com/nccgroup/tracy/configure"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/configure"
 )
 
 /* Used to order request and their corresponding tests. */
@@ -50,4 +51,5 @@ func ServerTestHelper(tests []RequestTestPair, t *testing.T) {
 			break
 		}
 	}
+	store.DB.Close()
 }
