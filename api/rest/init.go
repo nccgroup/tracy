@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"flag"
-	l "log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -103,7 +102,7 @@ func Configure() {
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
-		ErrorLog:     log.Error.(*l.Logger),
+		ErrorLog:     log.Error,
 	}
 }
 
