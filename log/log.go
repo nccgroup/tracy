@@ -10,16 +10,16 @@ import (
 var (
 	// Trace is used for logging trivial things to the command line. Only
 	// print in verbose mode.
-	Trace logger
+	Trace *log.Logger
 	// Info is used for logging more detailed program data. Only print in
 	// verbose mode.
-	Info logger
+	Info *log.Logger
 	// Warning is used for logging errors and exceptions that do not halt
 	// program flow. Only display in verbose mode.
-	Warning logger
+	Warning *log.Logger
 	// Error is used for logging program errors that cannot recover and the
 	// user should know about. Always display.
-	Error logger
+	Error *log.Logger
 	// Verbose indicates if the program is in verbose mode.
 	Verbose bool
 	// NewLine is newline to use in log messages for the OS of choice.
@@ -47,9 +47,13 @@ func init() {
 
 	// Defaults loggers only print errors. This is very helpful when
 	// running tests.
-	Trace = &NopLogger{}
-	Info = &NopLogger{}
-	Warning = &NopLogger{}
+	nopW := noopWriter{}
+	Trace = &log.Logger{}
+	Trace.SetOutput(nopW)
+	Info = &log.Logger{}
+	Info.SetOutput(nopW)
+	Warning = &log.Logger{}
+	Warning.SetOutput(nopW)
 	Error = log.New(os.Stderr, errorStr, flags)
 
 	switch runtime.GOOS {
@@ -60,6 +64,13 @@ func init() {
 	default:
 		NewLine = "\n"
 	}
+}
+
+type noopWriter struct {
+}
+
+func (a noopWriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
 }
 
 // Configure takes the command line options and builds the loggers.
