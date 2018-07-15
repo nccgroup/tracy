@@ -29,18 +29,12 @@ func main() {
 	if *cpuprofile != "" {
 		defer pprof.StopCPUProfile()
 	}
-	// Start the proxy.
-	go func() {
-		// Open a TCP listener.
-		ln := configure.ProxyServer()
-
-		// TODO: move to the init stuff, this isn't really a configuration.
-		// Load the configured certificates.
-		configure.Certificates()
-
-		// Serve it. This will block until the user closes the program.
-		proxy.ListenAndServe(ln)
-	}()
+	// Open a TCP listener.
+	ln := configure.ProxyServer()
+	// Create the proxy
+	p := proxy.New(ln)
+	// Start the proxy that will run forever
+	go p.Accept()
 
 	ps, err := configure.ReadConfig("proxy-server")
 	if err != nil {
@@ -139,6 +133,7 @@ func init() {
 		cache[cert.Host] = cachedCert
 	}
 	proxy.SetCertCache(cache)
+	configure.Certificates()
 }
 
 // processAutoLaunch launchs whatever browser they have configured.

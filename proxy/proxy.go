@@ -20,20 +20,26 @@ import (
 	"github.com/nccgroup/tracy/log"
 )
 
-// ListenAndServe waits and listens for TCP connections and proxies them.
-func ListenAndServe(ln net.Listener) {
-	var (
-		conn net.Conn
-		err  error
-	)
+type Proxy struct {
+	Listener net.Listener
+}
+
+func (p *Proxy) Accept() {
 	for {
-		conn, err = ln.Accept()
+		conn, err := p.Listener.Accept()
 		if err != nil {
 			log.Error.Println(err)
 			continue
 		}
 
 		go handleConnection(conn)
+	}
+
+}
+
+func New(listener net.Listener) *Proxy {
+	return &Proxy{
+		Listener: listener,
 	}
 }
 
