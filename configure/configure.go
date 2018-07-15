@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/nccgroup/tracy/log"
 	"io/ioutil"
 	l "log"
 	"net"
@@ -12,6 +11,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+
+	"github.com/nccgroup/tracy/log"
 )
 
 /*TracyPath is the path all tracy files go in. */
