@@ -196,7 +196,7 @@ func testFindTracersHelper(responseData string, tracers []types.Request) (int, e
 func TestFullProxy(t *testing.T) {
 	// Test just sending data, no trace strings
 	body, err := makeRequest(ts.URL, "a")
-	if err != nil && bytes.Compare(body, []byte("<div>a</div>")) != 0 {
+	if err != nil || bytes.Compare(body, []byte("<div>a</div>\n")) != 0 {
 		log.Error.Println(err)
 		t.FailNow()
 	}
