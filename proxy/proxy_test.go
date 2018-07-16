@@ -5,11 +5,17 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
 )
 
 var requestDataNoTags = `GET /api/v1/action/ HTTP/1.1
@@ -37,6 +43,12 @@ Pragma: no-cache
 Cache-Control: no-cache
 
 test1=zzXSSzz&test2=zzPLAINzz`
+
+// Setup the proxy and a test httpserver
+// Do it once so that you don't have port
+// collisions and db lock issues
+var ln, _ = setupProxy()
+var ts = setupHTTPTestServer()
 
 func TestAddTracersBodyWithNoTags(t *testing.T) {
 	numTracers, err := testAddTracersBodyHelper(requestDataNoTags)
@@ -179,4 +191,85 @@ func testFindTracersHelper(responseData string, tracers []types.Request) (int, e
 	foundTracers := findTracersInResponseBody(responseData, "www.test.com", tracers)
 
 	return len(foundTracers), nil
+}
+
+func TestFullProxy(t *testing.T) {
+	// Test just sending data, no trace strings
+	body, err := makeRequest(ts.URL, "a")
+	if err != nil && bytes.Compare(body, []byte("<div>a</div>")) != 0 {
+		log.Error.Println(err)
+		t.FailNow()
+	}
+}
+
+func BenchmarkFullProxy(b *testing.B) {
+	// Benchmark proxying data with both types of trace strings
+	for i := 0; i < b.N; i++ {
+		if _, err := makeRequest(ts.URL, "test1=zzXSSzz&test2=zzPLAINzz"); err != nil {
+			log.Error.Println(err)
+			b.FailNow()
+		}
+	}
+}
+
+func proxier(r *http.Request) (*url.URL, error) {
+	// Need a function to return what the proxy url for an http.Transport
+	ps, err := configure.ReadConfig("proxy-server")
+	if err != nil {
+		log.Error.Fatal(err)
+	}
+	return &url.URL{
+		Scheme: "http",
+		Host:   ps.(string),
+	}, nil
+}
+
+func setupProxy() (net.Listener, error) {
+	// Minimal steps needed to setup the proxy, configure the
+	// logging, setup the DB, create a proxy object and let it accept
+	log.Configure()
+	if err := store.Open(configure.DatabaseFile, log.Verbose); err != nil {
+		log.Error.Fatal(err.Error())
+		return nil, err
+	}
+	ln := configure.ProxyServer()
+	p := New(ln)
+	go p.Accept()
+	return ln, nil
+}
+
+func setupHTTPTestServer() *httptest.Server {
+	// Simple echo server that responds with the incoming body
+	// wrapped in divs to make sure the tracer is working on both ends
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := ioutil.ReadAll(r.Body)
+		fmt.Fprintln(w, "<div>"+string(body)+"</div>")
+	}))
+	return ts
+}
+
+func makeRequest(url string, b string) ([]byte, error) {
+	// Given a url & a body, will make a post request to that
+	// url through the proxy.
+	request, err := http.NewRequest("post", url, bufio.NewReader(strings.NewReader(b)))
+	if err != nil {
+		return nil, err
+	}
+	defer request.Body.Close()
+	transport := &http.Transport{
+		Proxy: proxier,
+	}
+	client := &http.Client{
+		Transport: transport,
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }
