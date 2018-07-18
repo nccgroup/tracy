@@ -8,10 +8,8 @@ import (
 	"testing"
 )
 
-/* Testing readConfig. GET /config */
-func TestGetAllConfig(t *testing.T) {
-	Configure()
-
+// Testing readConfig. GET /config
+func testGetAllConfig(t *testing.T) []RequestTestPair {
 	getReq, err := http.NewRequest("GET", "http://127.1.0.1:66666/config", nil)
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
@@ -36,5 +34,5 @@ func TestGetAllConfig(t *testing.T) {
 	tests := make([]RequestTestPair, 1)
 	getReqTest := RequestTestPair{getReq, getTest}
 	tests[0] = getReqTest
-	ServerTestHelper(tests, t)
+	return tests
 }

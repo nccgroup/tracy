@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/nccgroup/tracy/api/types"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/nccgroup/tracy/api/types"
 )
 
-/* Testing addTracer with httptest. POST /tracers */
-func TestAddTracer(t *testing.T) {
-	Configure()
-
+// Testing addTracer with httptest. POST /tracers
+func testAddTracer(t *testing.T) []RequestTestPair {
 	var (
 		tracerString     = "blahblah"
 		URL              = "http://example.com"
@@ -49,10 +48,10 @@ func TestAddTracer(t *testing.T) {
 	getReqTest := RequestTestPair{getReq, getTest}
 	tests[0] = addReqTest
 	tests[1] = getReqTest
-	ServerTestHelper(tests, t)
+	return tests
 }
 
-/* Commonly used GET request test. */
+// getTest is the commonly used GET request test.
 func getTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 	/* Return variable. */
 	var err error
@@ -74,7 +73,7 @@ func getTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 	return err
 }
 
-/* Commonly used POST request test. */
+// addTest is the commonly used POST request test.
 func addTest(rr *httptest.ResponseRecorder, t *testing.T) error {
 	/* Return variable. */
 	var err error

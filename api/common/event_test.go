@@ -2,95 +2,59 @@ package common
 
 import (
 	"encoding/json"
-	"github.com/nccgroup/tracy/api/store"
-	"github.com/nccgroup/tracy/api/types"
-	"github.com/nccgroup/tracy/configure"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/nccgroup/tracy/api/store"
+	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/configure"
 )
 
 // Test cases for making sure the event severity is correct.
-func TestSeverityLeaf(t *testing.T) {
+func TestAllSeverity(t *testing.T) {
 	tp := "lkasdmfasd"
-	rd := `<b>` + tp + `</b>`
-	testSeverity(t, tp, rd, 0)
-}
+	var table = []struct {
+		testPayload    string
+		renderedOutput string
+		expected       uint
+	}{
+		{tp, `<b>` + tp + `</b>`, 0},
+		{tp, `<b onerror="` + tp + `">something</b>`, 2},
+		{tp, `<b onclick="` + tp + `">something</b>`, 2},
+		{tp, `<input value="` + tp + `">something</input>`, 1},
+		{tp, `<a href="` + tp + `">something</a>`, 2},
+		{tp, `<` + tp + `><a>something</a>`, 3},
+		{tp, `<a ` + tp + `="blah">something</a>`, 3},
+	}
 
-func TestSeverityOnErrorValue(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<b onerror="` + tp + `">something</b>`
-	testSeverity(t, tp, rd, 2)
-}
-
-func TestSeverityOnClickValue(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<b onclick="` + tp + `">something</b>`
-	testSeverity(t, tp, rd, 2)
-}
-
-func TestSeverityValueAttributeValue(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<input value="` + tp + `">something</input>`
-	testSeverity(t, tp, rd, 1)
-}
-
-func TestSeverityHref(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<a href="` + tp + `">something</a>`
-	testSeverity(t, tp, rd, 2)
-}
-
-func TestSeverityUnencoded(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<` + tp + `><a>something</a>`
-	testSeverity(t, tp, rd, 3)
-}
-
-func TestSeverityAttr(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<a ` + tp + `="blah">something</a>`
-	testSeverity(t, tp, rd, 3)
+	for _, row := range table {
+		testSeverity(t, row.testPayload, row.renderedOutput, row.expected)
+	}
 }
 
 // Test cases for making sure we are registering the correct number of DOM contexts
 // from the given HTML data that might be returned by the plugin. When we encounter
 // new edge cases that are not triggering a DOM context properly, add a new test
 // to the top of this list.
-func TestAddEventOneContext(t *testing.T) {
+func TestAllAddDOMEvents(t *testing.T) {
 	tp := "lkasdmfasd"
-	rd := `<b>` + tp + `</b>`
-	testAddEventPayload(t, tp, rd, 1)
-}
+	var table = []struct {
+		testPayload    string
+		renderedOutput string
+		expected       uint
+	}{
+		{tp, `<b>` + tp + `</b>`, 1},
+		{tp, `<b>` + tp + ` ` + tp + `</b>`, 1},
+		{tp, `<b>` + tp + `</b>` + `<b>` + tp + `</b>`, 2},
+		{tp, `<b onload="` + tp + `">something</b>`, 1},
+		{tp, `<` + tp + `>something</b>`, 1},
+		{tp, `{"a": "` + tp + `"}`, 0},
+	}
 
-func TestAddEventSameLeaf(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<b>` + tp + ` ` + tp + `</b>`
-	testAddEventPayload(t, tp, rd, 1)
-}
-
-func TestAddEventTwoContexts(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<b>` + tp + `</b>` + `<b>` + tp + `</b>`
-	testAddEventPayload(t, tp, rd, 2)
-}
-
-func TestAddEventAttributeValue(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<b onload="` + tp + `">something</b>`
-	testAddEventPayload(t, tp, rd, 1)
-}
-
-func TestAddEventNodeName(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `<` + tp + `>something</b>`
-	testAddEventPayload(t, tp, rd, 1)
-}
-
-func TestAddEventJSON(t *testing.T) {
-	tp := "lkasdmfasd"
-	rd := `{"a": "` + tp + `"}`
-	testAddEventPayload(t, tp, rd, 0)
+	for _, row := range table {
+		testAddEventPayload(t, row.testPayload, row.renderedOutput, row.expected)
+	}
 }
 
 // TestAddEventDataJSON tests to make sure when we add a raw event to the database,
