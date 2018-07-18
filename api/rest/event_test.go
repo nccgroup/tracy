@@ -4,17 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/nccgroup/tracy/api/types"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/nccgroup/tracy/api/types"
 )
 
-/* Testing adding a tracer event. POST /tracers/<tracer_id>/events */
-func TestAddEvent(t *testing.T) {
-	Configure()
-
+// Testing adding a tracer event. POST /tracers/<tracer_id>/events
+func testAddEvent(t *testing.T) []RequestTestPair {
 	var (
 		tracerString     = "blahblah"
 		data             = "<a>blahblah</a>"
@@ -147,13 +146,11 @@ func TestAddEvent(t *testing.T) {
 	tests[0] = addReqTest
 	tests[1] = addEventReqTest
 	tests[2] = getEventReqTest
-	ServerTestHelper(tests, t)
+	return tests
 }
 
-/* Testing the database does not log duplicate events. */
-func TestDuplicateEvent(t *testing.T) {
-	Configure()
-
+// Testing the database does not log duplicate events.
+func testDuplicateEvent(t *testing.T) []RequestTestPair {
 	var (
 		tracerString     = "blahblah"
 		data             = "dahdata<a>blahblah</a>"
@@ -240,5 +237,5 @@ func TestDuplicateEvent(t *testing.T) {
 	tests[0] = addReqTest
 	tests[1] = addEventReqTest
 	tests[2] = addDupEvntReqTest
-	ServerTestHelper(tests, t)
+	return tests
 }
