@@ -3,12 +3,16 @@ package proxy
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
+	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -49,6 +53,7 @@ test1=zzXSSzz&test2=zzPLAINzz`
 // collisions and db lock issues
 var ln, _ = setupProxy()
 var ts = setupHTTPTestServer()
+var tstls = setupHTTPSTestServer()
 
 func TestAddTracersBodyWithNoTags(t *testing.T) {
 	numTracers, err := testAddTracersBodyHelper(requestDataNoTags)
@@ -201,11 +206,29 @@ func TestFullProxy(t *testing.T) {
 		t.FailNow()
 	}
 }
+func TestFullProxyTLS(t *testing.T) {
+	// Test just sending data, no trace strings
+	body, err := makeRequest(tstls.URL, "a")
+	if err != nil || bytes.Compare(body, []byte("<div>a</div>\n")) != 0 {
+		log.Error.Println(err)
+		t.FailNow()
+	}
+}
 
 func BenchmarkFullProxy(b *testing.B) {
 	// Benchmark proxying data with both types of trace strings
 	for i := 0; i < b.N; i++ {
 		if _, err := makeRequest(ts.URL, "test1=zzXSSzz&test2=zzPLAINzz"); err != nil {
+			log.Error.Println(err)
+			b.FailNow()
+		}
+	}
+}
+
+func BenchmarkFullProxyTLS(b *testing.B) {
+	// Benchmark proxying data with both types of trace strings
+	for i := 0; i < b.N; i++ {
+		if _, err := makeRequest(tstls.URL, "test1=zzXSSzz&test2=zzPLAINzz"); err != nil {
 			log.Error.Println(err)
 			b.FailNow()
 		}
@@ -232,6 +255,42 @@ func setupProxy() (net.Listener, error) {
 		log.Error.Fatal(err.Error())
 		return nil, err
 	}
+	certsJSON, err := ioutil.ReadFile(configure.CertCacheFile)
+	if err != nil {
+		certsJSON = []byte("[]")
+		// Can recover from this. Simply make a cache file and
+		// instantiate an empty cache.
+		ioutil.WriteFile(configure.CertCacheFile, certsJSON, os.ModePerm)
+	}
+
+	var certs []CertCacheEntry
+	if err := json.Unmarshal(certsJSON, &certs); err != nil {
+		log.Error.Print(err)
+		return nil, err
+	}
+
+	cache := make(map[string]tls.Certificate)
+	for _, cert := range certs {
+		keyPEM := cert.Certs.KeyPEM
+		certPEM := cert.Certs.CertPEM
+
+		cachedCert, err := tls.X509KeyPair(
+			pem.EncodeToMemory(&pem.Block{
+				Type:  "CERTIFICATE",
+				Bytes: certPEM}),
+			pem.EncodeToMemory(&pem.Block{
+				Type:  "EC PRIVATE KEY",
+				Bytes: keyPEM}))
+
+		if err != nil {
+			log.Error.Println(err)
+			continue
+		}
+
+		cache[cert.Host] = cachedCert
+	}
+	SetCertCache(cache)
+	configure.Certificates()
 	ln := configure.ProxyServer()
 	p := New(ln)
 	go p.Accept()
@@ -248,6 +307,16 @@ func setupHTTPTestServer() *httptest.Server {
 	return ts
 }
 
+func setupHTTPSTestServer() *httptest.Server {
+	// Simple echo server that responds with the incoming body
+	// wrapped in divs to make sure the tracer is working on both ends
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := ioutil.ReadAll(r.Body)
+		fmt.Fprintln(w, "<div>"+string(body)+"</div>")
+	}))
+	return ts
+}
+
 func makeRequest(url string, b string) ([]byte, error) {
 	// Given a url & a body, will make a post request to that
 	// url through the proxy.
@@ -258,6 +327,9 @@ func makeRequest(url string, b string) ([]byte, error) {
 	defer request.Body.Close()
 	transport := &http.Transport{
 		Proxy: proxier,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
 	}
 	client := &http.Client{
 		Transport: transport,
