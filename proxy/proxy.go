@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"sync"
 
 	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/store"
@@ -19,6 +20,12 @@ import (
 	"github.com/nccgroup/tracy/configure"
 	"github.com/nccgroup/tracy/log"
 )
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 1024*4)
+	},
+}
 
 // Proxy is the object that stores the configured proxy TCP listener
 // for the tracy proxy.
@@ -396,26 +403,9 @@ func handleConnection(client net.Conn) {
 // we can identify when sources of input include data coming from the server in
 // websocket.
 func bridge(client net.Conn, server net.Conn) {
-	buf := make([]byte, 1024*4)
-	for {
-		// Read up to 1024*4 bytes from the client.
-		nb, err := client.Read(buf)
-
-		// As of golang 1.7, 0-byte-reads don't always return EOF
-		if err == io.EOF || nb == 0 {
-			break
-		}
-
-		if err != nil {
-			log.Error.Println(err)
-		}
-
-		// Copy the bytes read above to the other connection.
-		_, err = server.Write(buf[:nb])
-
-		if err != nil {
-			log.Error.Println(err)
-			break
-		}
+	buf := bufferPool.Get().([]byte)
+	if _, err := io.CopyBuffer(client, server, buf); err != nil {
+		log.Error.Println(err)
 	}
+	bufferPool.Put(buf)
 }
