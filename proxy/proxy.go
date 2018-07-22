@@ -404,11 +404,8 @@ func handleConnection(client net.Conn) {
 // websocket.
 func bridge(client net.Conn, server net.Conn) {
 	buf := bufferPool.Get().([]byte)
-	for {
-		if _, err := io.CopyBuffer(client, server, buf); err != nil {
-			log.Error.Println(err)
-			break
-		}
+	if _, err := io.CopyBuffer(client, server, buf); err != nil {
+		log.Error.Println(err)
 	}
 	bufferPool.Put(buf)
 }
