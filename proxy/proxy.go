@@ -402,13 +402,13 @@ func handleConnection(client net.Conn) {
 // TODO: add code to look for tracy payloads in websockets so that
 // we can identify when sources of input include data coming from the server in
 // websocket.
-func bridge(client net.Conn, server net.Conn) {
+func bridge(src net.Conn, dst net.Conn) {
 	buf := bufferPool.Get().([]byte)
-	for {
-		if _, err := io.CopyBuffer(client, server, buf); err != nil {
-			log.Error.Println(err)
-			break
-		}
+
+	// CopyBuffer copies between the two parties until an EOF is found.
+	if _, err := io.CopyBuffer(src, dst, buf); err != nil {
+		log.Error.Println(err)
+
 	}
 	bufferPool.Put(buf)
 }

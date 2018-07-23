@@ -37,6 +37,8 @@ func Configure() {
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}/events").HandlerFunc(GetEvents)
 	RestRouter.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(AddEvents)
 	RestRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
+	RestRouter.Methods("PUT").Path("/projects").HandlerFunc(SwitchProject)
+	RestRouter.Methods("DELETE").Path("/projects").HandlerFunc(DeleteProject)
 
 	// The base application page. Don't use the compiled assets unless
 	// in production.

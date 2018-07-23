@@ -227,11 +227,11 @@ func ServerInWhitelist(server string) bool {
 	return ret
 }
 
-/*DeleteDatabase deletes the database at the file path specified. */
+// DeleteDatabase deletes the database at the file path specified.
 func DeleteDatabase(db string) error {
 	var ret error
 
-	/* If the database exists, remove it. It will affect the test. */
+	// If the database exists, remove it.
 	if _, err := os.Stat(db); !os.IsNotExist(err) {
 		err := os.Remove(db)
 		if err != nil {
