@@ -13,6 +13,8 @@ func TestAllRest(t *testing.T) {
 		testDuplicateEvent(t),
 		testGetAllConfig(t),
 		testAddTracer(t),
+		testSwitchProject(t),
+		testDeleteProject(t),
 	}
 
 	serverTestHelperBulk(table, t)
