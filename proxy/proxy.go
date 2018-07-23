@@ -408,7 +408,6 @@ func bridge(src net.Conn, dst net.Conn) {
 	// CopyBuffer copies between the two parties until an EOF is found.
 	if _, err := io.CopyBuffer(src, dst, buf); err != nil {
 		log.Error.Println(err)
-
 	}
 	bufferPool.Put(buf)
 }
