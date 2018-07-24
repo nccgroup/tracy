@@ -13,7 +13,7 @@ var observer = new MutationObserver(function(mutations) {
         /* Check to see if a node is a child of the parentNode if so don't add it because we already have that data */
         if (parentNode === null || !parentNode.contains(node)) {
           /* The only supported DOM types that we care about are `DOM` (1) and `text` (3). */
-          if (node.nodeType === 1) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
             /* In the case of a DOM type, check all the node's children for input fields. Use this as a chance
              * to restyle new inputs that were not caught earlier. */
             parentNode = node;
@@ -24,7 +24,7 @@ var observer = new MutationObserver(function(mutations) {
               location: document.location.href
             });
             clickToFill(node);
-          } else if (node.nodeType == 3) {
+          } else if (node.nodeType == Node.TEXT_NODE) {
             chrome.runtime.sendMessage({
               "message-type": "job",
               type: "text",
