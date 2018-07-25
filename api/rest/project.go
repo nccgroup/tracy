@@ -7,6 +7,19 @@ import (
 	"github.com/nccgroup/tracy/api/common"
 )
 
+// GetProjects handles the HTTP API request to get all the
+// available projects.
+func GetProjects(w http.ResponseWriter, r *http.Request) {
+	projs, err := common.GetProjects()
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(projs)
+}
+
 // DeleteProject handles the HTTP API request to delete a
 // project.
 func DeleteProject(w http.ResponseWriter, r *http.Request) {
