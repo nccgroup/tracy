@@ -39,6 +39,8 @@ function simulateKeyPress( e ) {
 		e.dispatchEvent(event);
 	})
 
+	e.dispatchEvent(new Event("change"));
+
 }
 
 /* Function used for catching a long click near the end of an input field to get a list of tracer strings. */
