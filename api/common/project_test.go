@@ -1,9 +1,12 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/nccgroup/tracy/api/store"
@@ -16,6 +19,7 @@ func TestProjectsCommonAll(t *testing.T) {
 	}{
 		{test: testDeleteProject(t)},
 		{test: testSwitchProject(t)},
+		{test: testGetProjects(t)},
 	}
 	for i, test := range table {
 		if err := store.Open(setupDatabase(i), false); err != nil {
@@ -24,9 +28,22 @@ func TestProjectsCommonAll(t *testing.T) {
 		test.test()
 		store.DB.Close()
 	}
+	files, err := ioutil.ReadDir(configure.TracyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		n := f.Name()
+		if strings.HasPrefix(n, "new") {
+			if err := os.Remove(filepath.Join(configure.TracyPath, n)); err != nil {
+				t.Fatal(err)
+			}
+
+		}
+	}
 }
 
-// TestDeleteProject creates a project, deletes it, then
+// testDeleteProject creates a project, deletes it, then
 // verifies the database file was deleted.
 func testDeleteProject(t *testing.T) func() {
 	return func() {
@@ -35,25 +52,83 @@ func testDeleteProject(t *testing.T) func() {
 		}
 		path := filepath.Join(configure.TracyPath, "new-project")
 
-		if configure.DatabaseFile != path {
-			t.Fatal("expected the database file to be named `new-project`")
+		if configure.DatabaseFile != path+".db" {
+			t.Fatal("expected the database file to be named `new-project.db`")
 		}
 
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			t.Fatal("no database found in the tracy path with name `new-project`")
+		if _, err := os.Stat(path + ".db"); os.IsNotExist(err) {
+			t.Fatal("no database found in the tracy path with name `new-project.db`")
 		}
 
 		if err := DeleteProject("new-project"); err != nil {
 			t.Fatal(err)
 		}
 
-		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			t.Fatal("a database was found in the tracy path with name `new-project` even after we deleted it")
+		if _, err := os.Stat(path + ".db"); !os.IsNotExist(err) {
+			t.Fatal("a database was found in the tracy path with name `new-project.db` even after we deleted it")
 		}
 	}
 }
 
-// TestSwitchProject creates a project, switches to it,
+// testGetProjects adds a bunch of projects and tries to
+// retrieve them to make sure they were created correctly.
+func testGetProjects(t *testing.T) func() {
+	return func() {
+		if err := SwitchProject("new-project1"); err != nil {
+			t.Fatal(err)
+		}
+		if err := SwitchProject("new-project2"); err != nil {
+			t.Fatal(err)
+		}
+		if err := SwitchProject("new-project3"); err != nil {
+			t.Fatal(err)
+		}
+
+		projs, err := GetProjects()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var m []string
+		err = json.Unmarshal(projs, &m)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(m) != 4 {
+			t.Fatalf("Expected 4 database files, but got %d", len(m))
+		}
+
+		if err := DeleteProject("new-project1"); err != nil {
+			t.Fatal(err)
+		}
+		if err := DeleteProject("new-project2"); err != nil {
+			t.Fatal(err)
+		}
+
+		projs2, err := GetProjects()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var m2 []string
+		err = json.Unmarshal(projs2, &m2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(m2) != 2 {
+			t.Fatalf("Expected 2 database files, but got %d", len(m2))
+		}
+
+		if err := DeleteProject("new-project3"); err != nil {
+			t.Fatal(err)
+		}
+
+	}
+}
+
+// testSwitchProject creates a project, switches to it,
 // then verifies that a database file was created and the
 // currently configured project is the newly created one.
 func testSwitchProject(t *testing.T) func() {
@@ -63,12 +138,16 @@ func testSwitchProject(t *testing.T) func() {
 		}
 		path := filepath.Join(configure.TracyPath, "new-project")
 
-		if configure.DatabaseFile != path {
-			t.Fatal("expected the database file to be named `new-project`")
+		if configure.DatabaseFile != path+".db" {
+			t.Fatal("expected the database file to be named `new-project.db`")
 		}
 
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			t.Fatal("no database found in the tracy path with name `new-project`")
+		if _, err := os.Stat(path + ".db"); os.IsNotExist(err) {
+			t.Fatal("no database found in the tracy path with name `new-project.db`")
+		}
+
+		if err := DeleteProject("new-project"); err != nil {
+			t.Fatal(err)
 		}
 	}
 }

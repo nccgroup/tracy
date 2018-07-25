@@ -39,6 +39,7 @@ func Configure() {
 	RestRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
 	RestRouter.Methods("PUT").Path("/projects").HandlerFunc(SwitchProject)
 	RestRouter.Methods("DELETE").Path("/projects").HandlerFunc(DeleteProject)
+	RestRouter.Methods("GET").Path("/projects").HandlerFunc(GetProjects)
 
 	// The base application page. Don't use the compiled assets unless
 	// in production.
@@ -89,6 +90,7 @@ func Configure() {
 			return false
 		}),
 		handlers.AllowedHeaders([]string{"X-TRACY", "Hoot"}),
+		handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"}),
 	}
 
 	// API middleware for: CORS, caching, content type, and custom headers

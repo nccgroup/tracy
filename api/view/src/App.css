@@ -437,3 +437,7 @@ div.loading-spinner-child {
 input.install-button {
   width: 50px;
 }
+
+select.project-picker { 
+    color: black;
+}
