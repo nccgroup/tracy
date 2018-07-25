@@ -31,6 +31,18 @@ function isNearLeftEdge(element, event) {
 	return ret;
 }
 
+/* Simulate input on a input field in hopes to trigger any input validation checks. */
+function simulateKeyPress( e ) {
+	e.focus();
+	["keypress", "keyup", "keydown"].forEach( eventName => {
+		var event = new KeyboardEvent(eventName);
+		e.dispatchEvent(event);
+	})
+
+	e.dispatchEvent(new Event("change"));
+
+}
+
 /* Function used for catching a long click near the end of an input field to get a list of tracer strings. */
 function registerLongPauseHandler(e) {
 	if (isNearLeftEdge(this, e)) {
@@ -52,6 +64,7 @@ function registerLongPauseHandler(e) {
 					const listElement = document.createElement("li");
 
 					listElement.addEventListener("mousedown", el => {
+
 						let payload;
 						if (
 							el.target.innerText.toLowerCase().startsWith("gen")
@@ -63,8 +76,8 @@ function registerLongPauseHandler(e) {
 									e.target.value =
 										e.target.value +
 										res.Tracers[0].TracerPayload;
-									/* If the user uses the drop down for the first element, toggle the box on. */
-									toggleEnabled(e.target);
+									
+									simulateKeyPress(e.target);
 									tagMenu.parentNode.removeChild(tagMenu);
 								})
 								.catch(error => console.error("Error:", error));
@@ -72,8 +85,7 @@ function registerLongPauseHandler(e) {
 							/* Add the tracer string template. */
 							e.target.value =
 								e.target.value + el.currentTarget.innerText;
-							/* If the user uses the drop down for the first element, toggle the box on. */
-							toggleEnabled(e.target);
+							simulateKeyPress(e.target);
 							tagMenu.parentNode.removeChild(tagMenu);
 						}
 					});
