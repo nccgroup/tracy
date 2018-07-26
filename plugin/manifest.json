@@ -20,6 +20,12 @@
       ],
       "css": ["css/dropdown.css"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["*://localhost/*"],
+      "all_frames": true,
+      "js": ["scripts/method-hooking-injector-allhosts.js"],
+      "run_at": "document_start"
     }
   ],
   "browser_action": {

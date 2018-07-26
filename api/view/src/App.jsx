@@ -9,6 +9,7 @@ import Col from "react-bootstrap/lib/Col";
 import FilterColumn from "./FilterColumn";
 import Row from "react-bootstrap/lib/Row";
 import ProjectPicker from "./ProjectPicker";
+import Settings from "./Settings";
 
 class App extends Component {
   constructor(props) {
@@ -180,10 +181,8 @@ class App extends Component {
 
   /* getProjects gets the projects available to view. */
   getProjects = () => {
-    //TODO: make configurable
-    const req = new Request(`http://127.0.0.1:8081/projects`, {
-      method: "GET",
-      headers: { Hoot: "!" }
+    const req = this.newTracyRequest(`/projects`, {
+      method: "GET"
     });
 
     fetch(req)
@@ -213,11 +212,9 @@ class App extends Component {
 
   /* Gets the bulk tracers via an HTTP GET request. */
   getTracers = () => {
-    //TODO: make configurable
     /* Create the HTTP GET request to the /tracers API endpoint. */
-    const req = new Request(`http://127.0.0.1:8081/tracers`, {
-      method: "GET",
-      headers: { Hoot: "!" }
+    const req = this.newTracyRequest(`/tracers`, {
+      method: "GET"
     });
 
     fetch(req)
@@ -248,17 +245,12 @@ class App extends Component {
 
   /* Gets the bulk events via an HTTP GET request. */
   getTracerEvents = (tracerID = this.state.tracer.ID) => {
-    // TODO: make configurable
     // By default, the app starts with non of the tracers selected. Don't make a
     // request in this case.
     if (tracerID) {
-      var req = new Request(
-        `http://127.0.0.1:8081/tracers/${tracerID}/events`,
-        {
-          method: "GET",
-          headers: { Hoot: "!" }
-        }
-      );
+      const req = this.newTracyRequest(`/tracers/${tracerID}/events`, {
+        method: "GET"
+      });
 
       fetch(req)
         .then(response => response.json())
@@ -468,9 +460,8 @@ class App extends Component {
   }
 
   deleteProject = proj => {
-    const req = new Request(`http://127.0.0.1:8081/projects?proj=${proj}`, {
-      method: "DELETE",
-      headers: { Hoot: "!" }
+    const req = this.newTracyRequest(`/projects?proj=${proj}`, {
+      method: "DELETE"
     });
 
     fetch(req)
@@ -499,10 +490,24 @@ class App extends Component {
     localStorage.setItem("project", proj);
   };
 
+  newTracyRequest = (path, opts) => {
+    if (!window.tracy || !window.tracy.host || !window.tracy.port) {
+      console.error("the `window.tracy` object hasn't been set yet");
+      return false;
+    }
+    if (!opts.headers) {
+      opts.headers = {};
+    }
+    opts.headers.Hoot = "!";
+    return new Request(
+      `http://${window.tracy.host}:${window.tracy.port}${path}`,
+      opts
+    );
+  };
+
   switchProject = proj => {
-    const req = new Request(`http://127.0.0.1:8081/projects?proj=${proj}`, {
-      method: "PUT",
-      headers: { Hoot: "!" }
+    const req = this.newTracyRequest(`/projects?proj=${proj}`, {
+      method: "PUT"
     });
 
     fetch(req)
@@ -537,10 +542,13 @@ class App extends Component {
         <Col md={12} className="container">
           <Row className="header">
             <Header width={2} />
-            <Col md={5} />
-            <Col md={5}>
+            <Col md={10}>
               <Row>
+                <Col md={2} />
                 <Col md={5}>
+                  <Settings />
+                </Col>
+                <Col md={2}>
                   <ProjectPicker
                     deleteProject={this.deleteProject}
                     switchProject={this.switchProject}
@@ -548,7 +556,7 @@ class App extends Component {
                     projects={this.state.projects}
                   />
                 </Col>
-                <Col md={5}>
+                <Col md={2}>
                   <WebSocketRouter
                     handleNewTracer={this.handleNewTracer}
                     handleNewRequest={this.handleNewRequest}
@@ -556,7 +564,7 @@ class App extends Component {
                     tracer={this.state.tracer}
                   />
                 </Col>
-                <Col md={2}>
+                <Col md={1}>
                   <FilterColumn handleFilterChange={this.handleFilterChange} />
                 </Col>
               </Row>
