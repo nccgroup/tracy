@@ -197,8 +197,14 @@ function processDomEvents() {
   }
 }
 
-/* Any time the page sends a message to the extension, the above handler should take care of it. */
+/* Any time the page sends a message to the extension, the above handler should 
+ * take care of it. */
 chrome.runtime.onMessage.addListener(messageRouter);
+/* Any time the UI tries to check if the extension is called, it will make an 
+ * external message. */
+chrome.runtime.onMessageExternal.addListener((r, s, _) => {
+  return true;
+});
 chrome.browserAction.onClicked.addListener(function(tab) {
   enabled = !enabled;
   if (!enabled) {

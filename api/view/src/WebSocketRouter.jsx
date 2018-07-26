@@ -17,8 +17,12 @@ class WebSocketRouter extends Component {
   }
 
   connectToWebSocket() {
-    //TODO: need to make this configurable.
-    let ws = new WebSocket("ws://localhost:8081/ws");
+    if (!window.tracy) {
+      setTimeout(this.connectToWebSocket, 1500);
+      return;
+    }
+
+    let ws = new WebSocket(`ws://${window.tracy.host}:${window.tracy.port}/ws`);
 
     ws.onmessage = function(event) {
       switch (Object.keys(JSON.parse(event.data))[0]) {
