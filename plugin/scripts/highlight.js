@@ -10,7 +10,6 @@ function getElementOffset(element) {
 
 // Function to help identify if an event happened near the left edge of an element.
 function isNearLeftEdge(element, event) {
-  let ret = false;
   const offset = getElementOffset(element);
   const rightEdge = element.getBoundingClientRect().right - offset.left;
   const mouseClickPosition = event.pageX - offset.left;
@@ -21,10 +20,10 @@ function isNearLeftEdge(element, event) {
   }
 
   if (rightEdge - mouseClickPosition < buttonWidth) {
-    ret = true;
+    return true;
   }
 
-  return ret;
+  return false;
 }
 
 // Simulate input on a input field in hopes to trigger any input validation checks.
@@ -41,7 +40,11 @@ function simulateKeyPress(e, value) {
 
 // registerLongPauseHandler catches a long click near the end of an input field
 // to get a list of tracer strings.
-function registerLongPauseHandler(e) {
+function registerRightClickHandler(e) {
+  // Remember the click event so that the background can tell us if they
+  // used a context menu item and which one is was.
+  cache.set(e.target);
+
   if (!isNearLeftEdge(e.target, e)) {
     return;
   }
@@ -62,7 +65,7 @@ function registerLongPauseHandler(e) {
       for (let tracerStringTypeKey in tracerStringTypes) {
         const listElement = document.createElement("li");
         listElement.addEventListener("mousedown", el => {
-          mouseDownEventListener(e, el, tagMenu);
+          setElementWithTracerString(e.target, el.target.innerText);
         });
         listElement.classList.add("highlight-on-hover");
         listElement.innerText = tracerStringTypes[tracerStringTypeKey];
@@ -78,20 +81,56 @@ function registerLongPauseHandler(e) {
   );
 }
 
-// mouseDownEventListener handles the moust clicks when a users clicks a long
-// click near the edge of an input field.
-function mouseDownEventListener(e, el, tagMenu) {
-  if (!el.target.innerText.toLowerCase().startsWith("gen")) {
+// clickCache is an object that can be used to set and get
+// the last clicked item without having to store it in a
+// global variable. clickCache has two functions, get and set.
+// set takes an HTML element and sets the cache. get returns
+// the value of the cache.
+function clickCache() {
+  let lastClicked;
+  return {
+    get: () => {
+      return lastClicked;
+    },
+    set: e => {
+      lastClicked = e;
+    }
+  };
+}
+
+// instantiate our click cache.
+const cache = clickCache();
+
+// Event listener from the background thread when a user clicks one
+// of the context menus.
+chrome.runtime.onMessage.addListener(function(msg) {
+  if (msg.cmd == "clickCache") {
+    setElementWithTracerString(cache.get(), msg.tracerString);
+  }
+});
+
+// setElementWithTracerString takes a tracy string and either generates a payload
+// if it starts with "gen" and adds the resultant tracer to the input
+// element specified.
+function setElementWithTracerString(element, tracerString) {
+  if (!element) {
+    console.error("No element to set the tracer string was defined.");
+    return;
+  }
+
+  if (!tracerString.toLowerCase().startsWith("gen")) {
     // Add the tracer string template.
-    simulateKeyPress(e.target, e.target.value + el.currentTarget.innerText);
+    simulateKeyPress(element, element.value + tracerString);
     return;
   }
 
   chrome.storage.local.get({ restHost: "localhost", restPort: 8081 }, res => {
     const req = new Request(
-      `http://${res.restHost}:${res.restPort}/tracers/generate?tracer_string=${
-        el.target.innerText
-      }&url=${document.location}`,
+      `http://${res.restHost}:${
+        res.restPort
+      }/tracers/generate?tracer_string=${tracerString}&url=${
+        document.location
+      }`,
       {
         headers: {
           Hoot: "!",
@@ -104,10 +143,7 @@ function mouseDownEventListener(e, el, tagMenu) {
       .then(res => res.json())
       .then(res => {
         // Add the tracer string template.
-        simulateKeyPress(
-          e.target,
-          e.target.value + res.Tracers[0].TracerPayload
-        );
+        simulateKeyPress(element, element.value + res.Tracers[0].TracerPayload);
       })
       .catch(err => console.error(err));
   });
@@ -136,5 +172,17 @@ function clickToFill(element) {
 
   // Register event listeners for all types of elements we'd like to allow for a
   // tracer.
-  inputs.map(t => t.addEventListener("mousedown", registerLongPauseHandler));
+  inputs.map(t => t.addEventListener("mousedown", registerRightClickHandler));
+
+  // If the user configured the plugin to autofill inputs, do that here.
+  chrome.storage.local.get(
+    { autoFill: false, autoFillPayload: "zzXSSzz" },
+    res => {
+      if (!res.autoFill) {
+        return;
+      }
+
+      inputs.map(t => setElementWithTracerString(t, res.autoFillPayload));
+    }
+  );
 }
