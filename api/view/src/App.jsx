@@ -139,7 +139,8 @@ class App extends Component {
             EventType: event.EventType,
             EventHost: this.parseHost(event.EventURL),
             EventPath: this.parsePath(event.EventURL),
-            Severity: context.Severity
+            Severity: context.Severity,
+            Reason: context.Reason
           };
         }.bind(this)
       );
