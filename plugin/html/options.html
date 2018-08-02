@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <meta charset="utf-8">
-</head>
-    <body>
-
+  </head>
+  <body>
     <form>
-      <label>Rest Server Host</label>
-      <input type="text" id="rest-host" ><br><br>
-      <label>Rest Server Port</label>
-      <input type="text" id="rest-port" ><br><br>
-      <button id="save" type="submit">Save</button>
+    <h3>Rest Server Host</h3>
+    <input type="text" id="rest-host" ><br><br>
+    <h3>Rest Server Port</h3>
+    <input type="text" id="rest-port" ><br><br>
+    <h3>Auto-Fill Inputs</h3>
+    <input type="checkbox" id="auto-fill" >
+    <select id="auto-fill-dropdown" disabled></select><br><br>
+    <button id="save" type="submit">Save</button>
     </form>
 
     <script src="../scripts/options.js"></script>
-    </body>
+  </body>
 </html>
