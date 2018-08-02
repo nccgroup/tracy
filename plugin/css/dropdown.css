@@ -2,17 +2,17 @@ div#tag-menu {
 	all: initial;
 	position: absolute;
 	display: inline-block;
-	border-color: black;
+	border-color: #BDC3C7;
 	border: solid;
+	border-width: 0px;
 	width: 100%;
 	z-index: 1000000000000;
-	background-color: white;
-	/*width: 150px;
-	height: 50px;*/
+	background-color: #282c34;
 	max-width: 200px;
-	max-height: 100px;
+	max-height: 150px;
 	overflow: auto;
-	padding: 5px;
+	padding: 0px;
+	box-shadow: 2px 2px 5px grey;
 }
 
 div#tag-menu * {
@@ -21,10 +21,19 @@ div#tag-menu * {
 
 #tag-menu ul li.highlight-on-hover {
 	display: block;
+	color: white;
+	padding-left: 10px;
+	padding-top: 5px;
+	padding-bottom: 5px;
+	border-top: 1px solid #39464e; 
+	font-family: Menlo, Monaco, Consolas, "Courier New", monospace; 
+	font-size: small;
 }
 
+#tag-menu ul li.highlight-on-hover:first-child { border-top: none; }
+
 #tag-menu ul li.highlight-on-hover:hover {
-	background-color: yellow;
+	background-color: #0084ff;
 }
 
 input[type="text"],
