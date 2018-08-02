@@ -386,7 +386,7 @@ class App extends Component {
           return null;
         });
       }
-      prevState.ptracers = this.parseVisibleTracers(prevState.tracers);
+      prevState.ptracers = this.parseVisibleTracers(prevState.tracers, this.state.filters);
       return prevState;
     });
   };
@@ -419,7 +419,7 @@ class App extends Component {
         });
       } else {
         prevState.tracers.push(data);
-        prevState.ptracers = this.parseVisibleTracers(prevState.tracers);
+        prevState.ptracers = this.parseVisibleTracers(prevState.tracers, this.state.filters);
       }
       return prevState;
     });
@@ -441,7 +441,7 @@ class App extends Component {
         });
       } else {
         prevState.events.push(data);
-        prevState.pevents = this.parseVisibleEvents(prevState.events);
+        prevState.pevents = this.parseVisibleEvents(prevState.events, this.state.filters);
       }
       return prevState;
     });
