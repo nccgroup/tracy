@@ -2,10 +2,11 @@ package common
 
 import (
 	"encoding/json"
+	"strings"
+
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/log"
-	"strings"
 
 	"github.com/yosssi/gohtml"
 	"golang.org/x/net/html"
@@ -118,8 +119,10 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 // surrounding a particular string.
 // TODO: consider moving the severity rating stuff out of this function so we can
 // clean it up a bit.
+
 func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer string, tracerEvent types.TracerEvent, highest *uint) {
 	var sev uint
+	var reason uint
 
 	// Just in case the HTML doesn't have a parent, we don't want to dereference a
 	// a nil pointer
@@ -137,11 +140,13 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					HTMLLocationType: types.Text,
 					EventContext:     gohtml.Format(n.Data),
 					Severity:         sev,
+					Reason:           types.LeafNode,
 				})
 		} else if n.Type == html.DocumentNode || n.Type == html.ElementNode || n.Type == html.DoctypeNode {
 			if n.Parent.Data == "script" {
 				if tracerEvent.EventType != "response" {
 					sev = 1
+					reason = types.LeafNodeScriptTag
 				}
 			}
 
@@ -150,6 +155,7 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 			if n.Type == html.ElementNode {
 				if tracerEvent.EventType != "response" {
 					sev = 3
+					reason = types.TagName
 				}
 			}
 
@@ -160,6 +166,7 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					HTMLLocationType: types.NodeName,
 					EventContext:     gohtml.Format(n.Data),
 					Severity:         sev,
+					Reason:           reason,
 				})
 		} else {
 			// TODO: although, we should care about these cases, there could be a
@@ -174,6 +181,7 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					HTMLLocationType: types.Comment,
 					EventContext:     gohtml.Format(n.Data),
 					Severity:         sev,
+					Reason:           types.LeafNodeCommentTag,
 				})
 		}
 
@@ -186,8 +194,10 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 		if strings.Contains(a.Key, tracer) {
 			if tracerEvent.EventType != "response" {
 				sev = 3
+				reason = types.AttributeName
 			} else {
 				sev = 1
+				reason = types.AttributeNameHTTPResponse
 			}
 
 			*tracerLocations = append(*tracerLocations,
@@ -197,19 +207,22 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					HTMLLocationType: types.Attr,
 					EventContext:     a.Val,
 					Severity:         sev,
+					Reason:           reason,
 				})
 		} else if strings.Contains(a.Val, tracer) {
 			// By default, user-input inside an attribute value is interesting.
 			sev = 1
-
+			reason = types.AttributeValueHTTPResponse
 			// HTTP responses don't mean as much.
 			if tracerEvent.EventType != "response" {
 				// If the href starts with a tracer string, need to look for JavaScript:
 				if a.Key == "href" && strings.HasPrefix(a.Val, tracer) {
 					sev = 2
+					reason = types.AttributeValueStartHref
 				} else if strings.HasPrefix(a.Key, "on") {
 					// for on handlers, these are very interesting
 					sev = 2
+					reason = types.AttributeValueOnEventHandler
 				}
 			}
 
@@ -220,6 +233,7 @@ func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer
 					HTMLLocationType: types.AttrVal,
 					EventContext:     a.Val,
 					Severity:         sev,
+					Reason:           reason,
 				})
 		}
 
