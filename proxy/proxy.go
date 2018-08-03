@@ -172,8 +172,10 @@ func identifyTracersInResponse(b []byte, host string, request *http.Request, res
 			}
 			_, err = common.AddEvent(tracer, event)
 			if err != nil {
-				log.Error.Print(err)
-				return
+				if !strings.Contains("UNIQUE", err.Error()) {
+					log.Error.Print(err)
+					return
+				}
 			}
 		}
 	}
