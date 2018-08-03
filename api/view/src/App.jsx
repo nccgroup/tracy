@@ -534,9 +534,8 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
               e.EventType === event.EventType &&
               e.HTMLNodeType === context.HTMLNodeType
           );
-          console.log("match_e", match_e);
+
           if (match_e.length === 1) {
-            console.log("HERE");
             this.handleEventSelection(match_e[0]);
           }
         });
