@@ -17,3 +17,9 @@ type RequestWebSocket struct {
 type TracerEventsWebSocket struct {
 	TracerEvents TracerEvent `json:"TracerEvent"`
 }
+
+// NotificationWebSocket is a struct that is used to pass new notifications
+// back to clients connected to the websocket server.
+type NotificationWebSocket struct {
+	Notification Notification `json:"Notification"`
+}

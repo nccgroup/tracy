@@ -24,38 +24,48 @@ class WebSocketRouter extends Component {
 
     let ws = new WebSocket(`ws://${window.tracy.host}:${window.tracy.port}/ws`);
 
-    ws.onmessage = function(event) {
-      switch (Object.keys(JSON.parse(event.data))[0]) {
+    ws.onmessage = msg => {
+      switch (Object.keys(JSON.parse(msg.data))[0]) {
         case "Tracer":
-          this.props.handleNewTracer(event);
+          this.props.handleNewTracer(msg);
           break;
         case "Request":
-          this.props.handleNewRequest(event);
+          this.props.handleNewRequest(msg);
           break;
         case "TracerEvent":
-          this.props.handleNewEvent(event);
+          this.props.handleNewEvent(msg);
+          break;
+        case "Notification":
+          const n = JSON.parse(msg.data).Notification;
+          n.Event.DOMContexts.map(c => {
+            if (c.Severity >= 2) {
+              this.props.handleNotification(n.Tracer, c, n.Event);
+              return true;
+            }
+            return false;
+          });
+
           break;
         default:
-          console.log("WebSocket message: ", event.data);
+          console.log("WebSocket message: ", msg.data);
           break;
       }
-    }.bind(this);
+    };
 
-    ws.onopen = function() {
+    ws.onopen = () => {
       this.setState({
         isOpen: true,
         ws: ws
       });
-    }.bind(this);
+    };
 
-    ws.onclose = function() {
+    ws.onclose = () => {
       this.setState({
         isOpen: false,
         ws: null
       });
-
       setTimeout(this.connectToWebSocket, 1500);
-    }.bind(this);
+    };
   }
 
   shouldComponentUpdate(nextProps, nextState) {

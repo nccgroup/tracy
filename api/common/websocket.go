@@ -83,6 +83,11 @@ func router() {
 							continue
 						}
 					}
+				case types.Notification:
+					if err := sub.Sock.WriteJSON(types.NotificationWebSocket{u}); err != nil {
+						log.Error.Println(err)
+						continue
+					}
 				default:
 					log.Error.Printf("not sure what it was: %T", u)
 					continue

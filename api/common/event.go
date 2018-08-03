@@ -21,7 +21,7 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 
 	// Only check for DOM contexts when we have format type HTML.
 	if event.RawEvent.Format == types.HTML {
-		if event.DOMContexts, err = getDOMContexts(event, tracer); err != nil {
+		if err = getDOMContexts(&event, tracer); err != nil {
 			log.Warning.Print(err)
 			return ret, err
 		}
@@ -47,12 +47,20 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 		log.Warning.Print(err)
 	}
 
+	// We want to have notifications trigger for events with a DOM context
+	// with severity of 2 or higher.
+	for _, c := range copy.DOMContexts {
+		if c.Severity >= 2 {
+			UpdateSubscribers(types.Notification{Tracer: tracer, Event: copy})
+			break
+		}
+	}
 	return ret, err
 }
 
 // getDomContexts searches through the raw tracer event that should be HTML and
 // finds all of tracer occurrences specified by the tracer passed in.
-func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMContext, error) {
+func getDOMContexts(event *types.TracerEvent, tracer types.Tracer) error {
 	var (
 		contexts []types.DOMContext
 		sev      uint
@@ -65,17 +73,18 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 	// user-input was output.
 	if doc, err = html.Parse(strings.NewReader(event.RawEvent.Data)); err != nil {
 		log.Warning.Print(err)
-		return contexts, err
+		return err
 	}
 
 	old := tracer.HasTracerEvents
 
 	// Find all instances of the string string and record their appropriate contexts.
-	getTracerLocation(doc, &contexts, tracer.TracerPayload, event, sevp)
+	getTracerLocation(doc, &contexts, tracer.TracerPayload, *event, sevp)
 
 	if len(contexts) == 0 {
-		return contexts, nil
+		return nil
 	}
+	event.DOMContexts = contexts
 
 	// All text events from the plugin will most likely be unexploitable.
 	if event.EventType == "text" {
@@ -112,14 +121,13 @@ func getDOMContexts(event types.TracerEvent, tracer types.Tracer) ([]types.DOMCo
 		UpdateSubscribers(tracer)
 	}
 
-	return contexts, err
+	return err
 }
 
 // Helper function that recursively traverses the DOM nodes and records any context
 // surrounding a particular string.
 // TODO: consider moving the severity rating stuff out of this function so we can
 // clean it up a bit.
-
 func getTracerLocation(n *html.Node, tracerLocations *[]types.DOMContext, tracer string, tracerEvent types.TracerEvent, highest *uint) {
 	var sev uint
 	var reason uint

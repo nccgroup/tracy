@@ -94,26 +94,47 @@ class App extends Component {
     return ret;
   }
 
-  /* Message the request objects into a set of tracer data structure so the table can read their columns. */
-  formatRequest(request) {
+  // Mesage the request objects into a set of tracer data structure so the
+  // table can read their columns.
+  formatRequest = request => {
     if (request.Tracers) {
-      return request.Tracers.map(tracer => {
-        return {
-          ID: tracer.ID,
-          RawRequest: request.RawRequest,
-          RequestMethod: request.RequestMethod,
-          RequestURL: this.parseHost(request.RequestURL),
-          RequestPath: this.parsePath(request.RequestURL),
-          TracerString: tracer.TracerString,
-          TracerPayload: tracer.TracerPayload,
-          TracerLocationIndex: tracer.TracerLocationIndex,
-          TracerLocationType: tracer.TracerLocationType,
-          OverallSeverity: tracer.OverallSeverity,
-          HasTracerEvents: tracer.HasTracerEvents
-        };
-      });
+      return request.Tracers.map(t => this.formatTracer(t, request));
     }
-  }
+  };
+
+  // formatTracer returns a new tracer object with some its fields
+  // changed to be read better by the tables.
+  formatTracer = (tracer, request) => {
+    if (request) {
+      return {
+        ID: tracer.ID,
+        RawRequest: request.RawRequest,
+        RequestMethod: request.RequestMethod,
+        RequestURL: this.parseHost(request.RequestURL),
+        RequestPath: this.parsePath(request.RequestURL),
+        TracerString: tracer.TracerString,
+        TracerPayload: tracer.TracerPayload,
+        TracerLocationIndex: tracer.TracerLocationIndex,
+        TracerLocationType: tracer.TracerLocationType,
+        OverallSeverity: tracer.OverallSeverity,
+        HasTracerEvents: tracer.HasTracerEvents
+      };
+    }
+
+    return {
+      ID: tracer.ID,
+      RawRequest: "n/a",
+      RequestMethod: "n/a",
+      RequestURL: "n/a",
+      RequestPath: "n/a",
+      TracerString: tracer.TracerString,
+      TracerPayload: tracer.TracerPayload,
+      TracerLocationIndex: tracer.TracerLocationIndex,
+      TracerLocationType: tracer.TracerLocationType,
+      OverallSeverity: tracer.OverallSeverity,
+      HasTracerEvents: tracer.HasTracerEvents
+    };
+  };
 
   /* Format all the event contexts into their corresponding columns. */
   formatEvent(event, eidx) {
@@ -245,7 +266,7 @@ class App extends Component {
   };
 
   /* Gets the bulk events via an HTTP GET request. */
-  getTracerEvents = (tracerID = this.state.tracer.ID) => {
+  getTracerEvents = (tracerID = this.state.tracer.ID, callback) => {
     // By default, the app starts with non of the tracers selected. Don't make a
     // request in this case.
     if (tracerID) {
@@ -257,11 +278,16 @@ class App extends Component {
         .then(response => response.json())
         .catch(error => setTimeout(this.getTracerEvents, 1500)) // If the API isn't up, retry until it comes up
         .then(response => {
-          this.setState({
-            events: response,
-            pevents: this.parseVisibleEvents(response, this.state.filters),
-            loading: false
-          });
+          this.setState(
+            {
+              events: response,
+              pevents: this.parseVisibleEvents(response, this.state.filters),
+              loading: false
+            },
+            () => {
+              if (callback) callback();
+            }
+          );
         });
     }
   };
@@ -346,17 +372,17 @@ class App extends Component {
   };
 
   /* Called whenever a new tracer row is selected. */
-  handleTracerSelection = nTracer => {
+  handleTracerSelection = (nTracer, callback) => {
     if (nTracer.ID !== this.state.tracer.ID) {
       this.setState({
-        tracer: nTracer._original,
+        tracer: nTracer._original ? nTracer._original : nTracer,
         loading: true,
         events: [],
         pevents: [],
         event: {}
       });
 
-      this.getTracerEvents(nTracer.ID);
+      this.getTracerEvents(nTracer.ID, callback);
     }
   };
 
@@ -364,7 +390,7 @@ class App extends Component {
   handleEventSelection = nEvent => {
     if (nEvent.ID !== this.state.event.ID) {
       this.setState({
-        event: nEvent._original
+        event: nEvent._original ? nEvent._original : nEvent
       });
     }
   };
@@ -386,7 +412,10 @@ class App extends Component {
           return null;
         });
       }
-      prevState.ptracers = this.parseVisibleTracers(prevState.tracers, prevState.filters);
+      prevState.ptracers = this.parseVisibleTracers(
+        prevState.tracers,
+        prevState.filters
+      );
       return prevState;
     });
   };
@@ -419,7 +448,10 @@ class App extends Component {
         });
       } else {
         prevState.tracers.push(data);
-        prevState.ptracers = this.parseVisibleTracers(prevState.tracers, prevState.filters);
+        prevState.ptracers = this.parseVisibleTracers(
+          prevState.tracers,
+          prevState.filters
+        );
       }
       return prevState;
     });
@@ -441,10 +473,75 @@ class App extends Component {
         });
       } else {
         prevState.events.push(data);
-        prevState.pevents = this.parseVisibleEvents(prevState.events, prevState.filters);
+        prevState.pevents = this.parseVisibleEvents(
+          prevState.events,
+          prevState.filters
+        );
       }
       return prevState;
     });
+  };
+
+  // newFindingNotification checks the browser supports notifications,
+  // then either asks permission for notifications, or displays the
+  // formatted notification if the user has already granted permission.
+  handleNotification = (tracer, context, event) => {
+    if (!("Notification" in window)) {
+      console.error("This browser does not support desktop notification");
+      return;
+    }
+
+    if (Notification.permission === "granted") {
+      // Let's check whether notification permissions have already been granted
+      // If it's okay let's create a notification
+      this.tracyNotification(tracer, context, event);
+    } else if (Notification.permission !== "denied") {
+      // Otherwise, we need to ask the user for permission
+      Notification.requestPermission(permission => {
+        // If the user accepts, let's create a notification
+        if (permission === "granted") {
+          this.tracyNotification(tracer, context, event);
+        }
+      });
+    }
+  };
+
+  // tracyNotification creates a notification with the tracy logo
+  // and standard default options, such as requiring interaction.
+  tracyNotification = (tracer, context, event) => {
+    const title = "Tracy found XSS!";
+    const body = `Tracer Payload: ${tracer.TracerPayload}
+Severity: ${context.Severity}
+HTML Parent Tag: ${context.HTMLNodeType}`;
+    const opts = {
+      body: body,
+      icon:
+        "https://user-images.githubusercontent.com/16947503/38943629-c354d81a-42e6-11e8-9644-cc956d92fbcc.png",
+      requireInteraction: true,
+      sticky: true
+    };
+
+    const n = new Notification(title, opts);
+    n.onclick = e => {
+      const match_t = this.state.ptracers.filter(
+        t => t.TracerPayload === tracer.TracerPayload
+      );
+      if (match_t.length === 1) {
+        this.handleTracerSelection(match_t[0], () => {
+          const match_e = this.state.pevents.filter(
+            e =>
+              e.RawEvent === event.RawEvent.Data &&
+              e.EventType === event.EventType &&
+              e.HTMLNodeType === context.HTMLNodeType
+          );
+          console.log("match_e", match_e);
+          if (match_e.length === 1) {
+            console.log("HERE");
+            this.handleEventSelection(match_e[0]);
+          }
+        });
+      }
+    };
   };
 
   /* When the app loads, make an HTTP request for the latest set of tracers and 
@@ -562,6 +659,7 @@ class App extends Component {
                     handleNewTracer={this.handleNewTracer}
                     handleNewRequest={this.handleNewRequest}
                     handleNewEvent={this.handleNewEvent}
+                    handleNotification={this.handleNotification}
                     tracer={this.state.tracer}
                   />
                 </Col>
