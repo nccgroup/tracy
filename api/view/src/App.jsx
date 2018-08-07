@@ -33,7 +33,7 @@ class App extends Component {
   }
 
   /* Helper  to return the URL query parameters as a comma-separated list. */
-  parseURLParameters(url) {
+  parseURLParameters = url => {
     var ret;
     var splitOnParam = url.split("?");
     if (splitOnParam.length > 1) {
@@ -43,10 +43,10 @@ class App extends Component {
     }
 
     return ret;
-  }
+  };
 
   /* Helper  to return the hostname from a URL string. */
-  parseHost(url) {
+  parseHost = url => {
     var ret;
 
     // In case the url has a protocol, remove it.
@@ -68,10 +68,10 @@ class App extends Component {
     }
 
     return ret;
-  }
+  };
 
   /* Helper  to return the path from a URL string. */
-  parsePath(url) {
+  parsePath = url => {
     var ret = "";
 
     // In case the url has a protocol, remove it.
@@ -92,7 +92,7 @@ class App extends Component {
     }
 
     return ret;
-  }
+  };
 
   // Mesage the request objects into a set of tracer data structure so the
   // table can read their columns.
@@ -100,6 +100,26 @@ class App extends Component {
     if (request.Tracers) {
       return request.Tracers.map(t => this.formatTracer(t, request));
     }
+  };
+
+  reproduce = () => {
+    if (
+      Object.keys(this.state.tracer).length === 0 ||
+      Object.keys(this.state.event).length === 0
+    ) {
+      return;
+    }
+
+    fetch(
+      this.newTracyRequest(
+        `/tracers/${this.state.tracer.ID}/events/${
+          this.state.event.ContextID
+        }/reproductions`,
+        {
+          method: "POST"
+        }
+      )
+    ).catch(err => console.error(err));
   };
 
   // formatTracer returns a new tracer object with some its fields
@@ -137,7 +157,7 @@ class App extends Component {
   };
 
   /* Format all the event contexts into their corresponding columns. */
-  formatEvent(event, eidx) {
+  formatEvent = (event, eidx) => {
     // Enum to human-readable structure to translate the various DOM contexts.
     const locationTypes = {
       0: "attribute name",
@@ -152,6 +172,7 @@ class App extends Component {
       ret = event.DOMContexts.map(
         function(context, cidx) {
           return {
+            ContextID: context.ID,
             HTMLLocationType: locationTypes[context.HTMLLocationType],
             HTMLNodeType: context.HTMLNodeType,
             EventContext: context.EventContext,
@@ -181,16 +202,16 @@ class App extends Component {
     }
 
     return ret;
-  }
+  };
 
   /* Given an event, give it an ID. */
-  enumerate(event, id) {
+  enumerate = (event, id) => {
     event.ID = id + 1;
 
     return event;
-  }
+  };
 
-  formatRowSeverity(row, rowIdx) {
+  formatRowSeverity = (row, rowIdx) => {
     // Enum to human-readable structure to translate the different severity ratings.
     const severity = {
       0: "unexploitable",
@@ -199,7 +220,7 @@ class App extends Component {
       3: "exploitable"
     };
     return severity[row.OverallSeverity];
-  }
+  };
 
   /* getProjects gets the projects available to view. */
   getProjects = () => {
@@ -293,7 +314,7 @@ class App extends Component {
   };
 
   /* Converts raw tracers into tracers that can be read by the table. */
-  parseVisibleTracers(requests = [], sfilters = {}) {
+  parseVisibleTracers = (requests = [], sfilters = {}) => {
     let ret = [];
     if (requests.length > 0) {
       const parsedTracers = [].concat
@@ -311,10 +332,10 @@ class App extends Component {
       }, parsedTracers);
     }
     return ret;
-  }
+  };
 
   /* Converts raw events into events that can be read by the table. */
-  parseVisibleEvents(events = [], sfilters = {}) {
+  parseVisibleEvents = (events = [], sfilters = {}) => {
     let ret = [];
     if (events.length > 0) {
       const parsedEvents = [].concat
@@ -339,7 +360,7 @@ class App extends Component {
       }, parsedEvents);
     }
     return ret;
-  }
+  };
 
   /* Called whenever one of the filter buttons is toggled. */
   handleFilterChange = (evt, filter) => {
@@ -395,9 +416,9 @@ class App extends Component {
     }
   };
 
-  /*handleNewTracer handles websocket messages that report new tracers. */
+  // handleNewTracer handles websocket messages that report new tracers.
   handleNewTracer = nTracer => {
-    let data = JSON.parse(nTracer.data)["Tracer"];
+    const data = JSON.parse(nTracer.data)["Tracer"];
     this.setState((prevState, props) => {
       let match = [].concat
         .apply([], prevState.tracers.map(n => n.Tracers))
@@ -420,9 +441,9 @@ class App extends Component {
     });
   };
 
-  /*handleNewRequest handles websocket messages that report new requests. */
+  // handleNewRequest handles websocket messages that report new requests.
   handleNewRequest = nRequest => {
-    let data = JSON.parse(nRequest.data)["Request"];
+    const data = JSON.parse(nRequest.data)["Request"];
     this.setState((prevState, props) => {
       let match = prevState.tracers.filter(n => n.ID === data.ID);
       if (match.length === 1) {
@@ -431,11 +452,11 @@ class App extends Component {
           if (data[n] !== match[n]) {
             match[n] = data[n];
 
-            //If the key was the RawRequest, we need to update the currently selected tracer
-            //with this value as well.
+            // If the key was the RawRequest, we need to update the currently
+            // selected tracer with this value as well.
             if (n === "RawRequest") {
-              //If the matched request has a tracer that is currently selected...
-              let selected = match.Tracers.filter(
+              // If the matched request has a tracer that is currently selected...
+              const selected = match.Tracers.filter(
                 m => m.ID === prevState.tracer.ID
               );
               if (selected.length === 1) {
@@ -457,9 +478,10 @@ class App extends Component {
     });
   };
 
-  /*handleNewEvent handles websocket messages that report a new event for the currently selected tracer. */
+  // handleNewEvent handles websocket messages that report a new event for the
+  // currently selected tracer.
   handleNewEvent = nEvent => {
-    let data = JSON.parse(nEvent.data)["TracerEvent"];
+    const data = JSON.parse(nEvent.data)["TracerEvent"];
     this.setState((prevState, props) => {
       let match = prevState.events.filter(n => n.ID === data.ID);
       if (match.length === 1) {
@@ -482,7 +504,7 @@ class App extends Component {
     });
   };
 
-  // newFindingNotification checks the browser supports notifications,
+  // handleNotification checks the browser supports notifications,
   // then either asks permission for notifications, or displays the
   // formatted notification if the user has already granted permission.
   handleNotification = (tracer, context, event) => {
@@ -543,9 +565,9 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
     };
   };
 
-  /* When the app loads, make an HTTP request for the latest set of tracers and 
-   * projects. */
-  componentDidMount() {
+  // When the app loads, make an HTTP request for the latest set of tracers and
+  // projects.
+  componentDidMount = () => {
     this.getProjects();
     const proj = this.getSavedProject();
     if (proj !== null) {
@@ -554,8 +576,9 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
       });
       this.switchProject(proj);
     }
-  }
+  };
 
+  // deleteProject issues an API request to delete a project from disk.
   deleteProject = proj => {
     const req = this.newTracyRequest(`/projects?proj=${proj}`, {
       method: "DELETE"
@@ -687,6 +710,7 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
                 tracer={this.state.tracer}
                 loading={this.state.loading}
                 handleEventSelection={this.handleEventSelection}
+                reproduce={this.reproduce}
               />
             </Col>
           </Row>

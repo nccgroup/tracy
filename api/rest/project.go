@@ -25,7 +25,7 @@ func GetProjects(w http.ResponseWriter, r *http.Request) {
 func DeleteProject(w http.ResponseWriter, r *http.Request) {
 	proj := r.URL.Query().Get("proj")
 	if proj == "" {
-		returnError(w, fmt.Errorf("No project query parameter was found."))
+		returnError(w, fmt.Errorf("no project query parameter was found"))
 		return
 	}
 
@@ -44,7 +44,7 @@ func DeleteProject(w http.ResponseWriter, r *http.Request) {
 func SwitchProject(w http.ResponseWriter, r *http.Request) {
 	proj := r.URL.Query().Get("proj")
 	if proj == "" {
-		returnError(w, fmt.Errorf("No project query parameter was found."))
+		returnError(w, fmt.Errorf("no project query parameter was found"))
 		return
 	}
 
