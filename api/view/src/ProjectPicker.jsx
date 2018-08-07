@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 import Glyphicon from "react-bootstrap/lib/Glyphicon";
+import Row from "react-bootstrap/lib/Row";
+import Col from "react-bootstrap/lib/Col";
 
 class ProjectPicker extends Component {
   newProject = _ => {
@@ -30,24 +32,32 @@ class ProjectPicker extends Component {
       return <option key={k}>{v}</option>;
     });
     return (
-      <div>
-        <label>Projects: </label>
-        <select
-          value={this.props.selected}
-          onChange={this.switchProject}
-          className="project-picker"
-        >
-          {opts}
-        </select>
-        <Glyphicon
-          onClick={this.newProject}
-          glyph="glyphicon glyphicon-plus-sign"
-        />
-        <Glyphicon
-          onClick={this.deleteProject}
-          glyph="glyphicon glyphicon-minus-sign"
-        />
-      </div>
+      <Row>
+        <Col md={4} />
+        <Col md={2}>
+          <label>Projects: </label>
+        </Col>
+        <Col md={4}>
+          <select
+            value={this.props.selected}
+            onChange={this.switchProject}
+            className="project-picker"
+          >
+            {opts}
+          </select>
+        </Col>
+        <Col md={2}>
+          <Glyphicon
+            onClick={this.newProject}
+            glyph="glyphicon glyphicon-plus-sign"
+          />
+
+          <Glyphicon
+            onClick={this.deleteProject}
+            glyph="glyphicon glyphicon-minus-sign"
+          />
+        </Col>
+      </Row>
     );
   }
 }
