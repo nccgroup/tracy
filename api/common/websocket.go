@@ -63,38 +63,51 @@ func router() {
 		case remove := <-removeSubChan:
 			delete(subscribers, remove)
 		case update := <-updateChan:
-			for _, sub := range subscribers {
-				switch u := update.(type) {
-				case types.Tracer:
-					if err := sub.Sock.WriteJSON(types.TracerWebSocket{u}); err != nil {
-						log.Error.Println(err)
-						continue
-					}
-				case types.Request:
-					if err := sub.Sock.WriteJSON(types.RequestWebSocket{u}); err != nil {
-						log.Error.Println(err)
-						continue
-					}
-				case types.TracerEvent:
-					// Only send event updates for the subscribed tracer.
-					if u.TracerID == sub.Tracer {
-						if err := sub.Sock.WriteJSON(types.TracerEventsWebSocket{u}); err != nil {
-							log.Error.Println(err)
-							continue
-						}
-					}
-				case types.Notification:
-					if err := sub.Sock.WriteJSON(types.NotificationWebSocket{u}); err != nil {
-						log.Error.Println(err)
-						continue
-					}
-				default:
-					log.Error.Printf("not sure what it was: %T", u)
+			updateRouter(update)
+		}
+	}
+}
+
+func updateRouter(update interface{}) {
+	//TODO: It'd be good to keep the types of subscribers in case we
+	// need to send specific messages to the extension or a particular
+	// type of extension
+	for _, sub := range subscribers {
+		switch u := update.(type) {
+		case types.Tracer:
+			if err := sub.Sock.WriteJSON(types.TracerWebSocket{u}); err != nil {
+				log.Error.Print(err)
+				continue
+			}
+		case types.Request:
+			if err := sub.Sock.WriteJSON(types.RequestWebSocket{u}); err != nil {
+				log.Error.Print(err)
+				continue
+			}
+		case types.TracerEvent:
+			// Only send event updates for the subscribed tracer.
+			if u.TracerID == sub.Tracer {
+				if err := sub.Sock.WriteJSON(types.TracerEventsWebSocket{u}); err != nil {
+					log.Error.Print(err)
 					continue
 				}
 			}
+		case types.Notification:
+			if err := sub.Sock.WriteJSON(types.NotificationWebSocket{u}); err != nil {
+				log.Error.Print(err)
+				continue
+			}
+		case types.Reproduction:
+			if err := sub.Sock.WriteJSON(types.ReproductionWebSocket{u}); err != nil {
+				log.Error.Print(err)
+				continue
+			}
+		default:
+			log.Error.Printf("not sure what it was: %T", u)
+			continue
 		}
 	}
+
 }
 
 func init() {

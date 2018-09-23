@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"net/http"
+	"strconv"
+
 	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/proxy"
-	"net/http"
-	"strconv"
 )
 
 // AddTracers handles the HTTP API request to add a set of tracers from a Request
@@ -95,10 +96,6 @@ func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: should collect more information about the location of where
-	// it was generated. generating a tracer like this loses information
-	// about inputs without being obvious about it. if we wanted to do
-	// reproduction steps, how would we do that here?
 	genTracer := types.Request{
 		RawRequest:    "GENERATED", // For generated tracers, there won't be a request
 		RequestMethod: "GENERATED", // For generated tracers, there won't be a request method

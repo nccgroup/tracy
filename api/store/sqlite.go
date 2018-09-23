@@ -32,6 +32,7 @@ func Open(path string, logMode bool) error {
 		&types.Tracer{},
 		&types.TracerEvent{},
 		&types.DOMContext{},
+		&types.ReproductionTest{},
 		&types.Request{},
 		&types.RawEvent{},
 		&types.Error{})

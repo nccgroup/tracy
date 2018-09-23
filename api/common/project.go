@@ -49,10 +49,5 @@ func DeleteProject(p string) error {
 func SwitchProject(p string) error {
 	store.DB.Close()
 	configure.DatabaseFile = filepath.Join(configure.TracyPath, p+".db")
-
-	if err := store.Open(configure.DatabaseFile, log.Verbose); err != nil {
-		return err
-	}
-
-	return nil
+	return store.Open(configure.DatabaseFile, log.Verbose)
 }

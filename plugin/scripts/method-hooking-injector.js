@@ -7,21 +7,16 @@
 
   // A list of scripts we want to inject into the page rather than have them as a
   // content script.
-  const injectionScripts = ["innerhtml.js"];
+  const injectionScripts = ["innerhtml.js", "repro.js"];
   // Inject the scripts.
-  injectionScripts.map(getInjectionSrc).map(injectScript);
+  injectionScripts.map(injectScript);
 
-  /*getInjectionSrc returns the file path of the script we are trying to inject */
-  function getInjectionSrc(file) {
-    return chrome.runtime.getURL(`scripts/${file}`);
-  }
-
-  /*injectScript injects the script into the page and then removes it. */
-  function injectScript(src) {
+  // injectScript injects the script into the page and then removes it.
+  function injectScript(file) {
     const hookInjector = document.createElement("script");
     hookInjector.type = "text/javascript";
-    hookInjector.src = src;
+    hookInjector.src = chrome.runtime.getURL(`scripts/${file}`);
     document.documentElement.appendChild(hookInjector);
-    hookInjector.parentNode.removeChild(hookInjector); // TODO: do we need to remove it?
+    hookInjector.parentNode.removeChild(hookInjector);
   }
 })();

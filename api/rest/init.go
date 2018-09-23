@@ -35,12 +35,13 @@ func Configure() {
 	RestRouter.Methods("GET").Path("/ws").HandlerFunc(WebSocket)
 	RestRouter.Methods("POST").Path("/tracers/{tracerID}/events").HandlerFunc(AddEvent)
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}/events").HandlerFunc(GetEvents)
+	RestRouter.Methods("POST").Path("/tracers/{tracerID}/events/{contextID}/reproductions").HandlerFunc(StartReproductions)
+	RestRouter.Methods("PUT").Path("/tracers/{tracerID}/events/{contextID}/reproductions/{reproID}").HandlerFunc(UpdateReproduction)
 	RestRouter.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(AddEvents)
 	RestRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
 	RestRouter.Methods("PUT").Path("/projects").HandlerFunc(SwitchProject)
 	RestRouter.Methods("DELETE").Path("/projects").HandlerFunc(DeleteProject)
 	RestRouter.Methods("GET").Path("/projects").HandlerFunc(GetProjects)
-
 	// The base application page. Don't use the compiled assets unless
 	// in production.
 	if v := flag.Lookup("test.v"); v != nil || configure.DebugUI {
