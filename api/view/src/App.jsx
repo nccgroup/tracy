@@ -9,7 +9,6 @@ import Col from "react-bootstrap/lib/Col";
 import FilterColumn from "./FilterColumn";
 import Row from "react-bootstrap/lib/Row";
 import ProjectPicker from "./ProjectPicker";
-import Settings from "./Settings";
 
 class App extends Component {
   constructor(props) {
@@ -580,6 +579,10 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
 
   // deleteProject issues an API request to delete a project from disk.
   deleteProject = proj => {
+    if (proj === undefined) {
+      console.error("cannot delete undefined project");
+      return false;
+    }
     const req = this.newTracyRequest(`/projects?proj=${proj}`, {
       method: "DELETE"
     });
@@ -593,7 +596,11 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
         }
         const i = this.state.projects.indexOf(proj);
         if (i !== -1) {
-          this.switchProject(this.state.projects[i + 1]);
+          // Be default, switch the project below it. If the project was the last
+          // element in the list, wrap around.
+          this.switchProject(
+            this.state.projects[(i + 1) % this.state.projects.length]
+          );
           this.setState((prevState, props) => {
             prevState.projects.splice(i, 1);
             return prevState;
@@ -626,6 +633,10 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
   };
 
   switchProject = proj => {
+    if (proj === undefined) {
+      console.error("cannot switch to undefined project");
+      return false;
+    }
     const req = this.newTracyRequest(`/projects?proj=${proj}`, {
       method: "PUT"
     });
@@ -664,11 +675,8 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
             <Header width={2} />
             <Col md={10}>
               <Row>
-                <Col md={2} />
-                <Col md={5}>
-                  <Settings />
-                </Col>
-                <Col md={2}>
+                <Col md={6} />
+                <Col md={3}>
                   <ProjectPicker
                     deleteProject={this.deleteProject}
                     switchProject={this.switchProject}
@@ -677,13 +685,18 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
                   />
                 </Col>
                 <Col md={2}>
-                  <WebSocketRouter
-                    handleNewTracer={this.handleNewTracer}
-                    handleNewRequest={this.handleNewRequest}
-                    handleNewEvent={this.handleNewEvent}
-                    handleNotification={this.handleNotification}
-                    tracer={this.state.tracer}
-                  />
+                  <Row>
+                    <Col md={3} />
+                    <Col md={9}>
+                      <WebSocketRouter
+                        handleNewTracer={this.handleNewTracer}
+                        handleNewRequest={this.handleNewRequest}
+                        handleNewEvent={this.handleNewEvent}
+                        handleNotification={this.handleNotification}
+                        tracer={this.state.tracer}
+                      />
+                    </Col>
+                  </Row>
                 </Col>
                 <Col md={1}>
                   <FilterColumn handleFilterChange={this.handleFilterChange} />
