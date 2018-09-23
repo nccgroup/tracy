@@ -47,7 +47,6 @@ class WebSocketRouter extends Component {
 
           break;
         default:
-          console.log("WebSocket message: ", msg.data);
           break;
       }
     };
@@ -69,14 +68,13 @@ class WebSocketRouter extends Component {
   }
 
   shouldComponentUpdate(nextProps, nextState) {
-    let ret = false;
     if (
       nextProps.tracer.ID !== this.props.tracer.ID ||
       nextState.isOpen !== this.state.isOpen
     ) {
-      ret = true;
+      return true;
     }
-    return ret;
+    return false;
   }
 
   render() {

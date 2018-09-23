@@ -2,8 +2,17 @@
   "name": "Tracy",
   "description":
     "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
-  "version": "0.4",
-  "permissions": ["activeTab", "<all_urls>", "storage", "contextMenus"],
+  "version": "0.3.5",
+  "permissions": [
+    "activeTab",
+    "<all_urls>",
+    "storage",
+    "contextMenus",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "browsingData"
+  ],
   "background": {
     "scripts": ["scripts/background.js"],
     "persistent": true
@@ -39,6 +48,7 @@
   },
   "web_accessible_resources": [
     "scripts/innerhtml.js",
+    "scripts/repro.js",
     "scripts/method-hooking.js",
     "images/tracy_svg.svg"
   ],

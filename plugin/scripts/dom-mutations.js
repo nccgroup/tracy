@@ -2,14 +2,14 @@ chrome.runtime.sendMessage({
   "message-type": "refresh"
 });
 
-/* This observer will be used to observe changes in the DOM. It will batches DOM changes and send them to the API
- * server if it finds a tracer string. */
-var observer = new MutationObserver(function(mutations) {
-  var parentNode = null;
+// This observer will be used to observe changes in the DOM. It will batches DOM changes and send them to the API
+// server if it finds a tracer string.
+const observer = new MutationObserver(mutations => {
+  let parentNode = null;
 
-  mutations.forEach(function(mutation) {
+  mutations.forEach(mutation => {
     if (mutation.addedNodes.length > 0) {
-      mutation.addedNodes.forEach(function(node) {
+      mutation.addedNodes.forEach(node => {
         /* Check to see if a node is a child of the parentNode if so don't add it because we already have that data */
         if (parentNode === null || !parentNode.contains(node)) {
           /* The only supported DOM types that we care about are `DOM` (1) and `text` (3). */
@@ -54,8 +54,8 @@ var observer = new MutationObserver(function(mutations) {
   }, this);
 });
 
-/* The configuration for the observer. We want to pretty much watch for everything. */
-var observerConfig = {
+// The configuration for the observer. We want to pretty much watch for everything.
+const observerConfig = {
   attributes: true,
   childList: true,
   characterData: true,

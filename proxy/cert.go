@@ -43,7 +43,7 @@ func upgradeConnectionTLS(conn net.Conn, host string) (net.Conn, bool, error) {
 		return connBuff, false, nil
 	}
 
-	r := &cacheRequest{
+	r := &certCacheRequest{
 		host: host,
 		err:  make(chan error),
 		resp: make(chan tls.Certificate),
@@ -147,16 +147,16 @@ func generateCert(host string, cert tls.Certificate) (tls.Certificate, KeyPairBy
 // SetCertCache initializes the certificate cache and starts the go routine that
 // serves the cache requests.
 func SetCertCache(cache map[string]tls.Certificate) {
-	cacheChan = make(chan *cacheRequest, 10)
+	cacheChan = make(chan *certCacheRequest, 10)
 	go certCache(cacheChan, cache)
 }
 
 // The speed issue should be fixed now that we are sharing keys across
 // certificates. It is still nice to have the cache though.
 var cache map[string]tls.Certificate
-var cacheChan chan *cacheRequest
+var cacheChan chan *certCacheRequest
 
-type cacheRequest struct {
+type certCacheRequest struct {
 	host string // host querying
 	err  chan error
 	resp chan tls.Certificate // result
@@ -165,10 +165,10 @@ type cacheRequest struct {
 // Accessing the cache needs to be thread safe since multiple connections will be accessing it
 // and some of those threads might trigger from the same host. If this function is not thread
 // safe, we'll get duplicate on-the-fly certificate generations, which is a lot of extra cycles.
-func certCache(cacheChan chan *cacheRequest, cache map[string]tls.Certificate) {
+func certCache(cacheChan chan *certCacheRequest, cache map[string]tls.Certificate) {
 	// Long-lived loop. Avoid memory allocations by reusing these.
 	var (
-		r          *cacheRequest
+		r          *certCacheRequest
 		newCer     tls.Certificate
 		err        error
 		cacheEntry KeyPairBytes

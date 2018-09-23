@@ -70,28 +70,42 @@ class TracerEventsTable extends Component {
               {
                 Header: "observed outputs",
                 columns: [
-                  { Header: "id", accessor: "ID", width: 30 },
+                  { Header: "id", accessor: "ID", width: 45 },
                   { Header: "host", accessor: "EventHost" },
                   { Header: "path", accessor: "EventPath" },
                   {
-                    Header: "location type",
+                    Header: "location",
                     accessor: "HTMLLocationType"
                   },
                   {
-                    Header: "node type",
+                    Header: "node",
                     accessor: "HTMLNodeType"
                   },
                   {
-                    Header: "event type",
+                    Header: "output",
                     accessor: "EventType"
                   },
                   {
                     Header: "severity",
-                    accessor: "Severity"
-                  }
+                    accessor: "Severity",
+                    width: 75
+                  } //,
+                  //                  { Header: "reproduce", width: 5 }
                 ]
               }
             ]}
+            getTdProps={(state, rowInfo, column) => {
+              return {
+                onClick: (e, handleOriginal) => {
+                  if (column.Header === "reproduce") {
+                    this.props.reproduce();
+                  }
+                  if (handleOriginal) {
+                    handleOriginal();
+                  }
+                }
+              };
+            }}
             getTrProps={(state, rowInfo, column, instance) => {
               if (rowInfo) {
                 let classname = "";
