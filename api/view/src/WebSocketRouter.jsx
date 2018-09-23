@@ -97,9 +97,9 @@ class WebSocketRouter extends Component {
       </span>
     );
     return (
-      <div className="websocket">
+      <div>
         {status === "disconnected" ? spinner : ""}
-        websocket status: <span className={`${status}`}>{status}</span>
+        websocket: <span className={`${status}`}>{status}</span>
       </div>
     );
   }
