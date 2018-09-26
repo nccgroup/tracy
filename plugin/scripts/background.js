@@ -197,20 +197,36 @@ function messageRouter(message, sender, sendResponse) {
   if (message["message-type"]) {
     switch (message["message-type"]) {
       case "job":
-        addJobToQueue(message, sender, sendResponse);
+        addJobToQueue(message, sender);
         break;
       case "config":
         configQuery(message, sender, sendResponse);
         break;
-      case "refresh":
-        refreshConfig(false);
-        break;
+      case "screenshot":
+        handleScreenshot(message, sender, sendResponse);
+        return true;
     }
   } else if (message.r) {
     // Changed the format of the message so we
     // wouldn't have such a long XSS payload.
     updateReproduction(message, sender);
   }
+}
+
+// handleScreenshot takes a screenshot of the requesting tab,
+// then sends it back to the request tab so that it can be
+// used in the input capture.
+async function handleScreenshot(message, sender, callback) {
+  callback(await captureScreenshot(sender.tab.id));
+}
+
+// captureScreenshot creates an image of that tab with the specified dimensions
+// and offset.
+async function captureScreenshot(tabID) {
+  const tab = await new Promise(r => chrome.tabs.get(tabID, tab => r(tab)));
+  return await new Promise(r =>
+    chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" }, d => r(d))
+  );
 }
 
 // updateReproduction validates that a particular tab
@@ -318,6 +334,7 @@ async function refreshConfig(wsConnect) {
 // Connect to the websocket endpoint so we don't have to poll for new tracer strings.
 function websocketConnect() {
   const nws = new WebSocket(`ws://${restServer}/ws`);
+
   nws.addEventListener("message", event => {
     let req = JSON.parse(event.data);
     switch (Object.keys(req)[0]) {
@@ -374,7 +391,7 @@ function configQuery(message, sender, sendResponse) {
 }
 
 // Add a job to the job queue.
-function addJobToQueue(message, sender, sendResponse) {
+async function addJobToQueue(message, sender) {
   // Don't add a job if it's one of the tabs that we have collected
   // in our reproduction steps flow.
   if (memoTabs.get()[sender.tab.id]) {
@@ -410,10 +427,16 @@ chrome.runtime.onMessageExternal.addListener((r, s, _) => {
   return true;
 });
 
+// Update the configuration on every page load.
+chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
+  if (changeInfo.status === "complete") {
+    refreshConfig(false);
+  }
+});
+
 // Configuration defaults
 let restServer = "127.0.0.1:443";
 let tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
 let defaultTracer = "";
 let tracerPayloads = [];
-
 refreshConfig(true);
