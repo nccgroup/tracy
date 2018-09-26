@@ -28,6 +28,7 @@ var (
 func Configure() {
 	RestRouter = mux.NewRouter()
 	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracers)
+	RestRouter.Methods("PUT").Path("/tracers/{tracerID}").HandlerFunc(EditTracer)
 	RestRouter.Methods("GET").Path("/tracers/generate").HandlerFunc(GenerateTracer)
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}/request").HandlerFunc(GetRequest)
 	RestRouter.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(GetTracer)

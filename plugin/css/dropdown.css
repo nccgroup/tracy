@@ -19,6 +19,10 @@ div#tag-menu * {
 	all: initial;
 }
 
+.screen-shot {
+    background-color: #67baaf !important;
+}
+
 #tag-menu ul li.highlight-on-hover {
 	display: block;
 	color: white;

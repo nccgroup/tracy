@@ -2,10 +2,12 @@ package common
 
 import (
 	"encoding/json"
+	"strings"
+
+	"github.com/jinzhu/gorm"
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/log"
-	"strings"
 )
 
 // AddTracer is the common functionality to add a tracer to the database.
@@ -84,6 +86,23 @@ func GetTracerRequest(tracerID uint) ([]byte, error) {
 	}
 
 	if ret, err = json.Marshal(request); err != nil {
+		log.Warning.Print(err)
+	}
+
+	return ret, err
+}
+
+// EditTracer updates a tracer in the database.
+func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
+	t := types.Tracer{Model: gorm.Model{ID: id}}
+	var err error
+	if err = store.DB.Model(&t).Updates(tracer).Error; err != nil {
+		log.Warning.Print(err)
+		return []byte{}, err
+	}
+
+	var ret []byte
+	if ret, err = json.Marshal(tracer); err != nil {
 		log.Warning.Print(err)
 	}
 
