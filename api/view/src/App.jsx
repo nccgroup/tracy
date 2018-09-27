@@ -160,7 +160,7 @@ class App extends Component {
     // Enum to human-readable structure to translate the various DOM contexts.
     const locationTypes = {
       0: "attribute name",
-      1: "text",
+      1: "leaf node",
       2: "node name",
       3: "attribute value",
       4: "comment block"
