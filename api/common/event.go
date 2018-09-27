@@ -89,6 +89,9 @@ func getDOMContexts(event *types.TracerEvent, tracer types.Tracer) error {
 	// All text events from the plugin will most likely be unexploitable.
 	if event.EventType == "text" {
 		*sevp = 0
+		for i := range event.DOMContexts {
+			event.DOMContexts[i].Severity = 0
+		}
 	}
 
 	tracer.HasTracerEvents = true

@@ -28,11 +28,12 @@ function isNearLeftEdge(element, event) {
 
 // Simulate input on a input field in hopes to trigger any input validation checks.
 function simulateKeyPress(e, value) {
+  console.log("[SIM]:", e, value);
   e.focus();
   e.value = value;
   ["keypress", "keyup", "keydown"].forEach(eventName => {
-    var event = new KeyboardEvent(eventName);
-    e.dispatchEvent(event);
+    const evt = new KeyboardEvent(eventName);
+    e.dispatchEvent(evt);
   });
 
   e.dispatchEvent(new Event("change"));
