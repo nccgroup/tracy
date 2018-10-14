@@ -23,6 +23,7 @@
       "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*"],
       "all_frames": true,
       "js": [
+        "scripts/util.js",
         "scripts/highlight.js",
         "scripts/dom-mutations.js",
         "scripts/method-hooking-injector.js"
@@ -33,7 +34,7 @@
     {
       "matches": ["*://localhost/*"],
       "all_frames": true,
-      "js": ["scripts/method-hooking-injector-allhosts.js"],
+      "js": ["scripts/method-hooking-injector-localhost.js"],
       "run_at": "document_start"
     }
   ],
