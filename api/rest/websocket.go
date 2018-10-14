@@ -1,9 +1,16 @@
 package rest
 
 import (
+	"fmt"
+	"net"
+	"net/http"
+	"net/url"
+	"strings"
+
 	"github.com/gorilla/websocket"
 	"github.com/nccgroup/tracy/api/common"
-	"net/http"
+	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
 )
 
 // upgrader is used a configuration struct when upgrading the websocket
@@ -48,52 +55,81 @@ func WebSocket(w http.ResponseWriter, r *http.Request) {
 // before it is upgraded to a websocket. This function prevents other websites
 // from connecting to the websocket.
 func checkOrigin(r *http.Request) bool {
-	/*	origin := r.Header.Get("Origin")
-		conf := configure.ReadAllConfig()
-		srv := conf["tracer-server"].(string)
-		srvs := strings.Split(srv, ":")
-		if len(srvs) != 2 {
-			return false
-		}
-		url, err := url.Parse(origin)
-		if err != nil {
-			log.Error.Print(err)
-			return false
-		}
+	org := r.Header.Get("Origin")
+	srv := "http://" + configure.ReadAllConfig()["tracer-server"].(string)
 
-		// Resolve the hostname from the origin.
-		origina, err := net.LookupHost(url.Hostname())
-		log.Error.Printf("%+v\n", url.Hostname())
-		var origin4 string
-		if len(origina) == 2 {
-			origin4 = origina[1]
-		} else {
-			origin4 = origina[0]
-		}
+	ourl, err := url.Parse(org)
+	if err != nil {
+		log.Error.Print(err)
+		return false
+	}
 
-		if err != nil {
-			log.Error.Print(err)
-			return false
-		}
-		// Resolve the hostname from the configuration file.
-		confa, err := net.LookupHost(srvs[0])
-		if err != nil {
-			log.Error.Print(err)
-			return false
-		}
-		var conf4 string
-		if len(confa) == 2 {
-			conf4 = confa[1]
-		} else {
-			conf4 = confa[0]
-		}
+	surl, err := url.Parse(srv)
+	if err != nil {
+		log.Error.Print(err)
+		return false
+	}
 
-		// if there is a match between the configured host and the origin host and they share the same port, it's fine
-		// if there is a match between the debug server, it's fine.
-		if origin4 == conf4 && string(srv[1]) == url.Port() ||
-			origin4 == "127.0.0.1" && url.Port() == "3000" {
+	// if there is a match between the Tracy web extension, it's fine.
+	if strings.HasSuffix(ourl.Scheme, "-extension") {
+		// Hardcoded IDs for tracy mozilla and chrome extensions.
+		// Not secrets, just their global extension IDs. We also want to
+		// allow connections from debugging websockets since those IDs
+		// change every reload.
+		if ourl.Hostname() == "lcgbimfijafcjjijgjoodgpblgmkckhn" ||
+			ourl.Hostname() == "9d1494b8-e44b-40f7-b4a9-47d47d31b9f2" ||
+			configure.DebugUI {
 			return true
-		}*/
+		}
+
+	}
+
+	org4, err := firstIPv4(ourl.Hostname())
+	if err != nil {
+		log.Error.Print(err)
+		return false
+	}
+	srv4, err := firstIPv4(surl.Hostname())
+	if err != nil {
+		log.Error.Print(err)
+		return false
+	}
+
+	// if there is a match between the configured host and the origin host
+	// and they share the same port, it's fine.
+	if org4 == srv4 && ourl.Port() == surl.Port() {
+		return true
+	}
+
+	// if there is a match between the debug server, it's fine.
+	if org4 == "127.0.0.1" && ourl.Port() == "3000" {
+		return true
+	}
 
 	return true
+}
+
+// firstIPv4 takes a hostname and returns the first IPv4 resolution of the
+// IP addresses.
+func firstIPv4(hostname string) (string, error) {
+	ips, err := net.LookupHost(hostname)
+
+	if err != nil {
+		log.Warning.Print(err)
+		return "", err
+	}
+
+	if len(ips) <= 0 {
+		log.Warning.Print("no hosts resolved in origin check")
+		return "", err
+	}
+
+	for _, v := range ips {
+		ip := net.IP(v)
+		if err := ip.To4(); err == nil {
+			return string(ip), nil
+		}
+	}
+
+	return "", fmt.Errorf("no IPv4 addresses found for %s", hostname)
 }
