@@ -63,14 +63,10 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 	var replacedTracers []types.Tracer
 
-	labelsConfig, err := configure.ReadConfig("tracers")
-	if err != nil {
-		log.Error.Fatal(err)
-		return []byte{}, []types.Tracer{}
-	}
+	labelsConfig := configure.Current.TracerStrings
 
 	var labels [][]byte
-	for s := range labelsConfig.(map[string]interface{}) {
+	for s := range labelsConfig {
 		labels = append(labels, []byte(s), []byte(url.QueryEscape(s)))
 	}
 
@@ -110,14 +106,11 @@ func TransformTracerString(tracerString []byte) (string, []byte, error) {
 	if err != nil {
 		return "", nil, fmt.Errorf("Could not QueryUnescape: %s, Error: %s", string(tracerString), err)
 	}
-	labels, err := configure.ReadConfig("tracers")
-	if err != nil {
-		return "", nil, fmt.Errorf("Could not ReadConfig: %s", err)
-	}
-	for tracer, payload := range labels.(map[string]interface{}) {
+	labels := configure.Current.TracerStrings
+	for tracer, payload := range labels {
 		if unescapedTag == tracer {
 			randID := generateRandomTracerString()
-			return string(randID), []byte(strings.Replace(payload.(string), idTag, string(randID), 1)), nil
+			return string(randID), []byte(strings.Replace(payload, idTag, string(randID), 1)), nil
 		}
 	}
 

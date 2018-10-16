@@ -4,7 +4,7 @@
     const hookInjector = document.createElement("script");
     hookInjector.type = "text/javascript";
     hookInjector.src = chrome.runtime.getURL(`scripts/${file}`);
-    hookInjector.name = "injected";
+    hookInjector.id = "injected";
     document.documentElement.appendChild(hookInjector);
     hookInjector.parentNode.removeChild(hookInjector);
   };

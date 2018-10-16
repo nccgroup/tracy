@@ -15,7 +15,7 @@ import (
 // available database files and returns the names of
 // the files.
 func GetProjects() ([]byte, error) {
-	files, err := ioutil.ReadDir(configure.TracyPath)
+	files, err := ioutil.ReadDir(configure.Current.TracyPath)
 	if err != nil {
 		return nil, err
 	}
@@ -41,13 +41,13 @@ func GetProjects() ([]byte, error) {
 // and deletes the file associated with it.
 func DeleteProject(p string) error {
 	store.DB.Close()
-	return configure.DeleteDatabase(filepath.Join(configure.TracyPath, p+".db"))
+	return configure.DeleteDatabase(filepath.Join(configure.Current.TracyPath, p+".db"))
 }
 
 // SwitchProject closes the currently opened database,
 // sets the new database file and opens it.
 func SwitchProject(p string) error {
 	store.DB.Close()
-	configure.DatabaseFile = filepath.Join(configure.TracyPath, p+".db")
-	return store.Open(configure.DatabaseFile, log.Verbose)
+	configure.Current.DatabasePath = filepath.Join(configure.Current.TracyPath, p+".db")
+	return store.Open(configure.Current.DatabasePath, log.Verbose)
 }

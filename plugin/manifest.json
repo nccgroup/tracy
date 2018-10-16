@@ -26,10 +26,15 @@
         "scripts/util.js",
         "scripts/highlight.js",
         "scripts/dom-mutations.js",
-        "scripts/method-hooking-injector.js",
-        "scripts/method-hooking-injector-localhost.js"
+        "scripts/method-hooking-injector.js"
       ],
       "css": ["css/dropdown.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://localhost/*", "*://127.0.0.1/*"],
+      "all_frames": true,
+      "js": ["scripts/util.js", "scripts/installed.js"],
       "run_at": "document_start"
     }
   ],

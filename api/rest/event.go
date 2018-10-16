@@ -7,12 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/log"
-
-	"github.com/gorilla/mux"
 )
 
 // addEventHelper is used by AddEvent and AddEvents to add an event to the tracer
@@ -124,7 +123,7 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 			if err = store.DB.First(&tracer, "tracer_payload = ?", tracerPayload).Error; err != nil {
 				// If there was an error getting the tracer, fail fast and continue
 				// to the next one.
-				log.Error.Println(err)
+				log.Error.Print(err)
 				continue
 			}
 			// Add the tracer event.
@@ -134,10 +133,10 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 			if status == http.StatusInternalServerError {
 				finalStatus = http.StatusInternalServerError
 				// Only returns the error for the last failed event addition.
-				finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
+				finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\"}", ret))
 			} else if status == http.StatusConflict && finalStatus != http.StatusInternalServerError {
 				finalStatus = http.StatusConflict
-				finalRet = []byte(fmt.Sprintf("{\"Status\": \"%s\":}", ret))
+				finalRet = []byte("[]")
 			} else {
 				count++
 			}

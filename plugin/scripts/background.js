@@ -289,8 +289,7 @@ async function refreshConfig(wsConnect) {
     .then(res => res.json())
     .catch(err => console.error(err))
     .then(res => {
-      tracerStringTypes = Object.keys(res["tracers"]);
-      defaultTracer = res["default-tracer"];
+      tracerStringTypes = Object.keys(res["TracerStrings"]);
 
       // TODO: can't figure out why Firefox is throwing an error here
       // about duplicate IDs.
@@ -380,9 +379,6 @@ function configQuery(message, sender, sendResponse) {
       case "tracer-string-types":
         sendResponse(tracerStringTypes);
         break;
-      case "default-tracer":
-        sendResponse(defaultTracer);
-        break;
       case "enabled":
         sendResponse(enabled);
         break;
@@ -437,6 +433,5 @@ chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
 // Configuration defaults
 let restServer = "127.0.0.1:443";
 let tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
-let defaultTracer = "";
 let tracerPayloads = [];
 refreshConfig(true);

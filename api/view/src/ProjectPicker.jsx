@@ -12,7 +12,9 @@ class ProjectPicker extends Component {
       );
       return;
     }
-    this.switchProject(proj);
+    if (proj) {
+      this.switchProject(proj);
+    }
   };
 
   deleteProject = _ => {

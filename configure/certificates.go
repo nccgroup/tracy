@@ -17,22 +17,13 @@ import (
 	"github.com/nccgroup/tracy/log"
 )
 
-// SigningCertificate is the certificate used to sign all the certificates
-// created on-the-fly when intercepting traffic.
-var SigningCertificate tls.Certificate
-
 // Certificates loads the local certificate pairs if they exist or generates new
 // ones on-the-fly.
 func Certificates() {
-	publicKey, err := ReadConfig("public-key-loc")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-	privateKey, err := ReadConfig("private-key-loc")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-	SigningCertificate, err = tls.LoadX509KeyPair(publicKey.(string), privateKey.(string))
+	var err error
+	Current.SigningCertificate, err = tls.LoadX509KeyPair(
+		Current.PublicKeyLocation,
+		Current.PrivateKeyLocation)
 	if err != nil {
 		// Cannot continue if the application doesn't have a valid
 		// certificate for TLS connections.
