@@ -47,7 +47,7 @@ class Settings extends Component {
   };
 
   render() {
-    if (this.state.extension) {
+    if (window.tracy && window.tracy.installed) {
       return <span />;
     }
 

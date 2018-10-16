@@ -10,22 +10,15 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/log"
 )
 
-/*TracyPath is the path all tracy files go in. */
-var TracyPath string
-
-/*DatabaseFile is the database file configured through the command line. */
-var DatabaseFile string
-
-/*CertCacheFile is the path of the cache file used to store a list of certificates already been dynamically generated for hosts tracy has seen. */
-var CertCacheFile string
-
-/*DebugUI is the flag used to tell if the user is debugging the UI. */
-var DebugUI bool
+// Current holds all the configuration options for the current environment.
+var Current types.Configuration
 
 func init() {
 	usr, err := user.Current()
@@ -33,30 +26,31 @@ func init() {
 		l.Fatal(err)
 	}
 
-	TracyPath = filepath.Join(usr.HomeDir, ".tracy")
-	if _, err = os.Stat(TracyPath); os.IsNotExist(err) {
-		os.Mkdir(TracyPath, 0755)
+	tp := filepath.Join(usr.HomeDir, ".tracy")
+	if _, err = os.Stat(tp); os.IsNotExist(err) {
+		os.Mkdir(tp, 0755)
 	}
 
-	/* Write the server certificates. */
-	pubKeyPath := filepath.Join(TracyPath, "cert.pem")
+	// Write the server certificates.
+	pubKeyPath := filepath.Join(tp, "cert.pem")
 	if _, err = os.Stat(pubKeyPath); os.IsNotExist(err) {
-		generateRootCA(TracyPath)
+		generateRootCA(tp)
 	}
-	privKeyPath := filepath.Join(TracyPath, "key.pem")
+	privKeyPath := filepath.Join(tp, "key.pem")
 	if _, err = os.Stat(privKeyPath); os.IsNotExist(err) {
-		generateRootCA(TracyPath)
+		generateRootCA(tp)
 	}
 
-	/* Read the configuration. */
-	configPath := filepath.Join(TracyPath, "tracy.json")
+	// Read the configuration.
+	configPath := filepath.Join(tp, "tracy.json")
 	var content []byte
 	if _, err = os.Stat(configPath); os.IsNotExist(err) {
-		/* Try to recover by writing a new tracer.json file with the default values. */
+		// Try to recover by writing a new tracer.json file with the
+		// default values.
 		pubKeyPath = strings.Replace(pubKeyPath, "\\", "\\\\", -1)
 		privKeyPath = strings.Replace(privKeyPath, "\\", "\\\\", -1)
 		def := fmt.Sprintf(DefaultConfig, pubKeyPath, privKeyPath)
-		/* Make sure to escape the path variables in windows paths. */
+		// Make sure to escape the path variables in windows paths.
 		ioutil.WriteFile(configPath, []byte(def), 0755)
 		content = []byte(def)
 	} else {
@@ -65,20 +59,15 @@ func init() {
 			l.Fatal(err)
 		}
 	}
-
+	Current.TracyPath = tp
 	var configData interface{}
 	err = json.Unmarshal(content, &configData)
 	if err != nil {
 		l.Fatalf("Configuration file has a JSON syntax error: %s", err.Error())
 	}
+	SetupConfig(configData.(map[string]interface{}))
 
-	/* Create the configuration channel listener to synchronize configuration changes. */
-	AppConfigReadChannel = make(chan *ReadConfigCmd, 10)
-	AppConfigWriteChannel = make(chan *WriteConfigCmd, 10)
-	AppConfigAllChannel = make(chan *AllConfigCmd, 10)
-	go ConfigurationListener(configData.(map[string]interface{}))
-
-	/* Set up the command line interface. */
+	// Set up the command line interface.
 	var (
 		databaseFileUsage    = "Indicate the file to use for the SQLite3 database. By default, a temporary one is picked."
 		databaseFileDefault  = "prod-tracer-db.db"
@@ -87,157 +76,134 @@ func init() {
 		debugUIUsage         = "Indicate if you'd like the UI to use the non-compiled assets in the case of debugging."
 	)
 	// Database file. Allows the user to change the location of the SQLite database file.
-	flag.StringVar(&DatabaseFile, "database", filepath.Join(TracyPath, databaseFileDefault), databaseFileUsage)
+	flag.StringVar(&Current.DatabasePath, "database", filepath.Join(tp, databaseFileDefault), databaseFileUsage)
 	// Cache file for certificates.
-	flag.StringVar(&CertCacheFile, "certificate-cache", filepath.Join(TracyPath, certCacheFileDefault), certCacheFileUsage)
+	flag.StringVar(&Current.CertCachePath, "certificate-cache", filepath.Join(tp, certCacheFileDefault), certCacheFileUsage)
 	// If you want to use the web UI, but don't want to compile all the assets
-	flag.BoolVar(&DebugUI, "debug-ui", false, debugUIUsage)
+	flag.BoolVar(&Current.DebugUI, "debug-ui", false, debugUIUsage)
 }
 
-/*ProxyServer configures the TCP listener based on the user's configuration. */
-func ProxyServer() net.Listener {
-	addr, err := ReadConfig("proxy-server")
-	if err != nil {
-		log.Error.Fatal(err)
+// SetupConfig Unmarshals the configuration file into valid data structures
+// that can be easily digested at runtime.
+func SetupConfig(config map[string]interface{}) {
+	tracers := config["tracers"].(map[string]interface{})
+	Current.TracerStrings = make(map[string]string, len(tracers))
+	for k, v := range tracers {
+		Current.TracerStrings[k] = v.(string)
 	}
-	ret, err := net.Listen("tcp", addr.(string))
+
+	ips := config["server-whitelist"].([]interface{})
+	var (
+		srv types.Server
+		err error
+	)
+	sw := make([]types.Server, len(ips))
+	for i, ip := range ips {
+		srv, err = ParseServer(ip.(string))
+		if err != nil {
+			l.Fatal(err)
+		}
+		sw[i] = srv
+	}
+	Current.ServerWhitelist = sw
+
+	srv, err = ParseServer(config["tracer-server"].(string))
+	if err != nil {
+		l.Fatal("configuration invalid ", err)
+	}
+	Current.TracerServer = srv
+
+	srv, err = ParseServer(config["proxy-server"].(string))
+	if err != nil {
+		l.Fatal("configuration invalid: ", err)
+	}
+	Current.ProxyServer = srv
+
+	if config["auto-launch"].(string) == "true" {
+		Current.AutoLaunch = true
+	} else {
+		Current.AutoLaunch = false
+	}
+
+	Current.PublicKeyLocation = config["public-key-loc"].(string)
+	Current.PrivateKeyLocation = config["private-key-loc"].(string)
+	Current.Version = config["version"].(string)
+}
+
+// ParseServer parses a string of the form <host>:<port> into a
+// types.Server object where the <host> is resolved to a set of IP
+// addresses.
+func ParseServer(hp string) (types.Server, error) {
+	splits := strings.Split(hp, ":")
+	if len(splits) != 2 {
+		return types.Server{},
+			fmt.Errorf("servers should be in the form of <host>:<port>")
+	}
+
+	u, err := net.LookupIP(splits[0])
+	if err != nil {
+		return types.Server{}, err
+	}
+
+	if len(u) <= 0 {
+		fmt.Errorf("no hosts resolved in origin check")
+	}
+
+	p, err := strconv.ParseUint(splits[1], 10, 32)
+	if err != nil {
+		return types.Server{}, err
+	}
+
+	return types.Server{IPs: u, Port: uint(p), Hostname: splits[0]}, nil
+}
+
+// ProxyServer configures the TCP listener based on the user's configuration.
+func ProxyServer() net.Listener {
+	s := fmt.Sprintf("%s:%d",
+		Current.ProxyServer.IPs[0].String(),
+		Current.ProxyServer.Port)
+	ret, err := net.Listen("tcp", s)
 	if err != nil {
 		/* Cannot continue if the application doesn't have TCP listener. Fail fast. */
-		log.Error.Fatalf("Cannot listen on %s: %s", addr, err.Error())
+		log.Error.Fatalf("Cannot listen on %s: %+v", s, err)
 	}
 
 	return ret
 }
 
-/*ReadConfigCmd is a channel operation used to read configuration data. */
-type ReadConfigCmd struct {
-	key  string
-	resp chan interface{}
-}
-
-/*WriteConfigCmd is a channel operation used to write configuration data. */
-type WriteConfigCmd struct {
-	key  string
-	val  interface{}
-	resp chan bool
-}
-
-/*AllConfigCmd is a channel operation used to read all of the configuration data. */
-type AllConfigCmd struct {
-	resp chan map[string]interface{}
-}
-
-/*AppConfigReadChannel is used to push changes to any subscribers within the application that
- * are dependent on those configurations. */
-var AppConfigReadChannel chan *ReadConfigCmd
-
-/*AppConfigWriteChannel is used to push changes to any subscribers within the application that
- * are dependent on those configurations. */
-var AppConfigWriteChannel chan *WriteConfigCmd
-
-/*AppConfigAllChannel is used to get the entire data structure of configuration options. */
-var AppConfigAllChannel chan *AllConfigCmd
-
-/*ConfigurationListener listens for configuration changes and updates the global variable.
-Serves as a stateless goroutine that is the only source of truth for the configuration data
-so that all reads and writes are serialized. This is done because configuration changes
-might come from various sources. */
-func ConfigurationListener(initial map[string]interface{}) {
-	configuration := initial
-	for {
-		// TODO: think this through. might get confusing.
-		select {
-		case read := <-AppConfigReadChannel:
-			if val, ok := configuration[read.key]; ok {
-				read.resp <- val
-			} else {
-				read.resp <- fmt.Errorf("No key %s in the current configuration", read.key)
-			}
-		case write := <-AppConfigWriteChannel:
-			configuration[write.key] = write.val
-			err := writeConf(configuration, TracyPath)
-			if err != nil {
-				log.Warning.Println(err)
-			}
-		case all := <-AppConfigAllChannel:
-			all.resp <- configuration
-		}
-	}
-}
-
-// Helper function to rewrite the configuration file based on a map.
-func writeConf(configuration map[string]interface{}, path string) error {
-	confStr, ret := json.MarshalIndent(configuration, "", "  ")
-	if ret == nil {
-		ioutil.WriteFile(filepath.Join(path, "tracy.json"), confStr, os.ModePerm)
+// HostInWhitelist returns true if the host is in the whitelist of the
+// configuration file or is the tracy server.Used to block the development
+// servers.
+func HostInWhitelist(host string) bool {
+	server, err := ParseServer(host)
+	if err != nil {
+		log.Error.Printf("%s: got %s", err, host)
+		return false
 	}
 
-	return ret
-}
-
-/*UpdateConfig updates the global configuration of the running application. */
-func UpdateConfig(k string, v interface{}) {
-	write := &WriteConfigCmd{
-		key: k,
-		val: v,
-	}
-	AppConfigWriteChannel <- write
-}
-
-/*ReadConfig read the global configuration of the running application. */
-func ReadConfig(k string) (interface{}, error) {
-	var err error
-	read := &ReadConfigCmd{
-		key:  k,
-		resp: make(chan interface{}),
-	}
-	AppConfigReadChannel <- read
-	resp := <-read.resp
-	switch resp.(type) {
-	case error:
-		err = resp.(error)
-	}
-
-	return resp, err
-}
-
-/*ReadAllConfig reads all of the global configuration settings. */
-func ReadAllConfig() map[string]interface{} {
-	all := &AllConfigCmd{
-		resp: make(chan map[string]interface{}),
-	}
-	AppConfigAllChannel <- all
-	return <-all.resp
-}
-
-/*ServerInWhitelist returns true if the server is in the whitelist. Used to block the development servers. */
-func ServerInWhitelist(server string) bool {
-	ret := false
-
-	whitelist, err := ReadConfig("server-whitelist")
-	if err == nil {
-		for _, v := range whitelist.([]interface{}) {
-			if server == v.(string) {
-				ret = true
-				break
-			}
+	for _, v := range Current.ServerWhitelist {
+		if v.Equal(server) {
+			return true
 		}
 	}
 
-	return ret
+	// Automatically whitelist the configured tracer server.
+	if Current.TracerServer.Equal(server) {
+		return true
+	}
+
+	return false
 }
 
 // DeleteDatabase deletes the database at the file path specified.
 func DeleteDatabase(db string) error {
-	var ret error
-
 	// If the database exists, remove it.
 	if _, err := os.Stat(db); !os.IsNotExist(err) {
 		err := os.Remove(db)
 		if err != nil {
-			ret = fmt.Errorf("wasn't able to delete the database at: %s", DatabaseFile)
+			return fmt.Errorf("wasn't able to delete the database at: %s", db)
 		}
 	}
 
-	return ret
+	return nil
 }

@@ -237,13 +237,10 @@ func BenchmarkFullProxyTLS(b *testing.B) {
 
 func proxier(r *http.Request) (*url.URL, error) {
 	// Need a function to return what the proxy url for an http.Transport
-	ps, err := configure.ReadConfig("proxy-server")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
+
 	return &url.URL{
 		Scheme: "http",
-		Host:   ps.(string),
+		Host:   configure.Current.ProxyServer.Addr(),
 	}, nil
 }
 
@@ -251,16 +248,16 @@ func setupProxy() (net.Listener, error) {
 	// Minimal steps needed to setup the proxy, configure the
 	// logging, setup the DB, create a proxy object and let it accept
 	log.Configure()
-	if err := store.Open(configure.DatabaseFile, log.Verbose); err != nil {
+	if err := store.Open(configure.Current.DatabasePath, log.Verbose); err != nil {
 		log.Error.Fatal(err.Error())
 		return nil, err
 	}
-	certsJSON, err := ioutil.ReadFile(configure.CertCacheFile)
+	certsJSON, err := ioutil.ReadFile(configure.Current.CertCachePath)
 	if err != nil {
 		certsJSON = []byte("[]")
 		// Can recover from this. Simply make a cache file and
 		// instantiate an empty cache.
-		ioutil.WriteFile(configure.CertCacheFile, certsJSON, os.ModePerm)
+		ioutil.WriteFile(configure.Current.CertCachePath, certsJSON, os.ModePerm)
 	}
 
 	var certs []CertCacheEntry

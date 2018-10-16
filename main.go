@@ -13,7 +13,6 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
-	"strings"
 
 	"github.com/nccgroup/tracy/api/rest"
 	"github.com/nccgroup/tracy/api/store"
@@ -25,7 +24,6 @@ import (
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func main() {
-
 	if *cpuprofile != "" {
 		defer pprof.StopCPUProfile()
 	}
@@ -36,28 +34,19 @@ func main() {
 	// Start the proxy that will run forever
 	go p.Accept()
 
-	ps, err := configure.ReadConfig("proxy-server")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-	fmt.Printf("Proxy server:\t%s%s", ps.(string), log.NewLine)
+	fmt.Printf("Proxy server:\t%s%s",
+		configure.Current.ProxyServer.Addr(), log.NewLine)
 
 	go func() {
 		log.Error.Fatal(rest.RestServer.ListenAndServe())
 	}()
 
-	ts, err := configure.ReadConfig("tracer-server")
-	if err != nil {
-		log.Error.Fatal(err)
-	}
-	fmt.Printf("Tracer server:\t%s%s", ts.(string), log.NewLine)
+	fmt.Printf("Tracer server:\t%s%s",
+		configure.Current.TracerServer.Addr(), log.NewLine)
 
-	autoLaunch, err := configure.ReadConfig("auto-launch")
-	if err != nil {
-		log.Error.Fatal(err.Error())
+	if configure.Current.AutoLaunch {
+		processAutoLaunch()
 	}
-
-	processAutoLaunch(autoLaunch.(string))
 
 	// Wait for the user to close the program.
 	signalChan := make(chan os.Signal, 1)
@@ -90,7 +79,7 @@ func init() {
 	}
 
 	// Open the database.
-	if err := store.Open(configure.DatabaseFile, log.Verbose); err != nil {
+	if err := store.Open(configure.Current.DatabasePath, log.Verbose); err != nil {
 		log.Error.Fatal(err.Error())
 	}
 
@@ -98,12 +87,12 @@ func init() {
 	rest.Configure()
 
 	// Instantiate the certificate cache.
-	certsJSON, err := ioutil.ReadFile(configure.CertCacheFile)
+	certsJSON, err := ioutil.ReadFile(configure.Current.CertCachePath)
 	if err != nil {
 		certsJSON = []byte("[]")
 		// Can recover from this. Simply make a cache file and
 		// instantiate an empty cache.
-		ioutil.WriteFile(configure.CertCacheFile, certsJSON, os.ModePerm)
+		ioutil.WriteFile(configure.Current.CertCachePath, certsJSON, os.ModePerm)
 	}
 
 	var certs []proxy.CertCacheEntry
@@ -137,28 +126,8 @@ func init() {
 }
 
 // processAutoLaunch launchs whatever browser they have configured.
-func processAutoLaunch(option string) {
-	switch option {
-	case "default":
-		s, err := configure.ReadConfig("tracer-server")
-		if err != nil {
-			log.Error.Print(err)
-		}
-		openbrowser(fmt.Sprintf("http://%s", s))
-	case "off":
-		return
-	default:
-		var cmd *exec.Cmd
-		optionArray := strings.Split(option, " ")
-		if len(optionArray) == 1 {
-			cmd = exec.Command(optionArray[0])
-		} else if len(optionArray) > 1 {
-			cmd = exec.Command(optionArray[0], optionArray[1:]...)
-		} else {
-			return
-		}
-		cmd.Run()
-	}
+func processAutoLaunch() {
+	openbrowser(fmt.Sprintf("%s", configure.Current.TracerServer.Addr()))
 }
 
 // openBrowser opens the default browser the user has configured.

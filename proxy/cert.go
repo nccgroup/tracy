@@ -188,14 +188,14 @@ func certCache(cacheChan chan *certCacheRequest, cache map[string]tls.Certificat
 			continue
 		}
 
-		newCer, cacheEntry, err = generateCert(r.host, configure.SigningCertificate)
+		newCer, cacheEntry, err = generateCert(r.host, configure.Current.SigningCertificate)
 		if err != nil {
 			log.Error.Println(err)
 			r.err <- err
 			continue
 		}
 
-		if err = addCacheEntryToCacheFile(cacheEntry, r.host, configure.CertCacheFile); err != nil {
+		if err = addCacheEntryToCacheFile(cacheEntry, r.host, configure.Current.CertCachePath); err != nil {
 			log.Error.Println(err)
 			r.err <- err
 			continue

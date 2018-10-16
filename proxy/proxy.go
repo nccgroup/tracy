@@ -103,7 +103,10 @@ func identifyTracersInResponse(b []byte, host, url string, gziped bool) {
 	// Check if the host is the tracer API server. We don't want to trigger
 	// anything if we accidentally proxied a tracer server API call because
 	// it will cause a recursion.
-	if configure.ServerInWhitelist(host) {
+	if host == "" {
+		log.Error.Printf("EMPTY: %s", url)
+	}
+	if configure.HostInWhitelist(host) {
 		return
 	}
 
@@ -268,7 +271,10 @@ func handleConnection(client net.Conn) {
 	// happen. For example, tracy payloads will occur all over the UI and
 	// we don't want those to be swapped.
 	xTracyHeader := request.Header.Get("X-TRACY")
-	if !configure.ServerInWhitelist(host) && xTracyHeader == "" {
+	if host == "" {
+		log.Error.Printf("%+v", request)
+	}
+	if !configure.HostInWhitelist(host) && xTracyHeader == "" {
 		// Look for tracers that might have been generated out-of-band
 		// using the API. Do this by checking if there exists a tracer,
 		// but we have no record of which request it came from.
@@ -291,7 +297,10 @@ func handleConnection(client net.Conn) {
 		// Check if the host is the tracer API server. We don't want to
 		// trigger anything if we accidentally proxied a tracer server
 		// API call because it will cause a recursion.
-		if !configure.ServerInWhitelist(host) && len(tracers) > 0 {
+		if host == "" {
+			log.Error.Printf("%+v", request)
+		}
+		if !configure.HostInWhitelist(host) && len(tracers) > 0 {
 			go func() {
 				// Have to do this again because we changed the
 				// contents of the request and the request object
@@ -473,7 +482,7 @@ func connectToTarget(isHTTPS bool, host, path string, req *http.Request, client 
 		// The proxy can finish this connection before this finishes.
 		// We don't need to do this in the cases where we are prepping the cache.
 		gzip := strings.EqualFold(resp.Header.Get("Content-Encoding"), "gzip")
-		go identifyTracersInResponse(b, req.URL.Host, req.Host+req.RequestURI, gzip)
+		go identifyTracersInResponse(b, host, req.Host+req.RequestURI, gzip)
 	}
 
 	// Write the response back to the client.

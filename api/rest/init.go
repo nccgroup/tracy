@@ -6,6 +6,8 @@ import (
 	"flag"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -45,48 +47,37 @@ func Configure() {
 	RestRouter.Methods("GET").Path("/projects").HandlerFunc(GetProjects)
 	// The base application page. Don't use the compiled assets unless
 	// in production.
-	if v := flag.Lookup("test.v"); v != nil || configure.DebugUI {
+	if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
 		RestRouter.PathPrefix("/").Handler(http.FileServer(http.Dir("./api/view/build")))
 	} else {
 		RestRouter.PathPrefix("/").Handler(http.FileServer(assetFS()))
 	}
 
-	addr, err := configure.ReadConfig("tracer-server")
-	if err != nil {
-		log.Error.Fatal(err)
-		return
-	}
-
 	corsOptions := []handlers.CORSOption{
 		handlers.AllowedOriginValidator(func(a string) bool {
-			var hp string
-			if hs := strings.Split(a, "//"); len(hs) == 1 {
-				hp = hs[0]
-			} else {
-				hp = hs[1]
+			if a == "" {
+				return true
+			}
+			u, err := url.Parse(a)
+			if err != nil {
+				return false
 			}
 
-			p := "80"
-			var h string
-			if hps := strings.Split(hp, ":"); len(hps) > 1 {
-				p = hps[1]
-				h = hps[0]
-			} else {
-				h = hps[0]
-			}
-
-			if h == "localhost" || h == "127.0.0.1" {
-				if p == "3000" {
-					// debug port
+			if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
+				p, err := strconv.ParseUint(u.Port(), 10, 32)
+				if err != nil {
+					return false
+				}
+				if uint(p) == configure.Current.TracerServer.Port {
 					return true
 				}
 
-				cps := strings.Split(addr.(string), ":")
-				// If the configured port is equal to port that
-				// sent the request.
-				if len(cps) == 2 && cps[1] == p {
-					return true
+				for _, v := range configure.Current.ServerWhitelist {
+					if uint(p) == v.Port {
+						return true
+					}
 				}
+
 			}
 
 			return false
@@ -104,7 +95,7 @@ func Configure() {
 
 	RestServer = &http.Server{
 		Handler: restHandler,
-		Addr:    addr.(string),
+		Addr:    configure.Current.TracerServer.Addr(),
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

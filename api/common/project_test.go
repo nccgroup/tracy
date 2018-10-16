@@ -28,14 +28,14 @@ func TestProjectsCommonAll(t *testing.T) {
 		test.test()
 		store.DB.Close()
 	}
-	files, err := ioutil.ReadDir(configure.TracyPath)
+	files, err := ioutil.ReadDir(configure.Current.TracyPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, f := range files {
 		n := f.Name()
 		if strings.HasPrefix(n, "new") {
-			if err := os.Remove(filepath.Join(configure.TracyPath, n)); err != nil {
+			if err := os.Remove(filepath.Join(configure.Current.TracyPath, n)); err != nil {
 				t.Fatal(err)
 			}
 
@@ -50,9 +50,9 @@ func testDeleteProject(t *testing.T) func() {
 		if err := SwitchProject("new-project"); err != nil {
 			t.Fatal(err)
 		}
-		path := filepath.Join(configure.TracyPath, "new-project")
+		path := filepath.Join(configure.Current.TracyPath, "new-project")
 
-		if configure.DatabaseFile != path+".db" {
+		if configure.Current.DatabasePath != path+".db" {
 			t.Fatal("expected the database file to be named `new-project.db`")
 		}
 
@@ -136,9 +136,9 @@ func testSwitchProject(t *testing.T) func() {
 		if err := SwitchProject("new-project"); err != nil {
 			t.Fatal(err)
 		}
-		path := filepath.Join(configure.TracyPath, "new-project")
+		path := filepath.Join(configure.Current.TracyPath, "new-project")
 
-		if configure.DatabaseFile != path+".db" {
+		if configure.Current.DatabasePath != path+".db" {
 			t.Fatal("expected the database file to be named `new-project.db`")
 		}
 

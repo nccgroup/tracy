@@ -7,37 +7,56 @@
     mutations.forEach(mutation => {
       if (mutation.addedNodes.length > 0) {
         mutation.addedNodes.forEach(node => {
+          // Ignore scripts injected from the background page.
+          if (
+            node.src &&
+            (node.src.startsWith("moz-extension") ||
+              node.src.startsWith("chrome-extension"))
+          ) {
+            return;
+          }
           // Check to see if a node is a child of the parentNode if so don't add
           // it because we already have that data
-          if (parentNode === null || !parentNode.contains(node)) {
+          if (
+            (parentNode === null || !parentNode.contains(node)) &&
+            // Ignore the dropdown that is created when you click the owl.
+            node.id !== "tag-menu"
+          ) {
             // The only supported DOM types that we care about are `DOM` (1) and
             // `text` (3).
-            if (node.name !== "injected") {
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                // In the case of a DOM type, check all the node's children for
-                // input fields. Use this as a chance to restyle new inputs that
-                // were not caught earlier.
-                parentNode = node;
-                util.send({
-                  "message-type": "job",
-                  type: "dom",
-                  msg: node.outerHTML,
-                  location: document.location.href
-                });
-                highlight.clickToFill(node);
-              } else if (node.nodeType == Node.TEXT_NODE) {
-                util.send({
-                  "message-type": "job",
-                  type: "text",
-                  msg: node.textContent,
-                  location: document.location.href
-                });
-              }
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              // In the case of a DOM type, check all the node's children for
+              // input fields. Use this as a chance to restyle new inputs that
+              // were not caught earlier.
+              parentNode = node;
+              util.send({
+                "message-type": "job",
+                type: "dom",
+                msg: node.outerHTML,
+                location: document.location.href
+              });
+              highlight.clickToFill(node);
+            } else if (node.nodeType == Node.TEXT_NODE) {
+              util.send({
+                "message-type": "job",
+                type: "text",
+                msg: node.textContent,
+                location: document.location.href
+              });
             }
           }
-        }, this);
+        });
       } else {
         if (mutation.type == "attributes") {
+          // Ignore the screenshot class changes and the changes
+          // to the style of the own dropdown.
+          if (
+            mutation.target.classList.contains("screenshot") ||
+            mutation.target.classList.contains("screenshot-done") ||
+            mutation.target.id == "tag-menu"
+          ) {
+            return;
+          }
           util.send({
             "message-type": "job",
             type: "dom",
@@ -53,7 +72,7 @@
           });
         }
       }
-    }, this);
+    });
   });
 
   // The configuration for the observer. We want to pretty much watch for everything.

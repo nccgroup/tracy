@@ -103,7 +103,7 @@ const highlight = (function() {
   // parent element of the target passed in. padding is the amount
   // of space on each side of the element
   async function captureScreenshot(e, padding) {
-    e.classList.add("screen-shot");
+    e.classList.add("screenshot");
     const dURIp = util.send({ "message-type": "screenshot" });
     const rec = e.getBoundingClientRect();
     const dim = {
@@ -115,7 +115,8 @@ const highlight = (function() {
     };
     const dURI = await dURIp;
     const imgP = dataURIToImage(dURI, dim);
-    e.classList.remove("screen-shot");
+    e.classList.add("screenshot-done");
+    e.classList.remove("screenshot");
     return await imgP;
   }
 
