@@ -8,14 +8,15 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/configure"
@@ -51,7 +52,7 @@ test1=zzXSSzz&test2=zzPLAINzz`
 // Setup the proxy and a test httpserver
 // Do it once so that you don't have port
 // collisions and db lock issues
-var ln, _ = setupProxy()
+var _ = setupProxy()
 var ts = setupHTTPTestServer()
 var tstls = setupHTTPSTestServer()
 
@@ -240,17 +241,18 @@ func proxier(r *http.Request) (*url.URL, error) {
 
 	return &url.URL{
 		Scheme: "http",
-		Host:   configure.Current.ProxyServer.Addr(),
+		Host:   configure.Current.TracyServer.Addr(),
 	}, nil
 }
 
-func setupProxy() (net.Listener, error) {
+func setupProxy() error {
 	// Minimal steps needed to setup the proxy, configure the
 	// logging, setup the DB, create a proxy object and let it accept
 	log.Configure()
+	configure.Setup()
 	if err := store.Open(configure.Current.DatabasePath, log.Verbose); err != nil {
 		log.Error.Fatal(err.Error())
-		return nil, err
+		return err
 	}
 	certsJSON, err := ioutil.ReadFile(configure.Current.CertCachePath)
 	if err != nil {
@@ -263,7 +265,7 @@ func setupProxy() (net.Listener, error) {
 	var certs []CertCacheEntry
 	if err := json.Unmarshal(certsJSON, &certs); err != nil {
 		log.Error.Print(err)
-		return nil, err
+		return err
 	}
 
 	cache := make(map[string]tls.Certificate)
@@ -286,12 +288,28 @@ func setupProxy() (net.Listener, error) {
 
 		cache[cert.Host] = cachedCert
 	}
+	r := mux.NewRouter()
+	t, u, d := configure.ProxyServer()
+	p := New(t, u, d)
+	r.SkipClean(true)
+	r.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		m.Handler = p
+		return true
+	})
+	s := &http.Server{
+		Handler: r,
+		Addr:    configure.Current.TracyServer.Addr(),
+		// Good practice: enforce timeouts for servers you create!
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+		ErrorLog:     log.Error,
+	}
+
 	SetCertCache(cache)
 	configure.Certificates()
-	ln := configure.ProxyServer()
-	p := New(ln)
-	go p.Accept()
-	return ln, nil
+
+	go s.ListenAndServe()
+	return nil
 }
 
 func setupHTTPTestServer() *httptest.Server {

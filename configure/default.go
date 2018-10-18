@@ -10,9 +10,9 @@ const DefaultConfig = `{
     "GEN-PLAIN": "[[ID]]"
    },
   "server-whitelist": ["127.0.0.1:3000"],
-  "tracer-server": "127.0.0.1:8081",
-  "proxy-server": "127.0.0.1:7777",
-  "auto-launch": "default",
+  "tracer-server": "127.0.0.1:7777",
+  "external-hostname": "",
+  "auto-launch": "false",
   "public-key-loc": "%s",
   "private-key-loc": "%s",
   "version": "0.5"

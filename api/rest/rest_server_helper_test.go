@@ -45,7 +45,7 @@ func serverTestHelper(tests []RequestTestPair, i int, t *testing.T) {
 		// 3.) run the response on the test method
 		// 4.) break on error
 		rr := httptest.NewRecorder()
-		RestRouter.ServeHTTP(rr, pair.Request)
+		Router.ServeHTTP(rr, pair.Request)
 		err := pair.Test(rr, t)
 		if err != nil {
 			t.Errorf("the following request did not pass it's test: %+v. Request body: %s", err, rr.Body.String())

@@ -6,7 +6,7 @@
   });
 
   (async () => {
-    const res = await util.get({ restHost: "localhost", restPort: 8081 });
+    const res = await util.get({ restHost: "localhost", restPort: 7777 });
     const hookInjector = document.createElement("script");
     hookInjector.type = "text/javascript";
     hookInjector.name = "injected";

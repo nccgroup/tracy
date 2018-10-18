@@ -8,10 +8,11 @@ import (
 )
 
 func testSwitchProject(t *testing.T) []RequestTestPair {
-	req, err := http.NewRequest("PUT", "http://127.0.0.1:8081/projects", nil)
+	req, err := http.NewRequest("PUT", "http://127.0.0.1:7777/projects", nil)
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
+	req.Header.Add("Hoot", "!")
 	q := req.URL.Query()
 	q.Add("proj", "test-proj")
 	req.URL.RawQuery = q.Encode()
@@ -32,10 +33,11 @@ func testSwitchProject(t *testing.T) []RequestTestPair {
 }
 
 func testDeleteProject(t *testing.T) []RequestTestPair {
-	req, err := http.NewRequest("DELETE", "http://127.0.0.1:8081/projects", nil)
+	req, err := http.NewRequest("DELETE", "http://127.0.0.1:7777/projects", nil)
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
+	req.Header.Add("Hoot", "!")
 	q := req.URL.Query()
 	q.Add("proj", "test-proj")
 	req.URL.RawQuery = q.Encode()

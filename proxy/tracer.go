@@ -33,6 +33,9 @@ func replaceTracers(req *http.Request) ([]types.Tracer, error) {
 	}
 
 	// Read the HTTP request body.
+	if req.Body == nil {
+		return tracers, nil
+	}
 	requestData, err := ioutil.ReadAll(req.Body)
 
 	if err != nil {
