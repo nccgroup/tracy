@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"flag"
+	l "log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -15,43 +17,123 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/configure"
 	"github.com/nccgroup/tracy/log"
+	"github.com/nccgroup/tracy/proxy"
 )
 
 var (
-	// RestServer is the HTTP server that serves the API.
-	RestServer *http.Server
+	// Server is the HTTP server that serves the API.
+	Server *http.Server
 
-	// RestRouter is the router used to map all API functionality. Exposed for
+	// Router is the router used to map all API functionality. Exposed for
 	// testing.
-	RestRouter *mux.Router
+	Router *mux.Router
+
+	apiTable = []struct {
+		method  string
+		path    string
+		handler func(http.ResponseWriter, *http.Request)
+	}{
+		{http.MethodPost, "/tracers", AddTracers},
+		{http.MethodPut, "/tracers/{tracerID}", EditTracer},
+		{http.MethodGet, "/tracers/generate", GenerateTracer},
+		{http.MethodGet, "/tracers/{tracerID}/request", GetRequest},
+		{http.MethodGet, "/tracers/{tracerID}", GetTracer},
+		{http.MethodGet, "/tracers", GetTracers},
+		{http.MethodPost, "/tracers/{tracerID}/events", AddEvent},
+		{http.MethodGet, "/tracers/{tracerID}/events", GetEvents},
+		{http.MethodPost, "/tracers/{tracerID}/events/{contextID}/reproductions", StartReproductions},
+		{http.MethodPut, "/tracers/{tracerID}/events/{contextID}/reproductions/{reproID}", UpdateReproduction},
+		{http.MethodPost, "/tracers/events/bulk", AddEvents},
+		{http.MethodGet, "/config", GetConfig},
+		{http.MethodPut, "/projects", SwitchProject},
+		{http.MethodDelete, "/projects", DeleteProject},
+		{http.MethodGet, "/projects", GetProjects},
+	}
 )
 
 // Configure configures all the HTTP routes and assigns them handler functions.
 func Configure() {
-	RestRouter = mux.NewRouter()
-	RestRouter.Methods("POST").Path("/tracers").HandlerFunc(AddTracers)
-	RestRouter.Methods("PUT").Path("/tracers/{tracerID}").HandlerFunc(EditTracer)
-	RestRouter.Methods("GET").Path("/tracers/generate").HandlerFunc(GenerateTracer)
-	RestRouter.Methods("GET").Path("/tracers/{tracerID}/request").HandlerFunc(GetRequest)
-	RestRouter.Methods("GET").Path("/tracers/{tracerID}").HandlerFunc(GetTracer)
-	RestRouter.Methods("GET").Path("/tracers").HandlerFunc(GetTracers)
-	RestRouter.Methods("GET").Path("/ws").HandlerFunc(WebSocket)
-	RestRouter.Methods("POST").Path("/tracers/{tracerID}/events").HandlerFunc(AddEvent)
-	RestRouter.Methods("GET").Path("/tracers/{tracerID}/events").HandlerFunc(GetEvents)
-	RestRouter.Methods("POST").Path("/tracers/{tracerID}/events/{contextID}/reproductions").HandlerFunc(StartReproductions)
-	RestRouter.Methods("PUT").Path("/tracers/{tracerID}/events/{contextID}/reproductions/{reproID}").HandlerFunc(UpdateReproduction)
-	RestRouter.Methods("POST").Path("/tracers/events/bulk").HandlerFunc(AddEvents)
-	RestRouter.Methods("GET").Path("/config").HandlerFunc(GetConfig)
-	RestRouter.Methods("PUT").Path("/projects").HandlerFunc(SwitchProject)
-	RestRouter.Methods("DELETE").Path("/projects").HandlerFunc(DeleteProject)
-	RestRouter.Methods("GET").Path("/projects").HandlerFunc(GetProjects)
-	// The base application page. Don't use the compiled assets unless
-	// in production.
-	if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
-		RestRouter.PathPrefix("/").Handler(http.FileServer(http.Dir("./api/view/build")))
-	} else {
-		RestRouter.PathPrefix("/").Handler(http.FileServer(assetFS()))
+	Router = mux.NewRouter()
+	api := Router.
+		Headers("Hoot", "!").
+		Subrouter()
+
+	for _, row := range apiTable {
+		api.Methods(row.method).Path(row.path).HandlerFunc(row.handler)
 	}
+	// Since we can only use the host header to tell where the request needs
+	// to be routed to, we need to map several different host header variations
+	// to the web application so that it works when the user is not proxying
+	// traffic and when they are proxying traffic.
+
+	// 1. User is proxying traffic and they navigate to tracy/ in browser
+	// URL bar.
+	addWebRouteByHost("tracy", Router)
+	// 2. User is navigating directly to the configured server in a web
+	// browser.
+	addWebRouteByHost(configure.Current.TracyServer.Addr(), Router)
+
+	// where things get tricky:
+	// 3. User configured tracy to run on 127.0.0.1, but the host header
+	// reads localhost instead (they navigate to localhost).
+	if configure.Current.TracyServer.Hostname == "127.0.0.1" {
+		addWebRouteByHost(strings.Replace(configure.Current.TracyServer.Addr(),
+			"127.0.0.1", "localhost", -1), Router)
+	}
+	// 4. and vice versa.
+	if configure.Current.TracyServer.Hostname == "localhost" {
+		addWebRouteByHost(strings.Replace(configure.Current.TracyServer.Addr(),
+			"localhost", "127.0.0.1", -1), Router)
+	}
+	// 5. User configured tracy to bind to all interfaces.
+	if configure.Current.TracyServer.Hostname == "0.0.0.0" {
+		ifaces, err := net.Interfaces()
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		for _, i := range ifaces {
+			addrs, err := i.Addrs()
+
+			if err != nil {
+				l.Fatal(err)
+			}
+
+			for _, addr := range addrs {
+				var ip net.IP
+				switch v := addr.(type) {
+				case *net.IPNet:
+					ip = v.IP
+				case *net.IPAddr:
+					ip = v.IP
+				}
+
+				addWebRouteByHost(strings.Replace(configure.Current.TracyServer.Addr(),
+					"0.0.0.0", ip.String(), -1), Router)
+			}
+		}
+	}
+	// 6. User is trying to access the web UI from a different network, such
+	// as over a virtual machine or on a hosted machine on the internet and
+	// wants to use a route to get the UI rather doing all this hostname
+	// checking.
+	addWebRouteByPath("/tracyui", Router)
+	// 7. User is trying to access the web UI from a CNAME record for the IP
+	// they have configured tracy to run on. Requires the user to set up
+	// Current.ExternalHostname in the configuration file.
+	if configure.Current.ExternalHostname != "" {
+		addWebRouteByHost(configure.Current.ExternalHostname, Router)
+	}
+
+	// Catch everything else.
+	t, u, d := configure.ProxyServer()
+	p := proxy.New(t, u, d)
+	// For CONNECT requests, the path will be an absolute URL
+	Router.SkipClean(true)
+	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		m.Handler = p
+		return true
+	})
 
 	corsOptions := []handlers.CORSOption{
 		handlers.AllowedOriginValidator(func(a string) bool {
@@ -68,7 +150,7 @@ func Configure() {
 				if err != nil {
 					return false
 				}
-				if uint(p) == configure.Current.TracerServer.Port {
+				if uint(p) == configure.Current.TracyServer.Port {
 					return true
 				}
 
@@ -86,21 +168,62 @@ func Configure() {
 		handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"}),
 	}
 
+	// Options requests don't have custom headers. So no hoot header will be
+	// present.
+	Router.Use(handlers.CORS(corsOptions...))
+
 	// API middleware for: CORS, caching, content type, and custom headers
 	// (CSRF).
-	restHandler := handlers.CORS(corsOptions...)(RestRouter)
-	restHandler = customHeaderMiddleware(restHandler)
-	restHandler = applicationJSONMiddleware(restHandler)
-	restHandler = cacheMiddleware(restHandler)
+	mw := []func(http.Handler) http.Handler{
+		customHeaderMiddleware,
+		applicationJSONMiddleware,
+		cacheMiddleware,
+	}
+	for _, m := range mw {
+		api.Use(m)
+	}
 
-	RestServer = &http.Server{
-		Handler: restHandler,
-		Addr:    configure.Current.TracerServer.Addr(),
+	Server = &http.Server{
+		Handler: Router,
+		Addr:    configure.Current.TracyServer.Addr(),
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 		ErrorLog:     log.Error,
 	}
+}
+
+// addWebRouteByPath creates routes for the base application page. Don't use the compiled
+// assets unless in production.
+func addWebRouteByPath(path string, router *mux.Router) {
+	if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
+		router.
+			Path(path).
+			Handler(http.FileServer(http.Dir("./api/view/build")))
+	} else {
+		router.
+			Path(path).
+			Handler(http.FileServer(assetFS()))
+	}
+
+}
+
+// addWebRouteByHost creates routes for the base application page. Don't use the compiled
+// assets unless in production.
+func addWebRouteByHost(host string, router *mux.Router) {
+	if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
+		router.
+			Host(host).
+			Handler(http.FileServer(http.Dir("./api/view/build")))
+	} else {
+		router.
+			Host(host).
+			Handler(http.FileServer(assetFS()))
+	}
+
+	// Have to do the WS route separate because you can't add custom headers
+	// to WS upgrades from the browser.
+	router.Methods(http.MethodGet).Path("/ws").HandlerFunc(WebSocket)
 }
 
 // applicationJSONMiddleware adds the 'application/json' content type to API
@@ -169,13 +292,12 @@ func customHeaderMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// They are navigating to the root of the server, it is just the UI, so allow them.
 		if !(r.URL.String() == "/" || strings.HasPrefix(r.URL.String(), "/static")) &&
-			// They are connecting over a websocket
-			!strings.HasPrefix(r.URL.String(), "/ws") &&
 			// They are making a request to the actual web application (not a DNS rebinding issue.), and they were able to set the Hoot header, so allow them.
 			!((strings.Split(r.Host, ":")[0] == "localhost" || strings.Split(r.Host, ":")[0] == "127.0.0.1") && r.Header.Get("Hoot") != "") &&
 			// They are making an OPTIONS request
 			strings.ToLower(r.Method) != "options" {
 
+			log.Error.Print("Here?")
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("No hoot header or incorrect host header..."))
 			return

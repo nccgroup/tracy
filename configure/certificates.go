@@ -20,8 +20,7 @@ import (
 // Certificates loads the local certificate pairs if they exist or generates new
 // ones on-the-fly.
 func Certificates() {
-	var err error
-	Current.SigningCertificate, err = tls.LoadX509KeyPair(
+	k, err := tls.LoadX509KeyPair(
 		Current.PublicKeyLocation,
 		Current.PrivateKeyLocation)
 	if err != nil {
@@ -29,6 +28,7 @@ func Certificates() {
 		// certificate for TLS connections.
 		log.Error.Fatalf("failed to parse certificate: %v", err)
 	}
+	Current.SigningCertificate = &k
 }
 
 // generateRootCA generates a root certificate authority used to sign

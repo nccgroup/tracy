@@ -90,7 +90,7 @@ func init() {
 // generateCert generates a certificate for the specified host and signs it
 // using the signing key passed in. All certificates generated with this
 // method will have the same public key that is stored in certificatePrivateKey.
-func generateCert(host string, cert tls.Certificate) (tls.Certificate, KeyPairBytes, error) {
+func generateCert(host string, cert *tls.Certificate) (tls.Certificate, KeyPairBytes, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {

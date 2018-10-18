@@ -279,7 +279,7 @@ async function refreshConfig(wsConnect) {
     return;
   }
   const settings = await new Promise(resolve =>
-    chrome.storage.local.get({ restHost: "localhost", restPort: 8081 }, res =>
+    chrome.storage.local.get({ restHost: "127.0.0.1", restPort: 7777 }, res =>
       resolve(res)
     )
   );
