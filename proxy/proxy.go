@@ -15,6 +15,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/nccgroup/tracy/api/common"
@@ -28,15 +29,20 @@ import (
 // for the tracy proxy.
 type Proxy struct {
 	HTTPTransport     http.Transport
+	HTTPBufferPool    *sync.Pool
+	HTTPBytePool      *sync.Pool
 	WebSocketUpgrader websocket.Upgrader
 	WebSocketDialer   websocket.Dialer
 }
 
 // New instantiates a Proxy object with the passed in net.Listener,
 // http.Transport, and websocket.Dialer.
-func New(transport http.Transport, upgrader websocket.Upgrader, dialer websocket.Dialer) *Proxy {
+func New(transport http.Transport, upgrader websocket.Upgrader,
+	dialer websocket.Dialer, bp, bufp *sync.Pool) *Proxy {
 	return &Proxy{
 		HTTPTransport:     transport,
+		HTTPBufferPool:    bufp,
+		HTTPBytePool:      bp,
 		WebSocketUpgrader: upgrader,
 		WebSocketDialer:   dialer,
 	}
@@ -47,17 +53,22 @@ func New(transport http.Transport, upgrader websocket.Upgrader, dialer websocket
 // yet. When the proxy finds one, it associates that HTTP request with the
 // payload so that there is a record of where the input was sent to the
 // server for the fist time.
-func identifyRequestsforGeneratedTracer(dump, method string) {
+func (p *Proxy) identifyRequestsforGeneratedTracer(d *[]byte, method string) {
+	defer p.HTTPBytePool.Put(d)
+	dump := string(*d)
 	// TODO: probably should change this to a websocket notifier so that we
 	// don't have to do this database lookup.
-	tracersBytes, err := common.GetTracers()
+	tracersBytes := p.HTTPBytePool.Get().(*[]byte)
+	defer p.HTTPBytePool.Put(tracersBytes)
+	var err error
+	*tracersBytes, err = common.GetTracers()
 	if err != nil {
 		log.Error.Print(err)
 		return
 	}
 
 	var requests []types.Request
-	err = json.Unmarshal(tracersBytes, &requests)
+	err = json.Unmarshal(*tracersBytes, &requests)
 	if err != nil {
 		log.Error.Print(err)
 		return
@@ -84,19 +95,23 @@ func identifyRequestsforGeneratedTracer(dump, method string) {
 
 // identifyTracersInResponse looks for all the registered tracers in an HTTP
 // response and makes an event for each of them.
-func identifyTracersInResponse(b []byte, reqURL *url.URL) {
+func (p *Proxy) identifyTracersInResponse(b *[]byte, reqURL *url.URL) {
+	defer p.HTTPBytePool.Put(b)
 	if configure.HostInWhitelist(reqURL.Host) {
 		return
 	}
 
-	requestsJSON, err := common.GetTracers()
+	var err error
+	requestsJSON := p.HTTPBytePool.Get().(*[]byte)
+	defer p.HTTPBytePool.Put(requestsJSON)
+	*requestsJSON, err = common.GetTracers()
 	if err != nil {
 		log.Error.Print(err)
 		return
 	}
 
 	var requests []types.Request
-	err = json.Unmarshal(requestsJSON, &requests)
+	err = json.Unmarshal(*requestsJSON, &requests)
 	if err != nil {
 		log.Error.Print(err)
 		return
@@ -106,7 +121,8 @@ func identifyTracersInResponse(b []byte, reqURL *url.URL) {
 		return
 	}
 
-	tracers := findTracersInResponseBody(string(b), reqURL.String(), requests)
+	body := string(*b)
+	tracers := findTracersInResponseBody(body, reqURL.String(), requests)
 
 	if len(tracers) == 0 {
 		return
@@ -114,7 +130,7 @@ func identifyTracersInResponse(b []byte, reqURL *url.URL) {
 
 	// We have to do this first so that we can get the ID of the raw event
 	// and insert it with the event structure.
-	rawEvent, err := common.AddEventData(string(b))
+	rawEvent, err := common.AddEventData(body)
 	if err != nil {
 		log.Error.Print(err)
 		return
@@ -270,13 +286,14 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		// Look for tracers that might have been generated out-of-band
 		// using the API. Do this by checking if there exists a tracer,
 		// but we have no record of which request it came from.
-		dump, err := httputil.DumpRequest(req, true)
+		dump := p.HTTPBytePool.Get().(*[]byte)
+		*dump, err = httputil.DumpRequest(req, true)
 		if err != nil {
 			log.Error.Print(err)
 			return
 		}
 
-		go identifyRequestsforGeneratedTracer(string(dump), req.Method)
+		go p.identifyRequestsforGeneratedTracer(dump, req.Method)
 
 		// Search through the request for the tracer keyword.
 		tracers, err := replaceTracers(req)
@@ -294,14 +311,17 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				// Have to do this again because we changed the
 				// contents of the request and the request object
 				// is a pointer.
-				dump, err := httputil.DumpRequest(req, true)
+				d := p.HTTPBytePool.Get().(*[]byte)
+				defer p.HTTPBytePool.Put(d)
+				var err error
+				*d, err = httputil.DumpRequest(req, true)
 				if err != nil {
 					log.Error.Print(err)
 					return
 				}
 
 				r := types.Request{
-					RawRequest:    string(dump),
+					RawRequest:    string(*d),
 					RequestURL:    req.Host + req.RequestURI,
 					RequestMethod: req.Method,
 					Tracers:       tracers,
@@ -316,7 +336,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if strings.HasPrefix(req.Header.Get("X-TRACY"), "GET-CACHE") {
-		err = serveFromCache(w, req)
+		err = p.serveFromCache(w, req)
 	} else if strings.HasPrefix(req.URL.Scheme, "ws") {
 		err = p.serveFromWebSocket(w, req)
 	} else if isHTTPS {
@@ -382,7 +402,7 @@ func (p *Proxy) serveFromWebSocket(w http.ResponseWriter, req *http.Request) err
 
 // serveFromCache serves a request from Tracy's local cache instead of making
 // a network request
-func serveFromCache(w http.ResponseWriter, req *http.Request) error {
+func (p *Proxy) serveFromCache(w http.ResponseWriter, req *http.Request) error {
 	e := strings.Split(req.Header.Get("X-TRACY"), ";")
 	if len(e) != 2 {
 		err := fmt.Errorf(`incorrect usage of GET-CACHE header. expected "GET-CACHE;<BASE64(EXPLOIT:TRACERSTRING)>"`)
@@ -391,17 +411,21 @@ func serveFromCache(w http.ResponseWriter, req *http.Request) error {
 
 	// So that we don't have to keep state in the proxy, encode the
 	// tracer string to replace and the exploit in the header.
-	et, err := base64.StdEncoding.DecodeString(e[1])
+	et := p.HTTPBytePool.Get().(*[]byte)
+	var err error
+	defer p.HTTPBytePool.Put(et)
+	*et, err = base64.StdEncoding.DecodeString(e[1])
 	if err != nil {
 		return err
 	}
 
-	ent := strings.Split(string(et), "--")
+	ent := strings.Split(string(*et), "--")
 	if len(ent) != 2 {
 		err := fmt.Errorf(`incorrect usage of GET-CACHE header. expected "GET-CACHE;<BASE64(EXPLOIT:TRACERSTRING)>"`)
 		return err
 	}
-	b, err := getCachedResponse(req.URL.String(), req.Method)
+	b := p.HTTPBytePool.Get().(*[]byte)
+	*b, err = getCachedResponse(req.URL.String(), req.Method)
 	if err != nil {
 		// Can't recover from this. Return something so the tab will close.
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -409,8 +433,8 @@ func serveFromCache(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// Swap out the tracer string with the exploit.
-	b = bytes.Replace(b, []byte(ent[1]), []byte(ent[0]), 1)
-	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(b)), req)
+	*b = bytes.Replace(*b, []byte(ent[1]), []byte(ent[0]), 1)
+	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(*b)), req)
 
 	if resp != nil {
 		defer resp.Body.Close()
@@ -461,32 +485,37 @@ func (p *Proxy) serveFromHTTP(w io.Writer, req *http.Request) error {
 		return err
 	}
 
-	var save bytes.Buffer
-	b, err := ioutil.ReadAll(io.TeeReader(resp.Body, &save))
+	save := p.HTTPBufferPool.Get().(*bytes.Buffer)
+	defer p.HTTPBufferPool.Put(save)
+
+	// This will get Put after we are done using it below.
+	b := p.HTTPBytePool.Get().(*[]byte)
+	*b, err = ioutil.ReadAll(io.TeeReader(resp.Body, save))
 	if err != nil {
 		return err
 	}
 
-	resp.Body = ioutil.NopCloser(&save)
+	resp.Body = ioutil.NopCloser(save)
 	// If the request has the X-TRACY: SET-CACHE value, make sure
 	// we cache this response.
 	if prepingCache {
 		// If we are prepping the cache, create a copy of the
 		// response so we can work with it on our own without
 		// slowing up the proxy.
-		respb, err := httputil.DumpResponse(resp, true)
+		respb := p.HTTPBytePool.Get().(*[]byte)
+		*respb, err = httputil.DumpResponse(resp, true)
 		if err != nil {
 			log.Error.Print(err)
 			return err
 		}
 
-		go prepCache(respb, req.URL, req.Method)
+		go p.prepCache(respb, req.URL, req.Method)
 	} else {
 		// Search for any known tracers in the response. Since the list of tracers
 		// might get large, perform this operation in a goroutine.
 		// The proxy can finish this connection before this finishes.
 		// We don't need to do this in the cases where we are prepping the cache.
-		go identifyTracersInResponse(b, req.URL)
+		go p.identifyTracersInResponse(b, req.URL)
 	}
 
 	writeBack(w, resp, b)
@@ -502,14 +531,14 @@ func writeErr(w io.Writer, err error) {
 	}
 }
 
-func writeBack(w io.Writer, resp *http.Response, b []byte) {
+func writeBack(w io.Writer, resp *http.Response, b *[]byte) {
 	switch rw := w.(type) {
 	case http.ResponseWriter:
 		for k, v := range resp.Header {
 			rw.Header().Set(k, v[0])
 		}
 		rw.WriteHeader(resp.StatusCode)
-		rw.Write(b)
+		rw.Write(*b)
 	case net.Conn:
 		resp.Write(rw)
 	}
@@ -518,8 +547,9 @@ func writeBack(w io.Writer, resp *http.Response, b []byte) {
 // prepCache processes a copy of the HTTP response so that it is uncompressed
 // and unchunked before storing it in the cache. This makes it easier for us
 // to swap out the payloads.
-func prepCache(respbc []byte, reqURL *url.URL, method string) {
-	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(respbc)), nil)
+func (p *Proxy) prepCache(respbc *[]byte, reqURL *url.URL, method string) {
+	defer p.HTTPBytePool.Put(respbc)
+	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(*respbc)), nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -532,7 +562,10 @@ func prepCache(respbc []byte, reqURL *url.URL, method string) {
 	}
 
 	// NOTE: ioutil.ReadAll handles all the chunking.
-	b, err := ioutil.ReadAll(resp.Body)
+	b := p.HTTPBytePool.Get().(*[]byte)
+	defer p.HTTPBytePool.Put(b)
+
+	*b, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error.Print(err)
 		return
@@ -542,7 +575,7 @@ func prepCache(respbc []byte, reqURL *url.URL, method string) {
 
 	// Check that the server actually sent compressed data.
 	if strings.EqualFold(resp.Header.Get("Content-Encoding"), "gzip") {
-		gr, err := gzip.NewReader(bytes.NewReader(b))
+		gr, err := gzip.NewReader(bytes.NewReader(*b))
 		if err == io.EOF {
 			return
 		}
@@ -556,7 +589,7 @@ func prepCache(respbc []byte, reqURL *url.URL, method string) {
 		}
 
 		defer gr.Close()
-		b, err = ioutil.ReadAll(gr)
+		*b, err = ioutil.ReadAll(gr)
 
 		if err != nil {
 			log.Error.Print(err)
@@ -565,17 +598,19 @@ func prepCache(respbc []byte, reqURL *url.URL, method string) {
 	}
 	//...and update the body and content length after normalizing
 	// chunking and compression.
-	resp.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-	resp.ContentLength = int64(len(b))
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(*b))
+	resp.ContentLength = int64(len(*b))
 	resp.Header.Del("Content-Encoding")
-	respb, err := httputil.DumpResponse(resp, true)
+	respb := p.HTTPBytePool.Get().(*[]byte)
+	defer p.HTTPBytePool.Put(respb)
+	*respb, err = httputil.DumpResponse(resp, true)
 
 	if err != nil {
 		log.Error.Print(err)
 		return
 	}
 
-	setCacheResponse(reqURL, method, respb)
+	setCacheResponse(reqURL, method, *respb)
 }
 
 // cacheResponse adds a cache entry in the proxy cache for the HTTP response
@@ -619,12 +654,11 @@ func getCachedResponse(url, method string) ([]byte, error) {
 // we can identify when sources of input include data coming from the server in
 // websocket.
 func (p *Proxy) bridge(src, dst net.Conn) {
-	buf := p.WebSocketUpgrader.WriteBufferPool.Get().([]byte)
-
+	buf := p.WebSocketUpgrader.WriteBufferPool.Get().(*[]byte)
+	defer p.WebSocketUpgrader.WriteBufferPool.Put(buf)
 	// CopyBuffer copies between the two parties until an EOF is found.
-	if _, err := io.CopyBuffer(src, dst, buf); err != nil {
+	if _, err := io.CopyBuffer(src, dst, *buf); err != nil {
 		log.Error.Println(err)
 	}
 
-	p.WebSocketUpgrader.WriteBufferPool.Put(buf)
 }

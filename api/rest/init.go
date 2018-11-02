@@ -126,8 +126,8 @@ func Configure() {
 	}
 
 	// Catch everything else.
-	t, u, d := configure.ProxyServer()
-	p := proxy.New(t, u, d)
+	t, u, d, bp, bufp := configure.ProxyServer()
+	p := proxy.New(t, u, d, bp, bufp)
 	// For CONNECT requests, the path will be an absolute URL
 	Router.SkipClean(true)
 	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
