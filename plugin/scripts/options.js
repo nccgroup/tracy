@@ -27,8 +27,8 @@ function saveOptions() {
 function restoreOptions() {
   chrome.storage.local.get(
     {
-      restHost: "localhost",
-      restPort: 8081,
+      restHost: "127.0.0.1",
+      restPort: 7777,
       autoFill: false,
       autoFillPayload: "GEN-XSS"
     },

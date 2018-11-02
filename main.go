@@ -27,22 +27,13 @@ func main() {
 	if *cpuprofile != "" {
 		defer pprof.StopCPUProfile()
 	}
-	// Open a TCP listener.
-	ln := configure.ProxyServer()
-	// Create the proxy
-	p := proxy.New(ln)
-	// Start the proxy that will run forever
-	go p.Accept()
-
-	fmt.Printf("Proxy server:\t%s%s",
-		configure.Current.ProxyServer.Addr(), log.NewLine)
 
 	go func() {
-		log.Error.Fatal(rest.RestServer.ListenAndServe())
+		log.Error.Fatal(rest.Server.ListenAndServe())
 	}()
 
 	fmt.Printf("Tracer server:\t%s%s",
-		configure.Current.TracerServer.Addr(), log.NewLine)
+		configure.Current.TracyServer.Addr(), log.NewLine)
 
 	if configure.Current.AutoLaunch {
 		processAutoLaunch()
@@ -53,7 +44,7 @@ func main() {
 	cleanupDone := make(chan bool)
 	signal.Notify(signalChan, os.Interrupt)
 	go func() {
-		for _ = range signalChan {
+		for range signalChan {
 			fmt.Println("Ctrl+C pressed. Shutting down...")
 			store.DB.Close()
 			cleanupDone <- true
@@ -69,6 +60,9 @@ func init() {
 
 	// Set up the logging based on the user command line flags.
 	log.Configure()
+
+	// Set up the configuration.
+	configure.Setup()
 
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -127,7 +121,7 @@ func init() {
 
 // processAutoLaunch launchs whatever browser they have configured.
 func processAutoLaunch() {
-	openbrowser(fmt.Sprintf("%s", configure.Current.TracerServer.Addr()))
+	openbrowser(fmt.Sprintf("%s", configure.Current.TracyServer.Addr()))
 }
 
 // openBrowser opens the default browser the user has configured.

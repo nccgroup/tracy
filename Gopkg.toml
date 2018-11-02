@@ -33,5 +33,5 @@
   name = "github.com/yosssi/gohtml"
 
 [[constraint]]
-  branch = "master"
+  version = "1.4.0"
   name = "github.com/gorilla/websocket"
