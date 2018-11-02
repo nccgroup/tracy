@@ -12,5 +12,6 @@ type TracerEvent struct {
 	RawEvent    RawEvent     `json:"RawEvent"`
 	EventURL    string       `json:"EventURL"    gorm:"not null; unique_index:idx_event_collision"`
 	EventType   string       `json:"EventType"   gorm:"not null"`
+	Extras      string       `json:"Extras"`
 	DOMContexts []DOMContext `json:"DOMContexts"`
 }
