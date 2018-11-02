@@ -16,6 +16,7 @@
           "message-type": "job",
           type: "innerHTML",
           msg: value,
+          extras: { stack: new Error().stack },
           location: document.location.href
         },
         "*"
