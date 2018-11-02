@@ -157,7 +157,7 @@ const highlight = (function() {
   // tracer API and inserts it into the element. It will also
   // take a screenshot of the surrounding area and attack that to the tracer.
   async function fillGenPayload(elem, tracerString) {
-    const conf = await util.get({ restHost: "localhost", restPort: 8081 });
+    const conf = await util.get({ restHost: "localhost", restPort: 7777 });
     const genReq = new Request(
       `http://${conf.restHost}:${
         conf.restPort
