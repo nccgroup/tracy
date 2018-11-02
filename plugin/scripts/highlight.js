@@ -242,7 +242,9 @@ const highlight = (function() {
   }
 
   // Find all the inputs and style them with the extension.
-  async function clickToFill(elem) {
+  // autom indicates if the user wants to fill the page without
+  // modifying their settings.
+  async function clickToFill(elem, autom) {
     const autop = util.get({ autoFill: false, autoFillPayload: "zzXSSzz" });
     const ifs = [
       ...elem.getElementsByTagName("input"),
@@ -258,7 +260,7 @@ const highlight = (function() {
     ifs.map(t => t.addEventListener("mousedown", rightSideInputHandler));
     const auto = await autop;
     // If the user configured the plugin to autofill inputs, do that here.
-    if (!auto.autoFill) {
+    if (!auto.autoFill && !autom) {
       return true;
     }
 
@@ -283,6 +285,14 @@ const highlight = (function() {
   chrome.runtime.onMessage.addListener(msg => {
     if (msg.cmd == "clickCache") {
       fillElement(cache.get(), msg.tracerString);
+    }
+  });
+
+  // Event listener from the background thread when a user clicks
+  // the auto-fill context menu.
+  chrome.runtime.onMessage.addListener(msg => {
+    if (msg.cmd == "auto-fill") {
+      clickToFill(document, true);
     }
   });
 

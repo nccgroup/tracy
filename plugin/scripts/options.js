@@ -40,13 +40,12 @@ function restoreOptions() {
         .then(res => res.json())
         .catch(err => console.error(err))
         .then(res => {
-          Object.keys(res["tracers"]).forEach(i => {
+          Object.keys(res["TracerStrings"]).forEach(i => {
             const o = document.createElement("option");
             o.text = i;
             s.add(o);
           });
 
-          console.log("[PAYLOAD]", settings);
           document.getElementById("auto-fill-dropdown").value =
             settings.autoFillPayload;
         });
@@ -54,15 +53,13 @@ function restoreOptions() {
       document.getElementById("rest-host").value = settings.restHost;
       document.getElementById("rest-port").value = settings.restPort;
       document.getElementById("auto-fill").checked = settings.autoFill;
-      s.disabled = !settings.autoFill;
     }
   );
 }
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("save").addEventListener("click", saveOptions);
   document.getElementById("auto-fill").addEventListener("click", e => {
-    const t = document.getElementById("auto-fill-dropdown");
-    t.disabled = !t.disabled;
+    document.getElementById("auto-fill-dropdown");
   });
   restoreOptions();
 });
