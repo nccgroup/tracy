@@ -35,7 +35,7 @@
                 msg: node.outerHTML,
                 location: document.location.href
               });
-              highlight.clickToFill(node);
+              highlight.clickToFill(node, false);
             } else if (node.nodeType == Node.TEXT_NODE) {
               util.send({
                 "message-type": "job",

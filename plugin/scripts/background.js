@@ -430,6 +430,24 @@ chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
   }
 });
 
+// Always want the autofill menu there.
+chrome.contextMenus.create({
+  id: "auto-fill",
+  title: "Auto-fill page",
+  contexts: ["all"],
+  onclick: (info, tab) => {
+    chrome.tabs.sendMessage(tab.id, {
+      cmd: "auto-fill"
+    });
+  }
+});
+
+chrome.contextMenus.create({
+  id: "sep",
+  type: "separator",
+  contexts: ["all"]
+});
+
 // Configuration defaults
 let restServer = "127.0.0.1:443";
 let tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
