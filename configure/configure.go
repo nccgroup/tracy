@@ -1,6 +1,7 @@
 package configure
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
@@ -207,7 +208,7 @@ func checkOrigin(r *http.Request) bool {
 }
 
 // ProxyServer configures the TCP listener based on the user's configuration.
-func ProxyServer() (http.Transport, websocket.Upgrader, websocket.Dialer) {
+func ProxyServer() (http.Transport, websocket.Upgrader, websocket.Dialer, *sync.Pool, *sync.Pool) {
 	t := http.Transport{
 		Proxy: http.ProxyURL(Current.ExternalProxyServer),
 		// If the scheme is HTTPS, need to the use the tls package to
@@ -222,10 +223,16 @@ func ProxyServer() (http.Transport, websocket.Upgrader, websocket.Dialer) {
 
 	// Tie the bufferpools together so we don't get a bunch
 	// of extra allocations from all the different ends of
-	// the websockets.
+	// the websockets and the HTTP proxy who makes use of it.
+	bufp := &sync.Pool{
+		New: func() interface{} {
+			return new(bytes.Buffer)
+		},
+	}
 	bp := &sync.Pool{
 		New: func() interface{} {
-			return make([]byte, 1024*4)
+			b := make([]byte, 1024*4)
+			return &b
 		},
 	}
 
@@ -248,7 +255,7 @@ func ProxyServer() (http.Transport, websocket.Upgrader, websocket.Dialer) {
 		WriteBufferPool: bp,
 	}
 
-	return t, u, w
+	return t, u, w, bp, bufp
 }
 
 // HostInWhitelist returns true if the host is in the whitelist of the
