@@ -289,8 +289,8 @@ func setupProxy() error {
 		cache[cert.Host] = cachedCert
 	}
 	r := mux.NewRouter()
-	t, u, d := configure.ProxyServer()
-	p := New(t, u, d)
+	t, u, d, bp, bufp := configure.ProxyServer()
+	p := New(t, u, d, bp, bufp)
 	r.SkipClean(true)
 	r.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		m.Handler = p
@@ -336,10 +336,14 @@ func makeRequest(url string, b string) ([]byte, error) {
 	// Given a url & a body, will make a post request to that
 	// url through the proxy.
 	request, err := http.NewRequest("post", url, bufio.NewReader(strings.NewReader(b)))
+	if request != nil {
+		defer request.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}
-	defer request.Body.Close()
+	request.Close = true
+
 	transport := &http.Transport{
 		Proxy: proxier,
 		TLSClientConfig: &tls.Config{
@@ -350,6 +354,9 @@ func makeRequest(url string, b string) ([]byte, error) {
 		Transport: transport,
 	}
 	resp, err := client.Do(request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}
