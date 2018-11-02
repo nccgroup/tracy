@@ -179,7 +179,8 @@ function requestHandler(domEvents) {
             Data: domEvent.msg
           },
           EventURL: domEvent.location,
-          EventType: domEvent.type
+          EventType: domEvent.type,
+          Extras: JSON.stringify(domEvent.extras)
         },
         TracerPayloads: tracersPerDomEvent
       };
