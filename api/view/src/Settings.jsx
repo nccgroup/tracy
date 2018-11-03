@@ -33,7 +33,7 @@ class Settings extends Component {
       // Default configuration for the UI.
       window.tracy = {
         host: "localhost",
-        port: 8081
+        port: 7777
       };
 
       return;
