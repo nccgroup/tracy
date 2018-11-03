@@ -396,7 +396,7 @@ async function addJobToQueue(message, sender) {
   }
   // If it is the first job added, set a timer to process the jobs.
   if (jobs.length === 0) {
-    setTimeout(processDomEvents, 2000);
+    setTimeout(processDomEvents, 250);
   }
   jobs.push(message);
 }
