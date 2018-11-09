@@ -35,6 +35,22 @@ Connection: close
 `
 
 //If you update this test don't forgot to update the content link
+var requestDataHeader = `POST /test?echo=1 HTTP/1.1
+Host: test.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Content-Length: 1
+Content-Type: text/plain
+X-Tracy: zzXSSzz
+Connection: close
+Pragma: no-cache
+Cache-Control: no-cache
+
+1`
+
+//If you update this test don't forgot to update the content link
 var requestDataTags = `POST /test?echo=zzXSSzz HTTP/1.1
 Host: test.com
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0
@@ -49,18 +65,33 @@ Cache-Control: no-cache
 
 test1=zzXSSzz&test2=zzPLAINzz`
 
-// Setup the proxy and a test httpserver
-// Do it once so that you don't have port
-// collisions and db lock issues
-var _ = setupProxy()
-var ts = setupHTTPTestServer()
-var tstls = setupHTTPSTestServer()
+var ts *httptest.Server
+var tstls *httptest.Server
+var p *Proxy
+
+func init() {
+	// Setup the proxy and a test httpserver
+	// Do it once so that you don't have port
+	// collisions and db lock issues
+	setupProxy()
+	ts = setupHTTPTestServer()
+	tstls = setupHTTPSTestServer()
+}
 
 func TestAddTracersBodyWithNoTags(t *testing.T) {
 	numTracers, err := testAddTracersBodyHelper(requestDataNoTags)
 	if err != nil {
 		t.Fatalf("tried to read parse but got the following error: %+v", err)
 	} else if numTracers != 0 {
+		t.Fatalf("Failed to find tracers %d", numTracers)
+	}
+}
+
+func TestAddTracersHeader(t *testing.T) {
+	numTracers, err := testAddTracersBodyHelper(requestDataHeader)
+	if err != nil {
+		t.Fatalf("tried to read parse but got the following error: %+v", err)
+	} else if numTracers != 1 {
 		t.Fatalf("Failed to find tracers %d", numTracers)
 	}
 }
@@ -86,22 +117,11 @@ func BenchmarkTracersBodyWithTags(b *testing.B) {
 }
 
 func testAddTracersBodyHelper(requestDataString string) (int, error) {
-	request, err := http.ReadRequest(bufio.NewReader(strings.NewReader(requestDataString)))
-	if err != nil {
-		return 0, err
-	}
-
-	addedTracers, err := replaceTracers(request)
-	if err != nil {
-		return 0, err
-	}
-
-	requestData, err := ioutil.ReadAll(request.Body)
-	if err != nil {
-		return 0, err
-	}
+	b := []byte(requestDataString)
+	var addedTracers []types.Tracer
+	b, addedTracers = replaceTracerStrings(b)
 	for _, addedTracer := range addedTracers {
-		i := bytes.Index(append([]byte(request.URL.RawQuery), requestData...), []byte(addedTracer.TracerPayload))
+		i := bytes.Index(b, []byte(addedTracer.TracerPayload))
 		if i == -1 {
 			return 0, fmt.Errorf("Could not find Tracer")
 		}
@@ -134,10 +154,12 @@ func testAddTracerQueryHelper(requestData string) (int, error) {
 		return 0, err
 	}
 
-	newQuery, addedTracers := replaceTracerStrings([]byte(request.URL.RawQuery))
+	b := []byte(request.URL.RawQuery)
+	var addedTracers []types.Tracer
+	b, addedTracers = replaceTracerStrings(b)
 
 	for _, addedTracer := range addedTracers {
-		i := strings.Index(string(newQuery), addedTracer.TracerPayload)
+		i := strings.Index(string(b), addedTracer.TracerPayload)
 		if i == -1 {
 			return 0, fmt.Errorf("no tracer found")
 		}
@@ -162,7 +184,6 @@ Connection: close
 {"ID":1,"Data":"an event!","Location":"aa","EventType":"a type of event"}`
 
 func TestFindTracers(t *testing.T) {
-	//findTracers(responseString string, tracers map[int]types.Tracer) []types.Tracer {
 	tracers := make([]types.Request, 1)
 	tracer := types.Tracer{TracerPayload: "AASDFG"}
 	tracers[0].Tracers = make([]types.Tracer, 1)
@@ -171,9 +192,11 @@ func TestFindTracers(t *testing.T) {
 	numHits, err := testFindTracersHelper(responseStringTracer, tracers)
 
 	if err != nil {
-		t.Fatal("Magic just happened") //error should always be null
-	} else if numHits != 1 {
-		t.Fatal("Failed to find tracer")
+		t.Fatal(err)
+	}
+
+	if numHits != 1 {
+		t.Fatalf("Failed to find tracer: %d", numHits)
 	}
 }
 
@@ -194,21 +217,21 @@ func TestFindNoTracers(t *testing.T) {
 }
 
 func testFindTracersHelper(responseData string, tracers []types.Request) (int, error) {
-	foundTracers := findTracersInResponseBody(responseData, "www.test.com", tracers)
+	foundTracers, err := p.findTracers(responseData, tracers)
 
-	return len(foundTracers), nil
+	return len(foundTracers), err
 }
 
 func TestFullProxy(t *testing.T) {
-	// Test just sending data, no trace strings
-	body, err := makeRequest(ts.URL, "a")
-	if err != nil || bytes.Compare(body, []byte("<div>a</div>\n")) != 0 {
+	// Test just sending data, no tracer strings
+	body, err := makeRequest(ts.URL, "ab")
+	if err != nil || bytes.Compare(body, []byte("<div>ab</div>\n")) != 0 {
 		log.Error.Println(err)
 		t.FailNow()
 	}
 }
 func TestFullProxyTLS(t *testing.T) {
-	// Test just sending data, no trace strings
+	// Test just sending data, no tracer strings
 	body, err := makeRequest(tstls.URL, "a")
 	if err != nil || bytes.Compare(body, []byte("<div>a</div>\n")) != 0 {
 		log.Error.Println(err)
@@ -290,7 +313,7 @@ func setupProxy() error {
 	}
 	r := mux.NewRouter()
 	t, u, d, bp, bufp := configure.ProxyServer()
-	p := New(t, u, d, bp, bufp)
+	p = New(t, u, d, bp, bufp)
 	r.SkipClean(true)
 	r.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		m.Handler = p
@@ -342,7 +365,11 @@ func makeRequest(url string, b string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Otherwise, we'll run out of file descriptors.
 	request.Close = true
+	// Otherwise, the message is sent as a chunked response, which we don't
+	// support right now?
+	request.ContentLength = int64(len(b))
 
 	transport := &http.Transport{
 		Proxy: proxier,
