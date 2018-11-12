@@ -231,8 +231,7 @@ func ProxyServer() (http.Transport, websocket.Upgrader, websocket.Dialer, *sync.
 	}
 	bp := &sync.Pool{
 		New: func() interface{} {
-			b := make([]byte, 1024*4)
-			return &b
+			return make([]byte, 1024*4)
 		},
 	}
 

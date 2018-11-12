@@ -3,9 +3,7 @@ package proxy
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -15,61 +13,15 @@ import (
 	"github.com/nccgroup/tracy/log"
 )
 
-// replaceTracers searches for tracer strings in HTTP query parameters and bodies
-// and replaces them with randomly generated tracer payloads. Also, it submits
-// the generated tracers to the API.
-func replaceTracers(req *http.Request) ([]types.Tracer, error) {
-	// Search the query string for any tags that need to be replaced with
-	// tracer strings and replace them.
-	rstring, tracers := replaceTracerStrings([]byte(req.URL.RawQuery))
-
-	// Write the new query string to the request.
-	req.URL.RawQuery = string(rstring)
-	req.RequestURI = req.URL.Path + "?" + string(rstring)
-
-	// Create tracer structs out of the generated tracer strings.
-	for i := range tracers {
-		tracers[i].TracerLocationType = types.QueryParam
-	}
-
-	// Read the HTTP request body.
-	if req.Body == nil {
-		return tracers, nil
-	}
-	requestData, err := ioutil.ReadAll(req.Body)
-
-	if err != nil {
-		return tracers, err
-	}
-
-	defer req.Body.Close()
-
-	// Search the body for any tags that need to be replaced with tracer
-	// strings and replace them.
-	rstring, rtracers := replaceTracerStrings(requestData)
-	for _, t := range rtracers {
-		t.TracerLocationType = types.Body
-		tracers = append(tracers, t)
-	}
-
-	// Write the new body to the request.
-	req.Body = ioutil.NopCloser(bytes.NewReader(rstring))
-	// Update the size of the request based on the replaced body.
-	req.ContentLength = int64(len(rstring))
-	return tracers, err
-
-}
-
 // replaceTracerStrings replaces any tracer strings in a slice of bytes
 // with tracer payloads. Returns the replaced slicey along with a list of
 // tracers used to replace the tracer strings. */
 func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
-	var replacedTracers []types.Tracer
-
-	labelsConfig := configure.Current.TracerStrings
-
-	var labels [][]byte
-	for s := range labelsConfig {
+	var (
+		replacedTracers []types.Tracer
+		labels          [][]byte
+	)
+	for s := range configure.Current.TracerStrings {
 		labels = append(labels, []byte(s), []byte(url.QueryEscape(s)))
 	}
 
@@ -81,7 +33,6 @@ func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 				log.Error.Println("There must be something wrong with configuration file syncing properly.")
 				break
 			}
-			// modify data so that we don't need to make a copy of it
 			data = bytes.Replace(data, tracerString, tracerBytes, 1)
 			// It is annoying for the UI to display URL encoded values. Convert them here.
 			uTracerString, err := url.QueryUnescape(string(tracerString))
@@ -98,6 +49,7 @@ func replaceTracerStrings(data []byte) ([]byte, []types.Tracer) {
 			index = bytes.Index(data, tracerString)
 		}
 	}
+
 	return data, replacedTracers
 }
 
@@ -119,28 +71,6 @@ func TransformTracerString(tracerString []byte) (string, []byte, error) {
 
 	//No tag found
 	return "", nil, fmt.Errorf("There were no tracers that matched: %s", string(tracerString))
-}
-
-// FindTracersInResponseBody finds tracer strings in the response body of an HTTP request.
-func findTracersInResponseBody(response string, url string, requests []types.Request) []types.Tracer {
-	tracers := make([]types.Tracer, 0)
-
-	// For each of the tracers, look for the tracer's tracer string in the response.
-	for _, request := range requests {
-		for _, tracer := range request.Tracers {
-			if strings.Contains(response, tracer.TracerPayload) {
-				log.Trace.Printf("Found a tracer! %s", tracer.TracerPayload)
-				//TODO: should we create multiple events if a tracer shows up multiple times in a response?
-				tracer.TracerEvents = []types.TracerEvent{types.TracerEvent{
-					TracerID:  tracer.ID,
-					EventURL:  url,
-					EventType: "response",
-				}}
-				tracers = append(tracers, tracer)
-			}
-		}
-	}
-	return tracers
 }
 
 func init() {
