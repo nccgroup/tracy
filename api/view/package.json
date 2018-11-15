@@ -7,7 +7,7 @@
     "@fortawesome/fontawesome-free-brands": "^5.0.8",
     "@fortawesome/fontawesome-free-solid": "^5.0.8",
     "@fortawesome/react-fontawesome": "0.0.18",
-    "bootstrap": "^3.3.7",
+    "bootstrap": ">=4.1.2",
     "code-prettify": "^0.1.0",
     "eslint": "^4.17.0",
     "immutability-helper": "^2.6.0",

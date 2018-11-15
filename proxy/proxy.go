@@ -473,7 +473,6 @@ func (p *Proxy) serveFromWebSocket(w http.ResponseWriter, req *http.Request) err
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err
 	}
 
