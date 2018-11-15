@@ -4,8 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"flag"
-	l "log"
-	"net"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -59,81 +58,9 @@ func Configure() {
 		Subrouter()
 
 	for _, row := range apiTable {
-		api.Methods(row.method).Path(row.path).HandlerFunc(row.handler)
+		api.Methods(row.method).Path(row.path).
+			HandlerFunc(row.handler).Name(fmt.Sprintf("%s:%s", row.method, row.path))
 	}
-	// Since we can only use the host header to tell where the request needs
-	// to be routed to, we need to map several different host header variations
-	// to the web application so that it works when the user is not proxying
-	// traffic and when they are proxying traffic.
-
-	// 1. User is proxying traffic and they navigate to tracy/ in browser
-	// URL bar.
-	addWebRouteByHost("tracy", Router)
-	// 2. User is navigating directly to the configured server in a web
-	// browser.
-	addWebRouteByHost(configure.Current.TracyServer.Addr(), Router)
-
-	// where things get tricky:
-	// 3. User configured tracy to run on 127.0.0.1, but the host header
-	// reads localhost instead (they navigate to localhost).
-	if configure.Current.TracyServer.Hostname == "127.0.0.1" {
-		addWebRouteByHost(strings.Replace(configure.Current.TracyServer.Addr(),
-			"127.0.0.1", "localhost", -1), Router)
-	}
-	// 4. and vice versa.
-	if configure.Current.TracyServer.Hostname == "localhost" {
-		addWebRouteByHost(strings.Replace(configure.Current.TracyServer.Addr(),
-			"localhost", "127.0.0.1", -1), Router)
-	}
-	// 5. User configured tracy to bind to all interfaces.
-	if configure.Current.TracyServer.Hostname == "0.0.0.0" {
-		ifaces, err := net.Interfaces()
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		for _, i := range ifaces {
-			addrs, err := i.Addrs()
-
-			if err != nil {
-				l.Fatal(err)
-			}
-
-			for _, addr := range addrs {
-				var ip net.IP
-				switch v := addr.(type) {
-				case *net.IPNet:
-					ip = v.IP
-				case *net.IPAddr:
-					ip = v.IP
-				}
-
-				addWebRouteByHost(strings.Replace(configure.Current.TracyServer.Addr(),
-					"0.0.0.0", ip.String(), -1), Router)
-			}
-		}
-	}
-	// 6. User is trying to access the web UI from a different network, such
-	// as over a virtual machine or on a hosted machine on the internet and
-	// wants to use a route to get the UI rather doing all this hostname
-	// checking.
-	addWebRouteByPath("/tracyui", Router)
-	// 7. User is trying to access the web UI from a CNAME record for the IP
-	// they have configured tracy to run on. Requires the user to set up
-	// Current.ExternalHostname in the configuration file.
-	if configure.Current.ExternalHostname != "" {
-		addWebRouteByHost(configure.Current.ExternalHostname, Router)
-	}
-
-	// Catch everything else.
-	t, u, d, bp, bufp := configure.ProxyServer()
-	p := proxy.New(t, u, d, bp, bufp)
-	// For CONNECT requests, the path will be an absolute URL
-	Router.SkipClean(true)
-	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-		m.Handler = p
-		return true
-	})
 
 	corsOptions := []handlers.CORSOption{
 		handlers.AllowedOriginValidator(func(a string) bool {
@@ -145,11 +72,18 @@ func Configure() {
 				return false
 			}
 
-			if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
-				p, err := strconv.ParseUint(u.Port(), 10, 32)
-				if err != nil {
-					return false
+			if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" || u.Hostname() == "tracy" {
+				var p uint64
+				if u.Port() == "" {
+					p = 80
+				} else {
+
+					p, err = strconv.ParseUint(u.Port(), 10, 32)
+					if err != nil {
+						return false
+					}
 				}
+
 				if uint(p) == configure.Current.TracyServer.Port {
 					return true
 				}
@@ -159,22 +93,17 @@ func Configure() {
 						return true
 					}
 				}
-
 			}
-
 			return false
 		}),
 		handlers.AllowedHeaders([]string{"X-TRACY", "Hoot"}),
 		handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"}),
 	}
 
-	// Options requests don't have custom headers. So no hoot header will be
-	// present.
-	Router.Use(handlers.CORS(corsOptions...))
-
 	// API middleware for: CORS, caching, content type, and custom headers
 	// (CSRF).
 	mw := []func(http.Handler) http.Handler{
+		handlers.CORS(corsOptions...),
 		customHeaderMiddleware,
 		applicationJSONMiddleware,
 		cacheMiddleware,
@@ -182,6 +111,82 @@ func Configure() {
 	for _, m := range mw {
 		api.Use(m)
 	}
+
+	// Options requests don't have custom headers. So no hoot header will be
+	// present.
+	options := Router.
+		Methods(http.MethodOptions).
+		Subrouter()
+
+	options.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		// If the host header indicates the request is going straight to
+		// the app, consider it going to the UI and use the CORS rules above.
+		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
+			m.Route = Router.NewRoute().Name("options")
+			m.Handler = handlers.CORS(corsOptions...)(nil)
+			m.MatchErr = nil
+			return true
+		}
+		return false
+	})
+
+	webUI := Router.Methods(http.MethodGet).Subrouter()
+	webUI.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		// If the host header indicates the request is going straight to
+		// the app, consider it going to the UI, direct them to it.
+		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
+			(req.URL.Path == "/" || req.URL.Path == "" || strings.HasPrefix(req.URL.Path, "/static") || strings.HasPrefix(req.URL.Path, "/tracy.ico")) {
+			m.Route = Router.NewRoute().Name("webUI")
+			if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
+				m.Handler = http.FileServer(http.Dir("./api/view/build"))
+			} else {
+				m.Handler = http.FileServer(assetFS())
+			}
+			m.MatchErr = nil
+			return true
+		}
+		return false
+	})
+
+	websocket := Router.Path("/ws").Subrouter()
+	websocket.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		// If the host header indicates the request is going straight to
+		// the app, consider it going to the UI, direct them to it.
+		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
+			m.Route = Router.NewRoute().Name("websocket")
+			m.Handler = http.HandlerFunc(WebSocket)
+			m.MatchErr = nil
+
+			return true
+		}
+		return false
+	})
+
+	var h http.Handler
+	if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
+		h = http.FileServer(http.Dir("./api/view/build"))
+	} else {
+		h = http.FileServer(assetFS())
+	}
+
+	// Catch everything else.
+	t, u, d, bp, bufp := configure.ProxyServer()
+	p := proxy.New(t, u, d, bp, bufp)
+
+	// For CONNECT requests, the path will be an absolute URL
+	Router.SkipClean(true)
+	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		if strings.HasPrefix(req.Host, "tracy") {
+			m.Route = Router.NewRoute().Name("tracyHost")
+			m.Handler = h
+			m.MatchErr = nil
+			return true
+		}
+		m.Route = Router.NewRoute().Name("proxy")
+		m.Handler = p
+		m.MatchErr = nil
+		return true
+	})
 
 	Server = &http.Server{
 		Handler: Router,
@@ -191,39 +196,6 @@ func Configure() {
 		ReadTimeout:  15 * time.Second,
 		ErrorLog:     log.Error,
 	}
-}
-
-// addWebRouteByPath creates routes for the base application page. Don't use the compiled
-// assets unless in production.
-func addWebRouteByPath(path string, router *mux.Router) {
-	if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
-		router.
-			Path(path).
-			Handler(http.FileServer(http.Dir("./api/view/build")))
-	} else {
-		router.
-			Path(path).
-			Handler(http.FileServer(assetFS()))
-	}
-
-}
-
-// addWebRouteByHost creates routes for the base application page. Don't use the compiled
-// assets unless in production.
-func addWebRouteByHost(host string, router *mux.Router) {
-	if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
-		router.
-			Host(host).
-			Handler(http.FileServer(http.Dir("./api/view/build")))
-	} else {
-		router.
-			Host(host).
-			Handler(http.FileServer(assetFS()))
-	}
-
-	// Have to do the WS route separate because you can't add custom headers
-	// to WS upgrades from the browser.
-	router.Methods(http.MethodGet).Path("/ws").HandlerFunc(WebSocket)
 }
 
 // applicationJSONMiddleware adds the 'application/json' content type to API
