@@ -1,58 +1,38 @@
 import React, { Component } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/css/bootstrap-theme.min.css";
 import Col from "react-bootstrap/lib/Col";
 import FormGroup from "react-bootstrap/lib/FormGroup";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
+import { getTracerEvents } from "../utils";
 
-class TracerEventsTable extends Component {
-  constructor(props) {
-    super(props);
-
-    this.reasonTable = {
-      "0":
-        "tracer payload found in the leaf node of an HTML element. unlikely to have broken the DOM",
-      "1":
-        "tracer payload found in the leaf node who's parent is a `<script>` tag. verify user-input cannot be used to execute arbitrary JavaScript in this page",
-      "2":
-        "tracer payload found in a tag name. this will only happen if user-input escaped a DOM property and created a new DOM node. very likely to be exploitable XSS",
-      "3":
-        "tracer payload found in the leaf node of a `<!-- -->` tag. verify user-input cannot be used to escape the comment block and write arbitrary HTML",
-      "4":
-        "tracer payload found in an attribute name. this will only happen if user-input escaped a DOM property and created a new DOM attribute. very likely to be exploitable XSS",
-      "5":
-        "tracer payload found in an attribute name of an HTTP response. verify this is rendered in the browser; if it is, it is likely to be exploitable XSS",
-      "6":
-        "tracer payload found at the beginning of an `href` attribute. verify user-input cannot be used to create a `javascript:` protocol to achieve XSS",
-      "7":
-        "tracer payload found inside an inline `on`-event handler. verify user-input caanot be used to execute JavaScript when this handler fires",
-      "8":
-        "tracer payload found insde an attribute value of an HTTP response. verify, when rendered in the browser, user-controlled input cannot be used to escape this attribute to achieve XSS"
-    };
-  }
-
-  onRowSelect = row => {
-    this.props.handleEventSelection(row);
+export default class TracerEventsTable extends Component {
+  reasonTable = {
+    "0":
+      "tracer payload found in the leaf node of an HTML element. unlikely to have broken the DOM",
+    "1":
+      "tracer payload found in the leaf node who's parent is a `<script>` tag. verify user-input cannot be used to execute arbitrary JavaScript in this page",
+    "2":
+      "tracer payload found in a tag name. this will only happen if user-input escaped a DOM property and created a new DOM node. very likely to be exploitable XSS",
+    "3":
+      "tracer payload found in the leaf node of a `<!-- -->` tag. verify user-input cannot be used to escape the comment block and write arbitrary HTML",
+    "4":
+      "tracer payload found in an attribute name. this will only happen if user-input escaped a DOM property and created a new DOM attribute. very likely to be exploitable XSS",
+    "5":
+      "tracer payload found in an attribute name of an HTTP response. verify this is rendered in the browser; if it is, it is likely to be exploitable XSS",
+    "6":
+      "tracer payload found at the beginning of an `href` attribute. verify user-input cannot be used to create a `javascript:` protocol to achieve XSS",
+    "7":
+      "tracer payload found inside an inline `on`-event handler. verify user-input caanot be used to execute JavaScript when this handler fires",
+    "8":
+      "tracer payload found insde an attribute value of an HTTP response. verify, when rendered in the browser, user-controlled input cannot be used to escape this attribute to achieve XSS"
   };
 
-  shouldComponentUpdate(nextProps, nextState) {
-    let ret = false;
-    if (
-      nextProps.selectedEventID !== this.props.selectedEventID ||
-      nextProps.events.length !== this.props.events.length ||
-      nextProps.loading !== this.props.loading
-    ) {
-      ret = true;
-    }
-
-    return ret;
-  }
-
   render() {
-    let ret;
     if (this.props.loading) {
-      ret = (
+      getTracerEvents(this.props.selectedTracerID).then(events =>
+        this.props.updateEvents(events)
+      );
+      return (
         <FormGroup className="loading-spinner-parent">
           <Col md={12} className="loading-spinner-child text-center">
             <span className="glyphicon glyphicon-refresh glyphicon-refresh-animate" />
@@ -60,8 +40,7 @@ class TracerEventsTable extends Component {
         </FormGroup>
       );
     } else {
-      let onRowSelect = this.onRowSelect;
-      ret = (
+      return (
         <div>
           <div className="tracer-event-table-tool-tip" />
           <ReactTable
@@ -98,7 +77,7 @@ class TracerEventsTable extends Component {
               return {
                 onClick: (e, handleOriginal) => {
                   if (column.Header === "reproduce") {
-                    this.props.reproduce();
+                    this.reproduce();
                   }
                   if (handleOriginal) {
                     handleOriginal();
@@ -129,7 +108,7 @@ class TracerEventsTable extends Component {
 
                 return {
                   onClick: (e, handleOriginal) => {
-                    onRowSelect(rowInfo.row);
+                    this.props.selectEvent(rowInfo.row.ID);
 
                     if (handleOriginal) {
                       handleOriginal();
@@ -152,9 +131,5 @@ class TracerEventsTable extends Component {
         </div>
       );
     }
-
-    return ret;
   }
 }
-
-export default TracerEventsTable;

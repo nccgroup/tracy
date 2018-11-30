@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import Glyphicon from "react-bootstrap/lib/Glyphicon";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 
-class FilterButton extends Component {
+export default class FilterButton extends Component {
   constructor(props) {
     super(props);
 
@@ -11,15 +11,6 @@ class FilterButton extends Component {
     };
 
     this.handleClick = this.handleClick.bind(this);
-  }
-
-  shouldComponentUpdate(nextProps, nextState) {
-    let ret = false;
-    if (nextState.enabled !== this.state.enabled) {
-      ret = true;
-    }
-
-    return ret;
   }
 
   componentDidMount() {
@@ -46,12 +37,12 @@ class FilterButton extends Component {
   }
 
   store(rowKeys) {
-    var value = rowKeys;
+    let value = rowKeys;
     if (!Array.isArray(rowKeys)) {
       value = [].concat(rowKeys);
     }
     const key = "filters";
-    var old;
+    let old;
     try {
       old = JSON.parse(localStorage.getItem(key));
     } catch (e) {
@@ -69,12 +60,12 @@ class FilterButton extends Component {
   }
 
   remove(rowKeys) {
-    var value = rowKeys;
+    let value = rowKeys;
     if (!Array.isArray(rowKeys)) {
       value = [].concat(rowKeys);
     }
     const key = "filters";
-    var old;
+    let old;
     try {
       old = JSON.parse(localStorage.getItem(key));
     } catch (e) {
@@ -105,14 +96,13 @@ class FilterButton extends Component {
     }
     const toggle = !this.state.enabled;
     if (!toggle) {
-      this.props.handleChange(value, false);
       this.remove(value);
     } else {
-      this.props.handleChange(value, this.props.filter);
-      // Since the filter is enabled, add it to localStorage to be saved on refresh
+      // Since the filter is enabled, add it to localStorage to be saved on
+      // refresh.
       this.store(value);
     }
-
+    this.props.toggleFilter(this.props.filter);
     this.setState(function(prevState) {
       return {
         enabled: !prevState.enabled
@@ -122,7 +112,7 @@ class FilterButton extends Component {
 
   render() {
     let img = "";
-    let className = this.state.enabled ? "filter-active" : "filter-inactive";
+    const className = this.state.enabled ? "filter-active" : "filter-inactive";
     if (this.props.imgType === "icon") {
       img = <FontAwesomeIcon className={className} icon={this.props.img} />;
     } else if (this.props.imgType === "glyph") {
@@ -142,5 +132,3 @@ class FilterButton extends Component {
     );
   }
 }
-
-export default FilterButton;

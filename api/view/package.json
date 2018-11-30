@@ -9,20 +9,16 @@
     "@fortawesome/react-fontawesome": "0.0.18",
     "bootstrap": ">=4.1.2",
     "code-prettify": "^0.1.0",
-    "eslint": "^4.17.0",
-    "immutability-helper": "^2.6.0",
-    "react": "^16.2.0",
+    "react": "^16.6.3",
     "react-bootstrap": "^0.31.5",
     "react-bootstrap-table": "^4.1.4",
     "react-code-prettify": "0.0.1",
     "react-dom": "^16.2.0",
-    "react-router": "^4.2.0",
-    "react-router-bootstrap": "^0.24.4",
-    "react-router-dom": "^4.2.2",
-    "react-scripts": "^1.1.5",
+    "react-redux": "^5.1.1",
+    "react-scripts": "^2.1.1",
     "react-syntax-highlight": "^15.3.1",
     "react-table": "^6.8.0",
-    "webpack": "^3.10.0"
+    "redux": "^4.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -39,5 +35,11 @@
       "webextensions": true,
       "node": true
     }
-  }
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }

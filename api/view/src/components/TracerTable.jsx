@@ -1,33 +1,23 @@
 import React, { Component } from "react";
-import "./App.css";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
+import { getTracers } from "../utils";
+import Col from "react-bootstrap/lib/Col";
+import FormGroup from "react-bootstrap/lib/FormGroup";
 
-class TracerTable extends Component {
-  constructor(props) {
-    super(props);
-
-    this.onRowSelect = this.onRowSelect.bind(this);
-  }
-
-  onRowSelect(row) {
-    this.props.handleTracerSelection(row);
-  }
-
-  shouldComponentUpdate(nextProps, nextState) {
-    let ret = false;
-    if (
-      (!this.props.tracer && nextProps.tracers) ||
-      nextProps.tracers.length !== this.props.tracers.length ||
-      nextProps.selectedTracerID !== this.props.selectedTracerID
-    ) {
-      ret = true;
-    }
-    return ret;
-  }
-
+export default class TracerTable extends Component {
   render() {
-    let onRowSelect = this.onRowSelect;
+    console.log("tracer table:", this.props);
+    if (this.props.loading) {
+      getTracers().then(tracers => this.props.updateTracers(tracers));
+      return (
+        <FormGroup className="loading-spinner-parent">
+          <Col md={12} className="loading-spinner-child text-center">
+            <span className="glyphicon glyphicon-refresh glyphicon-refresh-animate" />
+          </Col>
+        </FormGroup>
+      );
+    }
     return (
       <ReactTable
         data={this.props.tracers}
@@ -76,7 +66,7 @@ class TracerTable extends Component {
 
             return {
               onClick: (e, handleOriginal) => {
-                onRowSelect(rowInfo.row);
+                this.props.selectTracer(rowInfo.row.ID);
 
                 if (handleOriginal) {
                   handleOriginal();
@@ -99,5 +89,3 @@ class TracerTable extends Component {
     );
   }
 }
-
-export default TracerTable;

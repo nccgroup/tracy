@@ -3,11 +3,8 @@ import InstallLinks from "./InstallLinks";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
 import Settings from "./Settings";
+
 class Footer extends Component {
-  /* This is a static component that shouldn't update. */
-  shouldComponentUpdate(nextProps, nextState) {
-    return false;
-  }
   render() {
     return (
       <Row className="link-row">
