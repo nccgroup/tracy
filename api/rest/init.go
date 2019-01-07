@@ -117,12 +117,12 @@ func Configure() {
 	options := Router.
 		Methods(http.MethodOptions).
 		Subrouter()
-
+	o := Router.NewRoute().Name("options").BuildOnly()
 	options.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		// If the host header indicates the request is going straight to
 		// the app, consider it going to the UI and use the CORS rules above.
 		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
-			m.Route = Router.NewRoute().Name("options")
+			m.Route = o
 			m.Handler = handlers.CORS(corsOptions...)(nil)
 			m.MatchErr = nil
 			return true
@@ -131,12 +131,13 @@ func Configure() {
 	})
 
 	webUI := Router.Methods(http.MethodGet).Subrouter()
+	wui := Router.NewRoute().Name("webUI").BuildOnly()
 	webUI.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		// If the host header indicates the request is going straight to
 		// the app, consider it going to the UI, direct them to it.
 		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
 			(req.URL.Path == "/" || req.URL.Path == "" || strings.HasPrefix(req.URL.Path, "/static") || strings.HasPrefix(req.URL.Path, "/tracy.ico")) {
-			m.Route = Router.NewRoute().Name("webUI")
+			m.Route = wui
 			if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
 				m.Handler = http.FileServer(http.Dir("./api/view/build"))
 			} else {
@@ -149,11 +150,12 @@ func Configure() {
 	})
 
 	websocket := Router.Path("/ws").Subrouter()
+	ws := Router.NewRoute().Name("websocket").BuildOnly()
 	websocket.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		// If the host header indicates the request is going straight to
 		// the app, consider it going to the UI, direct them to it.
 		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
-			m.Route = Router.NewRoute().Name("websocket")
+			m.Route = ws
 			m.Handler = http.HandlerFunc(WebSocket)
 			m.MatchErr = nil
 
@@ -175,14 +177,16 @@ func Configure() {
 
 	// For CONNECT requests, the path will be an absolute URL
 	Router.SkipClean(true)
+	thost := Router.NewRoute().Name("tracyHost").BuildOnly()
+	prox := Router.NewRoute().Name("proxy").BuildOnly()
 	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		if strings.HasPrefix(req.Host, "tracy") {
-			m.Route = Router.NewRoute().Name("tracyHost")
+			m.Route = thost
 			m.Handler = h
 			m.MatchErr = nil
 			return true
 		}
-		m.Route = Router.NewRoute().Name("proxy")
+		m.Route = prox
 		m.Handler = p
 		m.MatchErr = nil
 		return true
