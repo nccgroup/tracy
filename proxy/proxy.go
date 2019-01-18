@@ -453,7 +453,7 @@ func (p *Proxy) serveFromWebSocket(w http.ResponseWriter, req *http.Request) err
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Error.Print(err)
 		return err
 	}
 
@@ -473,6 +473,7 @@ func (p *Proxy) serveFromWebSocket(w http.ResponseWriter, req *http.Request) err
 	}
 
 	if err != nil {
+		log.Error.Print(err)
 		return err
 	}
 
@@ -762,7 +763,7 @@ func (p *Proxy) bridge(src, dst net.Conn, isLeft bool, req *http.Request) {
 			break
 		}
 		if err != nil {
-			log.Error.Println(err)
+			log.Error.Print(err)
 		}
 
 		// Depending on which side of the bridge it is, either replace
@@ -789,7 +790,7 @@ func (p *Proxy) bridge(src, dst net.Conn, isLeft bool, req *http.Request) {
 		_, err = dst.Write(b[:nb])
 
 		if err != nil {
-			log.Error.Println(err)
+			log.Error.Print(err)
 			break
 		}
 	}

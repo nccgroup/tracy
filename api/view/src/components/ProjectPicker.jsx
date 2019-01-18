@@ -9,7 +9,7 @@ import {
   getSavedProject
 } from "../utils";
 
-class ProjectPicker extends Component {
+export default class ProjectPicker extends Component {
   // When the app loads, make an HTTP request for the latest set of tracers and
   // projects.
   componentDidMount = () => {
@@ -107,5 +107,3 @@ class ProjectPicker extends Component {
     );
   }
 }
-
-export default ProjectPicker;

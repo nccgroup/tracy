@@ -7,7 +7,6 @@ class Header extends Component {
     return (
       <Col md={this.props.width} className="brand">
         <TracyLogo width={25} />
-        <span className="logo-title">tracy</span>
       </Col>
     );
   }

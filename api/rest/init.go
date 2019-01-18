@@ -114,14 +114,13 @@ func Configure() {
 
 	// Options requests don't have custom headers. So no hoot header will be
 	// present.
-	options := Router.
-		Methods(http.MethodOptions).
-		Subrouter()
-
+	options := Router.Methods(http.MethodOptions).Subrouter()
 	options.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		log.Error.Printf("[OPTIONS], %+v", req)
 		// If the host header indicates the request is going straight to
 		// the app, consider it going to the UI and use the CORS rules above.
-		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
+		if req.Method == http.MethodOptions && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
+			log.Error.Printf("IT WAS NA OPTION %v", req)
 			m.Route = Router.NewRoute().Name("options")
 			m.Handler = handlers.CORS(corsOptions...)(nil)
 			m.MatchErr = nil
@@ -134,7 +133,7 @@ func Configure() {
 	webUI.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		// If the host header indicates the request is going straight to
 		// the app, consider it going to the UI, direct them to it.
-		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
+		if req.Method == http.MethodGet && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
 			(req.URL.Path == "/" || req.URL.Path == "" || strings.HasPrefix(req.URL.Path, "/static") || strings.HasPrefix(req.URL.Path, "/tracy.ico")) {
 			m.Route = Router.NewRoute().Name("webUI")
 			if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
@@ -262,14 +261,13 @@ func cacheMiddleware(next http.Handler) http.Handler {
 // as our CSRF protection. This middleware also protects CSRF.
 func customHeaderMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Error.Print("?")
 		// They are navigating to the root of the server, it is just the UI, so allow them.
 		if !(r.URL.String() == "/" || strings.HasPrefix(r.URL.String(), "/static")) &&
 			// They are making a request to the actual web application (not a DNS rebinding issue.), and they were able to set the Hoot header, so allow them.
 			!((strings.Split(r.Host, ":")[0] == "localhost" || strings.Split(r.Host, ":")[0] == "127.0.0.1") && r.Header.Get("Hoot") != "") &&
 			// They are making an OPTIONS request
 			strings.ToLower(r.Method) != "options" {
-
-			log.Error.Print("Here?")
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("No hoot header or incorrect host header..."))
 			return

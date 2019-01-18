@@ -24,6 +24,7 @@ const newTracyRequest = async (path, opts) => {
   }
 };
 
+// reproduce sends the API request to trigger a reproduction.
 const reproduce = async (tracerID, contextID) => {
   return await retryRequest(
     newTracyRequest(`/tracers/${tracerID}/events/${contextID}/reproductions`, {
@@ -32,44 +33,22 @@ const reproduce = async (tracerID, contextID) => {
   );
 };
 
-// getTracerEvents gets the bulk events via an HTTP GET request
+// getTracerEvents gets the bulk events via an HTTP GET request.
 const getTracerEvents = async tracerID => {
-  if (!tracerID) {
-    return;
-  }
   return await retryRequest(
     newTracyRequest(`/tracers/${tracerID}/events`, {
       method: "GET"
     })
   );
 };
-/*    .then(response => {
-      this.setState(
-        {
-          events: response,
-          pevents: this.parseVisibleEvents(response, this.state.filters),
-          loading: false
-        },
-        () => {
-          if (callback) callback();
-        }
-      );*/
 
-// Gets the bulk tracers via an HTTP GET request.
+// getTracers gets the bulk tracers via an HTTP GET request.
 const getTracers = async () => {
   return await retryRequest(
     newTracyRequest(`/tracers`, {
       method: "GET"
     })
   );
-
-  /*
-        if (JSON.stringify(this.state.tracers) !== JSON.stringify(response)) {
-          this.setState({
-            tracers: response,
-            ptracers: this.parseVisibleTracers(response, this.state.filters)
-          });
-        }*/
 };
 
 // getProjects gets the projects available to view.
@@ -92,10 +71,6 @@ const delProject = async proj => {
 
 // switchProject makes the API request to switch projects.
 const switchProject = async proj => {
-  if (proj === undefined) {
-    console.error("cannot switch to undefined project");
-    return false;
-  }
   return await retryRequest(
     this.newTracyRequest(`/projects?proj=${proj}`, {
       method: "PUT"
@@ -277,12 +252,10 @@ const severity = {
   3: "exploitable"
 };
 
-// Mesage the request objects into a set of tracer data structure so the
+// formatRequest mesages the request objects into a set of tracer data structure so the
 // table can read their columns.
-const formatRequest = request => {
-  if (request.Tracers) {
-    return request.Tracers.map(t => formatTracer(t, request));
-  }
+const formatRequest = req => {
+  return req.Tracers.map(t => formatTracer(t, req));
 };
 
 // formatTracer returns a new tracer object with some its fields
@@ -293,14 +266,14 @@ const formatTracer = (tracer, request) => {
       ID: tracer.ID,
       RawRequest: request.RawRequest,
       RequestMethod: request.RequestMethod,
-      RequestURL: parseHost(request.RequestURL),
-      RequestPath: parsePath(request.RequestURL),
+      RequestURL: request.RequestURL,
       TracerString: tracer.TracerString,
       TracerPayload: tracer.TracerPayload,
       TracerLocationIndex: tracer.TracerLocationIndex,
       TracerLocationType: tracer.TracerLocationType,
       OverallSeverity: tracer.OverallSeverity,
-      HasTracerEvents: tracer.HasTracerEvents
+      HasTracerEvents: tracer.HasTracerEvents,
+      Screenshot: tracer.Screenshot
     };
   }
 
@@ -309,13 +282,13 @@ const formatTracer = (tracer, request) => {
     RawRequest: "n/a",
     RequestMethod: "n/a",
     RequestURL: "n/a",
-    RequestPath: "n/a",
     TracerString: tracer.TracerString,
     TracerPayload: tracer.TracerPayload,
     TracerLocationIndex: tracer.TracerLocationIndex,
     TracerLocationType: tracer.TracerLocationType,
     OverallSeverity: tracer.OverallSeverity,
-    HasTracerEvents: tracer.HasTracerEvents
+    HasTracerEvents: tracer.HasTracerEvents,
+    Screenshot: tracer.Screenshot
   };
 };
 
@@ -334,9 +307,9 @@ const formatEvent = (event, eidx) => {
       RawEvent: event.RawEvent.Data,
       RawEventIndex: 0, // this isn't really correct. there could be a case where there are two of the same tracer in an HTTP response
       EventType: event.EventType,
-      EventHost: parseHost(event.EventURL),
-      EventPath: parsePath(event.EventURL),
-      Severity: 0
+      EventURL: event.EventURL,
+      Severity: 0,
+      Extras: event.Extras
     };
   }
   return event.DOMContexts.map((context, cidx) => {
@@ -348,10 +321,10 @@ const formatEvent = (event, eidx) => {
       RawEvent: event.RawEvent.Data,
       RawEventIndex: cidx,
       EventType: event.EventType,
-      EventHost: parseHost(event.EventURL),
-      EventPath: parsePath(event.EventURL),
+      EventURL: event.EventURL,
       Severity: context.Severity,
-      Reason: context.Reason
+      Reason: context.Reason,
+      Extras: event.Extras
     };
   });
 };
@@ -433,6 +406,15 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
   };
 };
 
+const selectedTracerByID = (tracers, id) => {
+  return tracers[firstIDByID(tracers, { ID: id })];
+};
+
+const selectedEventByID = (events, id) => {
+  console.log(events, id);
+  return events[firstIDByID(events, { ID: id })];
+};
+
 const firstIDByID = (set, match) => {
   for (let i = 0; i < set.length; i++) {
     if (match.ID === set[i].ID) {
@@ -443,6 +425,8 @@ const firstIDByID = (set, match) => {
 };
 
 export {
+  selectedTracerByID,
+  selectedEventByID,
   firstIDByID,
   sleep,
   newTracyRequest,

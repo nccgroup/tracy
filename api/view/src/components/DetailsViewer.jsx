@@ -1,8 +1,9 @@
 import React, { Component } from "react";
 import Col from "react-bootstrap/lib/Col";
 import Row from "react-bootstrap/lib/Row";
+import Grid from "react-bootstrap/lib/Grid";
 import EventDetails from "./EventDetails";
-import TracerDetails from "./TracerDetails";
+import TracerInputDetails from "./TracerInputDetails";
 import { isEmpty, occurrences } from "../utils";
 
 export default class DetailsViewer extends Component {
@@ -23,9 +24,10 @@ export default class DetailsViewer extends Component {
     let rightColumn = this.defaultRight;
     if (!isEmpty(this.props.tracer)) {
       leftColumn = (
-        <TracerDetails
-          data={this.props.tracer.RawRequest}
-          highlightString={this.props.tracer.TracerPayload}
+        <TracerInputDetails
+          screenshot={this.props.tracer.Screenshot}
+          highlightString={this.props.tracer.Payload}
+          rawData={this.props.tracer.RawRequest}
         />
       );
     }
@@ -56,14 +58,14 @@ export default class DetailsViewer extends Component {
     }
 
     return (
-      <Row id="details-views" className="details-viewer">
-        <Col md={6} className="left-bottom-column">
-          {leftColumn}
-        </Col>
-        <Col md={6} className="right-bottom-column">
-          {rightColumn}
-        </Col>
-      </Row>
+      <Grid fluid={true}>
+        <Row>
+          <Col md={12}>{leftColumn}</Col>
+        </Row>
+        <Row>
+          <Col md={12}>{rightColumn}</Col>
+        </Row>
+      </Grid>
     );
   }
 }

@@ -1,3 +1,31 @@
+.nav-sidebar {
+background-color: #252931;
+    position: fixed;
+    width: 50px;
+    top: 0px;
+    bottom: 0;
+    left: 0;
+}
+
+.tables {
+    overflow:auto;
+    position: fixed;
+    width: 820px;
+    top: 0px;
+    bottom: 0;
+    left: 60px;
+}
+
+.app-with-sidebar {
+    padding-left: 880px;
+}
+
+img.logo {
+    width: 40px;
+    padding-left: 10px;
+    padding-top: 7px;
+}
+
 .tracer-row {
   border-bottom: solid;
   border-color: black;
@@ -25,14 +53,15 @@ span.raw-title {
   color: white;
 }
 
+/*
 div.settings {
   padding-top: 10px;
 }
 
 ::placeholder {
   color: #e6e6e8;
-}
-
+}*/
+/*
 span.connecting {
   margin-right: 10px;
 }
@@ -43,7 +72,7 @@ span.connected {
 
 span.disconnected {
   color: #ff9994;
-}
+}*/
 
 .ReactTable .rt-tbody .rt-tr-group {
   border: none !important;
@@ -63,6 +92,7 @@ span.disconnected {
   border-bottom: none !important;
 }
 
+/*
 div.right-bottom-column,
 div.left-bottom-column,
 div.right-top-column,
@@ -109,23 +139,21 @@ div.left-top-column {
 div.right-top-column,
 div.left-top-column {
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 .filter-buttons {
-  /*margin-top: 1.5vh;*/
   padding-right: 10px;
 }
 
 .filter-button {
   list-style: none;
-}
+}*/
 
+/*
 .menudown-icon {
   float: right;
   width: 200px;
-}
+}*/
 
 .highlight {
   background-color: yellow;
@@ -139,6 +167,7 @@ pre {
   /*padding: 0;*/
 }
 
+/*
 div.left-top-column td,
 div.right-top-column td {
   font-size: small;
@@ -171,7 +200,6 @@ div.react-bs-table-bordered {
 }
 
 div.link-row {
-  height: 5vh;
   background-color: #1c2128;
 }
 
@@ -201,7 +229,7 @@ div.link-row {
   margin-left: 5%;
   margin-right: 5%;
 }
-
+*/
 .exploitable {
   color: #ff9994;
 }
@@ -217,10 +245,8 @@ div.link-row {
   color: #ffb347;
 }
 
-.row {
-  overflow: hidden;
-}
 
+/*
 .main-table {
   padding-left: 0px !important;
   margin-left: 0px !important;
@@ -238,37 +264,30 @@ div.link-row {
 }
 
 .filters-title-text {
-  line-height: 10vh;
   text-align: center;
 }
+*/
 
+/*
 .navigation-separator {
   padding-left: 0px !important;
   margin-left: 0px !important;
-  height: 10vh;
   background-color: #ccccccff;
 }
 
 .navigation-separator-bar {
-  height: 8vh;
 }
 
 .navigation-bar {
-  height: 10vh;
   background-color: #666666ff;
   color: white;
-  line-height: 10vh;
   text-align: center;
 }
 
 .text-sz-lg {
   font-size: 2em;
   font-weight: bold;
-}
-
-body {
-  overflow: hidden;
-}
+}*/
 
 div.rt-tr {
   height: 18px;
@@ -306,6 +325,8 @@ span {
   font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
+
+/* 
 div.plugin-settings {
   padding-top: 10px;
 }
@@ -322,11 +343,9 @@ span.logo-title {
 
 .nav-bar {
   margin-bottom: 0px;
-  height: 4vh;
 }
 
 .header {
-  padding-top: 1.5vh;
   height: 50px;
   background-color: #1c2128;
   color: #e6e6e8;
@@ -338,7 +357,7 @@ span.logo-title {
   font-size: xx-large;
   text-align: center;
 }
-
+*/
 .row-selected {
   background-color: #362c94;
   color: white;
@@ -349,17 +368,18 @@ html body {
   color: #e6e6e8;
 }
 
+/*
 div.header button {
   background-color: inherit;
   border: 0;
   height: 100%;
   border-right: #39464e solid 1px;
-}
+}*/
 
 pre code {
   padding: 9.5px;
 }
-
+/*
 .right-bottom-column pre,
 .left-bottom-column pre {
   padding: 0;
@@ -381,7 +401,6 @@ div.container {
 }
 
 div.raw-row {
-  height: 60vh;
 }
 
 div.raw-column {
@@ -389,7 +408,6 @@ div.raw-column {
 }
 
 div.tables-row {
-  height: 30vh;
 }
 
 div.header .button-active {
@@ -401,7 +419,6 @@ div.header .filter-container {
 }
 
 div.header {
-  max-height: 5vh;
 }
 
 .glyphicon-refresh-animate {
@@ -429,7 +446,6 @@ div.header {
 }
 
 div.loading-spinner-parent {
-  height: 29vh;
   position: relative;
 }
 
@@ -445,4 +461,4 @@ input.install-button {
 
 select.project-picker {
   color: black;
-}
+}*/

@@ -22,9 +22,7 @@ import { firstIDByID } from "../utils";
 const init = {
   proj: {},
   projs: [],
-  tracer: {},
   tracers: [],
-  event: {},
   events: [],
   tracersLoading: true,
   eventsLoading: false,
@@ -42,9 +40,7 @@ const rootReducer = (state = init, action) => {
       return Object.assign({}, state, {
         proj: action.proj,
         tracers: [],
-        tracer: {},
         events: [],
-        event: {},
         tracersLoading: true
       });
     case UPDATE_PROJECTS:
@@ -61,12 +57,10 @@ const rootReducer = (state = init, action) => {
           tracers: state.tracers.concat(action.tracer)
         });
       }
-
       state.tracers[i] = Object.assign(state.tracers[i], action.tracer);
       const j = firstIDByID(state.tracers, state.tracer);
       return Object.assign({}, state, {
-        tracers: state.tracers,
-        tracer: state.tracers[j]
+        tracers: state.tracers
       });
     case ADD_REQUEST:
       const a = firstIDByID(state.tracers, action.req);
@@ -80,8 +74,7 @@ const rootReducer = (state = init, action) => {
       state.tracers[a] = Object.assign(state.tracers[a], action.req);
       const b = firstIDByID(state.tracers, state.tracer);
       return Object.assign({}, state, {
-        tracers: state.tracers,
-        tracer: state.tracers[b]
+        tracers: state.tracers
       });
     case UPDATE_TRACERS:
       return Object.assign({}, state, {

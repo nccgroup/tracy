@@ -1,19 +1,31 @@
 import React, { Component } from "react";
 import HighlightedElement from "./HighlightedElement";
+import Table from "react-bootstrap/lib/Table";
 
-class TracerDetails extends Component {
+export default class TracerInputDetails extends Component {
   render() {
-    console.log("ME!", this.props);
     return (
-      <HighlightedElement
-        highlightString={this.props.highlightString}
-        highlightOffset={-1}
-        data={this.props.data}
-        lang="http"
-        title="raw request"
-      />
+      <div>
+        <img src={this.props.screenshot} />
+        <Table striped bordered condensed hover>
+          <thead>
+            <tr>
+              <th>AttributesX</th>
+              <th>AttributesY</th>
+            </tr>
+          </thead>
+          <tr>
+            <th>Attributes1</th>
+            <td>1</td>
+            <td>2</td>
+          </tr>
+          <tr>
+            <th>Attributes2</th>
+            <td>1</td>
+            <td>2</td>
+          </tr>
+        </Table>
+      </div>
     );
   }
 }
-
-export default TracerDetails;

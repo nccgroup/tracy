@@ -1,44 +1,40 @@
 import React, { Component } from "react";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
-import { getTracers } from "../utils";
+import { getTracers, formatRequest } from "../utils";
 import Col from "react-bootstrap/lib/Col";
 import FormGroup from "react-bootstrap/lib/FormGroup";
 
 export default class TracerTable extends Component {
   render() {
-    console.log("tracer table:", this.props);
     if (this.props.loading) {
-      getTracers().then(tracers => this.props.updateTracers(tracers));
-      return (
-        <FormGroup className="loading-spinner-parent">
-          <Col md={12} className="loading-spinner-child text-center">
-            <span className="glyphicon glyphicon-refresh glyphicon-refresh-animate" />
-          </Col>
-        </FormGroup>
-      );
+      getTracers().then(req => {
+        this.props.updateTracers(req.map(formatRequest).flat());
+      });
     }
+
     return (
       <ReactTable
         data={this.props.tracers}
+        loading={this.props.loading}
         columns={[
           {
             Header: "injection points",
             columns: [
               { Header: "id", accessor: "ID", width: 45 },
-              { Header: "method", accessor: "RequestMethod" },
-              { Header: "host", accessor: "RequestURL", width: 225 },
-              { Header: "path", accessor: "RequestPath" },
-              { Header: "tracer string", accessor: "TracerString" },
+              //              { Header: "method", accessor: "RequestMethod" },
+              { Header: "url", accessor: "RequestURL" },
+              //              { Header: "path", accessor: "RequestPath" },
+              //              { Header: "tracer string", accessor: "TracerString" },
               {
                 Header: "payload",
                 accessor: "TracerPayload",
                 width: 105
               },
               {
-                Header: "severity",
+                Header: "sev",
                 accessor: "OverallSeverity",
-                width: 75
+                width: 45
               }
             ]
           }

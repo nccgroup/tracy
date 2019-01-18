@@ -6,8 +6,6 @@ import { createStore } from "redux";
 import rootReducer from "./reducers";
 import "@fortawesome/fontawesome-free-solid";
 import "@fortawesome/fontawesome-free-brands";
-//import "bootstrap/dist/css/bootstrap.css";
-//import "bootstrap/dist/css/bootstrap-theme.css";
 
 const store = createStore(rootReducer);
 
