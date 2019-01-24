@@ -21,8 +21,8 @@ func testAddEvent(t *testing.T) []RequestTestPair {
 		location         = "dahlocation"
 		method           = "GET"
 		eventType        = "dateventType"
-		addEventURL      = "http://127.0.0.1:7777/tracers/1/events"
-		addTracerURL     = "http://127.0.0.1:7777/tracers"
+		addEventURL      = "http://127.0.0.1:7777/api/tracy/tracers/1/events"
+		addTracerURL     = "http://127.0.0.1:7777/api/tracy/tracers"
 		rawRequest       = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
 		addTracerPayload = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerPayload": "%s"}]}`, rawRequest, URL, method, tracerString)
 		eventString      = fmt.Sprintf(`{"RawEvent": {"Data": "%s"}, "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
@@ -152,8 +152,8 @@ func testDuplicateEvent(t *testing.T) []RequestTestPair {
 		location         = "dahlocation"
 		method           = "GET"
 		eventType        = "dateventType"
-		addEventURL      = "http://127.0.0.1:7777/tracers/1/events"
-		addTracerURL     = "http://127.0.0.1:7777/tracers"
+		addEventURL      = "http://127.0.0.1:7777/api/tracy/tracers/1/events"
+		addTracerURL     = "http://127.0.0.1:7777/api/tracy/tracers"
 		rawRequest       = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
 		addTracerPayload = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerPayload": "%s"}]}`, rawRequest, URL, method, tracerString)
 		eventString      = fmt.Sprintf(`{"RawEvent": {"Data": "%s"}, "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)

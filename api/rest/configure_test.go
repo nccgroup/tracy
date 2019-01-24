@@ -10,7 +10,7 @@ import (
 
 // Testing readConfig. GET /config
 func testGetAllConfig(t *testing.T) []RequestTestPair {
-	getReq, err := http.NewRequest("GET", "http://127.0.0.1:7777/config", nil)
+	getReq, err := http.NewRequest("GET", "http://127.0.0.1:7777/api/tracy/config", nil)
 	if err != nil {
 		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
 	}
