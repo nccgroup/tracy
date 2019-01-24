@@ -627,7 +627,7 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
     }
     opts.headers.Hoot = "!";
     return new Request(
-      `http://${window.tracy.host}:${window.tracy.port}${path}`,
+      `http://${window.tracy.host}:${window.tracy.port}/api/tracy${path}`,
       opts
     );
   };
@@ -675,8 +675,7 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
             <Header width={2} />
             <Col md={10}>
               <Row>
-                <Col md={6} />
-                <Col md={3}>
+                <Col md={7}>
                   <ProjectPicker
                     deleteProject={this.deleteProject}
                     switchProject={this.switchProject}
@@ -684,21 +683,16 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
                     projects={this.state.projects}
                   />
                 </Col>
-                <Col md={2}>
-                  <Row>
-                    <Col md={3} />
-                    <Col md={9}>
-                      <WebSocketRouter
-                        handleNewTracer={this.handleNewTracer}
-                        handleNewRequest={this.handleNewRequest}
-                        handleNewEvent={this.handleNewEvent}
-                        handleNotification={this.handleNotification}
-                        tracer={this.state.tracer}
-                      />
-                    </Col>
-                  </Row>
+                <Col md={3}>
+                  <WebSocketRouter
+                    handleNewTracer={this.handleNewTracer}
+                    handleNewRequest={this.handleNewRequest}
+                    handleNewEvent={this.handleNewEvent}
+                    handleNotification={this.handleNotification}
+                    tracer={this.state.tracer}
+                  />
                 </Col>
-                <Col md={1}>
+                <Col md={2}>
                   <FilterColumn handleFilterChange={this.handleFilterChange} />
                 </Col>
               </Row>
