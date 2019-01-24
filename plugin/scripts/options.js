@@ -34,9 +34,12 @@ function restoreOptions() {
     },
     settings => {
       const s = document.getElementById("auto-fill-dropdown");
-      fetch(`http://${settings.restHost}:${settings.restPort}/config`, {
-        headers: { Hoot: "!" }
-      })
+      fetch(
+        `http://${settings.restHost}:${settings.restPort}/api/tracy/config`,
+        {
+          headers: { Hoot: "!" }
+        }
+      )
         .then(res => res.json())
         .catch(err => console.error(err))
         .then(res => {

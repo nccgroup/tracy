@@ -161,7 +161,7 @@ const highlight = (function() {
     const genReq = new Request(
       `http://${conf.restHost}:${
         conf.restPort
-      }/tracers/generate?tracer_string=${tracerString}&url=${
+      }/api/tracy/tracers/generate?tracer_string=${tracerString}&url=${
         document.location
       }`,
       {
@@ -197,7 +197,7 @@ const highlight = (function() {
   // data URI to a tracer with a specific ID.
   function sendScreenshot(screenshot, id, conf) {
     const upReq = new Request(
-      `http://${conf.restHost}:${conf.restPort}/tracers/${id}`,
+      `http://${conf.restHost}:${conf.restPort}/api/tracy/tracers/${id}`,
       {
         method: "PUT",
         headers: { Hoot: "!", "X-TRACY": "NOTOUCHY" },

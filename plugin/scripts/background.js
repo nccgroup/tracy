@@ -118,7 +118,7 @@ const memoTabs = tabs();
 // bulkAddEvents makes a POST request to the bulk events to the API with
 // a set of events from the DOM.
 function bulkAddEvents(events) {
-  fetch(`http://${restServer}/tracers/events/bulk`, {
+  fetch(`http://${restServer}/api/tracy/tracers/events/bulk`, {
     headers: {
       Hoot: "!",
       "Content-Type": "application/json; charset=UTF-8"
@@ -240,7 +240,7 @@ function updateReproduction(message, sender) {
   const reproTest = { Successful: true };
 
   fetch(
-    `http://${restServer}/tracers/${tab.tracer.ID}/events/${
+    `http://${restServer}/api/tracy/tracers/${tab.tracer.ID}/events/${
       tab.context.ID
     }/reproductions/${tab.repro.ID}`,
     {
@@ -286,7 +286,7 @@ async function refreshConfig(wsConnect) {
   );
 
   restServer = settings.restHost + ":" + settings.restPort;
-  fetch(`http://${restServer}/config`, { headers: { Hoot: "!" } })
+  fetch(`http://${restServer}/api/tracy/config`, { headers: { Hoot: "!" } })
     .then(res => res.json())
     .catch(err => console.error(err))
     .then(res => {
@@ -312,7 +312,7 @@ async function refreshConfig(wsConnect) {
       });
     });
 
-  fetch(`http://${restServer}/tracers`, { headers: { Hoot: "!" } })
+  fetch(`http://${restServer}/api/tracy/tracers`, { headers: { Hoot: "!" } })
     .then(res => res.json())
     .catch(err => console.error(err))
     .then(
