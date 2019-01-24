@@ -39,7 +39,7 @@ func upgradeConnectionTLS(conn net.Conn, host string) (net.Conn, bool, error) {
 
 	// If the first three bytes are 'GET', the request is using a GET verb
 	// and the protocol can be guessed to be HTTP.
-	if string(get) == "GET" {
+	if string(get) == http.MethodGet {
 		return connBuff, false, nil
 	}
 

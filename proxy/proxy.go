@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -232,10 +233,6 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// being canceled because we aren't doing anything that really warrants
 	// a graceful shutdown or recovery. So catch when the request is cancelled
 	// and silently exit this reqest
-	/*go func() {
-		<-req.Context().Done()
-	}()*/
-
 	var (
 		port    = "80"
 		scheme  = "http"
@@ -254,20 +251,19 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 
 		client, _, err = hj.Hijack()
-		if client != nil {
-			defer client.Close()
-		}
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		client, isHTTPS, err = handleConnect(client, req)
-		if err == io.EOF {
+
+		if err != nil && err != io.EOF {
+			log.Error.Print(err)
 			return
 		}
-		if err != nil {
-			log.Error.Print(err)
+		if client == nil {
 			return
 		}
 
@@ -275,14 +271,15 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			port = "443"
 			scheme = "https"
 		}
-	}
 
-	// Requests with the custom HTTP header "X-TRACY" are opting out of the
-	// swapping of tracy payloads. Also, we keep a whitelist of hosts that
-	// shouldn't swap out tracy payloads so that recursion issues don't
-	// happen. For example, tracy payloads will occur all over the UI and
-	// we don't want those to be swapped.
-	if configure.HostInWhitelist(req.URL.Host) || req.Header.Get("X-TRACY") != "" {
+		req, err = http.ReadRequest(bufio.NewReader(client))
+		if err != nil && err != io.EOF {
+			log.Error.Print(err)
+			return
+		}
+		if req == nil {
+			return
+		}
 		// ReadRequest doesn't properly build the request object from a raw socket
 		// by itself, so we need to ammend some of the fields so we can use them
 		// later.
@@ -292,39 +289,28 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			log.Error.Print(err)
 			return
 		}
-		p.serve(client, w, req)
+		if client != nil {
+			defer client.Close()
+		}
+	}
+
+	// Requests with the custom HTTP header "X-TRACY" are opting out of the
+	// swapping of tracy payloads. Also, we keep a whitelist of hosts that
+	// shouldn't swap out tracy payloads so that recursion issues don't
+	// happen. For example, tracy payloads will occur all over the UI and
+	// we don't want those to be swapped.
+	if configure.HostInWhitelist(req.URL.Host) || req.Header.Get("X-TRACY") != "" {
+		p.serve(client, isHTTPS, w, req)
 		return
 	}
 
 	dump := p.HTTPBytePool.Get().([]byte)
 	clear(dump)
-	// For HTTPS connections, we already have the socket, so no need
-	// to build an HTTP request object that we are going to dump right back
-	// anyway. TOOD: this ended up being way more complicated than I expected.
-	if isHTTPS {
-		req, err = http.ReadRequest(bufio.NewReader(client))
-		if err == io.EOF {
-			p.HTTPBytePool.Put(dump)
-			return
-		}
-		if err != nil {
-			log.Error.Print(err)
-			p.HTTPBytePool.Put(dump)
-			return
-		}
-		dump, err = httputil.DumpRequest(req, true)
-		if err != nil {
-			log.Error.Print(err)
-			p.HTTPBytePool.Put(dump)
-			return
-		}
-	} else {
-		dump, err = httputil.DumpRequest(req, true)
-		if err != nil {
-			log.Error.Print(err)
-			p.HTTPBytePool.Put(dump)
-			return
-		}
+	dump, err = httputil.DumpRequest(req, true)
+	if err != nil {
+		log.Error.Print(err)
+		p.HTTPBytePool.Put(dump)
+		return
 	}
 
 	// Same here. We can't use buffer pool because copy will take the smallest
@@ -342,11 +328,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var tracers []types.Tracer
 	dump, tracers = replaceTracerStrings(dump)
 	req, err = http.ReadRequest(bufio.NewReader(bytes.NewReader(dump)))
-	if err == io.EOF {
-		p.HTTPBytePool.Put(dump)
-		return
-	}
-	if err != nil {
+
+	if err != nil && err != io.EOF {
 		log.Error.Print(err)
 		p.HTTPBytePool.Put(dump)
 		return
@@ -389,51 +372,46 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		log.Trace.Println(string(dump))
 	}
 
-	p.serve(client, w, req)
+	p.serve(client, isHTTPS, w, req)
 }
 
 func clear(b []byte) {
 	b = b[:0]
 }
 
-func (p *Proxy) serve(client net.Conn, w http.ResponseWriter, req *http.Request) {
+func (p *Proxy) serve(client net.Conn, isHTTPS bool, w http.ResponseWriter, req *http.Request) {
 	if strings.HasPrefix(req.Header.Get("X-TRACY"), "GET-CACHE") {
 		err := p.serveFromCache(w, req)
-		if err == io.EOF {
-			return
-		}
 
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Error.Print(err)
 			return
 		}
-	} else if strings.HasPrefix(req.URL.Scheme, "ws") {
+	} else if strings.HasPrefix(req.URL.Scheme, "ws") && client == nil {
 		err := p.serveFromWebSocket(w, req)
-		if err == io.EOF {
+
+		if err != nil && err != io.EOF {
+			log.Error.Print(err)
 			return
 		}
+	} else if strings.HasPrefix(req.URL.Scheme, "ws") && client != nil {
+		err := p.serveFromWebSocketWithClient(client, req)
 
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Error.Print(err)
 			return
 		}
 	} else if client != nil {
 		err := p.serveFromHTTP(client, req)
-		if err == io.EOF {
-			return
-		}
 
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Error.Print(err)
 			return
 		}
 	} else {
 		err := p.serveFromHTTP(w, req)
-		if err == io.EOF {
-			return
-		}
 
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Error.Print(err)
 			return
 		}
@@ -450,6 +428,7 @@ func (p *Proxy) serveFromWebSocket(w http.ResponseWriter, req *http.Request) err
 
 	if client != nil {
 		defer client.Close()
+
 	}
 
 	if err != nil {
@@ -470,6 +449,7 @@ func (p *Proxy) serveFromWebSocket(w http.ResponseWriter, req *http.Request) err
 
 	if server != nil {
 		defer server.Close()
+
 	}
 
 	if err != nil {
@@ -481,6 +461,54 @@ func (p *Proxy) serveFromWebSocket(w http.ResponseWriter, req *http.Request) err
 	// will block until the websocket is closed.
 	s := server.UnderlyingConn()
 	c := client.UnderlyingConn()
+	go p.bridge(c, s, true, req)
+	p.bridge(s, c, false, req)
+	return nil
+}
+
+// serveFromWebSocket connects to the backend websocket by computing the
+// websocket key, finishing the websocket handshake with the frontend
+// and bridge the two socket connections so they are passing data to each
+// other.
+const magicString string = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+func (p *Proxy) serveFromWebSocketWithClient(c net.Conn, req *http.Request) error {
+	h := req.Header.Get("sec-websocket-key")
+	// Gorilla doesn't like to have duplicate headers.
+	req.Header.Del("Sec-Websocket-Version")
+	req.Header.Del("Sec-Websocket-Extensions")
+	req.Header.Del("Sec-Websocket-Key")
+	req.Header.Del("Connection")
+	req.Header.Del("Upgrade")
+
+	// Make sure to copy cookies into the websocket handshake. This is how many
+	// will authenticate the connection.
+	server, _, err := p.WebSocketDialer.Dial(req.URL.String(), req.Header)
+	if server != nil {
+		defer server.Close()
+	}
+
+	if err != nil {
+		log.Error.Print(err)
+		return err
+	}
+
+	b := p.HTTPBytePool.Get().([]byte)
+	clear(b)
+	defer p.HTTPBytePool.Put(b)
+
+	hash := sha1.Sum([]byte(h + magicString))
+	b = []byte("HTTP/1.1 101 Web Socket Protocol Handshake\r\n" +
+		"Upgrade: WebSocket\r\n" +
+		"Connection: Upgrade\r\n" +
+		"Sec-WebSocket-Accept: " + base64.StdEncoding.EncodeToString(hash[:]) + "\r\n" +
+		"\r\n")
+
+	c.Write(b)
+
+	// Bridge the sockets together and send bytes to eachother. bridge
+	// will block until the websocket is closed.
+	s := server.UnderlyingConn()
 	go p.bridge(c, s, true, req)
 	p.bridge(s, c, false, req)
 	return nil
@@ -562,28 +590,51 @@ func (p *Proxy) serveFromHTTP(w io.Writer, req *http.Request) error {
 	// if we manually set this header, the body won't be transparently
 	// gziped when we read from body.
 	req.Header.Del("Accept-Encoding")
-	resp, err := p.HTTPTransport.RoundTrip(req)
-
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-
-	if err != nil {
-		writeErr(w, err)
-		return err
-	}
-
+	ctx := req.Context()
+	c := make(chan error, 1)
+	var resp *http.Response
+	var err error
 	save := p.HTTPBufferPool.Get().(*bytes.Buffer)
-	save.Reset()
-	defer p.HTTPBufferPool.Put(save)
-
-	// This will get Put after we are done using it below.
 	b := p.HTTPBytePool.Get().([]byte)
 	clear(b)
+	save.Reset()
+	defer p.HTTPBufferPool.Put(save)
 	defer p.HTTPBytePool.Put(b)
-	b, err = ioutil.ReadAll(io.TeeReader(resp.Body, save))
-	if err != nil {
-		return err
+
+	go func() {
+		resp, err = p.HTTPTransport.RoundTrip(req)
+
+		if resp != nil {
+			defer resp.Body.Close()
+		}
+
+		if err != nil {
+			writeErr(w, err)
+			c <- err
+			return
+		}
+
+		b, err = ioutil.ReadAll(io.TeeReader(resp.Body, save))
+		if err != nil {
+			c <- err
+			return
+		}
+
+		c <- nil
+	}()
+	select {
+	case <-ctx.Done():
+		<-c
+		if err := ctx.Err(); err != nil {
+			// This is likely the request being canceled by the context.
+			// Only warn here, don't proceed and report no errors.
+			log.Warning.Print(err)
+			return nil
+		}
+	case err := <-c:
+		if err != nil {
+			return err
+		}
 	}
 
 	resp.Body = ioutil.NopCloser(save)
@@ -645,10 +696,7 @@ func (p *Proxy) prepCache(respbc []byte, reqURL *url.URL, method string) {
 	if resp != nil {
 		defer resp.Body.Close()
 	}
-	if err == io.EOF {
-		return
-	}
-	if err != nil {
+	if err != nil && err != io.EOF {
 		log.Error.Print(err)
 		return
 	}
@@ -669,10 +717,7 @@ func (p *Proxy) prepCache(respbc []byte, reqURL *url.URL, method string) {
 	// Check that the server actually sent compressed data.
 	if strings.EqualFold(resp.Header.Get("Content-Encoding"), "gzip") {
 		gr, err := gzip.NewReader(bytes.NewReader(b))
-		if err == io.EOF {
-			return
-		}
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Error.Print(err)
 			return
 		}
@@ -755,7 +800,7 @@ func (p *Proxy) bridge(src, dst net.Conn, isLeft bool, req *http.Request) {
 
 	var err error
 	var nb int
-	var tracers []types.Tracer
+	//	var tracers []types.Tracer
 	for {
 		nb, err = src.Read(b)
 		// As of golang 1.7, 0-byte-reads don't always return EOF
@@ -768,24 +813,25 @@ func (p *Proxy) bridge(src, dst net.Conn, isLeft bool, req *http.Request) {
 
 		// Depending on which side of the bridge it is, either replace
 		// tracer strings or log events from tracer strings.
-		if isLeft {
-			b, tracers = replaceTracerStrings(b)
-			sb := string(b)
-			go func() {
-				r := types.Request{
-					RawRequest:    sb,
-					RequestMethod: "websocket",
-					Tracers:       tracers,
-				}
+		//TODO: something is off with this
+		/*		if isLeft {
+					b, tracers = replaceTracerStrings(b)
+					sb := string(b)
+					go func() {
+						r := types.Request{
+							RawRequest:    sb,
+							RequestMethod: "websocket",
+							Tracers:       tracers,
+						}
 
-				_, err = common.AddTracer(r)
-				if err != nil {
-					log.Error.Print(err)
-				}
-			}()
-		} else {
-			go p.createTracersFrom(string(b), "websocket", req.URL)
-		}
+						_, err = common.AddTracer(r)
+						if err != nil {
+							log.Error.Print(err)
+						}
+					}()
+				} else {
+					go p.createTracersFrom(string(b), "websocket", req.URL)
+				}*/
 
 		_, err = dst.Write(b[:nb])
 

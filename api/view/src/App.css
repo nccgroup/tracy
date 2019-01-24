@@ -114,11 +114,13 @@ div.left-top-column {
 }
 
 .filter-buttons {
-  /*margin-top: 1.5vh;*/
+  float: right;
   padding-right: 10px;
 }
 
-.filter-button {
+.icon-button {
+  float: left;
+  margin-right: 5px;
   list-style: none;
 }
 
@@ -171,7 +173,7 @@ div.react-bs-table-bordered {
 }
 
 div.link-row {
-  height: 5vh;
+  min-height: 75px;
   background-color: #1c2128;
 }
 
@@ -445,4 +447,9 @@ input.install-button {
 
 select.project-picker {
   color: black;
+  max-width: 125px;
+}
+
+.websocket-container {
+  float: right;
 }
