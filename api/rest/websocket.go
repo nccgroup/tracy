@@ -21,7 +21,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: checkOrigin,
 }
 
-// WebSocket is the websocket handler for the HTTP API. */
+// WebSocket is the websocket handler for the HTTP API.
 func WebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

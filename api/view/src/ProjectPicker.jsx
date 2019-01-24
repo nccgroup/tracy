@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import Glyphicon from "react-bootstrap/lib/Glyphicon";
+import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 import Row from "react-bootstrap/lib/Row";
 import Col from "react-bootstrap/lib/Col";
 
@@ -35,11 +35,10 @@ class ProjectPicker extends Component {
     });
     return (
       <Row>
-        <Col md={4} />
         <Col md={2}>
-          <label>Projects: </label>
+          <label>projects: </label>
         </Col>
-        <Col md={4}>
+        <Col md={2}>
           <select
             value={this.props.selected}
             onChange={this.switchProject}
@@ -48,16 +47,13 @@ class ProjectPicker extends Component {
             {opts}
           </select>
         </Col>
-        <Col md={2}>
-          <Glyphicon
-            onClick={this.newProject}
-            glyph="glyphicon glyphicon-plus-sign"
-          />
-
-          <Glyphicon
-            onClick={this.deleteProject}
-            glyph="glyphicon glyphicon-minus-sign"
-          />
+        <Col md={8}>
+          <div className="icon-button" href="#" onClick={this.newProject}>
+            <FontAwesomeIcon icon="plus" />
+          </div>
+          <div className="icon-button" href="#" onClick={this.deleteProject}>
+            <FontAwesomeIcon icon="minus" />
+          </div>
         </Col>
       </Row>
     );

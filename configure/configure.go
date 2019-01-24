@@ -55,8 +55,12 @@ func init() {
 	}
 
 	tp := filepath.Join(usr.HomeDir, ".tracy")
+	cd := filepath.Join(usr.HomeDir, ".tracy/crashes")
 	if _, err = os.Stat(tp); os.IsNotExist(err) {
 		os.Mkdir(tp, 0755)
+	}
+	if _, err = os.Stat(cd); os.IsNotExist(err) {
+		os.Mkdir(cd, 0755)
 	}
 
 	// Write the server certificates.

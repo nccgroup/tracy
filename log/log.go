@@ -54,7 +54,7 @@ func init() {
 	Info.SetOutput(nopW)
 	Warning = &log.Logger{}
 	Warning.SetOutput(nopW)
-	Error = log.New(os.Stderr, errorStr, flags)
+	Error = log.New(os.Stdout, errorStr, flags)
 
 	switch runtime.GOOS {
 	case "linux", "darwin":
@@ -79,7 +79,7 @@ func Configure() {
 		Trace = log.New(os.Stdout, traceStr, flags)
 		Info = log.New(os.Stdout, infoStr, flags)
 		Warning = log.New(os.Stdout, warnStr, flags)
-		Error = log.New(os.Stderr, errorStr, flags)
+		Error = log.New(os.Stdout, errorStr, flags)
 	}
 
 	if outFile != outFileDefault {

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -48,94 +46,38 @@ var (
 		{http.MethodDelete, "/projects", DeleteProject},
 		{http.MethodGet, "/projects", GetProjects},
 	}
+
+	apiMw = []func(http.Handler) http.Handler{
+		handlers.CORS(
+			handlers.AllowedHeaders([]string{"X-TRACY", "Hoot"}),
+			handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})),
+		customHeaderMiddleware,
+		applicationJSONMiddleware,
+		cacheMiddleware,
+	}
 )
 
 // Configure configures all the HTTP routes and assigns them handler functions.
 func Configure() {
 	Router = mux.NewRouter()
-	api := Router.
-		Headers("Hoot", "!").
-		Subrouter()
+	api := Router.PathPrefix("/api/tracy").Subrouter()
 
 	for _, row := range apiTable {
-		api.Methods(row.method).Path(row.path).
-			HandlerFunc(row.handler).Name(fmt.Sprintf("%s:%s", row.method, row.path))
+		api.
+			Path(row.path).
+			Methods(row.method, http.MethodOptions).
+			HandlerFunc(row.handler).
+			Name(fmt.Sprintf("%s:%s", row.method, row.path))
 	}
-
-	corsOptions := []handlers.CORSOption{
-		handlers.AllowedOriginValidator(func(a string) bool {
-			if a == "" {
-				return true
-			}
-			u, err := url.Parse(a)
-			if err != nil {
-				return false
-			}
-
-			if u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" || u.Hostname() == "tracy" {
-				var p uint64
-				if u.Port() == "" {
-					p = 80
-				} else {
-
-					p, err = strconv.ParseUint(u.Port(), 10, 32)
-					if err != nil {
-						return false
-					}
-				}
-
-				if uint(p) == configure.Current.TracyServer.Port {
-					return true
-				}
-
-				for _, v := range configure.Current.ServerWhitelist {
-					if uint(p) == v.Port {
-						return true
-					}
-				}
-			}
-			return false
-		}),
-		handlers.AllowedHeaders([]string{"X-TRACY", "Hoot"}),
-		handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"}),
-	}
-
-	// API middleware for: CORS, caching, content type, and custom headers
-	// (CSRF).
-	mw := []func(http.Handler) http.Handler{
-		handlers.CORS(corsOptions...),
-		customHeaderMiddleware,
-		applicationJSONMiddleware,
-		cacheMiddleware,
-	}
-	for _, m := range mw {
+	for _, m := range apiMw {
 		api.Use(m)
 	}
 
-	// Options requests don't have custom headers. So no hoot header will be
-	// present.
-	options := Router.
-		Methods(http.MethodOptions).
-		Subrouter()
-	o := Router.NewRoute().Name("options").BuildOnly()
-	options.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-		// If the host header indicates the request is going straight to
-		// the app, consider it going to the UI and use the CORS rules above.
-		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
-			m.Route = o
-			m.Handler = handlers.CORS(corsOptions...)(nil)
-			m.MatchErr = nil
-			return true
-		}
-		return false
-	})
-
-	webUI := Router.Methods(http.MethodGet).Subrouter()
 	wui := Router.NewRoute().Name("webUI").BuildOnly()
-	webUI.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		// If the host header indicates the request is going straight to
 		// the app, consider it going to the UI, direct them to it.
-		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
+		if req.Method == http.MethodGet && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
 			(req.URL.Path == "/" || req.URL.Path == "" || strings.HasPrefix(req.URL.Path, "/static") || strings.HasPrefix(req.URL.Path, "/tracy.ico")) {
 			m.Route = wui
 			if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
@@ -149,18 +91,18 @@ func Configure() {
 		return false
 	})
 
-	websocket := Router.Path("/ws").Subrouter()
 	ws := Router.NewRoute().Name("websocket").BuildOnly()
-	websocket.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		// If the host header indicates the request is going straight to
 		// the app, consider it going to the UI, direct them to it.
-		if strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
+		if req.Method == http.MethodGet && req.URL.Path == "/ws" && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
 			m.Route = ws
 			m.Handler = http.HandlerFunc(WebSocket)
 			m.MatchErr = nil
 
 			return true
 		}
+
 		return false
 	})
 
@@ -175,10 +117,7 @@ func Configure() {
 	t, u, d, bp, bufp := configure.ProxyServer()
 	p := proxy.New(t, u, d, bp, bufp)
 
-	// For CONNECT requests, the path will be an absolute URL
-	Router.SkipClean(true)
 	thost := Router.NewRoute().Name("tracyHost").BuildOnly()
-	prox := Router.NewRoute().Name("proxy").BuildOnly()
 	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
 		if strings.HasPrefix(req.Host, "tracy") {
 			m.Route = thost
@@ -186,8 +125,37 @@ func Configure() {
 			m.MatchErr = nil
 			return true
 		}
+		return false
+	})
+
+	// For CONNECT requests, the path will be an absolute URL
+	Router.SkipClean(true)
+
+	// Proxy catches everything, except for requests back to itself.
+	prox := Router.NewRoute().Name("proxy").BuildOnly()
+	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		server, err := configure.ParseServer(req.Host)
+		if err != nil {
+			log.Error.Print(err)
+			return false
+		}
+		//SANITY CHECK: if we are about to send a request back to the proxy,
+		// we hit a recursion and something is up.
+		if req.Method != http.MethodConnect && server.Equal(configure.Current.TracyServer) {
+			return false
+		}
+
 		m.Route = prox
 		m.Handler = p
+		m.MatchErr = nil
+		return true
+	})
+
+	// This is the catch all route. Specifically, it should catch recursion
+	// requests and return a 404 instead.
+	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		m.Route = nil
+		m.Handler = http.NotFoundHandler()
 		m.MatchErr = nil
 		return true
 	})
@@ -273,7 +241,6 @@ func customHeaderMiddleware(next http.Handler) http.Handler {
 			// They are making an OPTIONS request
 			strings.ToLower(r.Method) != "options" {
 
-			log.Error.Print("Here?")
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("No hoot header or incorrect host header..."))
 			return

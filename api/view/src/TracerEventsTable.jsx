@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/css/bootstrap-theme.min.css";
+//import "bootstrap/dist/css/bootstrap.min.css";
+//import "bootstrap/dist/css/bootstrap-theme.min.css";
 import Col from "react-bootstrap/lib/Col";
 import FormGroup from "react-bootstrap/lib/FormGroup";
 import ReactTable from "react-table";
