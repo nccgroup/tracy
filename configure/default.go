@@ -15,5 +15,5 @@ const DefaultConfig = `{
   "auto-launch": "false",
   "public-key-loc": "%s",
   "private-key-loc": "%s",
-  "version": "0.5"
+  "version": "%.2f"
 }`
