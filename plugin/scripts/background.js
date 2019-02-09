@@ -118,18 +118,20 @@ const memoTabs = tabs();
 // bulkAddEvents makes a POST request to the bulk events to the API with
 // a set of events from the DOM.
 function bulkAddEvents(events) {
-  fetch(`http://${restServer}/api/tracy/tracers/events/bulk`, {
-    headers: {
-      Hoot: "!",
-      "Content-Type": "application/json; charset=UTF-8"
-    },
-    method: "POST",
-    body: JSON.stringify(events)
-  }).catch(err =>
-    setTimeout(function() {
-      bulkAddEvents(events);
-    }, 1500)
-  );
+  if (!disabled) {
+    fetch(`http://${restServer}/api/tracy/tracers/events/bulk`, {
+      headers: {
+        Hoot: "!",
+        "Content-Type": "application/json; charset=UTF-8"
+      },
+      method: "POST",
+      body: JSON.stringify(events)
+    }).catch(err =>
+      setTimeout(function() {
+        bulkAddEvents(events);
+      }, 1500)
+    );
+  }
 }
 
 // requestHandler takes the current set of jobs from the page, filters them
@@ -239,16 +241,18 @@ function updateReproduction(message, sender) {
   }
   const reproTest = { Successful: true };
 
-  fetch(
-    `http://${restServer}/api/tracy/tracers/${tab.tracer.ID}/events/${
-      tab.context.ID
-    }/reproductions/${tab.repro.ID}`,
-    {
-      method: "PUT",
-      body: JSON.stringify(reproTest),
-      headers: { Hoot: "!" }
-    }
-  ).catch(err => console.error(err));
+  if (!disabled) {
+    fetch(
+      `http://${restServer}/api/tracy/tracers/${tab.tracer.ID}/events/${
+        tab.context.ID
+      }/reproductions/${tab.repro.ID}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(reproTest),
+        headers: { Hoot: "!" }
+      }
+    ).catch(err => console.error(err));
+  }
 
   removeTab(sender.tab.id);
 }
@@ -286,43 +290,47 @@ async function refreshConfig(wsConnect) {
   );
 
   restServer = settings.restHost + ":" + settings.restPort;
-  fetch(`http://${restServer}/api/tracy/config`, { headers: { Hoot: "!" } })
-    .then(res => res.json())
-    .catch(err => console.error(err))
-    .then(res => {
-      tracerStringTypes = Object.keys(res["TracerStrings"]);
+  if (!disabled) {
+    fetch(`http://${restServer}/api/tracy/config`, { headers: { Hoot: "!" } })
+      .then(res => res.json())
+      .catch(err => console.error(err))
+      .then(res => {
+        tracerStringTypes = Object.keys(res["TracerStrings"]);
 
-      // TODO: can't figure out why Firefox is throwing an error here
-      // about duplicate IDs.
-      tracerStringTypes.forEach(i => {
-        chrome.contextMenus.remove(i, () => {
-          // Context menu for right-clicking on an editable field.
-          chrome.contextMenus.create({
-            id: i,
-            title: i,
-            contexts: ["editable"],
-            onclick: (info, tab) => {
-              chrome.tabs.sendMessage(tab.id, {
-                cmd: "clickCache",
-                tracerString: i
-              });
-            }
+        // TODO: can't figure out why Firefox is throwing an error here
+        // about duplicate IDs.
+        tracerStringTypes.forEach(i => {
+          chrome.contextMenus.remove(i, () => {
+            // Context menu for right-clicking on an editable field.
+            chrome.contextMenus.create({
+              id: i,
+              title: i,
+              contexts: ["editable"],
+              onclick: (info, tab) => {
+                chrome.tabs.sendMessage(tab.id, {
+                  cmd: "clickCache",
+                  tracerString: i
+                });
+              }
+            });
           });
         });
       });
-    });
+  }
 
-  fetch(`http://${restServer}/api/tracy/tracers`, { headers: { Hoot: "!" } })
-    .then(res => res.json())
-    .catch(err => console.error(err))
-    .then(
-      res =>
-        (tracerPayloads = [].concat.apply(
-          [],
-          res.map(r => [].concat(r.Tracers.map(t => t.TracerPayload)))
-        ))
-    )
-    .catch(err => console.error(err));
+  if (!disabled) {
+    fetch(`http://${restServer}/api/tracy/tracers`, { headers: { Hoot: "!" } })
+      .then(res => res.json())
+      .catch(err => console.error(err))
+      .then(
+        res =>
+          (tracerPayloads = [].concat.apply(
+            [],
+            res.map(r => [].concat(r.Tracers.map(t => t.TracerPayload)))
+          ))
+      )
+      .catch(err => console.error(err));
+  }
 
   if (wsConnect) {
     websocketConnect();
@@ -333,43 +341,45 @@ async function refreshConfig(wsConnect) {
 // background page.
 // Connect to the websocket endpoint so we don't have to poll for new tracer strings.
 function websocketConnect() {
-  const nws = new WebSocket(`ws://${restServer}/ws`);
+  if (!disabled) {
+    const nws = new WebSocket(`ws://${restServer}/ws`);
 
-  nws.addEventListener("message", event => {
-    let req = JSON.parse(event.data);
-    switch (Object.keys(req)[0]) {
-      case "Request":
-        req.Request.Tracers.map(t => {
-          if (!tracerPayloads.includes(t.TracerPayload)) {
-            tracerPayloads.push(t.TracerPayload);
-          }
-        });
-        break;
-      case "Reproduction":
-        reproduceFinding(
-          req.Reproduction.Tracer,
-          req.Reproduction.TracerEvent,
-          req.Reproduction.DOMContext,
-          req.Reproduction.ReproductionTests
-        );
-        break;
-      case "Notification":
-        const n = req.Notification;
-        n.Event.DOMContexts.map(c => {
-          if (c.Severity >= 2) {
-            prepCache(n.Event);
-            return true;
-          }
-          return false;
-        });
-        break;
-      default:
-        break;
-    }
-  });
+    nws.addEventListener("message", event => {
+      let req = JSON.parse(event.data);
+      switch (Object.keys(req)[0]) {
+        case "Request":
+          req.Request.Tracers.map(t => {
+            if (!tracerPayloads.includes(t.TracerPayload)) {
+              tracerPayloads.push(t.TracerPayload);
+            }
+          });
+          break;
+        case "Reproduction":
+          reproduceFinding(
+            req.Reproduction.Tracer,
+            req.Reproduction.TracerEvent,
+            req.Reproduction.DOMContext,
+            req.Reproduction.ReproductionTests
+          );
+          break;
+        case "Notification":
+          const n = req.Notification;
+          n.Event.DOMContexts.map(c => {
+            if (c.Severity >= 2) {
+              prepCache(n.Event);
+              return true;
+            }
+            return false;
+          });
+          break;
+        default:
+          break;
+      }
+    });
 
-  // Attempt to reconnect when the socket closes.
-  nws.addEventListener("close", () => setTimeout(websocketConnect, 1500));
+    // Attempt to reconnect when the socket closes.
+    nws.addEventListener("close", () => setTimeout(websocketConnect, 1500));
+  }
 }
 
 // configQuery returns the appropriate configuration information
@@ -380,8 +390,8 @@ function configQuery(message, sender, sendResponse) {
       case "tracer-string-types":
         sendResponse(tracerStringTypes);
         break;
-      case "enabled":
-        sendResponse(enabled);
+      case "disabled":
+        sendResponse(disabled);
         break;
     }
   }
@@ -453,4 +463,5 @@ chrome.contextMenus.create({
 let restServer = "127.0.0.1:443";
 let tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
 let tracerPayloads = [];
+let disabled = false;
 refreshConfig(true);
