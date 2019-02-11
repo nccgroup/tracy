@@ -4,6 +4,7 @@ GOARCH = amd64
 VERSION=0
 COMMIT=$(shell git rev-parse HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+GOPATH=$(shell go env GOPATH)
 
 # Symlink into GOPATH
 PROJECT_NAME=github.com/nccgroup/tracy
@@ -16,7 +17,7 @@ LDFLAGS = "-X main.VERSION=${VERSION} -X main.COMMIT=${COMMIT} -X main.BRANCH=${
 
 # Build the project for all platforms. Really only for CI or builders.
 all: test view bins
-	
+
 # Build the cross-compiled binaries with xgo. Really only for CI or builders.
 bins:
 	dep ensure -v;
