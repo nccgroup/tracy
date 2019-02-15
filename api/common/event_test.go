@@ -30,6 +30,7 @@ func TestAllSeverity(t *testing.T) {
 
 	for _, row := range table {
 		testSeverity(t, row.testPayload, row.renderedOutput, row.expected)
+		clearCache()
 	}
 }
 
@@ -54,12 +55,14 @@ func TestAllAddDOMEvents(t *testing.T) {
 
 	for _, row := range table {
 		testAddEventPayload(t, row.testPayload, row.renderedOutput, row.expected)
+		clearCache()
 	}
 }
 
 // TestAddEventDataJSON tests to make sure when we add a raw event to the database,
 // it is properly tagged as JSON.
 func TestAddEventDataJSON(t *testing.T) {
+	defer clearCache()
 	tp := "lkasdmfasd"
 	rd := `{"a": "` + tp + `"}`
 
@@ -78,6 +81,7 @@ func TestAddEventDataJSON(t *testing.T) {
 // TestAddEventDataHTML tests to make sure when we add a raw event to the database,
 // it is properly tagged as HTML.
 func TestAddEventDataHTML(t *testing.T) {
+	defer clearCache()
 	tp := "lkasdmfasd"
 	rd := `<` + tp + `>something</b>`
 
@@ -93,6 +97,7 @@ func TestAddEventDataHTML(t *testing.T) {
 
 // TestGetEvents tests that the events we inserted are returned properly.
 func TestGetEvents(t *testing.T) {
+	defer clearCache()
 	tp := "lkasdmfasd"
 	rd := `<b>` + tp + `</b>` + `<b>` + tp + `</b>`
 	testAddEventPayload(t, tp, rd, 2)
@@ -122,7 +127,6 @@ func TestGetEvents(t *testing.T) {
 // and the expected severity.
 func testSeverity(t *testing.T, tp, rd string, expected uint) {
 	databaseInit()
-
 	var (
 		ts         = "zzPLAINzz"
 		evts       = false
@@ -306,6 +310,11 @@ Connection: close
 	if uint(len(tvs[0].DOMContexts)) != expected {
 		t.Fatalf("Failed to get the correct number of DOM contexts. Expected %d, got %d", expected, len(tvs[0].DOMContexts))
 	}
+}
+
+func clearCache() {
+	ClearTracerCache()
+	ClearTracerEventCache()
 }
 
 // Helper function to configure a test database to write to for our tests.
