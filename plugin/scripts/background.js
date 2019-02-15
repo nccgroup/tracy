@@ -355,18 +355,18 @@ function websocketConnect() {
           });
           break;
         case "Reproduction":
-          reproduceFinding(
+          /*reproduceFinding(
             req.Reproduction.Tracer,
             req.Reproduction.TracerEvent,
             req.Reproduction.DOMContext,
             req.Reproduction.ReproductionTests
-          );
+          );*/
           break;
         case "Notification":
           const n = req.Notification;
           n.Event.DOMContexts.map(c => {
             if (c.Severity >= 2) {
-              prepCache(n.Event);
+              //prepCache(n.Event);
               return true;
             }
             return false;

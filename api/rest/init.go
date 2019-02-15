@@ -31,7 +31,6 @@ var (
 		handler func(http.ResponseWriter, *http.Request)
 	}{
 		{http.MethodPost, "/tracers", AddTracers},
-		{http.MethodPut, "/tracers/{tracerID}", EditTracer},
 		{http.MethodGet, "/tracers/generate", GenerateTracer},
 		{http.MethodGet, "/tracers/{tracerID}/request", GetRequest},
 		{http.MethodGet, "/tracers/{tracerID}", GetTracer},

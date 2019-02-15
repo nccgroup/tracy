@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"crypto/sha1"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -56,25 +55,8 @@ func New(transport http.Transport, upgrader websocket.Upgrader,
 // server for the fist time.
 func (p *Proxy) identifyRequestsforGeneratedTracer(d []byte, method string) {
 	dump := string(d)
-	// TODO: probably should change this to a websocket notifier so that we
-	// don't have to do this database lookup.
-	tracersBytes := p.HTTPBytePool.Get().([]byte)
-	clear(tracersBytes)
-	defer p.HTTPBytePool.Put(tracersBytes)
 	var err error
-	tracersBytes, err = common.GetTracers()
-	if err != nil {
-		log.Error.Print(err)
-		return
-	}
-
-	var requests []types.Request
-	err = json.Unmarshal(tracersBytes, &requests)
-	if err != nil {
-		log.Error.Print(err)
-		return
-	}
-
+	requests := common.GetTracersCache()
 	for _, req := range requests {
 		for _, tracer := range req.Tracers {
 			if !strings.Contains(dump, tracer.TracerPayload) ||
@@ -118,21 +100,7 @@ func (p *Proxy) createTracersFrom(sb, eventType string, reqURL *url.URL) {
 		return
 	}
 	var err error
-	requestsJSON := p.HTTPBytePool.Get().([]byte)
-	clear(requestsJSON)
-	defer p.HTTPBytePool.Put(requestsJSON)
-	requestsJSON, err = common.GetTracers()
-	if err != nil {
-		log.Error.Print(err)
-		return
-	}
-
-	var requests []types.Request
-	err = json.Unmarshal(requestsJSON, &requests)
-	if err != nil {
-		log.Error.Print(err)
-		return
-	}
+	requests := common.GetTracersCache()
 	if len(requests) == 0 {
 		return
 	}
@@ -185,7 +153,7 @@ func handleConnect(client net.Conn, r *http.Request) (net.Conn, bool, error) {
 	// Try to upgrade the 'CONNECT' request to a TLS connection with
 	// the configured certificate.
 	c, isHTTPS, err := upgradeConnectionTLS(client, r.URL.Host)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		log.Warning.Println(err)
 		return nil, isHTTPS, err
 	}

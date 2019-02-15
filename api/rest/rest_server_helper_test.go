@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/configure"
 )
@@ -60,5 +61,7 @@ func serverTestHelper(tests []RequestTestPair, i int, t *testing.T) {
 func serverTestHelperBulk(table [][]RequestTestPair, t *testing.T) {
 	for i, row := range table {
 		serverTestHelper(row, i, t)
+		common.ClearTracerCache()
+		common.ClearTracerEventCache()
 	}
 }

@@ -7,10 +7,62 @@ import (
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/log"
-
 	"github.com/yosssi/gohtml"
 	"golang.org/x/net/html"
 )
+
+type tracerUpdate struct {
+	Event types.TracerEvent
+	ID    int
+}
+
+func tracerEventCache(inR chan int, inU chan tracerUpdate, out chan []types.TracerEvent) {
+	var (
+		i   int
+		ok  bool
+		e   tracerUpdate
+		ev  []types.TracerEvent
+		err error
+	)
+	events := make(map[int][]types.TracerEvent)
+	for {
+		select {
+		case i = <-inR:
+			// Without introducing another channel, -1 just indicates
+			// that the cache should be flushed.
+			if i == -1 {
+				events = map[int][]types.TracerEvent{}
+			} else if len(events[i]) == 0 {
+				events[i], err = getTracerEventsDB(uint(i))
+				if err != nil {
+					// This is tough to recover from because
+					// this is the first database call.
+					log.Error.Fatal(err)
+				}
+				out <- events[i]
+			} else {
+				out <- events[i]
+			}
+		case e = <-inU:
+			if ev, ok = events[e.ID]; ok {
+				events[e.ID] = append(ev, e.Event)
+			} else {
+				events[e.ID] = []types.TracerEvent{e.Event}
+			}
+		}
+	}
+}
+
+var inReadChanEvent chan int
+var inUpdateChanEvent chan tracerUpdate
+var outChanEvent chan []types.TracerEvent
+
+func init() {
+	inReadChanEvent = make(chan int, 10)
+	inUpdateChanEvent = make(chan tracerUpdate, 10)
+	outChanEvent = make(chan []types.TracerEvent, 10)
+	go tracerEventCache(inReadChanEvent, inUpdateChanEvent, outChanEvent)
+}
 
 // AddEvent is the common functionality to add an event to the database.
 func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
@@ -42,6 +94,7 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	// we don't want to erase the already recorded events that client might
 	// be showing.
 	copy.ID = event.ID
+	inUpdateChanEvent <- tracerUpdate{copy, int(tracer.ID)}
 	UpdateSubscribers(copy)
 	if ret, err = json.Marshal(copy); err != nil {
 		log.Warning.Print(err)
@@ -296,18 +349,15 @@ func AddEventData(eventData string) (types.RawEvent, error) {
 	return re, nil
 }
 
-// GetEvents is the common functionality for getting all the events for a given
-// tracer ID from the database.
-func GetEvents(tracerID uint) ([]byte, error) {
+func getTracerEventsDB(tracerID uint) ([]types.TracerEvent, error) {
 	var (
-		ret          []byte
 		err          error
 		tracerEvents []types.TracerEvent
 	)
 
 	if err = store.DB.Preload("DOMContexts").Find(&tracerEvents, "tracer_id = ?", tracerID).Error; err != nil {
 		log.Warning.Print(err)
-		return ret, err
+		return nil, err
 	}
 
 	cache := make(map[int]types.RawEvent, 0)
@@ -323,6 +373,28 @@ func GetEvents(tracerID uint) ([]byte, error) {
 		}
 	}
 
+	return tracerEvents, nil
+}
+
+func getTracerEventsCache(tracerID uint) []types.TracerEvent {
+	inReadChanEvent <- int(tracerID)
+	return <-outChanEvent
+}
+
+// ClearTracerEventCache will tell the cache of events to reset. This is mainly
+// used for testing.
+func ClearTracerEventCache() {
+	inReadChanEvent <- -1
+}
+
+// GetEvents is the common functionality for getting all the events for a given
+// tracer ID from the database.
+func GetEvents(tracerID uint) ([]byte, error) {
+	var (
+		ret []byte
+		err error
+	)
+	tracerEvents := getTracerEventsCache(tracerID)
 	if ret, err = json.Marshal(tracerEvents); err != nil {
 		log.Warning.Print(err)
 	}
