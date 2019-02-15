@@ -24,7 +24,7 @@ func TestUIRoutesNoProxy(t *testing.T) {
 		//		{http.MethodOptions, "http://127.0.0.1:7777/api/tracy/projects", "projects", },
 		//		{http.MethodOptions, "http://localhost:7777/api/tracy/projects", "projects", false},
 		{http.MethodPost, "http://127.0.0.1:7777/api/tracy/tracers", "/tracers", true},
-		{http.MethodPut, "http://127.0.0.1:7777/api/tracy/tracers/1", "/tracers/{tracerID}", true},
+		//		{http.MethodPut, "http://127.0.0.1:7777/api/tracy/tracers/1", "/tracers/{tracerID}", true},
 		{http.MethodGet, "http://127.0.0.1:7777/api/tracy/tracers/generate", "/tracers/generate", true},
 		{http.MethodGet, "http://127.0.0.1:7777/api/tracy/tracers/1/request", "/tracers/{tracerID}/request", true},
 		{http.MethodGet, "http://127.0.0.1:7777/api/tracy/tracers/1", "/tracers/{tracerID}", true},
