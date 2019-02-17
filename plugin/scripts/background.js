@@ -118,7 +118,7 @@ const memoTabs = tabs();
 // bulkAddEvents makes a POST request to the bulk events to the API with
 // a set of events from the DOM.
 function bulkAddEvents(events) {
-  if (!disabled) {
+  if (!disabled && events.length > 0) {
     fetch(`http://${restServer}/api/tracy/tracers/events/bulk`, {
       headers: {
         Hoot: "!",
@@ -131,67 +131,6 @@ function bulkAddEvents(events) {
         bulkAddEvents(events);
       }, 1500)
     );
-  }
-}
-
-// requestHandler takes the current set of jobs from the page, filters them
-// against the current set of tracer payloads, and sends them as a batch API
-// request to the API. Events should contain a list of DOM events.
-function requestHandler(domEvents) {
-  // A filtered list of DOM events based on if the event has a tracer in it.
-  // Each DOM event can have multiple tracer strings.
-  let filteredEvents = [];
-
-  // For each DOM write, search for all the tracer strings and collect their location.
-  for (let domEventKey in domEvents) {
-    const domEvent = domEvents[domEventKey];
-    // Each DOM write could have many tracer strings in it. Group these together.
-    let tracersPerDomEvent = [];
-
-    // The request is a batched list of DOM events. Iterate through each of them
-    // looking for a tracer string.
-    for (let id in tracerPayloads) {
-      const tracerPayload = tracerPayloads[id];
-      // If a tracer was found, add it to the list of tracers found for this event.
-      // Continue to the rest of the recorded.
-      const tracerLocation = domEvent.msg.indexOf(tracerPayload);
-      if (tracerLocation != -1) {
-        // Add this location data to the list of tracers per DOM event.
-        tracersPerDomEvent.push(tracerPayload);
-      }
-    }
-
-    // After collecting all the tracers per DOM event, add this DOM event to the
-    // list of filtered DOM events that will be submitted in bulk to the event API.
-    if (tracersPerDomEvent.length > 0) {
-      // Sanity check
-      if (!domEvent.msg) {
-        console.error("The DOM event msg field was not set properly.");
-        return;
-      } else if (!domEvent.location) {
-        console.error("The DOM event location field was not set properly.");
-        return;
-      } else if (!domEvent.type) {
-        console.error("The DOM event type field was not set properly.");
-        return;
-      }
-      const event = {
-        TracerEvent: {
-          RawEvent: {
-            Data: domEvent.msg
-          },
-          EventURL: domEvent.location,
-          EventType: domEvent.type,
-          Extras: JSON.stringify(domEvent.extras)
-        },
-        TracerPayloads: tracersPerDomEvent
-      };
-      filteredEvents.push(event);
-    }
-  }
-
-  if (filteredEvents.length > 0) {
-    bulkAddEvents(filteredEvents);
   }
 }
 
@@ -270,6 +209,7 @@ function removeTab(id) {
 // pulls configuration from the extension settings page and gets a current
 // list of tracers. refreshConfig is usually called on page load.
 async function refreshConfig(wsConnect) {
+  if (disabled) return;
   const ok = await new Promise(resolve =>
     chrome.tabs.query({ active: true }, tab => {
       // Don't refresh config if we are in the reproduction steps flow.
@@ -290,47 +230,44 @@ async function refreshConfig(wsConnect) {
   );
 
   restServer = settings.restHost + ":" + settings.restPort;
-  if (!disabled) {
-    fetch(`http://${restServer}/api/tracy/config`, { headers: { Hoot: "!" } })
-      .then(res => res.json())
-      .catch(err => console.error(err))
-      .then(res => {
-        tracerStringTypes = Object.keys(res["TracerStrings"]);
 
-        // TODO: can't figure out why Firefox is throwing an error here
-        // about duplicate IDs.
-        tracerStringTypes.forEach(i => {
-          chrome.contextMenus.remove(i, () => {
-            // Context menu for right-clicking on an editable field.
-            chrome.contextMenus.create({
-              id: i,
-              title: i,
-              contexts: ["editable"],
-              onclick: (info, tab) => {
-                chrome.tabs.sendMessage(tab.id, {
-                  cmd: "clickCache",
-                  tracerString: i
-                });
-              }
-            });
+  fetch(`http://${restServer}/api/tracy/config`, { headers: { Hoot: "!" } })
+    .then(res => res.json())
+    .catch(err => console.error(err))
+    .then(res => {
+      tracerStringTypes = Object.keys(res["TracerStrings"]);
+
+      // TODO: can't figure out why Firefox is throwing an error here
+      // about duplicate IDs.
+      tracerStringTypes.forEach(i => {
+        chrome.contextMenus.remove(i, () => {
+          // Context menu for right-clicking on an editable field.
+          chrome.contextMenus.create({
+            id: i,
+            title: i,
+            contexts: ["editable"],
+            onclick: (info, tab) => {
+              chrome.tabs.sendMessage(tab.id, {
+                cmd: "clickCache",
+                tracerString: i
+              });
+            }
           });
         });
       });
-  }
+    });
 
-  if (!disabled) {
-    fetch(`http://${restServer}/api/tracy/tracers`, { headers: { Hoot: "!" } })
-      .then(res => res.json())
-      .catch(err => console.error(err))
-      .then(
-        res =>
-          (tracerPayloads = [].concat.apply(
-            [],
-            res.map(r => [].concat(r.Tracers.map(t => t.TracerPayload)))
-          ))
-      )
-      .catch(err => console.error(err));
-  }
+  fetch(`http://${restServer}/api/tracy/tracers`, { headers: { Hoot: "!" } })
+    .then(res => res.json())
+    .catch(err => console.error(err))
+    .then(res => {
+      if (!res) return;
+      tracerPayloads = [].concat.apply(
+        [],
+        res.map(r => [].concat(r.Tracers.map(t => t.TracerPayload)))
+      );
+    })
+    .catch(err => console.error(err));
 
   if (wsConnect) {
     websocketConnect();
@@ -404,11 +341,14 @@ async function addJobToQueue(message, sender) {
   if (memoTabs.get()[sender.tab.id]) {
     return;
   }
-  // If it is the first job added, set a timer to process the jobs.
-  if (jobs.length === 0) {
-    setTimeout(processDomEvents, 250);
+
+  if (!disabled) {
+    // If it is the first job added, set a timer to process the jobs.
+    if (jobs.length === 0) {
+      setTimeout(processDomEvents, 1500);
+    }
+    jobs.push(message);
   }
-  jobs.push(message);
 }
 
 // Global list of DOM writes. When a job is written to this array
@@ -417,22 +357,21 @@ async function addJobToQueue(message, sender) {
 let jobs = [];
 
 // Process all the jobs in the current queue.
+const loc = chrome.runtime.getURL("scripts/worker.js");
+const worker = new Worker(loc);
+// Any that come back get sent out the API server.
+worker.addEventListener("message", e => bulkAddEvents(e.data));
 function processDomEvents() {
   const p = JSON.parse(JSON.stringify(jobs));
   // Clear out the jobs.
   jobs = [];
-  // Send any jobs off to the API server.
-  requestHandler(p);
+  // Send any jobs off to the web worker.
+  worker.postMessage({ jobs: p, tracerPayloads: tracerPayloads });
 }
 
 // Any time the page sends a message to the extension, the above handler should
 // take care of it.
 chrome.runtime.onMessage.addListener(messageRouter);
-// Any time the UI tries to check if the extension is called, it will make an
-// external message.
-chrome.runtime.onMessageExternal.addListener((r, s, _) => {
-  return true;
-});
 
 // Update the configuration on every page load.
 chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
@@ -464,4 +403,23 @@ let restServer = "127.0.0.1:443";
 let tracerStringTypes = ["Can't connect to API. Is Tracy running?"];
 let tracerPayloads = [];
 let disabled = false;
+
 refreshConfig(true);
+
+const paintIcon = d => {
+  if (d) {
+    chrome.browserAction.setIcon({
+      path: "images/tracy_16x16_x.png"
+    });
+  } else {
+    chrome.browserAction.setIcon({
+      path: "images/tracy_16x16.png"
+    });
+  }
+};
+
+paintIcon(disabled);
+chrome.browserAction.onClicked.addListener(tab => {
+  disabled = !disabled;
+  paintIcon(disabled);
+});
