@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"net/http/httptest" // profiling
+	"net/http/httptest"
 	"strings"
 	"time"
 
