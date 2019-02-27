@@ -41,6 +41,7 @@ type Configuration struct {
 	ExternalProxyServer      *url.URL
 	LogReusedHTTPConnections bool
 	ExternalHostname         string
+	MaxRequestSize           int
 }
 
 // CurrentVersion is the current version of the software
@@ -239,6 +240,19 @@ and rebooting tracy.`, vf, currentVersion)
 		ehn = ""
 	}
 	Current.ExternalHostname = ehn
+
+	var md uint64
+	mds, ok := config["max-default-size"].(string)
+	if !ok {
+		md = 1000000
+	} else {
+		md, err = strconv.ParseUint(mds, 10, 32)
+		if err != nil {
+			confFail("max-default-size", "uint")
+		}
+
+	}
+	Current.MaxRequestSize = int(md)
 }
 
 // ParseServer parses a string of the form <host>:<port> into a
