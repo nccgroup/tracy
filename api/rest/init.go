@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest" // profiling
-	_ "net/http/pprof"
 	"strings"
 	"time"
 
@@ -59,10 +58,6 @@ var (
 
 // Configure configures all the HTTP routes and assigns them handler functions.
 func Configure() {
-	// we need a webserver to get the pprof webserver
-	go func() {
-		log.Error.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 	Router = mux.NewRouter()
 	api := Router.PathPrefix("/api/tracy").Subrouter()
 
