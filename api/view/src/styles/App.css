@@ -346,6 +346,7 @@ span.logo-title {
 }
 
 .header {
+  padding-top: 1.5vh;
   height: 50px;
   background-color: #1c2128;
   color: #e6e6e8;
