@@ -18,7 +18,7 @@ const newTracyRequest = async (path, opts) => {
     }
     opts.headers.Hoot = "!";
     return new Request(
-      `http://${window.tracy.host}:${window.tracy.port}${path}`,
+      `http://${window.tracy.host}:${window.tracy.port}/api/tracy${path}`,
       opts
     );
   }
