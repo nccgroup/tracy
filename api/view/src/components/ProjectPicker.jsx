@@ -1,7 +1,5 @@
 import React, { Component } from "react";
-import Glyphicon from "react-bootstrap/lib/Glyphicon";
-import Row from "react-bootstrap/lib/Row";
-import Col from "react-bootstrap/lib/Col";
+import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 import {
   delProject,
   getProjects,
@@ -78,32 +76,18 @@ export default class ProjectPicker extends Component {
       return <option key={k}>{v}</option>;
     });
     return (
-      <Row>
-        <Col md={4} />
-        <Col md={2}>
-          <label>Projects: </label>
-        </Col>
-        <Col md={4}>
-          <select
-            value={this.props.proj}
-            onChange={this.selectProject}
-            className="project-picker"
-          >
-            {opts}
-          </select>
-        </Col>
-        <Col md={2}>
-          <Glyphicon
-            onClick={this.newProject}
-            glyph="glyphicon glyphicon-plus-sign"
-          />
-
-          <Glyphicon
-            onClick={this.delProject}
-            glyph="glyphicon glyphicon-minus-sign"
-          />
-        </Col>
-      </Row>
+      <div>
+        <label>Projects: </label>
+        <select
+          value={this.props.proj}
+          onChange={this.selectProject}
+          className="project-picker"
+        >
+          {opts}
+        </select>
+        <FontAwesomeIcon onClick={this.newProject} icon="plus" />
+        <FontAwesomeIcon onClick={this.delProject} icon="minus" />
+      </div>
     );
   }
 }

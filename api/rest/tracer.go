@@ -3,7 +3,6 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
-
 	"net/http"
 	"strconv"
 
@@ -36,38 +35,6 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 // database.
 func GetTracers(w http.ResponseWriter, r *http.Request) {
 	ret, err := common.GetTracers()
-	if err != nil {
-		returnError(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(ret)
-}
-
-// EditTracer handles the HTTP API request to edit a specific
-// tracer specified by the URL ID.
-func EditTracer(w http.ResponseWriter, r *http.Request) {
-	var tracer types.Tracer
-	if err := json.NewDecoder(r.Body).Decode(&tracer); err != nil {
-		returnError(w, err)
-		return
-	}
-
-	vars := mux.Vars(r)
-	tracerIDs, ok := vars["tracerID"]
-	if !ok {
-		returnError(w, fmt.Errorf("No tracerID variable found in the path"))
-		return
-	}
-
-	id, err := strconv.ParseUint(tracerIDs, 10, 32)
-	if err != nil {
-		returnError(w, err)
-		return
-	}
-
-	ret, err := common.EditTracer(tracer, uint(id))
 	if err != nil {
 		returnError(w, err)
 		return

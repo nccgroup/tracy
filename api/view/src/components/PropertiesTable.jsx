@@ -1,10 +1,9 @@
 import React, { Component } from "react";
-import Table from "react-bootstrap/lib/Table";
 
 export default class PropertiesTable extends Component {
   render() {
     return (
-      <Table striped bordered condensed hover>
+      <table>
         <tbody>
           <tr>
             <th>event URL</th>
@@ -39,7 +38,7 @@ export default class PropertiesTable extends Component {
             <td>{this.props.reason}</td>
           </tr>
         </tbody>
-      </Table>
+      </table>
     );
   }
 }

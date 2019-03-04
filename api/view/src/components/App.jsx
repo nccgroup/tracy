@@ -26,29 +26,3 @@ export default class App extends Component {
     );
   }
 }
-/*
-          <Row>
-            <Col>
-              <DetailsViewer />
-            </Col>
-          </Row>
-          <Footer />
-
- <Row>
-                <Col md={6} />
-                <Col md={3}>
-                  <ProjectPicker />
-                </Col>
-                <Col md={2}>
-                  <Row>
-                    <Col md={3} />
-                    <Col md={9}>
-                      <WebSocketRouter />
-                    </Col>
-                  </Row>
-                </Col>
-                <Col md={1}>
-                  <FilterColumn />
-                </Col>
-              </Row>
- */

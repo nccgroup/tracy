@@ -249,16 +249,6 @@ func BenchmarkFullProxy(b *testing.B) {
 	}
 }
 
-func BenchmarkFullProxyTLS(b *testing.B) {
-	// Benchmark proxying data with both types of trace strings
-	for i := 0; i < b.N; i++ {
-		if _, err := makeRequest(tstls.URL, "test1=zzXSSzz&test2=zzPLAINzz"); err != nil {
-			log.Error.Println(err)
-			b.FailNow()
-		}
-	}
-}
-
 func proxier(r *http.Request) (*url.URL, error) {
 	// Need a function to return what the proxy url for an http.Transport
 

@@ -1,7 +1,4 @@
 import React, { Component } from "react";
-import Col from "react-bootstrap/lib/Col";
-import Row from "react-bootstrap/lib/Row";
-import Grid from "react-bootstrap/lib/Grid";
 import EventDetails from "./EventDetails";
 import TracerInputDetails from "./TracerInputDetails";
 import { isEmpty, occurrences } from "../utils";
@@ -58,14 +55,10 @@ export default class DetailsViewer extends Component {
     }
 
     return (
-      <Grid fluid={true}>
-        <Row>
-          <Col md={12}>{leftColumn}</Col>
-        </Row>
-        <Row>
-          <Col md={12}>{rightColumn}</Col>
-        </Row>
-      </Grid>
+      <div>
+        {leftColumn}
+        {rightColumn}
+      </div>
     );
   }
 }

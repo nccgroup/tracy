@@ -41,7 +41,11 @@ type Configuration struct {
 	ExternalProxyServer      *url.URL
 	LogReusedHTTPConnections bool
 	ExternalHostname         string
+	MaxRequestSize           int
 }
+
+// CurrentVersion is the current version of the software
+const currentVersion = 0.5
 
 // Current holds all the configuration options for the current environment.
 var Current Configuration
@@ -55,8 +59,16 @@ func init() {
 	}
 
 	tp := filepath.Join(usr.HomeDir, ".tracy")
+	cd := filepath.Join(usr.HomeDir, ".tracy/crashes")
+	ar := filepath.Join(usr.HomeDir, ".tracy/archives")
 	if _, err = os.Stat(tp); os.IsNotExist(err) {
 		os.Mkdir(tp, 0755)
+	}
+	if _, err = os.Stat(cd); os.IsNotExist(err) {
+		os.Mkdir(cd, 0755)
+	}
+	if _, err = os.Stat(ar); os.IsNotExist(err) {
+		os.Mkdir(ar, 0755)
 	}
 
 	// Write the server certificates.
@@ -78,7 +90,7 @@ func init() {
 		// default values.
 		pubKeyPath = strings.Replace(pubKeyPath, "\\", "\\\\", -1)
 		privKeyPath = strings.Replace(privKeyPath, "\\", "\\\\", -1)
-		def := fmt.Sprintf(DefaultConfig, pubKeyPath, privKeyPath)
+		def := fmt.Sprintf(DefaultConfig, pubKeyPath, privKeyPath, currentVersion)
 		// Make sure to escape the path variables in windows paths.
 		ioutil.WriteFile(configPath, []byte(def), 0755)
 		content = []byte(def)
@@ -117,17 +129,34 @@ func init() {
 	flag.BoolVar(&Current.LogReusedHTTPConnections, "http-reuse", false, reuseUsage)
 }
 
+func confFail(k, t string) {
+	p := `
+Configuration file not formated properly. If you recently upgraded to a new
+version of tracy, there may be configuration options that were added or deprecated.
+Quick fix: "rm ~/.tracy/tracy.json" and reboot tracy.`
+	l.Fatalf("%s\n\n`%s` key in configuration file not formatted properly. Expecting %s", p, k, t)
+}
+
 // Setup unmarshals the configuration file into valid data structures
 // that can be easily digested at runtime.
 func Setup() {
-	config := configData.(map[string]interface{})
-	tracers := config["tracers"].(map[string]interface{})
+	config, ok := configData.(map[string]interface{})
+	if !ok {
+		l.Fatal("Configuration file not formatted as a JSON hashmap.")
+	}
+	tracers, ok := config["tracers"].(map[string]interface{})
+	if !ok {
+		confFail("tracers", "JSON hashmap")
+	}
 	Current.TracerStrings = make(map[string]string, len(tracers))
 	for k, v := range tracers {
 		Current.TracerStrings[k] = v.(string)
 	}
 
-	ips := config["server-whitelist"].([]interface{})
+	ips, ok := config["server-whitelist"].([]interface{})
+	if !ok {
+		confFail("server-whitelist", "[]")
+	}
 	var (
 		srv *types.Server
 		err error
@@ -142,21 +171,59 @@ func Setup() {
 	}
 	Current.ServerWhitelist = sw
 
-	srv, err = ParseServer(config["tracer-server"].(string))
+	ts, ok := config["tracer-server"].(string)
+	if !ok {
+		confFail("tracer-server", "string")
+	}
+	srv, err = ParseServer(ts)
 	if err != nil {
 		l.Fatal("configuration invalid ", err)
 	}
 	Current.TracyServer = srv
 
-	if config["auto-launch"].(string) == "true" {
+	al, ok := config["auto-launch"].(string)
+	if !ok {
+		// Default auto-launch to true.
+		al = "true"
+	}
+	if al == "true" {
 		Current.AutoLaunch = true
 	} else {
 		Current.AutoLaunch = false
 	}
 
-	Current.PublicKeyLocation = config["public-key-loc"].(string)
-	Current.PrivateKeyLocation = config["private-key-loc"].(string)
-	Current.Version = config["version"].(string)
+	pkl, ok := config["public-key-loc"].(string)
+	if !ok {
+		confFail("public-key-loc", "string")
+	}
+	Current.PublicKeyLocation = pkl
+
+	prkl, ok := config["private-key-loc"].(string)
+	if !ok {
+		confFail("private-key-loc", "string")
+	}
+	Current.PrivateKeyLocation = prkl
+
+	v, ok := config["version"].(string)
+	if !ok {
+		v = fmt.Sprintf("%.2f", currentVersion)
+	}
+	vf, err := strconv.ParseFloat(v, 32)
+	if err != nil {
+		confFail("version", "float")
+	}
+	if vf < currentVersion {
+		l.Printf(`
+The current configuration file matches an older version of tracy (v%.2f) than the 
+currently running version (v%.2f) . This could lead to unexpected errors. Update
+to the newest configuration file by:
+
+rm ~/.tracy/tracy.json
+
+and rebooting tracy.`, vf, currentVersion)
+	}
+
+	Current.Version = v
 
 	if eps != "" {
 		s, err := url.Parse(eps)
@@ -166,7 +233,26 @@ func Setup() {
 
 		Current.ExternalProxyServer = s
 	}
-	Current.ExternalHostname = config["external-hostname"].(string)
+
+	ehn, ok := config["external-hostname"].(string)
+	if !ok {
+		// Default to blank.
+		ehn = ""
+	}
+	Current.ExternalHostname = ehn
+
+	var md uint64
+	mds, ok := config["max-default-size"].(string)
+	if !ok {
+		md = 1000000
+	} else {
+		md, err = strconv.ParseUint(mds, 10, 32)
+		if err != nil {
+			confFail("max-default-size", "uint")
+		}
+
+	}
+	Current.MaxRequestSize = int(md)
 }
 
 // ParseServer parses a string of the form <host>:<port> into a

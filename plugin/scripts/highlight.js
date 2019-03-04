@@ -161,7 +161,7 @@ const highlight = (function() {
     const genReq = new Request(
       `http://${conf.restHost}:${
         conf.restPort
-      }/tracers/generate?tracer_string=${tracerString}&url=${
+      }/api/tracy/tracers/generate?tracer_string=${tracerString}&url=${
         document.location
       }`,
       {
@@ -173,12 +173,21 @@ const highlight = (function() {
     );
 
     try {
-      const resp = await fetch(genReq);
-      const json = await resp.json();
+      const disabled = await util.send({
+        "message-type": "config",
+        config: "disabled"
+      });
+      if (!disabled) {
+        const resp = await fetch(genReq);
+        const json = await resp.json();
 
-      await simulateInputType(elem, elem.value + json.Tracers[0].TracerPayload);
-      const ss = await captureScreenshot(elem, 200);
-      sendScreenshot(ss, json.Tracers[0].ID, conf);
+        await simulateInputType(
+          elem,
+          elem.value + json.Tracers[0].TracerPayload
+        );
+        const ss = await captureScreenshot(elem, 200);
+        sendScreenshot(ss, json.Tracers[0].ID, conf);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -195,18 +204,24 @@ const highlight = (function() {
 
   // sendScreenshot makes the API request to send the screenshot
   // data URI to a tracer with a specific ID.
-  function sendScreenshot(screenshot, id, conf) {
+  async function sendScreenshot(screenshot, id, conf) {
     const upReq = new Request(
-      `http://${conf.restHost}:${conf.restPort}/tracers/${id}`,
+      `http://${conf.restHost}:${conf.restPort}/api/tracy/tracers/${id}`,
       {
         method: "PUT",
         headers: { Hoot: "!", "X-TRACY": "NOTOUCHY" },
         body: JSON.stringify({ Screenshot: screenshot })
       }
     );
+    const disabled = await util.send({
+      "message-type": "config",
+      config: "disabled"
+    });
 
     try {
-      fetch(upReq);
+      if (!disabled) {
+        await fetch(upReq);
+      }
     } catch (err) {
       console.error(err);
     }

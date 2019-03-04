@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
+	"time"
 
 	"github.com/nccgroup/tracy/api/rest"
 	"github.com/nccgroup/tracy/api/store"
@@ -27,6 +28,14 @@ func main() {
 	if *cpuprofile != "" {
 		defer pprof.StopCPUProfile()
 	}
+
+	go func() {
+		ticker := time.Tick(time.Second)
+		for {
+			<-ticker
+			printMemUsage()
+		}
+	}()
 
 	go func() {
 		log.Error.Fatal(rest.Server.ListenAndServe())
@@ -122,6 +131,21 @@ func init() {
 // processAutoLaunch launchs whatever browser they have configured.
 func processAutoLaunch() {
 	openbrowser(fmt.Sprintf("%s", configure.Current.TracyServer.Addr()))
+}
+
+func printMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("\033[2K\r")
+	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+	fmt.Printf("\tNumGC = %v", m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }
 
 // openBrowser opens the default browser the user has configured.

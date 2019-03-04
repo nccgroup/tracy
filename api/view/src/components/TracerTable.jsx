@@ -1,9 +1,6 @@
 import React, { Component } from "react";
 import ReactTable from "react-table";
-import "react-table/react-table.css";
 import { getTracers, formatRequest } from "../utils";
-import Col from "react-bootstrap/lib/Col";
-import FormGroup from "react-bootstrap/lib/FormGroup";
 
 export default class TracerTable extends Component {
   render() {

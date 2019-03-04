@@ -1,6 +1,4 @@
 import React, { Component } from "react";
-import Col from "react-bootstrap/lib/Col";
-import FormGroup from "react-bootstrap/lib/FormGroup";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 import { getTracerEvents, formatEvent, enumerate } from "../utils";

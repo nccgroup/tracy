@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import Glyphicon from "react-bootstrap/lib/Glyphicon";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 
 export default class FilterButton extends Component {
@@ -111,17 +110,12 @@ export default class FilterButton extends Component {
   }
 
   render() {
-    let img = "";
-    const className = this.state.enabled ? "filter-active" : "filter-inactive";
-    if (this.props.imgType === "icon") {
-      img = <FontAwesomeIcon className={className} icon={this.props.img} />;
-    } else if (this.props.imgType === "glyph") {
-      img = <Glyphicon className={className} glyph={this.props.img} />;
-    }
+    let className = this.state.enabled ? "filter-active" : "filter-inactive";
+    const img = <FontAwesomeIcon className={className} icon={this.props.img} />;
 
     return (
       <div
-        className="filter-button"
+        className="icon-button"
         id={this.props.name}
         title={this.props.description}
         onClick={this.handleClick}
