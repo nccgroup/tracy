@@ -2,8 +2,10 @@ import React, { Component } from "react";
 
 export default class PropertiesTable extends Component {
   render() {
+    if (!this.props.eventURL) return <span>CLICK SOMETHING</span>;
+
     return (
-      <table>
+      <table className="properties-table">
         <tbody>
           <tr>
             <th>event URL</th>

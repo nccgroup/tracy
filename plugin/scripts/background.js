@@ -1,4 +1,4 @@
-// prepCache uses a tab to recreate the state of a page with a
+/// prepCache uses a tab to recreate the state of a page with a
 // special header attached so that tracy knows on the backend to
 // cache the responses in-memory so that we can run reproductions
 // without changing the state of the application.

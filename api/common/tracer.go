@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/jinzhu/gorm"
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/configure"
@@ -53,10 +54,28 @@ func tracerCache(inR, inRJ chan int, inU chan types.Request, out chan []types.Re
 			}
 			outJSON <- tracersJSON
 		case r = <-inU:
-			tracers = append(tracers, r)
-			if tracersJSON, err = json.Marshal(tracers); err != nil {
-				log.Warning.Print(err)
-				continue
+			// If the tracer already exists in the list, just update it
+			// with the new value.
+			if len(r.Tracers) > 0 && r.Tracers[0].RequestID == 0 {
+				for i := range tracers {
+					for j := range tracers[i].Tracers {
+						if r.Tracers[0].ID == tracers[i].Tracers[j].ID {
+							// Right now, this is the only field that needs to be updated.
+							tracers[i].Tracers[j].Screenshot = r.Tracers[0].Screenshot
+							if tracersJSON, err = json.Marshal(tracers); err != nil {
+								log.Warning.Print(err)
+								continue
+							}
+							continue
+						}
+					}
+				}
+			} else {
+				tracers = append(tracers, r)
+				if tracersJSON, err = json.Marshal(tracers); err != nil {
+					log.Warning.Print(err)
+					continue
+				}
 			}
 		}
 	}
@@ -178,6 +197,25 @@ func GetTracerRequest(tracerID uint) ([]byte, error) {
 	}
 
 	if ret, err = json.Marshal(request); err != nil {
+		log.Warning.Print(err)
+	}
+
+	return ret, err
+}
+
+// EditTracer updates a tracer in the database.
+func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
+	t := types.Tracer{Model: gorm.Model{ID: id}}
+	var err error
+	if err = store.DB.Model(&t).Updates(tracer).Error; err != nil {
+		log.Warning.Print(err)
+		return []byte{}, err
+	}
+	r := types.Request{Tracers: []types.Tracer{t}}
+	inUpdateChanTracer <- r
+
+	var ret []byte
+	if ret, err = json.Marshal(tracer); err != nil {
 		log.Warning.Print(err)
 	}
 

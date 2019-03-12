@@ -1,18 +1,23 @@
 import React, { Component } from "react";
 import ReactTable from "react-table";
-import { getTracers, formatRequest } from "../utils";
+import * as utils from "../utils";
 
 export default class TracerTable extends Component {
   render() {
     if (this.props.loading) {
-      getTracers().then(req => {
-        this.props.updateTracers(req.map(formatRequest).flat());
+      utils.getTracers().then(req => {
+        this.props.updateTracers(req.map(utils.formatRequest).flat());
       });
+    }
+    let data = this.props.tracers;
+    if (this.props.filterInactive) {
+      data = data.filter(utils.filterInactive);
     }
 
     return (
       <ReactTable
-        data={this.props.tracers}
+        className="tracer-table"
+        data={data}
         loading={this.props.loading}
         columns={[
           {

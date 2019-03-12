@@ -1,10 +1,12 @@
 import { connect } from "react-redux";
 import DetailsViewer from "../components/DetailsViewer";
-import { selectedTracerByID, selectedEventByID } from "../utils";
-
+import { changeTab } from "../actions/index.js";
 const mapStateToProps = state => ({
-  tracer: selectedTracerByID(state.tracers, state.selectedTracerID) || {},
-  event: selectedEventByID(state.events, state.selectedEventID) || {}
+  tabID: state.tabID
 });
 
-export default connect(mapStateToProps)(DetailsViewer);
+const mapDispatchToProps = dispatch => ({
+  changeTab: i => dispatch(changeTab(i))
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(DetailsViewer);

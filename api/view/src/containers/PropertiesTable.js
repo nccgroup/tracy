@@ -25,6 +25,17 @@ const reasonTable = {
 
 const mapStateToProps = state => {
   const event = selectedEventByID(state.events, state.selectedEventID);
+  if (!event)
+    return {
+      eventURL: "",
+      eventType: "",
+      extras: "",
+      eventContext: "",
+      locationType: "",
+      nodeType: "",
+      sev: 0,
+      reason: ""
+    };
   return {
     eventURL: event.EventURL,
     eventType: event.EventType,

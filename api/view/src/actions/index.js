@@ -1,85 +1,93 @@
-const SELECT_PROJ = "SELECT_PROJ";
-const UPDATE_PROJECTS = "UPDATE_PROJECT";
-const DEL_PROJECT = "DEL_PROJECT";
-const SELECT_TRACER = "SELECT_TRACER";
-const ADD_TRACER = "ADD_TRACER";
-const ADD_REQUEST = "ADD_REQUEST";
-const UPDATE_TRACERS = "UPDATE_TRACERS";
-const SELECT_EVENT = "SELECT_EVENT";
-const UPDATE_EVENTS = "UPDATE_EVENTS";
-const ADD_EVENT = "ADD_EVENT";
-const TOGGLE_LOADING_EVENTS = "TOGGLE_LOADING_EVENTS";
-const TOGGLE_LOADING_TRACERS = "TOGGLE_LOADING_TRACERS";
-const TOGGLE_INACTIVE_FILTER = "TOGGLE_INACTIVE_FILTER";
-const TOGGLE_HTTP_RESPONSE_FILTER = "TOGGLE_HTTP_RESPONSE_FILTER";
-const TOGGLE_TEXT_FILTER = "TOGGLE_TEXT_FILTER";
-const TOGGLE_WEBSOCKET_CONNECTED = "TOGGLE_WEBSOCKET_CONNECTED";
-const TOGGLE_WEBSOCKET_DISCONNECTED = "TOGGLE_WEBSOCKET_DISCONNECTED";
-const START_REPRODUCTION = "START_REPRODUCTION";
+export const SELECT_PROJ = "SELECT_PROJ";
+export const UPDATE_PROJECTS = "UPDATE_PROJECT";
+export const DEL_PROJECT = "DEL_PROJECT";
+export const SELECT_TRACER = "SELECT_TRACER";
+export const ADD_TRACER = "ADD_TRACER";
+export const ADD_REQUEST = "ADD_REQUEST";
+export const UPDATE_TRACERS = "UPDATE_TRACERS";
+export const SELECT_EVENT = "SELECT_EVENT";
+export const UPDATE_EVENTS = "UPDATE_EVENTS";
+export const ADD_EVENT = "ADD_EVENT";
+export const TOGGLE_LOADING_EVENTS = "TOGGLE_LOADING_EVENTS";
+export const TOGGLE_LOADING_TRACERS = "TOGGLE_LOADING_TRACERS";
+export const TOGGLE_INACTIVE_FILTER = "TOGGLE_INACTIVE_FILTER";
+export const TOGGLE_HTTP_RESPONSE_FILTER = "TOGGLE_HTTP_RESPONSE_FILTER";
+export const TOGGLE_TEXT_FILTER = "TOGGLE_TEXT_FILTER";
+export const TOGGLE_WEBSOCKET_CONNECTED = "TOGGLE_WEBSOCKET_CONNECTED";
+export const TOGGLE_WEBSOCKET_DISCONNECTED = "TOGGLE_WEBSOCKET_DISCONNECTED";
+export const START_REPRODUCTION = "START_REPRODUCTION";
+export const CHANGE_TAB = "CHANGE_TAB";
 
-const addTracer = tracer => {
+export const changeTab = tabID => {
+  return {
+    type: CHANGE_TAB,
+    tabID: tabID
+  };
+};
+
+export const addTracer = tracer => {
   return {
     type: ADD_TRACER,
     tracer: tracer
   };
 };
 
-const updateTracers = tracers => {
+export const updateTracers = tracers => {
   return {
     type: UPDATE_TRACERS,
     tracers: tracers
   };
 };
 
-const addRequest = req => {
+export const addRequest = req => {
   return {
     type: ADD_REQUEST,
     req: req
   };
 };
 
-const addEvent = event => {
+export const addEvent = event => {
   return {
     type: ADD_EVENT,
     event: event
   };
 };
 
-const delProject = i => {
+export const delProject = i => {
   return {
     type: DEL_PROJECT,
     i: i
   };
 };
 
-const selectTracer = id => {
+export const selectTracer = id => {
   return {
     type: SELECT_TRACER,
     id: id
   };
 };
 
-const selectEvent = id => {
+export const selectEvent = id => {
   return {
     type: SELECT_EVENT,
     id: id
   };
 };
 
-const updateEvents = events => {
+export const updateEvents = events => {
   return {
     type: UPDATE_EVENTS,
     events: events
   };
 };
 
-const startReproduction = () => {
+export const startReproduction = () => {
   return {
     type: START_REPRODUCTION
   };
 };
 
-const toggleFilter = type => {
+export const toggleFilter = type => {
   switch (type) {
     case TOGGLE_INACTIVE_FILTER:
       return toggleInactiveFilter();
@@ -87,82 +95,51 @@ const toggleFilter = type => {
       return toggleHTTPResponseFilter();
     case TOGGLE_TEXT_FILTER:
       return toggleTextFilter();
+    default:
+      console.error("PANIC");
   }
 };
 
-const toggleInactiveFilter = () => {
+export const toggleInactiveFilter = () => {
   return {
     type: TOGGLE_INACTIVE_FILTER
   };
 };
 
-const toggleHTTPResponseFilter = () => {
+export const toggleHTTPResponseFilter = () => {
   return {
     type: TOGGLE_HTTP_RESPONSE_FILTER
   };
 };
 
-const toggleTextFilter = () => {
+export const toggleTextFilter = () => {
   return {
     type: TOGGLE_TEXT_FILTER
   };
 };
 
-const webSocketDisconnect = () => {
+export const webSocketDisconnect = () => {
   return {
     type: TOGGLE_WEBSOCKET_DISCONNECTED
   };
 };
 
-const webSocketConnect = () => {
+export const webSocketConnect = () => {
   return {
     type: TOGGLE_WEBSOCKET_CONNECTED
   };
 };
 
-const updateProjects = projs => {
+export const updateProjects = projs => {
   return {
     type: UPDATE_PROJECTS,
     projs: projs
   };
 };
 
-const selectProject = proj => {
+export const selectProject = proj => {
   return {
     type: SELECT_PROJ,
     proj: proj
   };
-};
-
-export {
-  webSocketDisconnect,
-  webSocketConnect,
-  updateTracers,
-  selectProject,
-  updateProjects,
-  selectTracer,
-  toggleFilter,
-  selectEvent,
-  startReproduction,
-  delProject,
-  addTracer,
-  addRequest,
-  addEvent,
-  updateEvents,
-  START_REPRODUCTION,
-  SELECT_PROJ,
-  UPDATE_PROJECTS,
-  DEL_PROJECT,
-  SELECT_TRACER,
-  ADD_TRACER,
-  ADD_REQUEST,
-  UPDATE_TRACERS,
-  SELECT_EVENT,
-  UPDATE_EVENTS,
-  ADD_EVENT,
-  TOGGLE_INACTIVE_FILTER,
-  TOGGLE_HTTP_RESPONSE_FILTER,
-  TOGGLE_TEXT_FILTER,
-  TOGGLE_WEBSOCKET_CONNECTED,
-  TOGGLE_WEBSOCKET_DISCONNECTED
 };

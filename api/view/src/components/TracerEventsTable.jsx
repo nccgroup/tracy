@@ -1,23 +1,32 @@
 import React, { Component } from "react";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
-import { getTracerEvents, formatEvent, enumerate } from "../utils";
+import * as utils from "../utils";
 
 export default class TracerEventsTable extends Component {
   render() {
     if (this.props.loading) {
-      getTracerEvents(this.props.selectedTracerID).then(events =>
+      utils.getTracerEvents(this.props.selectedTracerID).then(events =>
         this.props.updateEvents(
           events
-            .map(formatEvent)
+            .map(utils.formatEvent)
             .flat()
-            .map(enumerate)
+            .map(utils.enumerate)
         )
       );
     }
+    let data = this.props.events;
+    if (this.props.filterResponses) {
+      data = data.filter(utils.filterResponses);
+    }
+    if (this.props.filterTextNodes) {
+      data = data.filter(utils.filterTextNodes);
+    }
+
     return (
       <ReactTable
-        data={this.props.events}
+        className="tracer-events-table"
+        data={data}
         loading={this.props.loading}
         manual
         columns={[
@@ -25,16 +34,7 @@ export default class TracerEventsTable extends Component {
             Header: "observed outputs",
             columns: [
               { Header: "id", accessor: "ID", width: 45 },
-              //   { Header: "host", accessor: "EventHost" },
-              { Header: "url", accessor: "EventPath" },
-              /*                  {
-                    Header: "location",
-                    accessor: "HTMLLocationType"
-                  },*/
-              /*{
-                    Header: "node",
-                    accessor: "HTMLNodeType"
-                  },*/
+              { Header: "url", accessor: "EventURL" },
               {
                 Header: "type",
                 accessor: "EventType"
@@ -43,8 +43,7 @@ export default class TracerEventsTable extends Component {
                 Header: "sev",
                 accessor: "Severity",
                 width: 45
-              } //,
-              //                  { Header: "reproduce", width: 5 }
+              }
             ]
           }
         ]}

@@ -8,18 +8,16 @@ export default class FilterButton extends Component {
     this.state = {
       enabled: false
     };
-
-    this.handleClick = this.handleClick.bind(this);
   }
 
-  componentDidMount() {
+  componentDidMount = () => {
     // If the value is in localStorage, we need to enable the filter.
     if (this.get(this.props.name)) {
       this.handleClick(this.props.name);
     }
-  }
+  };
 
-  get(rowKey) {
+  get = rowKey => {
     const key = "filters";
     var ret = false;
     try {
@@ -33,9 +31,9 @@ export default class FilterButton extends Component {
     }
 
     return ret;
-  }
+  };
 
-  store(rowKeys) {
+  store = rowKeys => {
     let value = rowKeys;
     if (!Array.isArray(rowKeys)) {
       value = [].concat(rowKeys);
@@ -56,9 +54,9 @@ export default class FilterButton extends Component {
     value = Array.from(new Set(value));
 
     localStorage.setItem(key, JSON.stringify(value));
-  }
+  };
 
-  remove(rowKeys) {
+  remove = rowKeys => {
     let value = rowKeys;
     if (!Array.isArray(rowKeys)) {
       value = [].concat(rowKeys);
@@ -84,9 +82,9 @@ export default class FilterButton extends Component {
     }
 
     localStorage.setItem(key, JSON.stringify(value));
-  }
+  };
 
-  handleClick(evt) {
+  handleClick = evt => {
     let value;
     try {
       value = evt.currentTarget.id;
@@ -107,22 +105,22 @@ export default class FilterButton extends Component {
         enabled: !prevState.enabled
       };
     });
-  }
+  };
 
-  render() {
+  render = () => {
     let className = this.state.enabled ? "filter-active" : "filter-inactive";
-    const img = <FontAwesomeIcon className={className} icon={this.props.img} />;
+    const img = <FontAwesomeIcon icon={this.props.img} />;
 
     return (
-      <div
-        className="icon-button"
+      <li
+        className={className}
         id={this.props.name}
         title={this.props.description}
         onClick={this.handleClick}
         href="#"
       >
         {img}
-      </div>
+      </li>
     );
-  }
+  };
 }

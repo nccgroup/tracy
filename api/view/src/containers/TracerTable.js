@@ -5,6 +5,7 @@ import { selectTracer, updateTracers } from "../actions";
 const mapStateToProps = state => ({
   tracers: state.tracers,
   selectedTracerID: state.selectedTracerID,
+  filterInactive: state.inactiveTracersFilter,
   loading: state.tracersLoading
 });
 

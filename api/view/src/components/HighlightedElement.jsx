@@ -4,32 +4,25 @@ import HighLight from "react-syntax-highlight";
 import "../../node_modules/highlight.js/styles/atom-one-dark.css";
 
 class HighlightedElement extends PureComponent {
-  constructor(props) {
-    super(props);
-
-    this.highlightSelection = this.highlightSelection.bind(this);
-  }
-
-  componentDidMount() {
-    console.log("this one", this.props);
-    var node = ReactDOM.findDOMNode(this);
+  componentDidMount = () => {
+    const node = ReactDOM.findDOMNode(this);
     if (node) {
       this.highlightSelection(node);
     }
-  }
+  };
 
-  componentDidUpdate() {
-    var node = ReactDOM.findDOMNode(this);
+  componentDidUpdate = () => {
+    const node = ReactDOM.findDOMNode(this);
     if (node) {
       this.highlightSelection(node);
     }
-  }
+  };
 
-  highlightSelection(node) {
+  highlightSelection = node => {
     let textNodes = this.textNodesUnder(node);
-    var highlightIndex = -1;
+    let highlightIndex = -1;
     if (textNodes && textNodes.length > 0) {
-      for (var i = 0; i < textNodes.length; i++) {
+      for (let i = 0; i < textNodes.length; i++) {
         const data = textNodes[i].textContent;
         const idx = data.indexOf(this.props.highlightString);
         if (idx !== -1) {
@@ -96,17 +89,18 @@ class HighlightedElement extends PureComponent {
         }
       }
     }
-  }
+  };
 
-  textNodesUnder(el) {
-    var n,
+  textNodesUnder = el => {
+    let n,
       a = [],
       walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
     while ((n = walk.nextNode())) a.push(n);
     return a;
-  }
+  };
 
-  render() {
+  render = () => {
+    if (!this.props.data) return <span />;
     return (
       <HighLight
         className="raw-data"
@@ -114,7 +108,7 @@ class HighlightedElement extends PureComponent {
         value={this.props.data}
       />
     );
-  }
+  };
 }
 
 export default HighlightedElement;

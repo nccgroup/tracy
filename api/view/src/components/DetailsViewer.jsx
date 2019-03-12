@@ -1,64 +1,48 @@
 import React, { Component } from "react";
-import EventDetails from "./EventDetails";
-import TracerInputDetails from "./TracerInputDetails";
-import { isEmpty, occurrences } from "../utils";
-
+import MetaView from "../containers/MetaView";
+import RawView from "../containers/RawView";
 export default class DetailsViewer extends Component {
-  defaultLeft = (
-    <pre className="raw-data">
-      Click one of the tracers above to list all of its destinations on the
-      right.
-    </pre>
-  );
-  defaultRight = (
-    <pre className="raw-data">
-      Click one of the tracer events above to see the tracer's destination.
-    </pre>
-  );
+  changeTab = e => {
+    this.props.changeTab(e.target.getAttribute("data"));
+  };
 
-  render() {
-    let leftColumn = this.defaultLeft;
-    let rightColumn = this.defaultRight;
-    if (!isEmpty(this.props.tracer)) {
-      leftColumn = (
-        <TracerInputDetails
-          screenshot={this.props.tracer.Screenshot}
-          highlightString={this.props.tracer.Payload}
-          rawData={this.props.tracer.RawRequest}
-        />
-      );
+  render = () => {
+    let o;
+    switch (this.props.tabID) {
+      case "0":
+        o = <MetaView />;
+        break;
+      case "1":
+        o = <RawView />;
+        break;
+      case "2":
+        o = <span>repros</span>;
+        break;
+      default:
+        o = <MetaView />;
     }
-
-    if (!isEmpty(this.props.event)) {
-      let lang;
-      let data;
-      try {
-        data = JSON.stringify(
-          JSON.parse(this.props.event.RawEvent),
-          null,
-          "  "
-        );
-        lang = "json";
-      } catch (e) {
-        data = this.props.event.RawEvent;
-        lang = "html";
-      }
-
-      rightColumn = (
-        <EventDetails
-          data={data}
-          highlightString={this.props.tracer.TracerPayload}
-          highlightOffset={this.props.event.RawEventIndex}
-          lang={lang}
-        />
-      );
-    }
-
     return (
-      <div>
-        {leftColumn}
-        {rightColumn}
+      <div className="details">
+        <ul>
+          <li>
+            <a href="#" data="0" onClick={this.changeTab}>
+              meta
+            </a>
+          </li>
+          <li>
+            <a href="#" data="1" onClick={this.changeTab}>
+              raw
+            </a>
+          </li>
+          <li>
+            <a href="#" data="2" onClick={this.changeTab}>
+              reproductions
+            </a>
+          </li>
+        </ul>
+
+        {o}
       </div>
     );
-  }
+  };
 }

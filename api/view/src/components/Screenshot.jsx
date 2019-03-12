@@ -7,6 +7,7 @@ export default class Screenshot extends Component {
         className="tracy-screenshot"
         src={this.props.screenshot}
         title="tracy-screenshot"
+        alt="tracy-screenshot"
       />
     );
   }

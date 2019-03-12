@@ -33,6 +33,7 @@ var (
 		{http.MethodPost, "/tracers", AddTracers},
 		{http.MethodGet, "/tracers/generate", GenerateTracer},
 		{http.MethodGet, "/tracers/{tracerID}/request", GetRequest},
+		{http.MethodPut, "/tracers/{tracerID}", EditTracer},
 		{http.MethodGet, "/tracers/{tracerID}", GetTracer},
 		{http.MethodGet, "/tracers", GetTracers},
 		{http.MethodPost, "/tracers/{tracerID}/events", AddEvent},

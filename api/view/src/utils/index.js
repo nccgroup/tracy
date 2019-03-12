@@ -191,16 +191,6 @@ const filterResponses = context => {
   return context.EventType.toLowerCase() !== "http response";
 };
 
-// filterArchivedTracers filters out events and tracers that have been archived.
-const filterArchivedTracers = tracer => {
-  return !isInLocalStorage("archivedTracers", tracer.ID);
-};
-
-// filterArchives filters out events and tracers that have been archived.
-const filterArchivedContexts = context => {
-  return !isInLocalStorage("archivedContexts", context.ID);
-};
-
 // filterInactive filters out tracers that have no events or contexts.
 const filterInactive = tracer => {
   return tracer.HasTracerEvents;
@@ -411,7 +401,6 @@ const selectedTracerByID = (tracers, id) => {
 };
 
 const selectedEventByID = (events, id) => {
-  console.log(events, id);
   return events[firstIDByID(events, { ID: id })];
 };
 

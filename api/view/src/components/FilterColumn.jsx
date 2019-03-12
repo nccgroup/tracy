@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import FilterButton from "../containers/FilterButton";
-import { isInLocalStorage } from "../utils";
 import {
   TOGGLE_TEXT_FILTER,
   TOGGLE_HTTP_RESPONSE_FILTER,
@@ -10,11 +9,11 @@ import {
 export default class FilterColumn extends Component {
   render() {
     return (
-      <div>
+      <ul className="filter-column">
         <FilterButton
           name="text"
           imgType="glyph"
-          img="text-size"
+          img="font"
           filter={TOGGLE_TEXT_FILTER}
           description="filter innerText DOM writes"
         />
@@ -32,7 +31,7 @@ export default class FilterColumn extends Component {
           filter={TOGGLE_INACTIVE_FILTER}
           description="filter tracers without events"
         />
-      </div>
+      </ul>
     );
   }
 }
