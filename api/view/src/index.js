@@ -7,7 +7,7 @@ import rootReducer from "./reducers";
 import "@fortawesome/fontawesome-free-solid";
 import "@fortawesome/fontawesome-free-brands";
 
-const store = createStore(rootReducer);
+export const store = createStore(rootReducer);
 
 render(
   <Provider store={store}>

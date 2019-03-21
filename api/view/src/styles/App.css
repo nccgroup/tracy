@@ -18,6 +18,9 @@ main > div.app {
 
 .nav-sidebar {
   background-color: #252931;
+  display: flex;
+  flex-flow: column wrap;
+  justify-content: space-between;
 }
 
 .tables {
@@ -431,6 +434,37 @@ div.header button {
 
 pre code {
   padding: 9.5px;
+}
+
+.spinner {
+  -animation: spin 0.7s infinite linear;
+  -ms-animation: spin 0.7s infinite linear;
+  -webkit-animation: spinw 0.7s infinite linear;
+  color: red;
+  margin: 12px;
+}
+
+.check {
+  color: green;
+  margin: 12px;
+}
+
+@keyframes spin {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+@-webkit-keyframes spinw {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+  }
 }
 /*
 .right-bottom-column pre,

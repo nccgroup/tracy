@@ -10,7 +10,9 @@ import {
 
 const mapStateToProps = state => ({
   isOpen: state.webSocketOpen,
-  tracerID: state.tracer.ID
+  tracerID: state.selectedTracerID,
+  tracyHost: state.tracyHost,
+  tracyPort: state.tracyPort
 });
 
 const mapDispatchToProps = dispatch => ({

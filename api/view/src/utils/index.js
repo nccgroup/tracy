@@ -1,3 +1,5 @@
+import { store } from "../index";
+
 // sleep returns a promise that is resolved after the provided number of ms.
 const sleep = ms => {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -7,18 +9,13 @@ const sleep = ms => {
 // the tracy API.
 const newTracyRequest = async (path, opts) => {
   while (true) {
-    if (!window.tracy || !window.tracy.host || !window.tracy.port) {
-      console.error("the `window.tracy` object hasn't been set yet");
-      await sleep(500);
-      continue;
-    }
-
+    const state = store.getState();
     if (!opts.headers) {
       opts.headers = {};
     }
     opts.headers.Hoot = "!";
     return new Request(
-      `http://${window.tracy.host}:${window.tracy.port}/api/tracy${path}`,
+      `http://${state.tracyHost}:${state.tracyPort}/api/tracy${path}`,
       opts
     );
   }
@@ -158,34 +155,6 @@ const isEmpty = obj => {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
 };
 
-// stolen from : https://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string
-// Function that count occurrences of a substring in a string;
-// * @param {String} string               The string
-// * @param {String} subString            The sub string to search for
-// * @param {Boolean} [allowOverlapping]  Optional. (Default:false)
-// *
-// * @author Vitim.us https://gist.github.com/victornpb/7736865
-// * @see Unit Test https://jsfiddle.net/Victornpb/5axuh96u/
-// * @see http://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string/7924240#7924240
-const occurrences = (string, subString, allowOverlapping) => {
-  string += "";
-  subString += "";
-  if (subString.length <= 0) return string.length + 1;
-
-  const n = 0,
-    pos = 0,
-    step = allowOverlapping ? 1 : subString.length;
-
-  while (true) {
-    pos = string.indexOf(subString, pos);
-    if (pos >= 0) {
-      ++n;
-      pos += step;
-    } else break;
-  }
-  return n;
-};
-
 // filterResponses filters out events that have the event type of response.
 const filterResponses = context => {
   return context.EventType.toLowerCase() !== "http response";
@@ -201,12 +170,6 @@ const filterTextNodes = context => {
   return context.EventType.toLowerCase() !== "text";
 };
 
-const contextFilterKeys = [
-  "responses",
-  "exploitable",
-  "archivedContexts",
-  "text"
-];
 // parseVisibleEvents converts raw events from the API into events that can be
 // read by the table.
 const parseVisibleEvents = (events = [], sfilters = []) => {
@@ -404,9 +367,9 @@ const selectedEventByID = (events, id) => {
   return events[firstIDByID(events, { ID: id })];
 };
 
-const firstIDByID = (set, match) => {
-  for (let i = 0; i < set.length; i++) {
-    if (match.ID === set[i].ID) {
+const firstIDByID = (s, m) => {
+  for (let i = 0; i < s.length; i++) {
+    if (m.ID === s[i].ID) {
       return i;
     }
   }

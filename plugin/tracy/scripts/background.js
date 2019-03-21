@@ -1,3 +1,21 @@
+console.log("trying: ", chrome.runtime.getURL("html/index.html"));
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  r => {
+    console.log("hello?");
+    if (r.requestHeaders) {
+      console.log(r.requestHeaders);
+      for (let i = 0; i < r.requestHeaders.length; i++) {
+        if (r.requestHeaders[i].name.toLowerCase() === "origin") {
+          r.requestHeaders.splice(i, 1);
+        }
+      }
+    }
+    return { requestHeaders: r.requestHeaders };
+  },
+  { urls: ["<all_urls>"] },
+  ["blocking", "requestHeaders"]
+);
+
 /// prepCache uses a tab to recreate the state of a page with a
 // special header attached so that tracy knows on the backend to
 // cache the responses in-memory so that we can run reproductions
@@ -357,7 +375,7 @@ async function addJobToQueue(message, sender) {
 let jobs = [];
 
 // Process all the jobs in the current queue.
-const loc = chrome.runtime.getURL("scripts/worker.js");
+const loc = chrome.runtime.getURL("tracy/scripts/worker.js");
 const worker = new Worker(loc);
 // Any that come back get sent out the API server.
 worker.addEventListener("message", e => bulkAddEvents(e.data));
@@ -409,11 +427,11 @@ refreshConfig(true);
 const paintIcon = d => {
   if (d) {
     chrome.browserAction.setIcon({
-      path: "images/tracy_16x16_x.png"
+      path: "../images/tracy_16x16_x.png"
     });
   } else {
     chrome.browserAction.setIcon({
-      path: "images/tracy_16x16.png"
+      path: "../images/tracy_16x16.png"
     });
   }
 };

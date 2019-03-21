@@ -1,23 +1,14 @@
 import React, { Component } from "react";
 import { sleep, newTracyNotification } from "../utils";
-
+import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 class WebSocketRouter extends Component {
-  componentDidMount() {
+  componentDidMount = () => {
     this.connectToWebSocket();
-  }
+  };
 
-  connectToWebSocket() {
-    while (true) {
-      if (!window.tracy) {
-        sleep(1500);
-        continue;
-      }
-
-      break;
-    }
-
+  connectToWebSocket = () => {
     this.ws = new WebSocket(
-      `ws://${window.tracy.host}:${window.tracy.port}/ws`
+      `ws://${this.props.tracyHost}:${this.props.tracyPort}/ws`
     );
 
     this.ws.onmessage = msg => {
@@ -58,32 +49,25 @@ class WebSocketRouter extends Component {
       sleep(1500);
       this.connectToWebSocket();
     };
-  }
+  };
 
   ws = null;
 
-  spinner = (
-    <span className="connecting glyphicon glyphicon-refresh glyphicon-refresh-animate">
-      {" "}
-    </span>
-  );
+  spinner = <FontAwesomeIcon className="spinner" icon="spinner" />;
+  check = <FontAwesomeIcon className="check" icon="check" />;
 
-  render() {
-    let status = "disconnected";
+  render = () => {
     if (this.props.isOpen && this.ws !== null) {
       // If we have a websocket connection, send a subscription notice
       // which channel we want to receive events for.
-      status = "connected";
       this.ws.send(JSON.stringify([this.props.tracerID]));
+      return <div title="websocket connected">{this.check}</div>;
     }
 
     return (
-      <div>
-        {status === "disconnected" ? this.spinner : ""}
-        websocket: <span className={`${status}`}>{status}</span>
-      </div>
+      <div title="websocketed disconnected. retrying...">{this.spinner}</div>
     );
-  }
+  };
 }
 
 export default WebSocketRouter;

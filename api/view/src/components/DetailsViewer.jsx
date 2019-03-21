@@ -25,19 +25,19 @@ export default class DetailsViewer extends Component {
       <div className="details">
         <ul>
           <li>
-            <a href="#" data="0" onClick={this.changeTab}>
+            <button data="0" onClick={this.changeTab}>
               meta
-            </a>
+            </button>
           </li>
           <li>
-            <a href="#" data="1" onClick={this.changeTab}>
+            <button data="1" onClick={this.changeTab}>
               raw
-            </a>
+            </button>
           </li>
           <li>
-            <a href="#" data="2" onClick={this.changeTab}>
+            <button data="2" onClick={this.changeTab}>
               reproductions
-            </a>
+            </button>
           </li>
         </ul>
 

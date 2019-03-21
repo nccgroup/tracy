@@ -213,7 +213,7 @@ func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
 	}
 	r := types.Request{Tracers: []types.Tracer{t}}
 	inUpdateChanTracer <- r
-
+	UpdateSubscribers(r)
 	var ret []byte
 	if ret, err = json.Marshal(tracer); err != nil {
 		log.Warning.Print(err)
