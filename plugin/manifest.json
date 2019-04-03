@@ -20,7 +20,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*"],
+      "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*", "*://tracy/*"],
       "all_frames": true,
       "js": [
         "tracy/scripts/util.js",
@@ -30,6 +30,12 @@
       ],
       "css": ["tracy/css/dropdown.css"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "js": ["tracy/scripts/form-mod.js"],
+      "run_at": "document_idle"
     },
     {
       "matches": ["*://localhost/*", "*://127.0.0.1/*"],
@@ -52,9 +58,9 @@
     "tracy/scripts/repro.js",
     "tracy/scripts/worker.js",
     "tracy/scripts/method-hooking.js",
-    "sw.js",
     "tracy/images/tracy_svg.svg",
-    "tracy/html/index.html"
+    "tracy/html/index.html",
+    "tracy/html/page-proxy.html"
   ],
   "manifest_version": 2,
   "options_ui": {

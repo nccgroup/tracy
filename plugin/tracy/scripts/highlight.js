@@ -259,7 +259,7 @@ const highlight = (function() {
   // Find all the inputs and style them with the extension.
   // autom indicates if the user wants to fill the page without
   // modifying their settings.
-  async function clickToFill(elem, autom) {
+  async function addClickToFill(elem, autom) {
     const autop = util.get({ autoFill: false, autoFillPayload: "zzXSSzz" });
     const ifs = [
       ...elem.getElementsByTagName("input"),

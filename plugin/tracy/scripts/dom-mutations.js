@@ -29,15 +29,16 @@
               // input fields. Use this as a chance to restyle new inputs that
               // were not caught earlier.
               parentNode = node;
-              util.send({
+              retryingSend({
                 "message-type": "job",
                 type: "dom",
                 msg: node.outerHTML,
                 location: document.location.href
               });
-              highlight.clickToFill(node, false);
+              highlight.addClickToFill(node, false);
+              form.addOnSubmit(node);
             } else if (node.nodeType == Node.TEXT_NODE) {
-              util.send({
+              retryingSend({
                 "message-type": "job",
                 type: "text",
                 msg: node.textContent,
@@ -57,14 +58,14 @@
           ) {
             return;
           }
-          util.send({
+          retryingSend({
             "message-type": "job",
             type: "dom",
             msg: mutation.target.outerHTML,
             location: document.location.href
           });
         } else if (mutation.type == "characterData") {
-          util.send({
+          retryingSend({
             "message-type": "job",
             type: "dom",
             msg: mutation.target.parentNode.outerHTML,
@@ -81,6 +82,17 @@
     childList: true,
     characterData: true,
     subtree: true
+  };
+
+  const retryingSend = async message => {
+    for (;;) {
+      try {
+        return await util.send(message);
+      } catch (e) {
+        console.log("retrying...", e);
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
   };
 
   observer.observe(document.documentElement, observerConfig);
