@@ -157,8 +157,6 @@ const highlight = (function() {
   // tracer API and inserts it into the element. It will also
   // take a screenshot of the surrounding area and attack that to the tracer.
   async function fillGenPayload(elem, tracerString) {
-    const conf = await util.get({ restHost: "localhost", restPort: 7777 });
-
     try {
       const disabled = await util.send({
         "message-type": "config",
@@ -178,7 +176,7 @@ const highlight = (function() {
           elem.value + json.Tracers[0].TracerPayload
         );
         const ss = await captureScreenshot(elem, 200);
-        sendScreenshot(ss, json.Tracers[0].ID, conf);
+        sendScreenshot(ss, json.Tracers[0].ID);
       }
     } catch (err) {
       console.error(err);
@@ -196,7 +194,7 @@ const highlight = (function() {
 
   // sendScreenshot makes the API request to send the screenshot
   // data URI to a tracer with a specific ID.
-  async function sendScreenshot(screenshot, id, conf) {
+  async function sendScreenshot(screenshot, id) {
     const disabled = await util.send({
       "message-type": "config",
       config: "disabled"
