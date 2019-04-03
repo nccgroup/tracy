@@ -165,18 +165,18 @@ const highlight = (function() {
       if (!disabled) {
         const json = await util.send({
           "message-type": "background-fetch",
-          "route": `/api/tracy/tracers/generate?tracer_string=${tracerString}&url=${
-              document.location
-            }`,
-          "method": "GET"
+          route: `/api/tracy/tracers/generate?tracer_string=${tracerString}&url=${
+            document.location
+          }`,
+          method: "GET"
         });
 
         await simulateInputType(
           elem,
           elem.value + json.Tracers[0].TracerPayload
         );
-        const ss = await captureScreenshot(elem, 200);
-        sendScreenshot(ss, json.Tracers[0].ID);
+        //const ss = await captureScreenshot(elem, 200);
+        //sendScreenshot(ss, json.Tracers[0].ID);
       }
     } catch (err) {
       console.error(err);
@@ -203,11 +203,11 @@ const highlight = (function() {
     try {
       if (!disabled) {
         await util.send({
-            "message-type": "background-fetch",
-            "route": `/api/tracy/tracers/${id}`,
-            "method": "PUT",
-            "body": JSON.stringify({ Screenshot: screenshot })
-          });
+          "message-type": "background-fetch",
+          route: `/api/tracy/tracers/${id}`,
+          method: "PUT",
+          body: JSON.stringify({ Screenshot: screenshot })
+        });
       }
     } catch (err) {
       console.error(err);
