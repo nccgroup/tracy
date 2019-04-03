@@ -144,6 +144,9 @@ function messageRouter(message, sender, sendResponse) {
       case "config":
         configQuery(message, sender, sendResponse);
         break;
+      case "background-fetch":
+        backgroundFetch(message, sender, sendResponse);
+        return true;
       case "screenshot":
         handleScreenshot(message, sender, sendResponse);
         return true;
@@ -153,6 +156,27 @@ function messageRouter(message, sender, sendResponse) {
     // wouldn't have such a long XSS payload.
     updateReproduction(message, sender);
   }
+}
+
+// cross-orgin fetches are disallowed from content scripts in Chrome Extensions,
+// so doing our fetch()'s from background instead of content scripts:
+// https://www.chromium.org/Home/chromium-security/extension-content-script-fetches
+// "message" should have a route, method, and optionally a body
+async function backgroundFetch(message, sender, callback) {
+  const req = new Request(
+    `http://${restServer}${message["route"]}`,
+    {
+      method: message.method,
+      headers: {Hoot: "!", "X-TRACY": "NOTOUCHY"}
+    }
+  );
+
+  if (message.body) { req.body = message.body; };
+
+  const resp = await fetch(req);
+  const json = await resp.json();
+
+  callback(json);
 }
 
 // handleScreenshot takes a screenshot of the requesting tab,

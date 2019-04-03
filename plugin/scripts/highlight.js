@@ -157,36 +157,26 @@ const highlight = (function() {
   // tracer API and inserts it into the element. It will also
   // take a screenshot of the surrounding area and attack that to the tracer.
   async function fillGenPayload(elem, tracerString) {
-    const conf = await util.get({ restHost: "localhost", restPort: 7777 });
-    const genReq = new Request(
-      `http://${conf.restHost}:${
-        conf.restPort
-      }/api/tracy/tracers/generate?tracer_string=${tracerString}&url=${
-        document.location
-      }`,
-      {
-        headers: {
-          Hoot: "!",
-          "X-TRACY": "NOTOUCHY"
-        }
-      }
-    );
-
     try {
       const disabled = await util.send({
         "message-type": "config",
         config: "disabled"
       });
       if (!disabled) {
-        const resp = await fetch(genReq);
-        const json = await resp.json();
+        const json = await util.send({
+          "message-type": "background-fetch",
+          "route": `/api/tracy/tracers/generate?tracer_string=${tracerString}&url=${
+              document.location
+            }`,
+          "method": "GET"
+        });
 
         await simulateInputType(
           elem,
           elem.value + json.Tracers[0].TracerPayload
         );
         const ss = await captureScreenshot(elem, 200);
-        sendScreenshot(ss, json.Tracers[0].ID, conf);
+        sendScreenshot(ss, json.Tracers[0].ID);
       }
     } catch (err) {
       console.error(err);
@@ -204,15 +194,7 @@ const highlight = (function() {
 
   // sendScreenshot makes the API request to send the screenshot
   // data URI to a tracer with a specific ID.
-  async function sendScreenshot(screenshot, id, conf) {
-    const upReq = new Request(
-      `http://${conf.restHost}:${conf.restPort}/api/tracy/tracers/${id}`,
-      {
-        method: "PUT",
-        headers: { Hoot: "!", "X-TRACY": "NOTOUCHY" },
-        body: JSON.stringify({ Screenshot: screenshot })
-      }
-    );
+  async function sendScreenshot(screenshot, id) {
     const disabled = await util.send({
       "message-type": "config",
       config: "disabled"
@@ -220,7 +202,12 @@ const highlight = (function() {
 
     try {
       if (!disabled) {
-        await fetch(upReq);
+        await util.send({
+            "message-type": "background-fetch",
+            "route": `/api/tracy/tracers/${id}`,
+            "method": "PUT",
+            "body": JSON.stringify({ Screenshot: screenshot })
+          });
       }
     } catch (err) {
       console.error(err);

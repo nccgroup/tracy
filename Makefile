@@ -4,7 +4,7 @@ GOARCH = amd64
 VERSION=0
 COMMIT=$(shell git rev-parse HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-GOPATH=$(shell go env GOPATH)
+GOPATH?=$(shell go env GOPATH)
 
 # Symlink into GOPATH
 PROJECT_NAME=github.com/nccgroup/tracy
@@ -21,15 +21,15 @@ all: test view bins
 # Build the cross-compiled binaries with xgo. Really only for CI or builders.
 bins:
 	dep ensure -v;
-	xgo -dest ${GOPATH}/src/${PROJECT_NAME}/bin --ldflags=${LDFLAGS} --targets=windows/amd64,linux/amd64,darwin/amd64 ${GOPATH}/src/${PROJECT_NAME}
+	xgo -dest ${BUILD_DIR}/bin --ldflags=${LDFLAGS} --targets=windows/amd64,linux/amd64,darwin/amd64 ${BUILD_DIR}
 
 # Build the view and static assets into a Go file
 view:
-	npm --prefix ${GOPATH}/src/${PROJECT_NAME}/api/view install; \
-	npm --prefix ${GOPATH}/src/${PROJECT_NAME}/api/view run build; \
-	cd ${GOPATH}/src/${PROJECT_NAME}/api/view/; \
+	npm --prefix ${BUILD_DIR}/api/view install; \
+	npm --prefix ${BUILD_DIR}/api/view run build; \
+	cd ${BUILD_DIR}/api/view/; \
 	go-bindata-assetfs -pkg rest ./build/...; \
-	mv ./bindata_assetfs.go ${GOPATH}/src/${PROJECT_NAME}/api/rest/
+	mv ./bindata_assetfs.go ${BUILD_DIR}/api/rest/
 
 # Format all the Go code
 fmt:
