@@ -173,10 +173,15 @@ async function backgroundFetch(message, sender, callback) {
 
   if (message.body) { req.body = message.body; };
 
-  const resp = await fetch(req);
-  const json = await resp.json();
-
-  callback(json);
+  fetch(req)
+    .then(async function(response) {
+      if (response.ok) {
+        const json = await response.json();
+        callback(json);
+      } else {
+        throw new Error('Network response was: ' + response.status);
+      }
+    });
 }
 
 // handleScreenshot takes a screenshot of the requesting tab,
