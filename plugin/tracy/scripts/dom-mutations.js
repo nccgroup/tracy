@@ -1,4 +1,4 @@
-(function() {
+(() => {
   // This observer will be used to observe changes in the DOM. It will batches
   // DOM changes and send them to the API/ server if it finds a tracer string.
   const observer = new MutationObserver(mutations => {
@@ -36,7 +36,9 @@
                 location: document.location.href
               });
               highlight.addClickToFill(node, false);
-              form.addOnSubmit(node);
+              // Form scripts load on document_idle,
+              // so we need to keep retying until the script loads.
+              retryingAddOnSubmit(node);
             } else if (node.nodeType == Node.TEXT_NODE) {
               retryingSend({
                 "message-type": "job",
@@ -88,6 +90,31 @@
     for (;;) {
       try {
         return await util.send(message);
+      } catch (e) {
+        console.log("retrying...", e);
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+  };
+
+  const pageLoaded = new Promise(r =>
+    document.addEventListener("DOMContentLoaded", () => r(true))
+  );
+  const pageComplete = (async () => {
+    for (;;) {
+      if (document.readyState !== "complete") {
+        await new Promise(r => setTimeout(r, 250));
+        continue;
+      }
+      return true;
+    }
+  })();
+
+  const retryingAddOnSubmit = async node => {
+    for (;;) {
+      try {
+        await Promise.all([pageComplete, pageLoaded]);
+        return form.addOnSubmit(node);
       } catch (e) {
         console.log("retrying...", e);
         await new Promise(r => setTimeout(r, 1000));

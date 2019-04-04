@@ -1,4 +1,4 @@
-const highlight = (function() {
+const highlight = (() => {
   // Gets the element offset without jQuery.
   // http://stackoverflow.com/questions/18953144/how-do-i-get-the-offset-top-value-of-an-element-without-using-jquery
   function getElementOffset(elem) {
@@ -311,5 +311,5 @@ const highlight = (function() {
     }
   });
 
-  return { clickToFill: clickToFill };
+  return { addClickToFill: addClickToFill };
 })();
