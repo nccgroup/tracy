@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/types"
-	"github.com/nccgroup/tracy/log"
 	"github.com/nccgroup/tracy/proxy"
 )
 
@@ -37,7 +36,6 @@ func EditTracer(w http.ResponseWriter, r *http.Request) {
 
 	ret, err := common.EditTracer(tracer, uint(id))
 	if err != nil {
-		log.Error.Print(err)
 		returnError(w, err)
 		return
 	}

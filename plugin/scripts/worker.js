@@ -5,7 +5,6 @@ onmessage = e =>
 // against the current set of tracer payloads, and sends them as a batch API
 // request to the API. Events should contain a list of DOM events.
 const requestHandler = (domEvents, tracerPayloads) => {
-  console.log("tracerPayloads", tracerPayloads);
   // A filtered list of DOM events based on if the event has a tracer in it.
   // Each DOM event can have multiple tracer strings.
   let filteredEvents = [];
@@ -25,7 +24,6 @@ const requestHandler = (domEvents, tracerPayloads) => {
       // Continue to the rest of the recorded.
       const tracerLocation = domEvent.msg.indexOf(tracerPayload);
       if (tracerLocation != -1) {
-        console.log("tracerPayload", tracerPayload);
         // Add this location data to the list of tracers per DOM event.
         tracersPerDomEvent.push(tracerPayload);
       }
@@ -46,7 +44,6 @@ const requestHandler = (domEvents, tracerPayloads) => {
         TracerPayloads: tracersPerDomEvent
       };
 
-      console.log(event.TracerPayloads);
       filteredEvents.push(event);
     }
   }
