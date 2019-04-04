@@ -72,13 +72,21 @@ func init() {
 		pprof.StartCPUProfile(f)
 	}
 
-	// Open the database.
-	if err := store.Open(configure.Current.DatabasePath, log.Verbose); err != nil {
-		log.Error.Fatal(err.Error())
-	}
+	// // Open the database.
+	// if err := store.Open(configure.Current.DatabasePath, log.Verbose); err != nil {
+	// 	log.Error.Fatal(err.Error())
+	// }
 
 	// Initialize the HTTP routes.
-	rest.Configure(rest.FULL)
+
+	oldHost := configure.Current.TracyServer.Hostname
+	oldPort := configure.Current.TracyServer.Port
+
+	configure.Current.TracyServer.Hostname = "127.0.0.1" //This is a hack to fix the fact we don't have an option to config just the proxy. Need to talk to Jake about how to fix this for real
+	configure.Current.TracyServer.Port = 8888
+	rest.Configure(rest.PROXY_ONLY)
+	configure.Current.TracyServer.Hostname = oldHost
+	configure.Current.TracyServer.Port = oldPort
 
 	// Instantiate the certificate cache.
 	certsJSON, err := ioutil.ReadFile(configure.Current.CertCachePath)

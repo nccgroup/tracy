@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/sha1"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,8 +19,6 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/nccgroup/tracy/api/common"
-	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/configure"
 	"github.com/nccgroup/tracy/log"
@@ -33,18 +32,23 @@ type Proxy struct {
 	HTTPBytePool      *sync.Pool
 	WebSocketUpgrader websocket.Upgrader
 	WebSocketDialer   websocket.Dialer
+	APIClient         *http.Client
 }
 
 // New instantiates a Proxy object with the passed in net.Listener,
 // http.Transport, and websocket.Dialer.
 func New(transport http.Transport, upgrader websocket.Upgrader,
 	dialer websocket.Dialer, bp, bufp *sync.Pool) *Proxy {
+
+	client := &http.Client{}
+
 	return &Proxy{
 		HTTPTransport:     transport,
 		HTTPBufferPool:    bufp,
 		HTTPBytePool:      bp,
 		WebSocketUpgrader: upgrader,
 		WebSocketDialer:   dialer,
+		APIClient:         client,
 	}
 }
 
@@ -54,9 +58,26 @@ func New(transport http.Transport, upgrader websocket.Upgrader,
 // payload so that there is a record of where the input was sent to the
 // server for the fist time.
 func (p *Proxy) identifyRequestsforGeneratedTracer(d []byte, method string) {
+
+	req, err := http.NewRequest("GET", "http://"+configure.Current.TracyServer.Addr()+"/api/tracy/tracers", nil) //Change this over to https when we do that. Well it would be better to make it a config
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Hoot", "Hoot")
+
+	resp, err := p.APIClient.Do(req) //because this is a request now we make a lot of request. Really this needs to be websocket but for now it's not a problem
+
+	if err != nil {
+		log.Error.Print(err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var requests []types.Request
+
+	err = json.NewDecoder(resp.Body).Decode(&requests)
+
 	dump := string(d)
-	var err error
-	requests := common.GetTracersCache()
+
 	for _, req := range requests {
 		for _, tracer := range req.Tracers {
 			if !strings.Contains(dump, tracer.TracerPayload) ||
@@ -66,12 +87,18 @@ func (p *Proxy) identifyRequestsforGeneratedTracer(d []byte, method string) {
 			req.RawRequest = dump
 			req.RequestMethod = method
 
-			err = store.DB.Save(&req).Error
+			jsonData, _ := json.Marshal(req)
+
+			req, err := http.NewRequest("PATCH", "http://"+configure.Current.TracyServer.Addr()+"/api/tracy/tracers", bytes.NewBuffer(jsonData)) //Change this over to https when we do that. Well it would be better to make it a config
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Hoot", "Hoot")
+
+			_, err = p.APIClient.Do(req)
+
 			if err != nil {
 				log.Error.Print(err)
 				return
 			}
-			common.UpdateSubscribers(req)
 		}
 	}
 }
@@ -95,7 +122,7 @@ func (p *Proxy) findTracers(s string, requests []types.Request) ([]types.Tracer,
 
 // createTracersFrom looks for all the registered tracers in a string
 // and makes an event for each of them.
-func (p *Proxy) createTracersFrom(sb, eventType string, reqURL *url.URL) {
+/* func (p *Proxy) createTracersFrom(sb, eventType string, reqURL *url.URL) {
 	if configure.HostInWhitelist(reqURL.Host) {
 		return
 	}
@@ -116,37 +143,39 @@ func (p *Proxy) createTracersFrom(sb, eventType string, reqURL *url.URL) {
 
 	// We have to do this first so that we can get the ID of the raw event
 	// and insert it with the event structure.
-	rawEvent, err := common.AddEventData(sb)
-	if err != nil {
-		log.Error.Print(err)
-		return
-	}
+	//	rawEvent, err := common.AddEventData(sb)
+	//	if err != nil {
+	//		log.Error.Print(err)
+	//		return
+	//	}
 
-	for _, tracer := range tracers {
-		for _, event := range tracer.TracerEvents {
-			//TODO: should probably make a bulk add events function
-			event.RawEventID = rawEvent.ID
-			event.RawEvent = rawEvent
-			event.EventURL = reqURL.String()
-			event.EventType = eventType
+	//bulkEvents := types.TracerEventBulk{TracerPayloads: tracers}
 
-			if err = store.DB.First(&tracer, "id = ?", event.TracerID).Error; err != nil {
-				// Don't print errors about the key being unique in the DB.
-				if !strings.Contains(err.Error(), "UNIQUE") {
-					log.Error.Println(err)
-					return
-				}
-			}
-			_, err = common.AddEvent(tracer, event)
-			if err != nil {
-				if !strings.Contains(err.Error(), "UNIQUE") {
-					log.Error.Print(err)
-					return
-				}
-			}
-		}
-	}
-}
+	// for _, tracer := range tracers {
+	// 	for _, event := range tracer.TracerEvents {
+	// 		//TODO: should probably make a bulk add events function
+	// 		event.RawEventID = rawEvent.ID
+	// 		event.RawEvent = rawEvent
+	// 		event.EventURL = reqURL.String()
+	// 		event.EventType = eventType
+
+	// 		if err = store.DB.First(&tracer, "id = ?", event.TracerID).Error; err != nil {
+	// 			// Don't print errors about the key being unique in the DB.
+	// 			if !strings.Contains(err.Error(), "UNIQUE") {
+	// 				log.Error.Println(err)
+	// 				return
+	// 			}
+	// 		}
+	// 		_, err = common.AddEvent(tracer, event)
+	// 		if err != nil {
+	// 			if !strings.Contains(err.Error(), "UNIQUE") {
+	// 				log.Error.Print(err)
+	// 				return
+	// 			}
+	// 		}
+	// 	}
+	// }
+} */
 
 // handleConnect handles the upgrade requests for 'CONNECT' HTTP requests.
 func handleConnect(client net.Conn, r *http.Request) (net.Conn, bool, error) {
@@ -327,7 +356,15 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				Tracers:       tracers,
 			}
 
-			_, err = common.AddTracer(r)
+			//_, err = common.AddTracer(r)
+			jsonData, _ := json.Marshal(r)
+
+			req, err := http.NewRequest("POST", "http://"+configure.Current.TracyServer.Addr()+"/api/tracy/tracers", bytes.NewBuffer(jsonData)) //Change this over to https when we do that. Well it would be better to make it a config
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Hoot", "Hoot")
+
+			_, err = p.APIClient.Do(req)
+
 			if err != nil {
 				log.Error.Print(err)
 			}
@@ -626,7 +663,7 @@ func (p *Proxy) serveFromHTTP(w io.Writer, req *http.Request) error {
 		// might get large, perform this operation in a goroutine.
 		// The proxy can finish this connection before this finishes.
 		// We don't need to do this in the cases where we are prepping the cache.
-		go p.createTracersFrom(string(b), "http response", req.URL)
+		//go p.createTracersFrom(string(b), "http response", req.URL)
 	}
 
 	writeBack(w, resp, b)

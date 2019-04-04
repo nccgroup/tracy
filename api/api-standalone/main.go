@@ -1,12 +1,8 @@
 package main
 
 import (
-	"crypto/tls"
-	"encoding/json"
-	"encoding/pem"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	_ "net/http/pprof"
 	"os"
 	"os/exec"
@@ -18,7 +14,6 @@ import (
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/configure"
 	"github.com/nccgroup/tracy/log"
-	"github.com/nccgroup/tracy/proxy"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -78,45 +73,8 @@ func init() {
 	}
 
 	// Initialize the HTTP routes.
-	rest.Configure(rest.FULL)
+	rest.Configure(rest.API_ONLY)
 
-	// Instantiate the certificate cache.
-	certsJSON, err := ioutil.ReadFile(configure.Current.CertCachePath)
-	if err != nil {
-		certsJSON = []byte("[]")
-		// Can recover from this. Simply make a cache file and
-		// instantiate an empty cache.
-		ioutil.WriteFile(configure.Current.CertCachePath, certsJSON, os.ModePerm)
-	}
-
-	var certs []proxy.CertCacheEntry
-	if err := json.Unmarshal(certsJSON, &certs); err != nil {
-		log.Error.Print(err)
-		return
-	}
-
-	cache := make(map[string]tls.Certificate)
-	for _, cert := range certs {
-		keyPEM := cert.Certs.KeyPEM
-		certPEM := cert.Certs.CertPEM
-
-		cachedCert, err := tls.X509KeyPair(
-			pem.EncodeToMemory(&pem.Block{
-				Type:  "CERTIFICATE",
-				Bytes: certPEM}),
-			pem.EncodeToMemory(&pem.Block{
-				Type:  "EC PRIVATE KEY",
-				Bytes: keyPEM}))
-
-		if err != nil {
-			log.Error.Println(err)
-			continue
-		}
-
-		cache[cert.Host] = cachedCert
-	}
-	proxy.SetCertCache(cache)
-	configure.Certificates()
 }
 
 // processAutoLaunch launchs whatever browser they have configured.
