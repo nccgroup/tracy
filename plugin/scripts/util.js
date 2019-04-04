@@ -1,22 +1,18 @@
-const util = (function() {
+const util = (() => {
   // send wraps the Chrome sendMessage API in a promise.
-  const send = async data => {
+  const send = data => {
     const stack = Error().stack;
 
-    return await new Promise((res, rej) => {
-      try {
-        chrome.runtime.sendMessage(data, resp => {
-          const err = chrome.runtime.lastError;
-          if (err) {
-            throw err;
-          }
+    return new Promise((res, rej) => {
+      chrome.runtime.sendMessage(data, resp => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          rej(err);
+          return;
+        }
 
-          res(resp);
-        });
-      } catch (e) {
-        console.error("[SEND->BACKGROUND]", e, stack);
-        rej(e);
-      }
+        res(resp);
+      });
     });
   };
 
@@ -25,19 +21,15 @@ const util = (function() {
     const stack = Error().stack;
 
     return await new Promise((res, rej) => {
-      try {
-        chrome.storage.local.get(data, resp => {
-          const err = chrome.runtime.lastError;
-          if (err) {
-            throw err;
-          }
+      chrome.storage.local.get(data, resp => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          rej(err);
+          return;
+        }
 
-          res(resp);
-        });
-      } catch (e) {
-        console.error("[GET->BACKGROUND]", e, stack);
-        rej(e);
-      }
+        res(resp);
+      });
     });
   };
 

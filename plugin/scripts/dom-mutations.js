@@ -29,20 +29,24 @@
               // input fields. Use this as a chance to restyle new inputs that
               // were not caught earlier.
               parentNode = node;
-              util.send({
-                "message-type": "job",
-                type: "dom",
-                msg: node.outerHTML,
-                location: document.location.href
-              });
+              util
+                .send({
+                  "message-type": "job",
+                  type: "dom",
+                  msg: node.outerHTML,
+                  location: document.location.href
+                })
+                .catch(err => console.log(err));
               highlight.clickToFill(node, false);
             } else if (node.nodeType == Node.TEXT_NODE) {
-              util.send({
-                "message-type": "job",
-                type: "text",
-                msg: node.textContent,
-                location: document.location.href
-              });
+              util
+                .send({
+                  "message-type": "job",
+                  type: "text",
+                  msg: node.textContent,
+                  location: document.location.href
+                })
+                .catch(err => console.log(err));
             }
           }
         });
@@ -57,19 +61,23 @@
           ) {
             return;
           }
-          util.send({
-            "message-type": "job",
-            type: "dom",
-            msg: mutation.target.outerHTML,
-            location: document.location.href
-          });
+          util
+            .send({
+              "message-type": "job",
+              type: "dom",
+              msg: mutation.target.outerHTML,
+              location: document.location.href
+            })
+            .catch(err => console.log(err));
         } else if (mutation.type == "characterData") {
-          util.send({
-            "message-type": "job",
-            type: "dom",
-            msg: mutation.target.parentNode.outerHTML,
-            location: document.location.href
-          });
+          util
+            .send({
+              "message-type": "job",
+              type: "dom",
+              msg: mutation.target.parentNode.outerHTML,
+              location: document.location.href
+            })
+            .catch(err => console.log(err));
         }
       }
     });

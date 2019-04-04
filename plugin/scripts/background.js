@@ -140,6 +140,7 @@ function messageRouter(message, sender, sendResponse) {
     switch (message["message-type"]) {
       case "job":
         addJobToQueue(message, sender);
+        sendResponse(true);
         break;
       case "config":
         configQuery(message, sender, sendResponse);
@@ -163,16 +164,15 @@ function messageRouter(message, sender, sendResponse) {
 // https://www.chromium.org/Home/chromium-security/extension-content-script-fetches
 // "message" should have a route, method, and optionally a body
 async function backgroundFetch(message, sender, callback) {
-  const req = new Request(
-    `http://${restServer}${message["route"]}`,
-    {
-      method: message.method,
-      headers: {Hoot: "!", "X-TRACY": "NOTOUCHY"}
-    }
-  );
+  let opts = {
+    method: message.method,
+    headers: { Hoot: "!", "X-TRACY": "NOTOUCHY" },
+    body: !message.body ? "" : message.body
+  };
 
-  if (message.body) { req.body = message.body; };
-
+  const lc = message.method.toLowerCase();
+  if (lc === "get" || lc === "header") delete opts.body;
+  const req = new Request(`http://${restServer}${message["route"]}`, opts);
   const resp = await fetch(req);
   const json = await resp.json();
 
@@ -265,6 +265,10 @@ async function refreshConfig(wsConnect) {
       // about duplicate IDs.
       tracerStringTypes.forEach(i => {
         chrome.contextMenus.remove(i, () => {
+          err = chrome.runtime.lastError;
+          if (err) {
+            //Don't really care about this error.
+          }
           // Context menu for right-clicking on an editable field.
           chrome.contextMenus.create({
             id: i,
@@ -286,10 +290,9 @@ async function refreshConfig(wsConnect) {
     .catch(err => console.error(err))
     .then(res => {
       if (!res) return;
-      tracerPayloads = [].concat.apply(
-        [],
-        res.map(r => [].concat(r.Tracers.map(t => t.TracerPayload)))
-      );
+      tracerPayloads = [].concat
+        .apply([], res.map(r => [].concat(r.Tracers.map(t => t.TracerPayload))))
+        .filter(t => t !== "");
     })
     .catch(err => console.error(err));
 

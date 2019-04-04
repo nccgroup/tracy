@@ -175,8 +175,8 @@ const highlight = (function() {
           elem,
           elem.value + json.Tracers[0].TracerPayload
         );
-        //const ss = await captureScreenshot(elem, 200);
-        //sendScreenshot(ss, json.Tracers[0].ID);
+        const ss = await captureScreenshot(elem, 200);
+        sendScreenshot(ss, json.Tracers[0].ID);
       }
     } catch (err) {
       console.error(err);
