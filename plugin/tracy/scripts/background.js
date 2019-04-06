@@ -163,8 +163,8 @@ function messageRouter(message, sender, sendResponse) {
       case "screenshot":
         handleScreenshot(message, sender, sendResponse);
         return true;
-      case "request":
-        sendRequest(message, sender, sendResponse);
+      case "replace":
+        replaceMessage(message, sender, sendResponse);
         return true;
     }
   } else if (message.r) {
@@ -174,40 +174,18 @@ function messageRouter(message, sender, sendResponse) {
   }
 }
 
-async function sendRequest(message, sender, callback) {
-  const objectToRequest = obj => {
-    const url = obj.url;
-    const lc = obj.method.toLowerCase();
-    if (lc === "get" || lc === "header") delete obj.body;
-    delete obj.url;
-    return new Request(url, obj);
-  };
+function getTracerTypes() {
+  return { zzXSSzz: "\"'<[[ID]]>", zzPLAINzz: "[[ID]]" };
+}
 
-  const responseToObject = resp => {
-    return resp.arrayBuffer().then(body => {
-      return {
-        headers: headersToObject(resp.headers),
-        status: resp.status,
-        statusText: resp.statusText,
-        body: Array.apply(null, new Uint8Array(body))
-      };
-    });
-  };
-  const headersToObject = headers => {
-    let ret = {};
-    for (let p of headers) {
-      ret[p[0]] = p[1];
-    }
-    return ret;
-  };
-
-  const req = objectToRequest(message.data);
-  console.log("req", req);
-  const r = await fetch(req, { redirect: "follow", mode: "cors" });
-  const o = await responseToObject(r);
-  console.log("[FETCH COMPLETE]", r, o);
-
-  callback(o);
+const workerReplace = chrome.runtime.getURL("tracy/scripts/worker-replace.js");
+async function replaceMessage(message, sender, sendResponse) {
+  const worker = new Worker(workerReplace);
+  worker.addEventListener("message", msg => {
+    sendResponse(msg);
+    worker.terminate();
+  });
+  worker.postMessage({ msg: message.msg, tracerTypes: getTracerTypes() });
 }
 
 // handleScreenshot takes a screenshot of the requesting tab,

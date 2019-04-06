@@ -2,7 +2,7 @@
   "name": "Tracy",
   "description":
     "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "permissions": [
     "activeTab",
     "<all_urls>",
