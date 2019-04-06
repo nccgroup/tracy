@@ -1,9 +1,6 @@
-console.log("trying: ", chrome.runtime.getURL("html/index.html"));
 chrome.webRequest.onBeforeSendHeaders.addListener(
   r => {
-    console.log("hello?");
     if (r.requestHeaders) {
-      console.log(r.requestHeaders);
       for (let i = 0; i < r.requestHeaders.length; i++) {
         if (r.requestHeaders[i].name.toLowerCase() === "origin") {
           r.requestHeaders.splice(i, 1);
@@ -158,6 +155,7 @@ function messageRouter(message, sender, sendResponse) {
     switch (message["message-type"]) {
       case "job":
         addJobToQueue(message, sender);
+        sendResponse(true);
         break;
       case "config":
         configQuery(message, sender, sendResponse);
@@ -165,12 +163,51 @@ function messageRouter(message, sender, sendResponse) {
       case "screenshot":
         handleScreenshot(message, sender, sendResponse);
         return true;
+      case "request":
+        sendRequest(message, sender, sendResponse);
+        return true;
     }
   } else if (message.r) {
     // Changed the format of the message so we
     // wouldn't have such a long XSS payload.
     updateReproduction(message, sender);
   }
+}
+
+async function sendRequest(message, sender, callback) {
+  const objectToRequest = obj => {
+    const url = obj.url;
+    const lc = obj.method.toLowerCase();
+    if (lc === "get" || lc === "header") delete obj.body;
+    delete obj.url;
+    return new Request(url, obj);
+  };
+
+  const responseToObject = resp => {
+    return resp.arrayBuffer().then(body => {
+      return {
+        headers: headersToObject(resp.headers),
+        status: resp.status,
+        statusText: resp.statusText,
+        body: Array.apply(null, new Uint8Array(body))
+      };
+    });
+  };
+  const headersToObject = headers => {
+    let ret = {};
+    for (let p of headers) {
+      ret[p[0]] = p[1];
+    }
+    return ret;
+  };
+
+  const req = objectToRequest(message.data);
+  console.log("req", req);
+  const r = await fetch(req, { redirect: "follow", mode: "cors" });
+  const o = await responseToObject(r);
+  console.log("[FETCH COMPLETE]", r, o);
+
+  callback(o);
 }
 
 // handleScreenshot takes a screenshot of the requesting tab,
@@ -257,8 +294,13 @@ async function refreshConfig(wsConnect) {
 
       // TODO: can't figure out why Firefox is throwing an error here
       // about duplicate IDs.
+      let err;
       tracerStringTypes.forEach(i => {
         chrome.contextMenus.remove(i, () => {
+          err = chrome.runtime.lastError;
+          if (err) {
+            //Don't really care about this error.
+          }
           // Context menu for right-clicking on an editable field.
           chrome.contextMenus.create({
             id: i,
@@ -427,11 +469,11 @@ refreshConfig(true);
 const paintIcon = d => {
   if (d) {
     chrome.browserAction.setIcon({
-      path: "../images/tracy_16x16_x.png"
+      path: "../tracy/images/tracy_16x16_x.png"
     });
   } else {
     chrome.browserAction.setIcon({
-      path: "../images/tracy_16x16.png"
+      path: "../tracy/images/tracy_16x16.png"
     });
   }
 };
