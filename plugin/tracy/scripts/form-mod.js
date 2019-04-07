@@ -1,20 +1,18 @@
 const form = (() => {
   const addOnSubmit = elem => {
-    [...elem.getElementsByTagName("form")].map(t =>
-      t.addEventListener("submit", async e => {
-        const inputs = [...e.target.getElementsByTagName("input")];
-        console.log("inputs:", inputs.length, inputs);
-        //        debugger;
-        await Promise.all(
-          inputs.map(async t => {
-            t.value = await util.send({
-              "message-type": "replace",
-              msg: t.value
-            });
-          })
-        );
-      })
-    );
+    const addEventListener = elem => {
+      elem.addEventListener("submit", evt => {
+        [...evt.target.getElementsByTagName("input")].map(t => {
+          ({ str, tracers } = replace.str(t.value));
+          t.value = str;
+        });
+      });
+    };
+    if (elem.tagName.toLowerCase() === "form") {
+      addEventListener(elem);
+    } else {
+      [...elem.getElementsByTagName("form")].map(t => addEventListener(elem));
+    }
   };
 
   return { addOnSubmit: addOnSubmit };

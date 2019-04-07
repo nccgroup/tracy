@@ -14,28 +14,24 @@
     "browsingData"
   ],
   "background": {
-    "scripts": ["tracy/scripts/background.js"],
+    "scripts": ["tracy/scripts/replace.js", "tracy/scripts/background.js"],
     "persistent": true
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*", "*://tracy/*"],
+      "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*"],
       "all_frames": true,
       "js": [
         "tracy/scripts/util.js",
         "tracy/scripts/highlight.js",
+        "tracy/scripts/replace.js",
+        "tracy/scripts/form-mod.js",
         "tracy/scripts/dom-mutations.js",
         "tracy/scripts/method-hooking-injector.js"
       ],
       "css": ["tracy/css/dropdown.css"],
       "run_at": "document_start"
-    },
-    {
-      "matches": ["<all_urls>"],
-      "all_frames": true,
-      "js": ["tracy/scripts/form-mod.js"],
-      "run_at": "document_idle"
     },
     {
       "matches": ["*://localhost/*", "*://127.0.0.1/*"],
@@ -54,7 +50,10 @@
     }
   },
   "web_accessible_resources": [
-    "tracy/scripts/innerhtml.js",
+    "tracy/scripts/replace.js",
+    "tracy/scripts/xhr-mod.js",
+    "tracy/scripts/fetch-mod.js",
+    "tracy/scripts/inner-html-mod.js",
     "tracy/scripts/repro.js",
     "tracy/scripts/worker.js",
     "tracy/scripts/method-hooking.js",

@@ -36,9 +36,8 @@
                 location: document.location.href
               });
               highlight.addClickToFill(node, false);
-              // Form scripts load on document_idle,
-              // so we need to keep retying until the script loads.
-              retryingAddOnSubmit(node);
+              form.addOnSubmit(node);
+              //retryingAddOnSubmit(node);
             } else if (node.nodeType == Node.TEXT_NODE) {
               retryingSend({
                 "message-type": "job",

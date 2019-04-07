@@ -1,16 +1,26 @@
-chrome.webRequest.onBeforeSendHeaders.addListener(
+chrome.webRequest.onBeforeRequest.addListener(
   r => {
-    if (r.requestHeaders) {
-      for (let i = 0; i < r.requestHeaders.length; i++) {
-        if (r.requestHeaders[i].name.toLowerCase() === "origin") {
-          r.requestHeaders.splice(i, 1);
-        }
+    const url = new URL(r.url);
+    const copy = new URLSearchParams();
+    let mod = false;
+    url.searchParams.forEach((value, key) => {
+      const keyr = replace.str(key);
+      const valuer = replace.str(value);
+
+      if (keyr !== key || valuer !== value) {
+        mod = true;
       }
+      copy.append(keyr, valuer);
+    });
+
+    if (mod) {
+      url.search = copy.toString();
+      const newURL = url.toString();
+      return { redirectUrl: newURL };
     }
-    return { requestHeaders: r.requestHeaders };
   },
   { urls: ["<all_urls>"] },
-  ["blocking", "requestHeaders"]
+  ["blocking"]
 );
 
 /// prepCache uses a tab to recreate the state of a page with a
@@ -163,29 +173,12 @@ function messageRouter(message, sender, sendResponse) {
       case "screenshot":
         handleScreenshot(message, sender, sendResponse);
         return true;
-      case "replace":
-        replaceMessage(message, sender, sendResponse);
-        return true;
     }
   } else if (message.r) {
     // Changed the format of the message so we
     // wouldn't have such a long XSS payload.
     updateReproduction(message, sender);
   }
-}
-
-function getTracerTypes() {
-  return { zzXSSzz: "\"'<[[ID]]>", zzPLAINzz: "[[ID]]" };
-}
-
-const workerReplace = chrome.runtime.getURL("tracy/scripts/worker-replace.js");
-async function replaceMessage(message, sender, sendResponse) {
-  const worker = new Worker(workerReplace);
-  worker.addEventListener("message", msg => {
-    sendResponse(msg);
-    worker.terminate();
-  });
-  worker.postMessage({ msg: message.msg, tracerTypes: getTracerTypes() });
 }
 
 // handleScreenshot takes a screenshot of the requesting tab,

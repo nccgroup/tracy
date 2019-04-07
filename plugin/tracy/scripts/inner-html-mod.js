@@ -1,4 +1,4 @@
-(function() {
+(() => {
   // Get a reference to the original innerHTML prototype.
   const originalSet = Object.getOwnPropertyDescriptor(
     Element.prototype,
