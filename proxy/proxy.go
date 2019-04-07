@@ -365,14 +365,9 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				Tracers:       tracers,
 			}
 
-			//_, err = common.AddTracer(r)
 			jsonData, _ := json.Marshal(r)
 
-			req, err := http.NewRequest("POST", "http://"+configure.Current.TracyServer.Addr()+"/api/tracy/tracers", bytes.NewBuffer(jsonData)) //Change this over to https when we do that. Well it would be better to make it a config
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Hoot", "Hoot")
-
-			_, err = p.APIClient.Do(req)
+			_, err = p.apiRequest(http.MethodPost, jsonData, "/api/tracy/tracers")
 
 			if err != nil {
 				log.Error.Print(err)
