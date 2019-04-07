@@ -101,6 +101,21 @@ func (p *Proxy) identifyRequestsforGeneratedTracer(d []byte, method string) {
 	}
 }
 
+func (p *Proxy) apiRequest(method string, data []byte, endpoint string) (*http.Response, error) {
+	req, err := http.NewRequest(method, "http://"+configure.Current.TracyServer.Addr()+endpoint, bytes.NewBuffer(data))
+	if err != nil {
+		log.Error.Print(err)
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Hoot", "Hoot")
+
+	response, err := p.APIClient.Do(req)
+
+	return response, err
+}
+
 // findTracers finds tracer strings in a string.
 func (p *Proxy) findTracers(s string, requests []types.Request) ([]types.Tracer, error) {
 	// For each of the tracers, look for the tracer's tracer string.
