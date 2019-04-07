@@ -7,12 +7,15 @@ chrome.webRequest.onBeforeRequest.addListener(
       const keyr = replace.str(key);
       const valuer = replace.str(value);
 
-      if (keyr !== key || valuer !== value) {
+      if (keyr.tracers.length !== 0 || valuer.tracers.length !== 0) {
         mod = true;
       }
-      copy.append(keyr, valuer);
+      copy.append(keyr.str, valuer.str);
     });
 
+    // Not a fan of doing this, but luckily this only happens when you click
+    // a link that has a zzPLAINzz or zzXSSzz in it, which I imagine won't be the usual
+    // case. We could try to hook link clicks like how we hook onsubmit with forms...
     if (mod) {
       url.search = copy.toString();
       const newURL = url.toString();

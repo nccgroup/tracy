@@ -158,25 +158,6 @@ func getTracersDB() ([]types.Request, error) {
 	return reqs, err
 }
 
-// EditTracer updates a tracer in the database.
-func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
-	t := types.Tracer{Model: gorm.Model{ID: id}}
-	var err error
-	if err = store.DB.Model(&t).Updates(tracer).Error; err != nil {
-		log.Warning.Print(err)
-		return []byte{}, err
-	}
-	r := types.Request{Tracers: []types.Tracer{t}}
-	inUpdateChanTracer <- r
-
-	var ret []byte
-	if ret, err = json.Marshal(tracer); err != nil {
-		log.Warning.Print(err)
-	}
-
-	return ret, err
-}
-
 // GetTracersCache returns the current set of tracers but first looks in the cache
 // for them.
 func GetTracersCache() []types.Request {

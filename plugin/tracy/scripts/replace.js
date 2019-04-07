@@ -17,6 +17,7 @@ const replace = (() => {
   // tracer strings. Returns the replaced string as well
   // as an array of tracers that were replaced and their tracer type.
   const str = msg => {
+    if (!msg) return { str: msg, tracers: [] };
     let copy = msg;
     const tracers = [];
     const tracerTypes = getTracerTypes();
@@ -34,7 +35,7 @@ const replace = (() => {
         tracerType[0],
         tracerType[1].replace(tracerSwap, gen)
       );
-      tracers.push([tracerType[0], gen]);
+      tracers.push({ TracerString: tracerType[0], TracerPayload: gen });
 
       // Continue to do replacements until we get the same string.
       for (;;) {
@@ -48,7 +49,7 @@ const replace = (() => {
         if (copyr === copy) {
           break;
         } else {
-          tracers.push([tracerType[0], gen]);
+          tracers.push({ TracerString: tracerType[0], TracerPayload: gen });
         }
       }
     }
@@ -79,15 +80,28 @@ const replace = (() => {
       return headers;
     }
 
-    const copy = new Headers();
-    let key,
-      value,
+    let copy,
       tracers = [];
-    for (let i of headers) {
-      key = str(i[0]);
-      value = str(i[1]);
-      tracers = tracers.concat(key.tracers.concat(value.tracers));
-      copy.append(key.str, value.str);
+    if (headers instanceof Headers) {
+      copy = new Headers();
+      let key, value;
+
+      for (let i of headers) {
+        key = str(i[0]);
+        value = str(i[1]);
+        tracers = tracers.concat(key.tracers.concat(value.tracers));
+        copy.append(key.str, value.str);
+      }
+    } else {
+      // The alternative is the headers object is just a regular object.
+      copy = {};
+      let key, value;
+      for (let k in headers) {
+        key = str(k);
+        value = str(headers[k]);
+        tracers = tracers.concat(key.tracers.concat(value.tracers));
+        copy[key.str] = value.str;
+      }
     }
     return { headers: copy, tracers: tracers };
   };
@@ -110,8 +124,8 @@ const replace = (() => {
     }
 
     // If it is none of the above types, it is probably just a plain string.
-    ({ str, tracers } = str(body));
-    return { body: str, tracers: tracers };
+    const b = str(body);
+    return { body: b.str, tracers: b.tracers };
   };
 
   // replaceURLSearchParams replaces each key and value of a URLSearchParams
@@ -178,8 +192,8 @@ const replace = (() => {
   // replaceBufferSource replaces the given buffer source with tracer strings
   // and rebuilds the buffer.
   const replaceBufferSource = bs => {
-    ({ str, tracers } = str(ab2str(bs)));
-    return { body: str2ab(str), tracers: tracers };
+    const b = str(ab2str(bs));
+    return { body: str2ab(b.str), tracers: b.tracers };
   };
 
   return { str: str, body: body, headers: headers };
