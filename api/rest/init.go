@@ -37,6 +37,7 @@ var (
 		{http.MethodGet, "/tracers/{tracerID}", GetTracer},
 		{http.MethodGet, "/tracers", GetTracers},
 		{http.MethodPost, "/tracers/{tracerID}/events", AddEvent},
+		{http.MethodPut, "/tracers/{tracerID}", EditTracer},
 		{http.MethodGet, "/tracers/{tracerID}/events", GetEvents},
 		{http.MethodPost, "/tracers/{tracerID}/events/{contextID}/reproductions", StartReproductions},
 		{http.MethodPut, "/tracers/{tracerID}/events/{contextID}/reproductions/{reproID}", UpdateReproduction},

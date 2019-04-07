@@ -19,6 +19,7 @@ const requestHandler = (domEvents, tracerPayloads) => {
     // looking for a tracer string.
     for (let id in tracerPayloads) {
       const tracerPayload = tracerPayloads[id];
+
       // If a tracer was found, add it to the list of tracers found for this event.
       // Continue to the rest of the recorded.
       const tracerLocation = domEvent.msg.indexOf(tracerPayload);

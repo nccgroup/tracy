@@ -170,6 +170,9 @@ function messageRouter(message, sender, sendResponse) {
       case "config":
         configQuery(message, sender, sendResponse);
         break;
+      case "background-fetch":
+        backgroundFetch(message, sender, sendResponse);
+        return true;
       case "screenshot":
         handleScreenshot(message, sender, sendResponse);
         return true;
@@ -179,6 +182,26 @@ function messageRouter(message, sender, sendResponse) {
     // wouldn't have such a long XSS payload.
     updateReproduction(message, sender);
   }
+}
+
+// cross-orgin fetches are disallowed from content scripts in Chrome Extensions,
+// so doing our fetch()'s from background instead of content scripts:
+// https://www.chromium.org/Home/chromium-security/extension-content-script-fetches
+// "message" should have a route, method, and optionally a body
+async function backgroundFetch(message, sender, callback) {
+  let opts = {
+    method: message.method,
+    headers: { Hoot: "!", "X-TRACY": "NOTOUCHY" },
+    body: !message.body ? "" : message.body
+  };
+
+  const lc = message.method.toLowerCase();
+  if (lc === "get" || lc === "header") delete opts.body;
+  const req = new Request(`http://${restServer}${message["route"]}`, opts);
+  const resp = await fetch(req);
+  const json = await resp.json();
+
+  callback(json);
 }
 
 // handleScreenshot takes a screenshot of the requesting tab,
@@ -293,10 +316,9 @@ async function refreshConfig(wsConnect) {
     .catch(err => console.error(err))
     .then(res => {
       if (!res) return;
-      tracerPayloads = [].concat.apply(
-        [],
-        res.map(r => [].concat(r.Tracers.map(t => t.TracerPayload)))
-      );
+      tracerPayloads = [].concat
+        .apply([], res.map(r => [].concat(r.Tracers.map(t => t.TracerPayload))))
+        .filter(t => t !== "");
     })
     .catch(err => console.error(err));
 
