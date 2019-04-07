@@ -71,7 +71,7 @@ func AddTracer(request types.Request) ([]byte, error) {
 }
 
 // updateTracer is the common functionality to add a tracer to the database.
-func UpdateTracer(request types.Request) ([]byte, error) {
+func UpdateRequest(request types.Request) ([]byte, error) {
 	var (
 		ret []byte
 		err error
