@@ -25,14 +25,17 @@
                 r({ al: al, tracers: u.tracers });
               } else {
                 al[1].body = b.body;
-                al[1].headers = headers.headers;
 
-                r({
+                let ret = {
                   al: al,
-                  tracers: u.tracers
-                    .concat(headers.tracers)
-                    .concat(body.tracers)
-                });
+                  tracers: u.tracers.concat(b.tracers)
+                };
+                if (headers) {
+                  ret.al[1].headers = headers.headers;
+                  ret.tracers = ret.tracers.concat(headers.tracers);
+                }
+
+                r(ret);
               }
             });
           } else {
@@ -73,10 +76,10 @@
 
   // buildRequestFromFetch builds an HTTP request string that is expected
   // to be produced from the fetch arguments.
+  const version = "HTTP/1.1";
   const buildRequestFromFetch = async al => {
     const method = al.length > 1 && al.method ? al.method : "GET";
     const url = al[0].startsWith("http") ? new URL(url).pathname : al[0];
-    const version = "HTTP/1.1";
     const host = al[0].startsWith("http")
       ? new URL(url).host
       : document.location.host;
@@ -94,7 +97,7 @@ ${i[0]}: ${i[1]}`;
     const body = await req.text();
 
     return `${method} ${url} ${version}
-${host}${headers}
+Host: ${host}${headers}
     
 ${body}`;
   };

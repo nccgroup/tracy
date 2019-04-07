@@ -34,11 +34,11 @@ const form = (() => {
 
   // buildRequestFromForm transforms an HTML form object into a string
   // of the expected HTTP request it will generate.
+  const version = "HTTP/1.1";
   const buildRequestFromForm = form => {
     const method = form.getAttribute("method");
     const url = form.getAttribute("action");
     //TODO: not sure how to get this from a form. Not sure it really matters.
-    const version = "HTTP/1.1";
     const host = url.startsWith("http")
       ? new URL(url).host
       : document.location.host;
