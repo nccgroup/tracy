@@ -80,29 +80,19 @@ const replace = (() => {
       return headers;
     }
 
-    let copy,
-      tracers = [];
-    if (headers instanceof Headers) {
+    let tracers = [],
       copy = new Headers();
-      let key, value;
-
-      for (let i of headers) {
-        key = str(i[0]);
-        value = str(i[1]);
-        tracers = tracers.concat(key.tracers.concat(value.tracers));
-        copy.append(key.str, value.str);
-      }
-    } else {
-      // The alternative is the headers object is just a regular object.
-      copy = {};
-      let key, value;
-      for (let k in headers) {
-        key = str(k);
-        value = str(headers[k]);
-        tracers = tracers.concat(key.tracers.concat(value.tracers));
-        copy[key.str] = value.str;
-      }
+    if (!(headers instanceof Headers)) {
+      headers = new Headers(headers);
     }
+    let key, value;
+    for (let i of headers) {
+      key = str(i[0]);
+      value = str(i[1]);
+      tracers = tracers.concat(key.tracers.concat(value.tracers));
+      copy.append(key.str, value.str);
+    }
+
     return { headers: copy, tracers: tracers };
   };
 
@@ -111,6 +101,8 @@ const replace = (() => {
   // the data back into the same interface. See
   // https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
   // for more info about the body types.
+  // We don't use the body mixins from the Request object because we want to
+  // keep the original body types.
   const body = async body => {
     if (body instanceof Blob) {
       //TODO: maybe we shouldn't support blobs of data?

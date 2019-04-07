@@ -15,31 +15,87 @@
             replace.body(al[1].body).then(b => {
               // 1. If there were no headers and no tracers in the body, return.
               if (!headers && b.tracers.length === 0) {
-                r(al);
+                r({ al: al, tracers: u.tracers });
               } else if (
                 // 2. If there were headers, but no tracers in the headers and no tracers in the body, return.
                 headers &&
                 headers.tracers.length === 0 &&
                 b.tracers.length === 0
               ) {
-                r(al);
+                r({ al: al, tracers: u.tracers });
               } else {
                 al[1].body = b.body;
                 al[1].headers = headers.headers;
 
-                r(al);
+                r({
+                  al: al,
+                  tracers: u.tracers
+                    .concat(headers.tracers)
+                    .concat(body.tracers)
+                });
               }
             });
           } else {
             if (headers) al[1].headers = headers.headers;
-            r(al);
+            r({ al: al, tracers: u.tracers.concat(headers.tracers) });
           }
         } else {
-          r(al);
+          r({ al: al, tracers: u.tracers });
         }
       });
 
-      return argsp.then(args => Reflect.apply(t, thisa, args));
+      return argsp.then(args => {
+        if (args.tracers.length !== 0) {
+          (async () => {
+            window.postMessage(
+              {
+                "message-type": "background-fetch",
+                route: "/api/tracy/tracers",
+                method: "POST",
+                body: JSON.stringify({
+                  RawRequest: await buildRequestFromFetch(args.al),
+                  RequestURL: document.location.href,
+                  RequestMethod:
+                    args.al.length > 1 && args.al.method
+                      ? args.al.method
+                      : "GET",
+                  Tracers: args.tracers
+                })
+              },
+              "*"
+            );
+          })();
+        }
+        return Reflect.apply(t, thisa, args.al);
+      });
     }
   });
+
+  // buildRequestFromFetch builds an HTTP request string that is expected
+  // to be produced from the fetch arguments.
+  const buildRequestFromFetch = async al => {
+    const method = al.length > 1 && al.method ? al.method : "GET";
+    const url = al[0].startsWith("http") ? new URL(url).pathname : al[0];
+    const version = "HTTP/1.1";
+    const host = al[0].startsWith("http")
+      ? new URL(url).host
+      : document.location.host;
+    let headers = "";
+    if (al[1].headers) {
+      for (let i of al[1].headers) {
+        headers += `
+${i[0]}: ${i[1]}`;
+      }
+    }
+
+    // Build a request object from the fetch parameters and use the Body mixins.
+    // Much easier than parsing everything individually.
+    const req = new Request(al[0], al[1]);
+    const body = await req.text();
+
+    return `${method} ${url} ${version}
+${host}${headers}
+    
+${body}`;
+  };
 })();
