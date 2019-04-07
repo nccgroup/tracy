@@ -87,11 +87,7 @@ func (p *Proxy) identifyRequestsforGeneratedTracer(d []byte, method string) {
 
 			jsonData, _ := json.Marshal(req)
 
-			req, err := http.NewRequest("PATCH", "http://"+configure.Current.TracyServer.Addr()+"/api/tracy/tracers", bytes.NewBuffer(jsonData)) //Change this over to https when we do that. Well it would be better to make it a config
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Hoot", "Hoot")
-
-			_, err = p.APIClient.Do(req)
+			_, err = p.apiRequest("PATCH", jsonData, "/api/tracy/tracers")
 
 			if err != nil {
 				log.Error.Print(err)
