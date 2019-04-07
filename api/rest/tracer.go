@@ -34,7 +34,7 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 // AddTracers handles the HTTP API request to add a set of tracers from a Request
 // to the database.
 func updateTracer(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("HTITHTITHTIHTI")
+
 	var in types.Request
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		returnError(w, err)
