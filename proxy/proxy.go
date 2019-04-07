@@ -87,7 +87,7 @@ func (p *Proxy) identifyRequestsforGeneratedTracer(d []byte, method string) {
 
 			jsonData, _ := json.Marshal(req)
 
-			_, err = p.apiRequest(http.MethodPatch, jsonData, "/api/tracy/tracers")
+			_, err = p.apiRequest(http.MethodPatch, jsonData, "/api/tracy/tracers/request")
 
 			if err != nil {
 				log.Error.Print(err)
