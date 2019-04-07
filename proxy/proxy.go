@@ -40,15 +40,13 @@ type Proxy struct {
 func New(transport http.Transport, upgrader websocket.Upgrader,
 	dialer websocket.Dialer, bp, bufp *sync.Pool) *Proxy {
 
-	client := &http.Client{}
-
 	return &Proxy{
 		HTTPTransport:     transport,
 		HTTPBufferPool:    bufp,
 		HTTPBytePool:      bp,
 		WebSocketUpgrader: upgrader,
 		WebSocketDialer:   dialer,
-		APIClient:         client,
+		APIClient:         &http.Client{},
 	}
 }
 
