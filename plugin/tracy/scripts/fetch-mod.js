@@ -94,8 +94,12 @@ ${i[0]}: ${i[1]}`;
     // Build a request object from the fetch parameters and use the Body mixins.
     // Much easier than parsing everything individually.
     const req = new Request(al[0], al[1]);
-    const body = await req.text();
-
+    const bodyBlob = await req.blob();
+    const reader = new FileReader();
+    const body = await new Promise(r => {
+      reader.addEventListener("loadend", e => r(e.srcElement.result));
+      reader.readAsText(bodyBlob);
+    });
     return `${method} ${url} ${version}
 Host: ${host}${headers}
     

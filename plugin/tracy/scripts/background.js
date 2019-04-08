@@ -3,11 +3,13 @@ chrome.webRequest.onBeforeRequest.addListener(
     const url = new URL(r.url);
     const copy = new URLSearchParams();
     let mod = false;
+    let tracers = [];
     url.searchParams.forEach((value, key) => {
       const keyr = replace.str(key);
       const valuer = replace.str(value);
 
       if (keyr.tracers.length !== 0 || valuer.tracers.length !== 0) {
+        tracers = tracers.concat(keyr.tracers).concat(valuer.tracers);
         mod = true;
       }
       copy.append(keyr.str, valuer.str);
@@ -19,6 +21,25 @@ chrome.webRequest.onBeforeRequest.addListener(
     if (mod) {
       url.search = copy.toString();
       const newURL = url.toString();
+      async () => {
+        // These are only handling link clicks, so there shouldn't be any body
+        backgroundFetch(
+          {
+            route: "/api/tracy/tracers",
+            method: "POST",
+            body: JSON.stringify({
+              RawRequest: `${r.method} ${url.pathname}${url.search}  HTTP/1.1
+Host: ${url.host}`,
+              RequestURL: newURL,
+              RequestMethod: r.method,
+              Tracers: tracers
+            })
+          },
+          null,
+          () => {}
+        );
+      };
+      console.log("REDIRECTING");
       return { redirectUrl: newURL };
     }
   },

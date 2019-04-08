@@ -83,7 +83,13 @@ ${key.str}: ${value.str}`;
       opts = { method: xhr.method, body: body };
     }
     const req = new Request(url, opts);
-    const b = await req.text();
+    const bodyBlob = await req.blob();
+    const reader = new FileReader();
+    const b = await new Promise(r => {
+      reader.addEventListener("loadend", e => r(e.srcElement.result));
+      reader.readAsText(bodyBlob);
+    });
+
     return `${xhr.method} ${url} ${version}
 Host: ${host}${xhr.headers}
 
