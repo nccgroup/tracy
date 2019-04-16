@@ -7,7 +7,7 @@
         const u = replace.str(al[0]);
         if (u.tracers.length !== 0) al[0] = u.str;
         if (al.length >= 2) {
-          // If the fetch has options, replace the header values, key, and body arguments.
+          // If the fetch has options, replace the header values and key, and body arguments.
           // Bodies can come in many forms, so we need to handle them differently.
           let headers;
           if (al[1].headers) headers = replace.headers(al[1].headers);
@@ -24,12 +24,15 @@
               ) {
                 r({ al: al, tracers: u.tracers });
               } else {
-                al[1].body = b.body;
-
                 let ret = {
                   al: al,
-                  tracers: u.tracers.concat(b.tracers)
+                  tracers: u.tracers
                 };
+                // At least headers or body is there. Add them back to the request.
+                if (b.tracers.length !== 0) {
+                  ret.al[1].body = b.body;
+                  ret.tracers = ret.tracers.concat(b.tracers);
+                }
                 if (headers) {
                   ret.al[1].headers = headers.headers;
                   ret.tracers = ret.tracers.concat(headers.tracers);
@@ -57,7 +60,9 @@
                 method: "POST",
                 body: JSON.stringify({
                   RawRequest: await buildRequestFromFetch(args.al),
-                  RequestURL: document.location.href,
+                  RequestURL: al[0].startsWith("http")
+                    ? new URL(url).toString()
+                    : new URL(`${document.location.href}/${al[0]}`).toString(),
                   RequestMethod:
                     args.al.length > 1 && args.al.method
                       ? args.al.method

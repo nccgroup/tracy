@@ -8,6 +8,8 @@
   // Define a new prototype for innerHTML that proxies the call and then calls
   // the original innerHTML.
   Object.defineProperty(Element.prototype, "innerHTML", {
+    // Don't change this to an arrow function. It will change the `this` variable
+    // to the one where we are defining this override and will break this functionality.
     set: function(value) {
       // Send a message to the extension to check the arguments of any
       // call to innerHTML have user-controlled input.

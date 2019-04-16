@@ -157,30 +157,21 @@ const highlight = (() => {
   // tracer API and inserts it into the element. It will also
   // take a screenshot of the surrounding area and attack that to the tracer.
   async function fillGenPayload(elem, tracerString) {
-    try {
-      const disabled = await util.send({
-        "message-type": "config",
-        config: "disabled"
-      });
-      if (!disabled) {
-        const json = await util.send({
-          "message-type": "background-fetch",
-          route: `/api/tracy/tracers/generate?tracer_string=${tracerString}&url=${
-            document.location
-          }`,
-          method: "GET"
-        });
+    const r = replace.str(tracerString);
+    simulateInputType(elem, elem.value + r.str);
+    r.tracers[0].Screenshot = await captureScreenshot(elem, 200);
 
-        await simulateInputType(
-          elem,
-          elem.value + json.Tracers[0].TracerPayload
-        );
-        const ss = await captureScreenshot(elem, 200);
-        sendScreenshot(ss, json.Tracers[0].ID);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    util.send({
+      "message-type": "background-fetch",
+      route: "/api/tracy/tracers",
+      method: "POST",
+      body: JSON.stringify({
+        RawRequest: "GENERATED",
+        RequestMethod: "GENERATED",
+        RequestURL: document.location.href,
+        Tracers: r.tracers
+      })
+    });
   }
 
   // fillNonGenPayload handles the logic for when filling an HTML element
@@ -190,28 +181,6 @@ const highlight = (() => {
     // because we don't know what tracer to associate the screenshot with
     // until the network request is made.
     return await simulateInputType(elem, elem.value + tracerString);
-  }
-
-  // sendScreenshot makes the API request to send the screenshot
-  // data URI to a tracer with a specific ID.
-  async function sendScreenshot(screenshot, id) {
-    const disabled = await util.send({
-      "message-type": "config",
-      config: "disabled"
-    });
-
-    try {
-      if (!disabled) {
-        await util.send({
-          "message-type": "background-fetch",
-          route: `/api/tracy/tracers/${id}`,
-          method: "PUT",
-          body: JSON.stringify({ Screenshot: screenshot })
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    }
   }
 
   // Given an data URI and dimensions, create an Image and use the canvas

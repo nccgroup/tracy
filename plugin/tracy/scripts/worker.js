@@ -12,6 +12,11 @@ const requestHandler = (domEvents, tracerPayloads) => {
   // For each DOM write, search for all the tracer strings and collect their location.
   for (let domEventKey in domEvents) {
     const domEvent = domEvents[domEventKey];
+    // Some websites seem to not always write strings to the DOM. In those cases,
+    // we don't care about searching.
+    if (typeof domEvent.msg !== "string") {
+      continue;
+    }
     // Each DOM write could have many tracer strings in it. Group these together.
     let tracersPerDomEvent = [];
 

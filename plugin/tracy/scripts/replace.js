@@ -10,6 +10,8 @@ const replace = (() => {
   // is sent off.
   const getTracerTypes = () => [
     ["zzXSSzz", `\\"'<${tracerSwap}>`],
+    ["GEN-XSS", `\\"'<${tracerSwap}>`],
+    ["GEN-PLAIN", `${tracerSwap}`],
     ["zzPLAINzz", `${tracerSwap}`]
   ];
 
@@ -18,6 +20,7 @@ const replace = (() => {
   // as an array of tracers that were replaced and their tracer type.
   const str = msg => {
     if (!msg) return { str: msg, tracers: [] };
+    if (typeof msg !== "string") return { str: msg, tracers: [] };
     let copy = msg;
     const tracers = [];
     const tracerTypes = getTracerTypes();
