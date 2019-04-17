@@ -31,7 +31,8 @@
 
   paintIcon(settings.isDisabled());
   chrome.browserAction.onClicked.addListener(tab => {
+    console.log("hello", tab, settings.isDisabled());
     settings.setDisabled(!settings.isDisabled());
-    paintIcon(settings.disabled);
+    paintIcon(settings.isDisabled());
   });
 })();
