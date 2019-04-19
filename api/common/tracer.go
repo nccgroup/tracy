@@ -125,6 +125,30 @@ func UpdateRequest(request types.Request) ([]byte, error) {
 	return ret, err
 }
 
+func AddRequest(request types.Request, tracerID uint) ([]byte, error) {
+	var (
+		ret []byte
+		err error
+	)
+
+	tracer := types.Tracer{}
+
+	tracer.ID = tracerID
+
+	if err = store.DB.Model(&tracer).Association("Requests").Append(request).Error; err != nil {
+		log.Warning.Printf(err.Error())
+		return ret, err
+	}
+
+	inUpdateChanTracer <- request
+	UpdateSubscribers(request)
+	if ret, err = json.Marshal(request); err != nil { //TODO: Find out what should be returned here
+		log.Warning.Printf(err.Error())
+	}
+
+	return ret, err
+}
+
 // GetTracer is the common functionality to get a tracer from the database by it's ID.
 func GetTracer(tracerID uint) ([]byte, error) {
 	var (

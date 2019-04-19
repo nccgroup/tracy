@@ -83,7 +83,15 @@ func updateRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
+//AddRequest added a request to the db based on the ID
 func AddRequest(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	tracerID, ok := vars["tracerID"]
+	if !ok {
+		returnError(w, fmt.Errorf("No tracerID variable found in the path"))
+		return
+	}
 
 	var in types.Request
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -91,7 +99,13 @@ func AddRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ret, err := common.UpdateRequest(in)
+	ID, err := strconv.ParseUint(tracerID, 10, 32)
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+
+	ret, err := common.AddRequest(in, uint(ID))
 	if err != nil {
 		returnError(w, err)
 		return
