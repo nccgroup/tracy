@@ -8,6 +8,8 @@ const replace = (() => {
   // getTracerTypes returns the set of available tracers
   // that need to be replaced  inline before an HTTP request
   // is sent off.
+  // TODO: use the settings.js for this. need to find a way to
+  // get the settings from an injectable script
   const getTracerTypes = () => [
     ["zzXSSzz", `\\"'<${tracerSwap}>`],
     ["GEN-XSS", `\\"'<${tracerSwap}>`],

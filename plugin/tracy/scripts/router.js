@@ -10,7 +10,7 @@
           settings.query(message, sender, sendResponse);
           break;
         case "background-fetch":
-          background.fetch(message, sender, sendResponse);
+          background.fetchWithCallback(message, sender, sendResponse);
           return true;
         case "screenshot":
           screenshot.take(message, sender, sendResponse);

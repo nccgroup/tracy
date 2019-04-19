@@ -1,20 +1,19 @@
 const jobs = (() => {
   // bulkAddEvents makes a POST request to the bulk events to the API with
   // a set of events from the DOM.
-  const bulkAddEvents = events => {
+  const bulkAddEvents = async events => {
     if (!settings.isDisabled() && events.length > 0) {
-      fetch(`http://${settings.getServer()}/api/tracy/tracers/events/bulk`, {
-        headers: {
-          Hoot: "!",
-          "Content-Type": "application/json; charset=UTF-8"
-        },
-        method: "POST",
-        body: JSON.stringify(events)
-      }).catch(err =>
+      try {
+        return background.fetch({
+          method: "POST",
+          route: "/api/tracy/tracers/events/bulk",
+          body: JSON.stringify(events)
+        });
+      } catch (e) {
         setTimeout(function() {
           bulkAddEvents(events);
-        }, 1500)
-      );
+        }, 1500);
+      }
     }
   };
 
