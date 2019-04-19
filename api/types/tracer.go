@@ -16,7 +16,7 @@ type Tracer struct {
 	gorm.Model
 	TracerString        string        `json:"TracerString" gorm:"not null;index"` // the tracer string used by the user (e.g. {{XSS}})
 	OverallSeverity     uint          `json:"OverallSeverity" gorm:"not null"`
-	RequestID           uint          `json:"RequestID" gorm:"not null;index"`
+	Requests            []Request     `json:"RequestID" gorm:"many2many:tracer_requests"`
 	TracerEvents        []TracerEvent `json:"TracerEvents" `
 	TracerPayload       string        `json:"TracerPayload" gorm:"not null;index;unique_index:idx_tracer_string"` // the payload tracy convert the string into
 	TracerLocationType  uint          `json:"TracerLocationType" gorm:"not null"`

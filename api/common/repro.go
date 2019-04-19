@@ -26,7 +26,7 @@ func StartReproductions(tracerID, contextID uint) {
 
 	// Get the raw request associated with this tracer.
 	var req types.Request
-	if err := store.DB.First(&req, tracer.RequestID).Error; err != nil {
+	if err := store.DB.First(&req, tracer.Requests[0].ID).Error; err != nil { //TODO: for now where always just going to grab the first request. This will change once we figure out what to do with this
 		log.Error.Print(err)
 		return
 	}

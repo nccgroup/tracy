@@ -83,6 +83,24 @@ func updateRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
+func AddRequest(w http.ResponseWriter, r *http.Request) {
+
+	var in types.Request
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		returnError(w, err)
+		return
+	}
+
+	ret, err := common.UpdateRequest(in)
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(ret)
+}
+
 // GetTracers handles the HTTP API request for getting all the tracers from the
 // database.
 func GetTracers(w http.ResponseWriter, r *http.Request) {
