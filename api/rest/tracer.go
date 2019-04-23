@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/types"
-	"github.com/nccgroup/tracy/proxy"
 )
 
 // EditTracer handles the HTTP API request to edit a specific
@@ -34,6 +34,12 @@ func EditTracer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	u, ok := r.Context().Value(hh).(*uuid.UUID)
+	if !ok {
+		returnError(w, fmt.Errorf("Wrong value associated with the Hoot header"))
+		return
+	}
+	tracer.UUID = u.String()
 	ret, err := common.EditTracer(tracer, uint(id))
 	if err != nil {
 		returnError(w, err)
@@ -53,6 +59,15 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	u, ok := r.Context().Value(hh).(*uuid.UUID)
+	if !ok {
+		returnError(w, fmt.Errorf("Wrong value associated with the Hoot header"))
+		return
+	}
+	for _, v := range in.Tracers {
+		v.UUID = u.String()
+	}
+
 	ret, err := common.AddTracer(in)
 	if err != nil {
 		returnError(w, err)
@@ -66,7 +81,13 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 // GetTracers handles the HTTP API request for getting all the tracers from the
 // database.
 func GetTracers(w http.ResponseWriter, r *http.Request) {
-	ret, err := common.GetTracers()
+	u, ok := r.Context().Value(hh).(*uuid.UUID)
+	if !ok {
+		returnError(w, fmt.Errorf("Wrong value associated with the Hoot header"))
+		return
+	}
+
+	ret, err := common.GetTracers(u.String())
 	if err != nil {
 		returnError(w, err)
 		return
@@ -90,8 +111,13 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 		returnError(w, err)
 		return
 	}
+	u, ok := r.Context().Value(hh).(*uuid.UUID)
+	if !ok {
+		returnError(w, fmt.Errorf("Wrong value associated with the Hoot header"))
+		return
+	}
 
-	ret, err := common.GetTracer(uint(id))
+	ret, err := common.GetTracer(uint(id), u.String())
 	if err != nil {
 		returnError(w, err)
 		return
@@ -101,6 +127,7 @@ func GetTracer(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
+/* DEPRECATED
 // GenerateTracer handles the HTTP API request for generating a new tracer and
 // storing it in the database. Often used for frontend heavy applications that
 // might start using the input right away before sending an HTTP request.
@@ -162,30 +189,4 @@ func GenerateTracer(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(ret)
-}
-
-// GetRequest handles the HTTP API request to get the tracer raw request string
-// belonging to a specific tracer ID.
-func GetRequest(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	tracerID, ok := vars["tracerID"]
-	if !ok {
-		returnError(w, fmt.Errorf("No tracerID variable found in the path"))
-		return
-	}
-
-	id, err := strconv.ParseUint(tracerID, 10, 32)
-	if err != nil {
-		returnError(w, err)
-		return
-	}
-
-	ret, err := common.GetTracerRequest(uint(id))
-	if err != nil {
-		returnError(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(ret)
-}
+} */

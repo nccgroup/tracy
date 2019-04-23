@@ -11,58 +11,58 @@ import (
 	"github.com/nccgroup/tracy/log"
 )
 
-func tracerCache(inR, inRJ chan int, inU chan types.Request, out chan []types.Request, outJSON chan []byte) {
+func tracerCache(inClear chan int, inR, inRJ chan string, inU chan types.Request, out chan []types.Request, outJSON chan []byte) {
 	var (
-		i           int
-		r           types.Request
-		tracers     []types.Request
-		tracersJSON []byte
-		err         error
+		u   string
+		r   types.Request
+		err error
 	)
+	tracers := make(map[string]types.Request)
+	tracersJSON := make(map[string]byte)
+
 	for {
 		select {
-		case i = <-inR:
-			if i == -1 {
-				tracers = nil
-				tracersJSON = nil
-				continue
-			}
-			if tracers == nil {
-				tracers, err = getTracersDB()
+		case _ = <-inClear:
+			tracers = nil
+			tracersJSON = nil
+			continue
+		case u = <-inR:
+			if tracers[u] == nil {
+				tracers[u], err = getTracersDB(u)
 				if err != nil {
 					log.Error.Fatal(err)
 				}
 			}
 			out <- tracers
-		case _ = <-inRJ:
-			if tracers == nil {
-				tracers, err = getTracersDB()
+		case u = <-inRJ:
+			if tracers[u] == nil {
+				tracers[u], err = getTracersDB(u)
 				if err != nil {
 					log.Error.Fatal(err)
 				}
-				if tracersJSON, err = json.Marshal(tracers); err != nil {
+				if tracersJSON[u], err = json.Marshal(tracers[u]); err != nil {
 					log.Warning.Print(err)
 					outJSON <- []byte{}
 					continue
 				}
-			} else if tracersJSON == nil {
-				if tracersJSON, err = json.Marshal(tracers); err != nil {
+			} else if tracersJSON[u] == nil {
+				if tracersJSON[u], err = json.Marshal(tracers[u]); err != nil {
 					log.Warning.Print(err)
 					outJSON <- []byte{}
 					continue
 				}
 			}
-			outJSON <- tracersJSON
+			outJSON <- tracersJSON[u]
 		case r = <-inU:
 			// If the tracer already exists in the list, just update it
 			// with the new value.
 			if len(r.Tracers) > 0 && r.Tracers[0].RequestID == 0 {
-				for i := range tracers {
-					for j := range tracers[i].Tracers {
-						if r.Tracers[0].ID == tracers[i].Tracers[j].ID {
+				for i := range tracers[u] {
+					for j := range tracers[u][i].Tracers {
+						if r.Tracers[0].ID == tracers[u][i].Tracers[j].ID {
 							// Right now, this is the only field that needs to be updated.
-							tracers[i].Tracers[j].Screenshot = r.Tracers[0].Screenshot
-							if tracersJSON, err = json.Marshal(tracers); err != nil {
+							tracers[u][i].Tracers[j].Screenshot = r.Tracers[0].Screenshot
+							if tracersJSON, err = json.Marshal(tracers[u]); err != nil {
 								log.Warning.Print(err)
 								continue
 							}
@@ -71,8 +71,8 @@ func tracerCache(inR, inRJ chan int, inU chan types.Request, out chan []types.Re
 					}
 				}
 			} else {
-				tracers = append(tracers, r)
-				if tracersJSON, err = json.Marshal(tracers); err != nil {
+				tracers[u] = append(tracers[u], r)
+				if tracersJSON[u], err = json.Marshal(tracers[u]); err != nil {
 					log.Warning.Print(err)
 					continue
 				}
@@ -81,19 +81,21 @@ func tracerCache(inR, inRJ chan int, inU chan types.Request, out chan []types.Re
 	}
 }
 
-var inReadChanTracer chan int
+var inClearChanTracer chan int
+var inReadChanTracer chan string
 var inUpdateChanTracer chan types.Request
-var inReadChanTracerJSON chan int
+var inReadChanTracerJSON chan string
 var outChanTracer chan []types.Request
 var outChanTracerJSON chan []byte
 
 func init() {
-	inReadChanTracer = make(chan int, 10)
+	inClearChanTracer = make(chan int, 10)
+	inReadChanTracer = make(chan string, 10)
 	inUpdateChanTracer = make(chan types.Request, 10)
-	inReadChanTracerJSON = make(chan int, 10)
+	inReadChanTracerJSON = make(chan string, 10)
 	outChanTracer = make(chan []types.Request, 10)
 	outChanTracerJSON = make(chan []byte, 10)
-	go tracerCache(inReadChanTracer, inReadChanTracerJSON, inUpdateChanTracer, outChanTracer, outChanTracerJSON)
+	go tracerCache(inClearChanTracer, inReadChanTracer, inReadChanTracerJSON, inUpdateChanTracer, outChanTracer, outChanTracerJSON)
 }
 
 // AddTracer is the common functionality to add a tracer to the database.
@@ -123,7 +125,7 @@ func AddTracer(request types.Request) ([]byte, error) {
 }
 
 // GetTracer is the common functionality to get a tracer from the database by it's ID.
-func GetTracer(tracerID uint) ([]byte, error) {
+func GetTracer(tracerID uint, uuid string) ([]byte, error) {
 	var (
 		ret    []byte
 		err    error
@@ -144,13 +146,13 @@ func GetTracer(tracerID uint) ([]byte, error) {
 	return ret, nil
 }
 
-func getTracersDB() ([]types.Request, error) {
+func getTracersDB(u string) ([]types.Request, error) {
 	var (
 		err  error
 		reqs []types.Request
 	)
 
-	if err = store.DB.Preload("Tracers").Find(&reqs).Error; err != nil {
+	if err = store.DB.Where("uuid = ?", u).Preload("Tracers").Find(&reqs).Error; err != nil {
 		log.Warning.Print(err)
 		return nil, err
 	}
@@ -160,54 +162,34 @@ func getTracersDB() ([]types.Request, error) {
 
 // GetTracersCache returns the current set of tracers but first looks in the cache
 // for them.
-func GetTracersCache() []types.Request {
-	inReadChanTracer <- 1
+func GetTracersCache(u string) []types.Request {
+	inReadChanTracer <- u
 	return <-outChanTracer
 }
 
 // GetTracersJSONCache returns the current set of tracers as a JSON object
-// and grabs it from the cache.
-func GetTracersJSONCache() []byte {
-	inReadChanTracerJSON <- 1
+// and grabs it from the cache based on the UUID.
+func GetTracersJSONCache(u string) []byte {
+	inReadChanTracerJSON <- u
 	return <-outChanTracerJSON
 }
 
 // ClearTracerCache will tell the cache of tracers to reset. This is mainly used
 // for testing.
 func ClearTracerCache() {
-	inReadChanTracer <- -1
+	inClearChanTracer <- -1
 }
 
 // GetTracers is the common functionality to get all the tracers from database.
-func GetTracers() ([]byte, error) {
-	return GetTracersJSONCache(), nil
-}
-
-// GetTracerRequest gets the raw request for the tracer specified by an ID.
-func GetTracerRequest(tracerID uint) ([]byte, error) {
-	var (
-		ret     []byte
-		err     error
-		request types.Request
-	)
-
-	if err = store.DB.First(&request).Error; err != nil {
-		log.Warning.Print(err)
-		return ret, err
-	}
-
-	if ret, err = json.Marshal(request); err != nil {
-		log.Warning.Print(err)
-	}
-
-	return ret, err
+func GetTracers(u string) ([]byte, error) {
+	return GetTracersJSONCache(u), nil
 }
 
 // EditTracer updates a tracer in the database.
 func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
 	t := types.Tracer{Model: gorm.Model{ID: id}}
 	var err error
-	if err = store.DB.Model(&t).Updates(tracer).Error; err != nil {
+	if err = store.DB.Model(&t).Where("uuid = ?", tracer.UUID).Updates(tracer).Error; err != nil {
 		log.Warning.Print(err)
 		return []byte{}, err
 	}

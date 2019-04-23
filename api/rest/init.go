@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"flag"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/configure"
@@ -183,6 +185,29 @@ func applicationJSONMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// uuidMiddleware ensures that the UUID is properly added to the Hoot header and
+// if so, adds it to the request context.
+type hootHeader string
+
+var hh = hootHeader("HOOT")
+
+func uuidMiddlewate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var hid string
+		if hid = r.Header.Get("HOOT"); hid == "" {
+			returnError(w, fmt.Errorf("No UUID header found in the Hoot header"))
+			return
+		}
+		h, err := uuid.Parse(hid)
+		if err != nil {
+			returnError(w, err)
+			return
+		}
+		nr := r.WithContext(context.WithValue(r.Context(), hh, &h))
+		next.ServeHTTP(w, nr)
+	})
+}
+
 // cacheMiddleware adds caching headers to get requests that haven't changed.
 func cacheMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -241,8 +266,7 @@ func customHeaderMiddleware(next http.Handler) http.Handler {
 			!((strings.Split(r.Host, ":")[0] == "localhost" || strings.Split(r.Host, ":")[0] == "127.0.0.1") && r.Header.Get("Hoot") != "") &&
 			// They are making an OPTIONS request
 			strings.ToLower(r.Method) != "options" {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("No hoot header or incorrect host header..."))
+			returnError(w, fmt.Errorf("No hoot header or incorrect host header..."))
 			return
 		}
 		next.ServeHTTP(w, r)

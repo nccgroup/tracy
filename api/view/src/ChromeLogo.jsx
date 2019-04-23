@@ -1,27 +1,29 @@
 import React, { Component } from "react";
 
 class ChromeLogo extends Component {
-  install() {
-    window.open(
-      "https://chrome.google.com/webstore/detail/tracy/lcgbimfijafcjjijgjoodgpblgmkckhn?authuser=1",
-      "_blank"
-    );
-  }
+	install() {
+		// apparently this doesn't work with localhost https://developer.chrome.com/webstore/inline_installation:/
+		//chrome.webstore.install();
+		window.open(
+			"https://chrome.google.com/webstore/detail/tracy/lcgbimfijafcjjijgjoodgpblgmkckhn?authuser=1",
+			"_blank"
+		);
+	}
 
-  //This is a static component, it should never need to be rerendered.
-  shouldComponentUpdate(nextProps, nextState) {
-    return false;
-  }
+	/* This is a static component, it should never need to be rerendered. */
+	shouldComponentUpdate(nextProps, nextState) {
+		return false;
+	}
 
-  render() {
-    return (
-      <input
-        className="install-button"
-        type="image"
-        title="install the Tracy Chrome extension"
-        alt="chrome-logo"
-        onClick={this.install}
-        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAACwCAYAAACvt+ReAAAeuklEQVR4XuzAMQEAAAgCMOxf2g7w
+	render() {
+		return (
+			<input
+				className="install-button"
+				type="image"
+				title="install the Tracy Chrome extension"
+				alt="chrome-logo"
+				onClick={this.install}
+				src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALAAAACwCAYAAACvt+ReAAAeuklEQVR4XuzAMQEAAAgCMOxf2g7w
 btkAAAAAAAAAAAAAAAAAAAAAAAAAAJcaz96ZAMlR3Wn+e5l19CG6SwdCB1KXhISFsVDLSMbczXht
 j7HBYjjWx+Jp1ouHwGik5rDx7nokAtsb4RlG0s4RxHjWkiOGWWPwSHgOMHPQg4RZjyTUXBICQVer
 pVbfXX1VVR7v/berMksvqrOqq6u6Lqj8Il5nVmZ2doXipy++938vX3Y//ECLSjzAGWsGAEZoAigI
@@ -160,9 +162,9 @@ F2BXy3+8pVkwpQWMvoypbRxiUhm4wiAU2flK576ImPj7GxfjugWzXdvMYt8wKQFtTKPEvhBoJ+A5
 lfH2OQ1AuAC7WvLHd7QoMFu4wAYmqBmgoFCSxQh7JA5W5+2uRX7suaoBiJ3O9Hb3xPWmCZj8PKwh
 MHSQYK8rEO3Ff32rC7AL9eNfahHgAQjWDBKAQU1MM4NP33AhVvvCgJiEQ6SESFCX5R7UwUDhOKz/
 vx04JgAAAEAYZP/UxtgDKwAAAAAAAAAAAAAAAAAAAAAAAAAAHK2m8pBJGqBwAAAAAElFTkSuQmCC"
-      />
-    );
-  }
+			/>
+		);
+	}
 }
 
 export default ChromeLogo;

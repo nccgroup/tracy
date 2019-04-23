@@ -22,5 +22,6 @@ type Tracer struct {
 	TracerLocationType  uint          `json:"TracerLocationType" gorm:"not null"`
 	TracerLocationIndex uint          `json:"TracerLocationIndex"` // what is the index or where the tracer was located in the request
 	HasTracerEvents     bool          `json:"HasTracerEvents" gorm:"not null"`
+	UUID                string        `json:"UUID" gorm:"not null"`
 	Screenshot          string        `json:"Screenshot"`
 }

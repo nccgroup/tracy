@@ -35,3 +35,6 @@
 [[constraint]]
   version = "1.4.0"
   name = "github.com/gorilla/websocket"
+[[constraint]]
+  name = "github.com/google/uuid"
+  version = "1.1.1"
