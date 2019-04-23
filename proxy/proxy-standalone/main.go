@@ -13,7 +13,6 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
-	"time"
 
 	"github.com/nccgroup/tracy/api/rest"
 	"github.com/nccgroup/tracy/api/store"
@@ -28,14 +27,6 @@ func main() {
 	if *cpuprofile != "" {
 		defer pprof.StopCPUProfile()
 	}
-
-	go func() {
-		ticker := time.Tick(time.Second)
-		for {
-			<-ticker
-			printMemUsage()
-		}
-	}()
 
 	go func() {
 		log.Error.Fatal(rest.Server.ListenAndServe())
@@ -81,13 +72,21 @@ func init() {
 		pprof.StartCPUProfile(f)
 	}
 
-	// Open the database.
-	if err := store.Open(configure.Current.DatabasePath, log.Verbose); err != nil {
-		log.Error.Fatal(err.Error())
-	}
+	// // Open the database.
+	// if err := store.Open(configure.Current.DatabasePath, log.Verbose); err != nil {
+	// 	log.Error.Fatal(err.Error())
+	// }
 
 	// Initialize the HTTP routes.
-	rest.Configure(rest.FULL)
+
+	oldHost := configure.Current.TracyServer.Hostname
+	oldPort := configure.Current.TracyServer.Port
+
+	configure.Current.TracyServer.Hostname = "127.0.0.1" //This is a hack to fix the fact we don't have an option to config just the proxy. Need to talk to Jake about how to fix this for real
+	configure.Current.TracyServer.Port = 8888
+	rest.Configure(rest.PROXY_ONLY)
+	configure.Current.TracyServer.Hostname = oldHost
+	configure.Current.TracyServer.Port = oldPort
 
 	// Instantiate the certificate cache.
 	certsJSON, err := ioutil.ReadFile(configure.Current.CertCachePath)
@@ -131,21 +130,6 @@ func init() {
 // processAutoLaunch launchs whatever browser they have configured.
 func processAutoLaunch() {
 	openbrowser(fmt.Sprintf("%s", configure.Current.TracyServer.Addr()))
-}
-
-func printMemUsage() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
-	fmt.Printf("\033[2K\r")
-	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
-	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
-	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
-	fmt.Printf("\tNumGC = %v", m.NumGC)
-}
-
-func bToMb(b uint64) uint64 {
-	return b / 1024 / 1024
 }
 
 // openBrowser opens the default browser the user has configured.

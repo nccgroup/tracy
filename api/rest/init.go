@@ -33,9 +33,11 @@ var (
 		handler func(http.ResponseWriter, *http.Request)
 	}{
 		{http.MethodPost, "/tracers", AddTracers},
+		{http.MethodPatch, "/tracers/request", updateRequest},
 		{http.MethodGet, "/tracers/generate", GenerateTracer},
 		{http.MethodGet, "/tracers/{tracerID}/request", GetRequest},
 		{http.MethodPut, "/tracers/{tracerID}", EditTracer},
+		{http.MethodPost, "/tracers/{tracerID}/request", AddRequest},
 		{http.MethodGet, "/tracers/{tracerID}", GetTracer},
 		{http.MethodGet, "/tracers", GetTracers},
 		{http.MethodPost, "/tracers/{tracerID}/events", AddEvent},
@@ -60,108 +62,122 @@ var (
 	}
 )
 
+//Jake said he loves enums so we will give him enums
+const (
+	PROXY_ONLY = iota
+	FULL
+	API_ONLY
+)
+
 // Configure configures all the HTTP routes and assigns them handler functions.
-func Configure() {
+func Configure(mode int) {
 	Router = mux.NewRouter()
-	api := Router.PathPrefix("/api/tracy").Subrouter()
+	if mode >= FULL { //make this over complicated so Jake hates me
 
-	for _, row := range apiTable {
-		api.
-			Path(row.path).
-			Methods(row.method, http.MethodOptions).
-			HandlerFunc(row.handler).
-			Name(fmt.Sprintf("%s:%s", row.method, row.path))
-	}
-	for _, m := range apiMw {
-		api.Use(m)
-	}
+		api := Router.PathPrefix("/api/tracy").Subrouter()
 
-	wui := Router.NewRoute().Name("webUI").BuildOnly()
-	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-		// If the host header indicates the request is going straight to
-		// the app, consider it going to the UI, direct them to it.
-		if req.Method == http.MethodGet && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
-			(req.URL.Path == "/" || req.URL.Path == "" || strings.HasPrefix(req.URL.Path, "/static") || strings.HasPrefix(req.URL.Path, "/tracy.ico")) {
-			m.Route = wui
-			if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
-				m.Handler = http.FileServer(http.Dir("./api/view/build"))
-			} else {
-				m.Handler = http.FileServer(assetFS())
+		for _, row := range apiTable {
+			api.
+				Path(row.path).
+				Methods(row.method, http.MethodOptions).
+				HandlerFunc(row.handler).
+				Name(fmt.Sprintf("%s:%s", row.method, row.path))
+		}
+		for _, m := range apiMw {
+			api.Use(m)
+		}
+
+		wui := Router.NewRoute().Name("webUI").BuildOnly()
+		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+			// If the host header indicates the request is going straight to
+			// the app, consider it going to the UI, direct them to it.
+			if req.Method == http.MethodGet && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
+				(req.URL.Path == "/" || req.URL.Path == "" || strings.HasPrefix(req.URL.Path, "/static") || strings.HasPrefix(req.URL.Path, "/tracy.ico")) {
+				m.Route = wui
+				if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
+					m.Handler = http.FileServer(http.Dir("./api/view/build"))
+				} else {
+					m.Handler = http.FileServer(assetFS())
+				}
+				m.MatchErr = nil
+				return true
 			}
-			m.MatchErr = nil
-			return true
+			return false
+		})
+
+		ws := Router.NewRoute().Name("websocket").BuildOnly()
+		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+			// If the host header indicates the request is going straight to
+			// the app, consider it going to the UI, direct them to it.
+			if req.Method == http.MethodGet && req.URL.Path == "/ws" && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
+				m.Route = ws
+				m.Handler = http.HandlerFunc(WebSocket)
+				m.MatchErr = nil
+
+				return true
+			}
+
+			return false
+		})
+
+		var h http.Handler
+		if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
+			h = http.FileServer(http.Dir("./api/view/build"))
+		} else {
+			h = http.FileServer(assetFS())
 		}
-		return false
-	})
 
-	ws := Router.NewRoute().Name("websocket").BuildOnly()
-	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-		// If the host header indicates the request is going straight to
-		// the app, consider it going to the UI, direct them to it.
-		if req.Method == http.MethodGet && req.URL.Path == "/ws" && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
-			m.Route = ws
-			m.Handler = http.HandlerFunc(WebSocket)
-			m.MatchErr = nil
+		thost := Router.NewRoute().Name("tracyHost").BuildOnly()
+		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+			if strings.HasPrefix(req.Host, "tracy") {
+				m.Route = thost
+				m.Handler = h
+				m.MatchErr = nil
+				return true
+			}
+			return false
+		})
 
-			return true
-		}
-
-		return false
-	})
-
-	var h http.Handler
-	if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
-		h = http.FileServer(http.Dir("./api/view/build"))
-	} else {
-		h = http.FileServer(assetFS())
 	}
 
-	// Catch everything else.
-	t, u, d, bp, bufp := configure.ProxyServer()
-	p := proxy.New(t, u, d, bp, bufp)
+	if mode <= FULL {
 
-	thost := Router.NewRoute().Name("tracyHost").BuildOnly()
-	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-		if strings.HasPrefix(req.Host, "tracy") {
-			m.Route = thost
-			m.Handler = h
+		// Catch everything else.
+		t, u, d, bp, bufp := configure.ProxyServer()
+		p := proxy.New(t, u, d, bp, bufp)
+
+		// For CONNECT requests, the path will be an absolute URL
+		Router.SkipClean(true)
+
+		// Proxy catches everything, except for requests back to itself.
+		prox := Router.NewRoute().Name("proxy").BuildOnly()
+		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+			server, err := configure.ParseServer(req.Host)
+			if err != nil {
+				log.Error.Print(err)
+				return false
+			}
+			//SANITY CHECK: if we are about to send a request back to the proxy,
+			// we hit a recursion and something is up.
+			if req.Method != http.MethodConnect && server.Equal(configure.Current.TracyServer) && mode != PROXY_ONLY {
+				return false
+			}
+
+			m.Route = prox
+			m.Handler = p
 			m.MatchErr = nil
 			return true
-		}
-		return false
-	})
+		})
 
-	// For CONNECT requests, the path will be an absolute URL
-	Router.SkipClean(true)
-
-	// Proxy catches everything, except for requests back to itself.
-	prox := Router.NewRoute().Name("proxy").BuildOnly()
-	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-		server, err := configure.ParseServer(req.Host)
-		if err != nil {
-			log.Error.Print(err)
-			return false
-		}
-		//SANITY CHECK: if we are about to send a request back to the proxy,
-		// we hit a recursion and something is up.
-		if req.Method != http.MethodConnect && server.Equal(configure.Current.TracyServer) {
-			return false
-		}
-
-		m.Route = prox
-		m.Handler = p
-		m.MatchErr = nil
-		return true
-	})
-
-	// This is the catch all route. Specifically, it should catch recursion
-	// requests and return a 404 instead.
-	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-		m.Route = nil
-		m.Handler = http.NotFoundHandler()
-		m.MatchErr = nil
-		return true
-	})
+		// This is the catch all route. Specifically, it should catch recursion
+		// requests and return a 404 instead.
+		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+			m.Route = nil
+			m.Handler = http.NotFoundHandler()
+			m.MatchErr = nil
+			return true
+		})
+	}
 
 	Server = &http.Server{
 		Handler: Router,
