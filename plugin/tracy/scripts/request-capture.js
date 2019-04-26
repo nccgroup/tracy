@@ -31,21 +31,24 @@
         const newURL = url.toString();
 
         // These are only handling link clicks, so there shouldn't be any body
-        background.fetch(
-          {
-            route: "/api/tracy/tracers",
-            method: "POST",
-            body: JSON.stringify({
-              RawRequest: `${r.method} ${url.pathname}${url.search}  HTTP/1.1
+        async () => {
+          const { err } = await background.fetch(
+            {
+              route: "/api/tracy/tracers",
+              method: "POST",
+              body: JSON.stringify({
+                RawRequest: `${r.method} ${url.pathname}${url.search}  HTTP/1.1
 Host: ${url.host}`,
-              RequestURL: newURL,
-              RequestMethod: r.method,
-              Tracers: tracers
-            })
-          },
-          null,
-          () => {}
-        );
+                RequestURL: newURL,
+                RequestMethod: r.method,
+                Tracers: tracers
+              })
+            },
+            null,
+            () => {}
+          );
+          if (err) console.error(err);
+        };
 
         console.log("[REDIRECTING]", r.url, newURL);
         return { redirectUrl: newURL };
@@ -53,5 +56,41 @@ Host: ${url.host}`,
     },
     { urls: ["<all_urls>"] },
     ["blocking"]
+  );
+})();
+
+(() => {
+  chrome.webRequest.onBeforeRequest.addListener(
+    r => {
+      const url = new URL(r.url);
+      const copy = new URLSearchParams();
+      let mod = false;
+      let tracers = [];
+      url.searchParams.forEach((value, key) => {});
+
+      if (mod) {
+        // These are only handling link clicks, so there shouldn't be any body
+        async () => {
+          const { err } = await background.fetch(
+            {
+              route: "/api/tracy/tracers",
+              method: "POST",
+              body: JSON.stringify({
+                RawRequest: `${r.method} ${url.pathname}${url.search}  HTTP/1.1
+Host: ${url.host}`,
+                RequestURL: newURL,
+                RequestMethod: r.method,
+                Tracers: tracers
+              })
+            },
+            null,
+            () => {}
+          );
+          if (err) console.error(err);
+        };
+      }
+    },
+    { urls: ["<all_urls>"] },
+    ["requestBody"]
   );
 })();

@@ -50,8 +50,33 @@ func EditTracer(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
-// AddTracers handles the HTTP API request to add a set of tracers from a Request
-// to the database.
+// AddRequests handles the HTTP API request to add a tracer
+// with multiple requests to the database.
+func AddRequests(w http.ResponseWriter, r *http.Request) {
+	var in types.Tracer
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		returnError(w, err)
+		return
+	}
+
+	u, ok := r.Context().Value(hh).(*uuid.UUID)
+	if !ok {
+		returnError(w, fmt.Errorf("Wrong value associated with the Hoot header"))
+		return
+	}
+	in.UUID = u.String()
+	ret, err := common.AddRequests(in)
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(ret)
+}
+
+// AddTracers handles the API request for adding a request with multiple
+// tracers to the database.
 func AddTracers(w http.ResponseWriter, r *http.Request) {
 	var in types.Request
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -67,8 +92,7 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 	for _, v := range in.Tracers {
 		v.UUID = u.String()
 	}
-
-	ret, err := common.AddTracer(in)
+	ret, err := common.AddTracers(in)
 	if err != nil {
 		returnError(w, err)
 		return
@@ -78,10 +102,9 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
-// AddTracers handles the HTTP API request to add a set of tracers from a Request
+// UpdateRequest handles the HTTP API request to add a set of tracers from a Request
 // to the database.
-func updateRequest(w http.ResponseWriter, r *http.Request) {
-
+func UpdateRequest(w http.ResponseWriter, r *http.Request) {
 	var in types.Request
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		returnError(w, err)
@@ -98,9 +121,8 @@ func updateRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write(ret)
 }
 
-//AddRequest added a request to the db based on the ID
-func AddRequest(w http.ResponseWriter, r *http.Request) {
-
+// AddRequestByID adds a request to the db based on the tracer ID
+func AddRequestByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tracerID, ok := vars["tracerID"]
 	if !ok {
@@ -121,6 +143,55 @@ func AddRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ret, err := common.AddRequest(in, uint(ID))
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(ret)
+}
+
+// AddRequestByTracerPayload adds a request to the DB based on the tracer payload.
+func AddRequestByTracerPayload(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tracerPayload, ok := vars["tracerPayload"]
+	if !ok {
+		returnError(w, fmt.Errorf("No tracerPayload variable found in the path"))
+		return
+	}
+
+	var in types.Request
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		returnError(w, err)
+		return
+	}
+
+	u, ok := r.Context().Value(hh).(*uuid.UUID)
+	if !ok {
+		returnError(w, fmt.Errorf("Wrong value associated with the Hoot header"))
+		return
+	}
+
+	var tracers []types.Tracer
+	tracersb, err := common.GetTracers(u.String())
+	if err := json.Unmarshal(tracersb, &tracers); err != nil {
+		returnError(w, err)
+		return
+	}
+	var tracer *types.Tracer
+	for _, v := range tracers {
+		if v.TracerPayload == tracerPayload {
+			tracer = &v
+			break
+		}
+	}
+	if tracer == nil {
+		returnError(w, fmt.Errorf("Couldn't find a tracer with payload %s", tracerPayload))
+		return
+	}
+	ret, err := common.AddRequest(in, tracer.ID)
+
 	if err != nil {
 		returnError(w, err)
 		return

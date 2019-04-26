@@ -14,8 +14,14 @@ const background = (() => {
     const lc = o.method.toLowerCase();
     if (lc === "get" || lc === "header") delete opts.body;
     const req = new Request(`http://${settings.getServer()}${o.route}`, opts);
-    const resp = await fetch(req);
-    return await resp.json();
+    let resp;
+    try {
+      resp = await fetch(req);
+    } catch (e) {
+      return { json: null, err: e };
+    }
+    if (resp.status === 500) return { json: null, err: resp.statusText };
+    return { json: await resp.json(), err: null };
   };
 
   // cross-orgin fetches are disallowed from content scripts in Chrome Extensions,
@@ -23,7 +29,8 @@ const background = (() => {
   // https://www.chromium.org/Home/chromium-security/extension-content-script-fetches
   // "message" should have a route, method, and optionally a body
   const fetchWithCallback = async (message, sender, callback) => {
-    const json = await fetch(message);
+    const json = await fetchNoCallback(message);
+
     // If the background fetch is to create a new tracer,
     // update our list of tracer payloads.
     if (
@@ -33,7 +40,7 @@ const background = (() => {
       settings.setTracerPayloads(
         settings
           .getTracerPayloads()
-          .concat(JSON.parse(message.body).Tracers.map(t => t.TracerPayload))
+          .concat(JSON.parse(message.body).TracerPayload)
       );
     }
 

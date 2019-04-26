@@ -41,11 +41,11 @@ const restoreOptions = async () => {
   );
 
   /*  const s = document.getElementById("auto-fill-dropdown");
-  replace.getTracerTypes().map(i => {
-    const o = document.createElement("option");
-    o.text = i[0];
-    s.add(o);
-  });*/
+       replace.getTracerTypes().map(i => {
+       const o = document.createElement("option");
+       o.text = i[0];
+       s.add(o);
+       });*/
 
   //  document.getElementById("auto-fill-dropdown").value =    settings.autoFillPayload;
   document.getElementById("rest-host").value = settings.restHost;
@@ -54,10 +54,24 @@ const restoreOptions = async () => {
   document.getElementById("api-key").value = settings.apiKey;
 };
 
+// Stolen from : https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+const generateUUID = () =>
+  ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+    (
+      c ^
+      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+    ).toString(16)
+  );
+
 document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("api-key-refresh").addEventListener("click", () => {
+    const uuid = generateUUID();
+    document.getElementById("api-key").value = uuid;
+    saveOptions();
+  });
   document.getElementById("save").addEventListener("click", saveOptions);
   /*  document.getElementById("auto-fill").addEventListener("click", e => {
-    document.getElementById("auto-fill-dropdown");
-  });*/
+       document.getElementById("auto-fill-dropdown");
+       });*/
   restoreOptions();
 });

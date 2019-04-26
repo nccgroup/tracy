@@ -3,17 +3,16 @@ const jobs = (() => {
   // a set of events from the DOM.
   const bulkAddEvents = async events => {
     if (!settings.isDisabled() && events.length > 0) {
-      try {
-        return background.fetch({
-          method: "POST",
-          route: "/api/tracy/tracers/events/bulk",
-          body: JSON.stringify(events)
-        });
-      } catch (e) {
+      const { err } = await background.fetch({
+        method: "POST",
+        route: "/api/tracy/tracers/events/bulk",
+        body: JSON.stringify(events)
+      });
+
+      if (err)
         setTimeout(function() {
           bulkAddEvents(events);
         }, 1500);
-      }
     }
   };
 

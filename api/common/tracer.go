@@ -11,13 +11,14 @@ import (
 	"github.com/nccgroup/tracy/log"
 )
 
+/*
 func tracerCache(inClear chan int, inR, inRJ chan string, inU chan types.Request, out chan []types.Request, outJSON chan []byte) {
 	var (
 		u   string
 		r   types.Request
 		err error
 	)
-	tracers := make(map[string]types.Request)
+	tracers := make(map[string]types.Tracer)
 	tracersJSON := make(map[string]byte)
 
 	for {
@@ -80,7 +81,7 @@ func tracerCache(inClear chan int, inR, inRJ chan string, inU chan types.Request
 		}
 	}
 }
-
+*/
 var inClearChanTracer chan int
 var inReadChanTracer chan string
 var inUpdateChanTracer chan types.Request
@@ -89,42 +90,72 @@ var outChanTracer chan []types.Request
 var outChanTracerJSON chan []byte
 
 func init() {
-	inClearChanTracer = make(chan int, 10)
-	inReadChanTracer = make(chan string, 10)
-	inUpdateChanTracer = make(chan types.Request, 10)
-	inReadChanTracerJSON = make(chan string, 10)
-	outChanTracer = make(chan []types.Request, 10)
-	outChanTracerJSON = make(chan []byte, 10)
-	go tracerCache(inClearChanTracer, inReadChanTracer, inReadChanTracerJSON, inUpdateChanTracer, outChanTracer, outChanTracerJSON)
+	/*	inClearChanTracer = make(chan int, 10)
+		inReadChanTracer = make(chan string, 10)
+		inUpdateChanTracer = make(chan types.Request, 10)
+		inReadChanTracerJSON = make(chan string, 10)
+		outChanTracer = make(chan []types.Tracer, 10)
+		outChanTracerJSON = make(chan []byte, 10)
+		go tracerCache(inClearChanTracer, inReadChanTracer, inReadChanTracerJSON, inUpdateChanTracer, outChanTracer, outChanTracerJSON)*/
 }
 
-// AddTracer is the common functionality to add a tracer to the database.
-func AddTracer(request types.Request) ([]byte, error) {
+// AddRequests adds multiple requests for a single tracer to the database.
+func AddRequests(tracer types.Tracer) ([]byte, error) {
 	var (
 		ret []byte
 		err error
 	)
 
-	// Adding a size limit to the rawrequest field
-	if len(request.RawRequest) > configure.Current.MaxRequestSize {
-		request.RawRequest = request.RawRequest[:configure.Current.MaxRequestSize]
+	// Adding a size limit to the RawRequest field.
+	for _, v := range tracer.Requests {
+		if len(v.RawRequest) > configure.Current.MaxRequestSize {
+			v.RawRequest = v.RawRequest[:configure.Current.MaxRequestSize]
+		}
 	}
 
-	if err = store.DB.Create(&request).Error; err != nil {
+	log.Error.Printf("TRACER: %+v", tracer)
+	if err = store.DB.Create(&tracer).Error; err != nil {
 		log.Warning.Printf(err.Error())
 		return ret, err
 	}
 
-	inUpdateChanTracer <- request
-	UpdateSubscribers(request)
-	if ret, err = json.Marshal(request); err != nil {
+	//	inUpdateChanTracer <- tracer
+	UpdateSubscribers(tracer)
+	if ret, err = json.Marshal(tracer); err != nil {
 		log.Warning.Printf(err.Error())
 	}
 
 	return ret, err
 }
 
-// updateTracer is the common functionality to add a tracer to the database.
+// AddTracers adds multiple tracers for a single requests to the database.
+func AddTracers(req types.Request) ([]byte, error) {
+	var (
+		ret []byte
+		err error
+	)
+
+	// Adding a size limit to the RawRequest field.
+	if len(req.RawRequest) > configure.Current.MaxRequestSize {
+		req.RawRequest = req.RawRequest[:configure.Current.MaxRequestSize]
+	}
+
+	if err = store.DB.Create(&req).Error; err != nil {
+		log.Warning.Printf(err.Error())
+		return ret, err
+	}
+
+	//	inUpdateChanTracer <- tracer
+	UpdateSubscribers(req)
+	if ret, err = json.Marshal(req); err != nil {
+		log.Warning.Printf(err.Error())
+	}
+
+	return ret, err
+}
+
+// UpdateRequest is the common functionality to modify a raw request
+// in the database.
 func UpdateRequest(request types.Request) ([]byte, error) {
 	var (
 		ret []byte
@@ -136,7 +167,7 @@ func UpdateRequest(request types.Request) ([]byte, error) {
 		return ret, err
 	}
 
-	inUpdateChanTracer <- request
+	//	inUpdateChanTracer <- request
 	UpdateSubscribers(request)
 	if ret, err = json.Marshal(request); err != nil {
 		log.Warning.Printf(err.Error())
@@ -145,6 +176,8 @@ func UpdateRequest(request types.Request) ([]byte, error) {
 	return ret, err
 }
 
+// AddRequest is the common functionality to add a request to a tracer
+// by its ID.
 func AddRequest(request types.Request, tracerID uint) ([]byte, error) {
 	var (
 		ret []byte
@@ -160,7 +193,7 @@ func AddRequest(request types.Request, tracerID uint) ([]byte, error) {
 		return ret, err
 	}
 
-	inUpdateChanTracer <- request
+	//	inUpdateChanTracer <- request
 	UpdateSubscribers(request)
 	if ret, err = json.Marshal(request); err != nil { //TODO: Find out what should be returned here
 		log.Warning.Printf(err.Error())
@@ -191,18 +224,18 @@ func GetTracer(tracerID uint, uuid string) ([]byte, error) {
 	return ret, nil
 }
 
-func getTracersDB(u string) ([]types.Request, error) {
+func getTracersDB(u string) ([]types.Tracer, error) {
 	var (
-		err  error
-		reqs []types.Request
+		err     error
+		tracers []types.Tracer
 	)
 
-	if err = store.DB.Where("uuid = ?", u).Preload("Tracers").Find(&reqs).Error; err != nil {
+	if err = store.DB.Where("uuid = ?", u).Preload("Requests").Find(&tracers).Error; err != nil {
 		log.Warning.Print(err)
 		return nil, err
 	}
 
-	return reqs, err
+	return tracers, err
 }
 
 // GetTracersCache returns the current set of tracers but first looks in the cache
@@ -227,7 +260,19 @@ func ClearTracerCache() {
 
 // GetTracers is the common functionality to get all the tracers from database.
 func GetTracers(u string) ([]byte, error) {
-	return GetTracersJSONCache(u), nil
+	//	return GetTracersJSONCache(u), nil
+	tracers, err := getTracersDB(u)
+	if err != nil {
+		return []byte{}, nil
+	}
+
+	var ret []byte
+	if ret, err = json.Marshal(tracers); err != nil {
+		log.Warning.Printf(err.Error())
+		return ret, err
+	}
+
+	return ret, nil
 }
 
 // EditTracer updates a tracer in the database.
@@ -239,7 +284,7 @@ func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
 		return []byte{}, err
 	}
 	r := types.Request{Tracers: []types.Tracer{t}}
-	inUpdateChanTracer <- r
+	//	inUpdateChanTracer <- r
 	UpdateSubscribers(r)
 	var ret []byte
 	if ret, err = json.Marshal(tracer); err != nil {

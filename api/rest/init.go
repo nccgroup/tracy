@@ -33,11 +33,12 @@ var (
 		handler func(http.ResponseWriter, *http.Request)
 	}{
 		{http.MethodPost, "/tracers", AddTracers},
-		{http.MethodPatch, "/tracers/request", updateRequest},
-		{http.MethodGet, "/tracers/generate", GenerateTracer},
-		{http.MethodGet, "/tracers/{tracerID}/request", GetRequest},
+		{http.MethodPost, "/tracers/requests", AddRequests},
+		{http.MethodPatch, "/tracers/request", UpdateRequest},
+		//		{http.MethodGet, "/tracers/generate", GenerateTracer},
+		//	{http.MethodGet, "/tracers/{tracerID}/request", GetRequest},
 		{http.MethodPut, "/tracers/{tracerID}", EditTracer},
-		{http.MethodPost, "/tracers/{tracerID}/request", AddRequest},
+		{http.MethodPost, "/tracers/{tracerPayload}/request", AddRequestByTracerPayload},
 		{http.MethodGet, "/tracers/{tracerID}", GetTracer},
 		{http.MethodGet, "/tracers", GetTracers},
 		{http.MethodPost, "/tracers/{tracerID}/events", AddEvent},
@@ -56,6 +57,7 @@ var (
 		handlers.CORS(
 			handlers.AllowedHeaders([]string{"X-TRACY", "Hoot"}),
 			handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})),
+		uuidMiddleware,
 		customHeaderMiddleware,
 		applicationJSONMiddleware,
 		cacheMiddleware,
@@ -207,7 +209,7 @@ type hootHeader string
 
 var hh = hootHeader("HOOT")
 
-func uuidMiddlewate(next http.Handler) http.Handler {
+func uuidMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var hid string
 		if hid = r.Header.Get("HOOT"); hid == "" {
@@ -215,11 +217,13 @@ func uuidMiddlewate(next http.Handler) http.Handler {
 			return
 		}
 		h, err := uuid.Parse(hid)
+		log.Error.Printf("uuid: %+v", h)
 		if err != nil {
 			returnError(w, err)
 			return
 		}
 		nr := r.WithContext(context.WithValue(r.Context(), hh, &h))
+		log.Error.Printf("serving next")
 		next.ServeHTTP(w, nr)
 	})
 }

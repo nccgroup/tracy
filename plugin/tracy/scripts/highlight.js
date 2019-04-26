@@ -87,7 +87,7 @@ const highlight = (() => {
         fillElement(e.target, el.target.innerText);
       });
       listElement.classList.add("highlight-on-hover");
-      listElement.innerText = t;
+      listElement.innerText = t[0];
       list.appendChild(listElement);
     });
 
@@ -160,17 +160,18 @@ const highlight = (() => {
     const r = replace.str(tracerString);
     simulateInputType(elem, elem.value + r.str);
     r.tracers[0].Screenshot = await captureScreenshot(elem, 200);
-
+    r.tracers[0].Requests = [
+      {
+        RawRequest: "GENERATED",
+        RequestMethod: "GENERATED",
+        RequestURL: document.location.href
+      }
+    ];
     util.send({
       "message-type": "background-fetch",
       route: "/api/tracy/tracers",
       method: "POST",
-      body: JSON.stringify({
-        RawRequest: "GENERATED",
-        RequestMethod: "GENERATED",
-        RequestURL: document.location.href,
-        Tracers: r.tracers
-      })
+      body: JSON.stringify(r.tracers[0])
     });
   }
 
