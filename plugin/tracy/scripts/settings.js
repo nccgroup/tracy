@@ -12,17 +12,17 @@ const settings = (() => {
     );
 
     restServer = s.restHost + ":" + s.restPort;
-    try {
-      const { json, err } = await background.fetch({
-        method: "GET",
-        route: "/api/tracy/tracers"
-      });
-      if (err) return;
-      tracerPayloads = json.map(r => r.TracerPayload).filter(t => t !== "");
-    } catch (e) {
-      console.error(e);
-      x;
+
+    const { json, err } = await background.fetch({
+      method: "GET",
+      route: "/api/tracy/tracers"
+    });
+    if (err) {
+      console.error(err);
+      return;
     }
+    tracerPayloads = json.map(r => r.TracerPayload).filter(t => t !== "");
+
     if (wsConnect) {
       websocket.websocketConnect();
     }
