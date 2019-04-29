@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/nccgroup/tracy/api/common"
+	"github.com/nccgroup/tracy/log"
 )
 
 // upgrader is used a configuration struct when upgrading the websocket
@@ -29,7 +30,13 @@ func WebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := common.AddSubscriber(conn)
+	var key string
+	key, err = common.AddSubscriber(conn)
+	if err != nil {
+		log.Error.Print(err)
+		conn.Close()
+		return
+	}
 	conn.SetCloseHandler(func(code int, text string) error {
 		common.RemoveSubscriber(key)
 		return nil
@@ -40,13 +47,6 @@ func WebSocket(w http.ResponseWriter, r *http.Request) {
 		if err := conn.ReadJSON(&msg); err != nil {
 			conn.Close()
 			return
-		}
-
-		// The only data we receive from the client is a number that tells
-		// the router the connection only wants to receive updates for that
-		// tracer ID.
-		if len(msg) == 1 {
-			common.ChangeTracer(key, msg[0])
 		}
 	}
 }

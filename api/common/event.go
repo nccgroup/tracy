@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+/*
 type tracerUpdate struct {
 	Event types.TracerEvent
 	ID    int
@@ -56,12 +57,13 @@ func tracerEventCache(inR chan int, inU chan tracerUpdate, out chan []types.Trac
 var inReadChanEvent chan int
 var inUpdateChanEvent chan tracerUpdate
 var outChanEvent chan []types.TracerEvent
-
+*/
 func init() {
-	inReadChanEvent = make(chan int, 10)
-	inUpdateChanEvent = make(chan tracerUpdate, 10)
-	outChanEvent = make(chan []types.TracerEvent, 10)
-	go tracerEventCache(inReadChanEvent, inUpdateChanEvent, outChanEvent)
+	/*
+		inReadChanEvent = make(chan int, 10)
+		inUpdateChanEvent = make(chan tracerUpdate, 10)
+		outChanEvent = make(chan []types.TracerEvent, 10)
+		go tracerEventCache(inReadChanEvent, inUpdateChanEvent, outChanEvent)*/
 }
 
 // AddEvent is the common functionality to add an event to the database.
@@ -94,8 +96,8 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	// we don't want to erase the already recorded events that client might
 	// be showing.
 	copy.ID = event.ID
-	inUpdateChanEvent <- tracerUpdate{copy, int(tracer.ID)}
-	UpdateSubscribers(copy)
+	//inUpdateChanEvent <- tracerUpdate{copy, int(tracer.ID)}
+	UpdateSubscribers(tracer.UUID, copy)
 	if ret, err = json.Marshal(copy); err != nil {
 		log.Warning.Print(err)
 	}
@@ -104,7 +106,7 @@ func AddEvent(tracer types.Tracer, event types.TracerEvent) ([]byte, error) {
 	// with severity of 2 or higher.
 	for _, c := range copy.DOMContexts {
 		if c.Severity >= 2 {
-			UpdateSubscribers(types.Notification{Tracer: tracer, Event: copy})
+			UpdateSubscribers(tracer.UUID, types.Notification{Tracer: tracer, Event: copy})
 			break
 		}
 	}
@@ -174,7 +176,7 @@ func getDOMContexts(event *types.TracerEvent, tracer types.Tracer) error {
 	// If we updated the severity or got our first event, update the clients
 	// connected to the websocket.
 	if !old || newSev {
-		UpdateSubscribers(tracer)
+		UpdateSubscribers(tracer.UUID, tracer)
 	}
 
 	return err
@@ -376,6 +378,7 @@ func getTracerEventsDB(tracerID uint) ([]types.TracerEvent, error) {
 	return tracerEvents, nil
 }
 
+/*
 func getTracerEventsCache(tracerID uint) []types.TracerEvent {
 	inReadChanEvent <- int(tracerID)
 	return <-outChanEvent
@@ -385,16 +388,17 @@ func getTracerEventsCache(tracerID uint) []types.TracerEvent {
 // used for testing.
 func ClearTracerEventCache() {
 	inReadChanEvent <- -1
-}
+}*/
 
 // GetEvents is the common functionality for getting all the events for a given
 // tracer ID from the database.
 func GetEvents(tracerID uint) ([]byte, error) {
-	var (
-		ret []byte
-		err error
-	)
-	tracerEvents := getTracerEventsCache(tracerID)
+	var ret []byte
+	tracerEvents, err := getTracerEventsDB(tracerID)
+	if err != nil {
+		log.Warning.Print(err)
+		return ret, err
+	}
 	if ret, err = json.Marshal(tracerEvents); err != nil {
 		log.Warning.Print(err)
 	}

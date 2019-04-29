@@ -60,12 +60,12 @@ func StartReproductions(tracerID, contextID uint) {
 		rts[i] = rt
 	}
 
-	UpdateSubscribers(types.Reproduction{
+	/*	UpdateSubscribers(types.Reproduction{
 		Tracer:            tracer,
 		TracerEvent:       event,
 		DOMContext:        context,
 		ReproductionTests: rts,
-	})
+	})*/
 }
 
 // createReproductionTest creates a row in the events

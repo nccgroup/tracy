@@ -44,16 +44,16 @@ func TestAllRest(t *testing.T) {
 	configure.Setup()
 	Configure()
 	var table = [][]RequestTestPair{
-		/*		testAddEvent(t),
-				testDuplicateEvent(t),
-				//		testGetAllConfig(t),
-				testAddTracer(t),
-				//		testSwitchProject(t),
-				testUUIDGetTracers(t),
-				testUUIDGetTracer(t),
-				testUUIDEditTracers(t),
-				testAddTracerBadAuth(t),
-				testAddRequestByTracerPayload(t),*/
+		testAddEvent(t),
+		testDuplicateEvent(t),
+		//		testGetAllConfig(t),
+		testAddTracer(t),
+		//		testSwitchProject(t),
+		testUUIDGetTracers(t),
+		testUUIDGetTracer(t),
+		testUUIDEditTracers(t),
+		testAddTracerBadAuth(t),
+		testAddRequestByTracerPayload(t),
 		testUUIDGetEvents(t),
 	}
 

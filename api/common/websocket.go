@@ -1,65 +1,69 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/gorilla/websocket"
 	"github.com/nccgroup/tracy/api/types"
 	"github.com/nccgroup/tracy/log"
 )
 
 var (
-	subscribers   map[int]*subscriber
-	updateChan    chan interface{}
+	subscribers   map[string]*subscriber
+	updateChan    chan *update
 	addSubChan    chan *subscriber
 	changeSubChan chan []int
-	removeSubChan chan int
+	removeSubChan chan string
 )
+
+type update struct {
+	Key  string
+	Data interface{}
+}
 
 // subscriber is a struct used to keep track of client connections to the router.
 // A subscriber has a key index, the tracer it is currently listening to and the
 // websocket connection that manages it.
 type subscriber struct {
-	KeyChan chan int
-	Sock    *websocket.Conn
-	Tracer  uint
+	Key    string
+	Sock   *websocket.Conn
+	Tracer uint
 }
 
 // AddSubscriber takes a websocket connection and adds it to the list of subscribers.
 // New events that happen in package common get pushed these events.
-func AddSubscriber(conn *websocket.Conn) int {
-	c := make(chan int, 1)
-	addSubChan <- &subscriber{c, conn, 0}
-	return <-c
+func AddSubscriber(conn *websocket.Conn) (string, error) {
+	// The first message they send needs to be their UUID.
+	var msg []string
+	if err := conn.ReadJSON(&msg); err != nil {
+		conn.Close()
+		return "", err
+	}
+	if len(msg) != 1 {
+		return "", fmt.Errorf("websocket expected an array with the first element a UUID")
+	}
+	addSubChan <- &subscriber{msg[0], conn, 0}
+	return msg[0], nil
 }
 
 // RemoveSubscriber removes the websocket from the list of subscribers.
-func RemoveSubscriber(key int) {
+func RemoveSubscriber(key string) {
 	removeSubChan <- key
 }
 
-// ChangeTracer changes the tracer to send event updates for.
-func ChangeTracer(key, tracer int) {
-	changeSubChan <- []int{key, tracer}
-}
-
 // UpdateSubscribers sends an update to all the subscribers.
-func UpdateSubscribers(update interface{}) {
-	updateChan <- update
+func UpdateSubscribers(key string, data interface{}) {
+	updateChan <- &update{key, data}
 }
 
 // Router is a single goroutine used to serialize notifications to each of the
 // connected websocket clients. It handles adding and removing a subscriber, changing
 // what tracer the subscriber is listening to and and updates to that tracer.
 func router() {
-	id := 0
-
 	for {
 		select {
-		case change := <-changeSubChan:
-			subscribers[change[0]].Tracer = uint(change[1])
 		case add := <-addSubChan:
-			subscribers[id] = add
-			add.KeyChan <- id
-			id++
+			subscribers[add.Key] = add
 		case remove := <-removeSubChan:
 			delete(subscribers, remove)
 		case update := <-updateChan:
@@ -68,12 +72,13 @@ func router() {
 	}
 }
 
-func updateRouter(update interface{}) {
-	//TODO: It'd be good to keep the types of subscribers in case we
-	// need to send specific messages to the extension or a particular
-	// type of extension
+func updateRouter(update *update) {
 	for _, sub := range subscribers {
-		switch u := update.(type) {
+		// Only send updates to the subscriber with the matching key.
+		if sub.Key != update.Key {
+			continue
+		}
+		switch u := update.Data.(type) {
 		case types.Tracer:
 			if err := sub.Sock.WriteJSON(types.TracerWebSocket{u}); err != nil {
 				log.Error.Print(err)
@@ -111,10 +116,9 @@ func updateRouter(update interface{}) {
 }
 
 func init() {
-	updateChan = make(chan interface{}, 10)
+	updateChan = make(chan *update, 10)
 	addSubChan = make(chan *subscriber, 10)
-	removeSubChan = make(chan int, 10)
-	changeSubChan = make(chan []int, 10)
-	subscribers = make(map[int]*subscriber, 25)
+	removeSubChan = make(chan string, 10)
+	subscribers = make(map[string]*subscriber, 25)
 	go router()
 }

@@ -12,14 +12,15 @@ import (
 )
 
 /*
-func tracerCache(inClear chan int, inR, inRJ chan string, inU chan types.Request, out chan []types.Request, outJSON chan []byte) {
+func tracerCache(inClear chan int, inR, inRJ chan string, inU chan types.Tracer, out chan []types.Tracer, outJSON chan []byte) {
 	var (
 		u   string
-		r   types.Request
+		r   types.Tracer
 		err error
 	)
-	tracers := make(map[string]types.Tracer)
-	tracersJSON := make(map[string]byte)
+	empty := []byte{}
+	tracers := make(map[string][]types.Tracer)
+	tracersJSON := make(map[string][]byte)
 
 	for {
 		select {
@@ -34,7 +35,7 @@ func tracerCache(inClear chan int, inR, inRJ chan string, inU chan types.Request
 					log.Error.Fatal(err)
 				}
 			}
-			out <- tracers
+			out <- tracers[u]
 		case u = <-inRJ:
 			if tracers[u] == nil {
 				tracers[u], err = getTracersDB(u)
@@ -43,13 +44,13 @@ func tracerCache(inClear chan int, inR, inRJ chan string, inU chan types.Request
 				}
 				if tracersJSON[u], err = json.Marshal(tracers[u]); err != nil {
 					log.Warning.Print(err)
-					outJSON <- []byte{}
+					outJSON <- empty
 					continue
 				}
 			} else if tracersJSON[u] == nil {
 				if tracersJSON[u], err = json.Marshal(tracers[u]); err != nil {
 					log.Warning.Print(err)
-					outJSON <- []byte{}
+					outJSON <- empty
 					continue
 				}
 			}
@@ -57,46 +58,51 @@ func tracerCache(inClear chan int, inR, inRJ chan string, inU chan types.Request
 		case r = <-inU:
 			// If the tracer already exists in the list, just update it
 			// with the new value.
-			if len(r.Tracers) > 0 && r.Tracers[0].RequestID == 0 {
-				for i := range tracers[u] {
-					for j := range tracers[u][i].Tracers {
-						if r.Tracers[0].ID == tracers[u][i].Tracers[j].ID {
-							// Right now, this is the only field that needs to be updated.
-							tracers[u][i].Tracers[j].Screenshot = r.Tracers[0].Screenshot
-							if tracersJSON, err = json.Marshal(tracers[u]); err != nil {
-								log.Warning.Print(err)
-								continue
-							}
-							continue
-						}
+			for i := range tracers[r.UUID] {
+				if r.ID == tracers[r.UUID][i].ID {
+					// This overwrites that tracer. Make sure whatever
+					// you pass here has all its fields filled out so
+					// that we don't lose data.
+					tracers[r.UUID][i] = r
+					if tracersJSON[r.UUID], err = json.Marshal(tracers[r.UUID]); err != nil {
+						log.Warning.Print(err)
+						continue
 					}
-				}
-			} else {
-				tracers[u] = append(tracers[u], r)
-				if tracersJSON[u], err = json.Marshal(tracers[u]); err != nil {
-					log.Warning.Print(err)
 					continue
 				}
 			}
+
+			// Otherwise, add it to the list.
+			tracers[r.UUID] = append(tracers[r.UUID], r)
+			if tracersJSON[r.UUID], err = json.Marshal(tracers[r.UUID]); err != nil {
+				log.Warning.Print(err)
+				continue
+			}
+
 		}
 	}
 }
-*/
+
 var inClearChanTracer chan int
 var inReadChanTracer chan string
-var inUpdateChanTracer chan types.Request
+var inUpdateChanTracer chan types.Tracer
 var inReadChanTracerJSON chan string
-var outChanTracer chan []types.Request
+var outChanTracer chan []types.Tracer
 var outChanTracerJSON chan []byte
-
+*/
 func init() {
 	/*	inClearChanTracer = make(chan int, 10)
 		inReadChanTracer = make(chan string, 10)
-		inUpdateChanTracer = make(chan types.Request, 10)
+		inUpdateChanTracer = make(chan types.Tracer, 10)
 		inReadChanTracerJSON = make(chan string, 10)
 		outChanTracer = make(chan []types.Tracer, 10)
 		outChanTracerJSON = make(chan []byte, 10)
-		go tracerCache(inClearChanTracer, inReadChanTracer, inReadChanTracerJSON, inUpdateChanTracer, outChanTracer, outChanTracerJSON)*/
+		go tracerCache(inClearChanTracer,
+			inReadChanTracer,
+			inReadChanTracerJSON,
+			inUpdateChanTracer,
+			outChanTracer,
+			outChanTracerJSON)*/
 }
 
 // AddRequests adds multiple requests for a single tracer to the database.
@@ -118,8 +124,8 @@ func AddRequests(tracer types.Tracer) ([]byte, error) {
 		return ret, err
 	}
 
-	//	inUpdateChanTracer <- tracer
-	UpdateSubscribers(tracer)
+	//inUpdateChanTracer <- tracer
+	UpdateSubscribers(tracer.UUID, tracer)
 	if ret, err = json.Marshal(tracer); err != nil {
 		log.Warning.Printf(err.Error())
 	}
@@ -144,8 +150,11 @@ func AddTracers(req types.Request) ([]byte, error) {
 		return ret, err
 	}
 
-	//	inUpdateChanTracer <- tracer
-	UpdateSubscribers(req)
+	/*	for _, v := range req.Tracers {
+		v.Requests = []types.Request{req}
+		inUpdateChanTracer <- v
+	}*/
+	UpdateSubscribers(req.UUID, req)
 	if ret, err = json.Marshal(req); err != nil {
 		log.Warning.Printf(err.Error())
 	}
@@ -167,7 +176,7 @@ func UpdateRequest(request types.Request) ([]byte, error) {
 	}
 
 	//	inUpdateChanTracer <- request
-	UpdateSubscribers(request)
+	UpdateSubscribers(request.UUID, request)
 	if ret, err = json.Marshal(request); err != nil {
 		log.Warning.Printf(err.Error())
 	}
@@ -194,7 +203,7 @@ func AddRequest(request types.Request, tracerID uint) ([]byte, error) {
 	}
 
 	//	inUpdateChanTracer <- request
-	UpdateSubscribers(request)
+	UpdateSubscribers(request.UUID, request)
 	if ret, err = json.Marshal(request); err != nil { //TODO: Find out what should be returned here
 		log.Warning.Printf(err.Error())
 	}
@@ -238,9 +247,10 @@ func getTracersDB(u string) ([]types.Tracer, error) {
 	return tracers, err
 }
 
+/*
 // GetTracersCache returns the current set of tracers but first looks in the cache
 // for them.
-func GetTracersCache(u string) []types.Request {
+func GetTracersCache(u string) []types.Tracer {
 	inReadChanTracer <- u
 	return <-outChanTracer
 }
@@ -256,17 +266,16 @@ func GetTracersJSONCache(u string) []byte {
 // for testing.
 func ClearTracerCache() {
 	inClearChanTracer <- -1
-}
+}*/
 
 // GetTracers is the common functionality to get all the tracers from database.
 func GetTracers(u string) ([]byte, error) {
-	//	return GetTracersJSONCache(u), nil
+	var ret []byte
 	tracers, err := getTracersDB(u)
 	if err != nil {
-		return []byte{}, nil
+		log.Warning.Printf(err.Error())
+		return empty, err
 	}
-
-	var ret []byte
 	if ret, err = json.Marshal(tracers); err != nil {
 		log.Warning.Printf(err.Error())
 		return ret, err
@@ -283,11 +292,11 @@ func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
 	var err error
 	if err = store.DB.Model(&t).Where("uuid = ?", tracer.UUID).Updates(tracer).Error; err != nil {
 		log.Warning.Print(err)
-		return []byte{}, err
+		return empty, err
 	}
-	r := types.Request{Tracers: []types.Tracer{t}}
-	//	inUpdateChanTracer <- r
-	UpdateSubscribers(r)
+
+	//	inUpdateChanTracer <- t
+	UpdateSubscribers(tracer.UUID, t)
 
 	return empty, err
 }

@@ -54,7 +54,8 @@ Host: ${url.host}`,
           if (err) console.error(err);
         };
 
-        console.log("[REDIRECTING]", r.url, newURL);
+        // I would like to know when this is happening.
+        console.error("[REDIRECTING]", r.url, newURL);
         return { redirectUrl: newURL };
       }
     },

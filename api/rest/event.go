@@ -74,8 +74,6 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEvents gets all the events associated with a tracer ID.
-// TODO: SO MANY JSON DECODES. move the common package to not use JSON
-// and make helper function since this logic is getting more complex.
 // TODO: move UUIDs into a middleware as well as the type decoding
 func GetEvents(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -90,8 +88,10 @@ func GetEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var tracer types.Tracer
-	tracerb, err := common.GetTracer(uint(tracerID), u.String())
+	// This call will verify if the user has access to the tracer or not.
+	// If they don't, the database shouldn't return anything and
+	// the API will bail.
+	_, err = common.GetTracer(uint(tracerID), u.String())
 	if err != nil {
 		if strings.Contains(err.Error(), "record not found") {
 			w.WriteHeader(http.StatusNotFound)
@@ -102,32 +102,10 @@ func GetEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.Unmarshal(tracerb, &tracer); err != nil {
-		returnError(w, err)
-		return
-	}
-
-	var eventsb []byte
-	var events []types.TracerEvent
-	eventsb, err = common.GetEvents(uint(tracerID))
-	if err != nil {
-		returnError(w, err)
-		return
-	}
-	if err := json.Unmarshal(eventsb, &events); err != nil {
-		returnError(w, err)
-		return
-	}
-
-	var eventsc []types.TracerEvent
-	for i := range events {
-		// Only return the events that you have access to the tracer for.
-		if events[i].TracerID == tracer.ID {
-			eventsc = append(eventsc, events[i])
-		}
-	}
+	// If we made it here, the user has access to the tracer.
 	var ret []byte
-	if ret, err = json.Marshal(eventsc); err != nil {
+	ret, err = common.GetEvents(uint(tracerID))
+	if err != nil {
 		returnError(w, err)
 		return
 	}
