@@ -10,5 +10,6 @@ type Request struct {
 	RawRequest    string   `json:"RawRequest" gorm:"not null"`
 	RequestURL    string   `json:"RequestURL" gorm:"not null"`
 	RequestMethod string   `json:"RequestMethod" gorm:"not null"`
+	UUID          string   `json:"UUID" gorm:"not null"`
 	Tracers       []Tracer `json:"Tracers" gorm:"many2many:tracer_requests"`
 }

@@ -17,16 +17,7 @@ class Footer extends Component {
         <Col md={4}>
           <span>raw output</span>
         </Col>
-        <Col md={2}>
-          <Row className="plugin-settings">
-            <Col md={9}>
-              <Settings />
-            </Col>
-            <Col md={3}>
-              <InstallLinks />
-            </Col>
-          </Row>
-        </Col>
+        <Col md={2} />
       </Row>
     );
   }

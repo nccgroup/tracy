@@ -87,7 +87,7 @@ func init() {
 	}
 
 	// Initialize the HTTP routes.
-	rest.Configure(rest.FULL)
+	rest.Configure()
 
 	// Instantiate the certificate cache.
 	certsJSON, err := ioutil.ReadFile(configure.Current.CertCachePath)

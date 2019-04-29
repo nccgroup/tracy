@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/store"
 	"github.com/nccgroup/tracy/configure"
+	"github.com/nccgroup/tracy/log"
 )
 
 // Used to order request and their corresponding tests.
@@ -37,7 +37,8 @@ func serverTestHelper(tests []RequestTestPair, i int, t *testing.T) {
 	// Delete any existing database entries.
 	configure.DeleteDatabase(db)
 	// Open the database because the init method from main.go won't trigger.
-	store.Open(db, false)
+	store.Open(db, true)
+	log.Error.Printf("creating new database %s", db)
 
 	for _, pair := range tests {
 		// For each request/test combo:
@@ -54,6 +55,7 @@ func serverTestHelper(tests []RequestTestPair, i int, t *testing.T) {
 		}
 	}
 	store.DB.Close()
+	os.Remove(db)
 }
 
 // serverTestHelperBulk executes a table of tests using serverTestHelper.
@@ -61,7 +63,7 @@ func serverTestHelper(tests []RequestTestPair, i int, t *testing.T) {
 func serverTestHelperBulk(table [][]RequestTestPair, t *testing.T) {
 	for i, row := range table {
 		serverTestHelper(row, i, t)
-		common.ClearTracerCache()
-		common.ClearTracerEventCache()
+		//		common.ClearTracerCache()
+		//		common.ClearTracerEventCache()
 	}
 }

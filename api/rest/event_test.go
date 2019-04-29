@@ -12,77 +12,88 @@ import (
 	"github.com/nccgroup/tracy/api/types"
 )
 
+// testUUIDGetEvents tests that when getting all the events for a tracer, the user
+// requesting only gets the events that belong to them.
+func testUUIDGetEvents(t *testing.T) []RequestTestPair {
+	// Create a tracer as one user.
+	addReq := createAPIRequest(t, http.MethodPost, addURL, bytes.NewBuffer([]byte(addTracerPayload)), "")
+	// Add an event to the tracer for user 1.
+	addEventReq := createAPIRequest(t, http.MethodPost, addEventURL, bytes.NewBuffer([]byte(eventString)), "")
+	// Make sure that user 1 can see their event.
+	getReq := createAPIRequest(t, http.MethodGet, addEventURL, nil, "")
+	// Make sure that user 2 can't see their event.
+	getReq2 := createAPIRequest(t, http.MethodGet, addEventURL, nil, "f0699507-d88a-40cf-b965-b22320152396")
+
+	getEventsUUIDTest := func(i, j int) func(rr *httptest.ResponseRecorder, t *testing.T) error {
+		return func(rr *httptest.ResponseRecorder, t *testing.T) error {
+			// Make sure the status code is 200.
+			if status := rr.Code; status != j {
+				return fmt.Errorf("getEventsUUIDTest returned the wrong status code: got %v, but wanted %v", status, http.StatusOK)
+			}
+			// Make sure the body is a valid JSON object.
+			var got []types.TracerEvent
+			json.Unmarshal([]byte(rr.Body.String()), &got)
+
+			// Each user should only have one tracer.
+			if len(got) != i {
+				return fmt.Errorf("Unexpected number of tracers returned. Expected %d. Got %d", i, len(got))
+			}
+			return nil
+		}
+	}
+
+	return []RequestTestPair{
+		RequestTestPair{addReq, addTest(1)},
+		RequestTestPair{addEventReq, addEventTest},
+		RequestTestPair{getReq, getEventsUUIDTest(1, http.StatusOK)},
+		RequestTestPair{getReq2, getEventsUUIDTest(0, http.StatusNotFound)},
+	}
+
+}
+
+func addEventTest(rr *httptest.ResponseRecorder, t *testing.T) error {
+	// Validate we got the status could that was expected.
+	if status := rr.Code; status != http.StatusOK {
+		return fmt.Errorf("addTracerEvent returned the wrong status code. Got %+v, but expected %+v", status, http.StatusOK)
+	}
+	// Validate the tracer was the first tracer inserted.
+	got := types.TracerEvent{}
+	json.Unmarshal([]byte(rr.Body.String()), &got)
+
+	// Validate the response gave us back the event we added.
+	if got.ID != 1 {
+		return fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
+	}
+	if got.EventURL != location {
+		return fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.EventURL, location)
+	}
+	if got.EventType != eventType {
+		return fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType, eventType)
+	}
+	if len(got.DOMContexts) == 0 {
+		return fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one")
+	}
+	if got.DOMContexts[0].HTMLNodeType != "a" {
+		return fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.DOMContexts[0].HTMLNodeType)
+	}
+	if got.DOMContexts[0].HTMLLocationType != 1 {
+		return fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", got.DOMContexts[0].HTMLLocationType)
+	}
+	if strings.Trim(got.DOMContexts[0].EventContext, " ") != "blahblah" {
+		return fmt.Errorf("addTracerEvent returned the wrong context data. Got '%s', but expected 'blahblah'", strings.Trim(got.DOMContexts[0].EventContext, " "))
+	}
+	if got.DOMContexts[0].ID != 1 {
+		return fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", got.DOMContexts[0].ID)
+	}
+
+	return nil
+}
+
 // Testing adding a tracer event. POST /tracers/<tracer_id>/events
 func testAddEvent(t *testing.T) []RequestTestPair {
-	var (
-		tracerString     = "blahblah"
-		data             = "<a>blahblah</a>"
-		URL              = "http://example.com"
-		location         = "dahlocation"
-		method           = "GET"
-		eventType        = "dateventType"
-		addEventURL      = "http://127.0.0.1:7777/api/tracy/tracers/1/events"
-		addTracerURL     = "http://127.0.0.1:7777/api/tracy/tracers"
-		rawRequest       = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
-		addTracerPayload = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerPayload": "%s"}]}`, rawRequest, URL, method, tracerString)
-		eventString      = fmt.Sprintf(`{"RawEvent": {"Data": "%s"}, "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
-	)
-
-	addReq, err := http.NewRequest("POST", addTracerURL, bytes.NewBuffer([]byte(addTracerPayload)))
-	if err != nil {
-		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
-	}
-	addReq.Header.Add("Hoot", "!")
-
-	addEventReq, err := http.NewRequest("POST", addEventURL, bytes.NewBuffer([]byte(eventString)))
-	if err != nil {
-		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
-	}
-	addEventReq.Header.Add("Hoot", "!")
-
-	addEventTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
-		// Validate we got the status could that was expected.
-		if status := rr.Code; status != http.StatusOK {
-			return fmt.Errorf("addTracerEvent returned the wrong status code. Got %+v, but expected %+v", status, http.StatusOK)
-		}
-		// Validate the tracer was the first tracer inserted.
-		got := types.TracerEvent{}
-		json.Unmarshal([]byte(rr.Body.String()), &got)
-
-		// Validate the response gave us back the event we added.
-		if got.ID != 1 {
-			return fmt.Errorf("addTracerEvent returned the wrong ID. Got %+v, but expected %+v", got.ID, 1)
-		}
-		if got.EventURL != location {
-			return fmt.Errorf("addTracerEvent returned the wrong body location. Got %+v, but expected %+v", got.EventURL, location)
-		}
-		if got.EventType != eventType {
-			return fmt.Errorf("addTracerEvent returned the wrong body event type. Got %+v, but expected %+v", got.EventType, eventType)
-		}
-		if len(got.DOMContexts) == 0 {
-			return fmt.Errorf("addTracerEvent returned the wrong number of contexts. Got none, but expected one")
-		}
-		if got.DOMContexts[0].HTMLNodeType != "a" {
-			return fmt.Errorf("addTracerEvent returned the wrong node name for the context. Got %s, but expected 'a'", got.DOMContexts[0].HTMLNodeType)
-		}
-		if got.DOMContexts[0].HTMLLocationType != 1 {
-			return fmt.Errorf("addTracerEvent returned the wrong location type for the context. Got %d, but expected 1 (text)", got.DOMContexts[0].HTMLLocationType)
-		}
-		if strings.Trim(got.DOMContexts[0].EventContext, " ") != "blahblah" {
-			return fmt.Errorf("addTracerEvent returned the wrong context data. Got '%s', but expected 'blahblah'", strings.Trim(got.DOMContexts[0].EventContext, " "))
-		}
-		if got.DOMContexts[0].ID != 1 {
-			return fmt.Errorf("addTracerEvent returned the wrong ID. Got %d, but expected 1", got.DOMContexts[0].ID)
-		}
-
-		return nil
-	}
-
-	getEventReq, err := http.NewRequest("GET", fmt.Sprintf("%s", addEventURL), nil)
-	if err != nil {
-		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
-	}
-	getEventReq.Header.Add("Hoot", "!")
+	addReq := createAPIRequest(t, http.MethodPost, addURL, bytes.NewBuffer([]byte(addTracerPayload)), "")
+	addEventReq := createAPIRequest(t, http.MethodPost, addEventURL, bytes.NewBuffer([]byte(eventString)), "")
+	getEventReq := createAPIRequest(t, http.MethodGet, addEventURL, nil, "")
 
 	getEventTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
 		// Ensure we got the expected status code.
@@ -133,42 +144,18 @@ func testAddEvent(t *testing.T) []RequestTestPair {
 		return nil
 	}
 
-	tests := make([]RequestTestPair, 3)
-	addReqTest := RequestTestPair{addReq, addTest}
-	addEventReqTest := RequestTestPair{addEventReq, addEventTest}
-	getEventReqTest := RequestTestPair{getEventReq, getEventTest}
-	tests[0] = addReqTest
-	tests[1] = addEventReqTest
-	tests[2] = getEventReqTest
-	return tests
+	return []RequestTestPair{
+		RequestTestPair{addReq, addTest(1)},
+		RequestTestPair{addEventReq, addEventTest},
+		RequestTestPair{getEventReq, getEventTest},
+	}
+
 }
 
 // Testing the database does not log duplicate events.
 func testDuplicateEvent(t *testing.T) []RequestTestPair {
-	var (
-		tracerString     = "blahblah"
-		data             = "dahdata<a>blahblah</a>"
-		URL              = "http://example.com"
-		location         = "dahlocation"
-		method           = "GET"
-		eventType        = "dateventType"
-		addEventURL      = "http://127.0.0.1:7777/api/tracy/tracers/1/events"
-		addTracerURL     = "http://127.0.0.1:7777/api/tracy/tracers"
-		rawRequest       = "GET / HTTP/1.1\\nHost: gorm.io\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0\\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,;q=0.8\\nAccept-Language: en-US,en;q=0.5\\nAccept-Encoding: gzip, deflate\\nConnection: keep-alive\\nPragma: no-cacheCache-Control: no-cache"
-		addTracerPayload = fmt.Sprintf(`{"RawRequest": "%s", "RequestURL": "%s", "RequestMethod": "%s", "Tracers": [{"TracerPayload": "%s"}]}`, rawRequest, URL, method, tracerString)
-		eventString      = fmt.Sprintf(`{"RawEvent": {"Data": "%s"}, "EventURL": "%s", "EventType": "%s"}`, data, location, eventType)
-	)
-
-	addReq, err := http.NewRequest("POST", addTracerURL, bytes.NewBuffer([]byte(addTracerPayload)))
-	if err != nil {
-		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
-	}
-	addReq.Header.Add("Hoot", "!")
-	addEventReq, err := http.NewRequest("POST", addEventURL, bytes.NewBuffer([]byte(eventString)))
-	if err != nil {
-		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
-	}
-	addEventReq.Header.Add("Hoot", "!")
+	addReq := createAPIRequest(t, http.MethodPost, addURL, bytes.NewBuffer([]byte(addTracerPayload)), "")
+	addEventReq := createAPIRequest(t, http.MethodPost, addEventURL, bytes.NewBuffer([]byte(eventString)), "")
 
 	addFirstEventTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
 		// Validate we got the status could that was expected.
@@ -206,11 +193,7 @@ func testDuplicateEvent(t *testing.T) []RequestTestPair {
 		return nil
 	}
 
-	addEventReqDup, err := http.NewRequest("POST", addEventURL, bytes.NewBuffer([]byte(eventString)))
-	if err != nil {
-		t.Fatalf("tried to build an HTTP request, but got the following error: %+v", err)
-	}
-	addEventReqDup.Header.Add("Hoot", "!")
+	addEventReqDup := createAPIRequest(t, http.MethodPost, addEventURL, bytes.NewBuffer([]byte(eventString)), "")
 
 	addDupEventTest := func(rr *httptest.ResponseRecorder, t *testing.T) error {
 		var err error
@@ -221,12 +204,9 @@ func testDuplicateEvent(t *testing.T) []RequestTestPair {
 		return err
 	}
 
-	tests := make([]RequestTestPair, 3)
-	addReqTest := RequestTestPair{addReq, addTest}
-	addEventReqTest := RequestTestPair{addEventReq, addFirstEventTest}
-	addDupEvntReqTest := RequestTestPair{addEventReqDup, addDupEventTest}
-	tests[0] = addReqTest
-	tests[1] = addEventReqTest
-	tests[2] = addDupEvntReqTest
-	return tests
+	return []RequestTestPair{
+		RequestTestPair{addReq, addTest(1)},
+		RequestTestPair{addEventReq, addFirstEventTest},
+		RequestTestPair{addEventReqDup, addDupEventTest},
+	}
 }

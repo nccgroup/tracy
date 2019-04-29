@@ -113,7 +113,6 @@ func AddRequests(tracer types.Tracer) ([]byte, error) {
 		}
 	}
 
-	log.Error.Printf("TRACER: %+v", tracer)
 	if err = store.DB.Create(&tracer).Error; err != nil {
 		log.Warning.Printf(err.Error())
 		return ret, err
@@ -162,7 +161,7 @@ func UpdateRequest(request types.Request) ([]byte, error) {
 		err error
 	)
 
-	if err = store.DB.Save(&request).Error; err != nil {
+	if err = store.DB.Where("uuid = ?", request.UUID).Save(&request).Error; err != nil {
 		log.Warning.Printf(err.Error())
 		return ret, err
 	}
@@ -185,10 +184,11 @@ func AddRequest(request types.Request, tracerID uint) ([]byte, error) {
 	)
 
 	tracer := types.Tracer{}
-
 	tracer.ID = tracerID
-
-	if err = store.DB.Model(&tracer).Association("Requests").Append(request).Error; err != nil {
+	if err = store.DB.Model(&tracer).
+		Where("uuid = ?", request.UUID).
+		Association("Requests").
+		Append(request).Error; err != nil {
 		log.Warning.Printf(err.Error())
 		return ret, err
 	}
@@ -210,7 +210,7 @@ func GetTracer(tracerID uint, uuid string) ([]byte, error) {
 		tracer types.Tracer
 	)
 
-	if err = store.DB.First(&tracer, tracerID).Error; err != nil {
+	if err = store.DB.Where("uuid = ?", uuid).First(&tracer, tracerID).Error; err != nil {
 		log.Warning.Printf(err.Error())
 		return ret, err
 	}
@@ -275,6 +275,8 @@ func GetTracers(u string) ([]byte, error) {
 	return ret, nil
 }
 
+var empty = []byte("")
+
 // EditTracer updates a tracer in the database.
 func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
 	t := types.Tracer{Model: gorm.Model{ID: id}}
@@ -286,10 +288,6 @@ func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
 	r := types.Request{Tracers: []types.Tracer{t}}
 	//	inUpdateChanTracer <- r
 	UpdateSubscribers(r)
-	var ret []byte
-	if ret, err = json.Marshal(tracer); err != nil {
-		log.Warning.Print(err)
-	}
 
-	return ret, err
+	return empty, err
 }

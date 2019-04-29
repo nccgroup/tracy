@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"flag"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +15,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/configure"
 	"github.com/nccgroup/tracy/log"
-	"github.com/nccgroup/tracy/proxy"
 )
 
 var (
@@ -34,7 +32,7 @@ var (
 	}{
 		{http.MethodPost, "/tracers", AddTracers},
 		{http.MethodPost, "/tracers/requests", AddRequests},
-		{http.MethodPatch, "/tracers/request", UpdateRequest},
+		//		{http.MethodPatch, "/tracers/request", UpdateRequest},
 		//		{http.MethodGet, "/tracers/generate", GenerateTracer},
 		//	{http.MethodGet, "/tracers/{tracerID}/request", GetRequest},
 		{http.MethodPut, "/tracers/{tracerID}", EditTracer},
@@ -42,15 +40,14 @@ var (
 		{http.MethodGet, "/tracers/{tracerID}", GetTracer},
 		{http.MethodGet, "/tracers", GetTracers},
 		{http.MethodPost, "/tracers/{tracerID}/events", AddEvent},
-		{http.MethodPut, "/tracers/{tracerID}", EditTracer},
 		{http.MethodGet, "/tracers/{tracerID}/events", GetEvents},
-		{http.MethodPost, "/tracers/{tracerID}/events/{contextID}/reproductions", StartReproductions},
-		{http.MethodPut, "/tracers/{tracerID}/events/{contextID}/reproductions/{reproID}", UpdateReproduction},
+		//{http.MethodPost, "/tracers/{tracerID}/events/{contextID}/reproductions", StartReproductions},
+		//{http.MethodPut, "/tracers/{tracerID}/events/{contextID}/reproductions/{reproID}", UpdateReproduction},
 		{http.MethodPost, "/tracers/events/bulk", AddEvents},
-		{http.MethodGet, "/config", GetConfig},
-		{http.MethodPut, "/projects", SwitchProject},
-		{http.MethodDelete, "/projects", DeleteProject},
-		{http.MethodGet, "/projects", GetProjects},
+		//		{http.MethodGet, "/config", GetConfig},
+		//		{http.MethodPut, "/projects", SwitchProject},
+		//		{http.MethodDelete, "/projects", DeleteProject},
+		//		{http.MethodGet, "/projects", GetProjects},
 	}
 
 	apiMw = []func(http.Handler) http.Handler{
@@ -64,122 +61,34 @@ var (
 	}
 )
 
-//Jake said he loves enums so we will give him enums
-const (
-	PROXY_ONLY = iota
-	FULL
-	API_ONLY
-)
-
 // Configure configures all the HTTP routes and assigns them handler functions.
-func Configure(mode int) {
+func Configure() {
 	Router = mux.NewRouter()
-	if mode >= FULL { //make this over complicated so Jake hates me
-
-		api := Router.PathPrefix("/api/tracy").Subrouter()
-
-		for _, row := range apiTable {
-			api.
-				Path(row.path).
-				Methods(row.method, http.MethodOptions).
-				HandlerFunc(row.handler).
-				Name(fmt.Sprintf("%s:%s", row.method, row.path))
-		}
-		for _, m := range apiMw {
-			api.Use(m)
-		}
-
-		wui := Router.NewRoute().Name("webUI").BuildOnly()
-		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-			// If the host header indicates the request is going straight to
-			// the app, consider it going to the UI, direct them to it.
-			if req.Method == http.MethodGet && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) &&
-				(req.URL.Path == "/" || req.URL.Path == "" || strings.HasPrefix(req.URL.Path, "/static") || strings.HasPrefix(req.URL.Path, "/tracy.ico")) {
-				m.Route = wui
-				if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
-					m.Handler = http.FileServer(http.Dir("./api/view/build"))
-				} else {
-					m.Handler = http.FileServer(assetFS())
-				}
-				m.MatchErr = nil
-				return true
-			}
-			return false
-		})
-
-		ws := Router.NewRoute().Name("websocket").BuildOnly()
-		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-			// If the host header indicates the request is going straight to
-			// the app, consider it going to the UI, direct them to it.
-			if req.Method == http.MethodGet && req.URL.Path == "/ws" && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
-				m.Route = ws
-				m.Handler = http.HandlerFunc(WebSocket)
-				m.MatchErr = nil
-
-				return true
-			}
-
-			return false
-		})
-
-		var h http.Handler
-		if v := flag.Lookup("test.v"); v != nil || configure.Current.DebugUI {
-			h = http.FileServer(http.Dir("./api/view/build"))
-		} else {
-			h = http.FileServer(assetFS())
-		}
-
-		thost := Router.NewRoute().Name("tracyHost").BuildOnly()
-		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-			if strings.HasPrefix(req.Host, "tracy") {
-				m.Route = thost
-				m.Handler = h
-				m.MatchErr = nil
-				return true
-			}
-			return false
-		})
-
+	api := Router.PathPrefix("/api/tracy").Subrouter()
+	for _, row := range apiTable {
+		api.
+			Path(row.path).
+			Methods(row.method, http.MethodOptions).
+			HandlerFunc(row.handler).
+			Name(fmt.Sprintf("%s:%s", row.method, row.path))
+	}
+	for _, m := range apiMw {
+		api.Use(m)
 	}
 
-	if mode <= FULL {
-
-		// Catch everything else.
-		t, u, d, bp, bufp := configure.ProxyServer()
-		p := proxy.New(t, u, d, bp, bufp)
-
-		// For CONNECT requests, the path will be an absolute URL
-		Router.SkipClean(true)
-
-		// Proxy catches everything, except for requests back to itself.
-		prox := Router.NewRoute().Name("proxy").BuildOnly()
-		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-			server, err := configure.ParseServer(req.Host)
-			if err != nil {
-				log.Error.Print(err)
-				return false
-			}
-			//SANITY CHECK: if we are about to send a request back to the proxy,
-			// we hit a recursion and something is up.
-			if req.Method != http.MethodConnect && server.Equal(configure.Current.TracyServer) && mode != PROXY_ONLY {
-				return false
-			}
-
-			m.Route = prox
-			m.Handler = p
+	ws := Router.NewRoute().Name("websocket").BuildOnly()
+	Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
+		// If the host header indicates the request is going straight to
+		// the app, consider it going to the UI, direct them to it.
+		if req.Method == http.MethodGet && req.URL.Path == "/ws" && strings.HasSuffix(req.Host, fmt.Sprintf("%d", configure.Current.TracyServer.Port)) {
+			m.Route = ws
+			m.Handler = http.HandlerFunc(WebSocket)
 			m.MatchErr = nil
 			return true
-		})
+		}
 
-		// This is the catch all route. Specifically, it should catch recursion
-		// requests and return a 404 instead.
-		Router.MatcherFunc(func(req *http.Request, m *mux.RouteMatch) bool {
-			m.Route = nil
-			m.Handler = http.NotFoundHandler()
-			m.MatchErr = nil
-			return true
-		})
-	}
+		return false
+	})
 
 	Server = &http.Server{
 		Handler: Router,
@@ -217,13 +126,11 @@ func uuidMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		h, err := uuid.Parse(hid)
-		log.Error.Printf("uuid: %+v", h)
 		if err != nil {
 			returnError(w, err)
 			return
 		}
 		nr := r.WithContext(context.WithValue(r.Context(), hh, &h))
-		log.Error.Printf("serving next")
 		next.ServeHTTP(w, nr)
 	})
 }
@@ -286,7 +193,7 @@ func customHeaderMiddleware(next http.Handler) http.Handler {
 			!((strings.Split(r.Host, ":")[0] == "localhost" || strings.Split(r.Host, ":")[0] == "127.0.0.1") && r.Header.Get("Hoot") != "") &&
 			// They are making an OPTIONS request
 			strings.ToLower(r.Method) != "options" {
-			returnError(w, fmt.Errorf("No hoot header or incorrect host header..."))
+			returnError(w, fmt.Errorf("no hoot header or incorrect host header..."))
 			return
 		}
 		next.ServeHTTP(w, r)

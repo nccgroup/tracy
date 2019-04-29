@@ -8,7 +8,6 @@ import Footer from "./Footer";
 import Col from "react-bootstrap/lib/Col";
 import FilterColumn from "./FilterColumn";
 import Row from "react-bootstrap/lib/Row";
-import ProjectPicker from "./ProjectPicker";
 
 class App extends Component {
   constructor(props) {
@@ -567,7 +566,7 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
   // When the app loads, make an HTTP request for the latest set of tracers and
   // projects.
   componentDidMount = () => {
-    this.getProjects();
+    //    this.getProjects();
     const proj = this.getSavedProject();
     if (proj !== null) {
       this.setState({
@@ -675,14 +674,7 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
             <Header width={2} />
             <Col md={10}>
               <Row>
-                <Col md={7}>
-                  <ProjectPicker
-                    deleteProject={this.deleteProject}
-                    switchProject={this.switchProject}
-                    selected={this.state.project}
-                    projects={this.state.projects}
-                  />
-                </Col>
+                <Col md={7} />
                 <Col md={3}>
                   <WebSocketRouter
                     handleNewTracer={this.handleNewTracer}

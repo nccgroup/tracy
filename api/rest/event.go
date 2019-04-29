@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/store"
@@ -73,6 +74,9 @@ func AddEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEvents gets all the events associated with a tracer ID.
+// TODO: SO MANY JSON DECODES. move the common package to not use JSON
+// and make helper function since this logic is getting more complex.
+// TODO: move UUIDs into a middleware as well as the type decoding
 func GetEvents(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tracerID, err := strconv.ParseUint(vars["tracerID"], 10, 32)
@@ -80,9 +84,50 @@ func GetEvents(w http.ResponseWriter, r *http.Request) {
 		returnError(w, err)
 		return
 	}
+	u, ok := r.Context().Value(hh).(*uuid.UUID)
+	if !ok {
+		returnError(w, fmt.Errorf("Wrong value associated with the Hoot header"))
+		return
+	}
 
-	ret, err := common.GetEvents(uint(tracerID))
+	var tracer types.Tracer
+	tracerb, err := common.GetTracer(uint(tracerID), u.String())
 	if err != nil {
+		if strings.Contains(err.Error(), "record not found") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		returnError(w, err)
+		return
+	}
+
+	if err := json.Unmarshal(tracerb, &tracer); err != nil {
+		returnError(w, err)
+		return
+	}
+
+	var eventsb []byte
+	var events []types.TracerEvent
+	eventsb, err = common.GetEvents(uint(tracerID))
+	if err != nil {
+		returnError(w, err)
+		return
+	}
+	if err := json.Unmarshal(eventsb, &events); err != nil {
+		returnError(w, err)
+		return
+	}
+
+	var eventsc []types.TracerEvent
+	for i := range events {
+		// Only return the events that you have access to the tracer for.
+		if events[i].TracerID == tracer.ID {
+			eventsc = append(eventsc, events[i])
+		}
+	}
+	var ret []byte
+	if ret, err = json.Marshal(eventsc); err != nil {
 		returnError(w, err)
 		return
 	}

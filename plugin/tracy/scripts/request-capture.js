@@ -1,9 +1,13 @@
 (() => {
   //TODO: capture all headers here and update the raw requests of tracers
   // to have more accurate HTTP requests.
+  const ui = chrome.runtime.getURL("index.html");
   chrome.webRequest.onBeforeRequest.addListener(
     r => {
       const url = new URL(r.url);
+      if (url.hostname === "tracy") {
+        return { redirectUrl: ui };
+      }
       const copy = new URLSearchParams();
       let mod = false;
       let tracers = [];
@@ -56,41 +60,5 @@ Host: ${url.host}`,
     },
     { urls: ["<all_urls>"] },
     ["blocking"]
-  );
-})();
-
-(() => {
-  chrome.webRequest.onBeforeRequest.addListener(
-    r => {
-      const url = new URL(r.url);
-      const copy = new URLSearchParams();
-      let mod = false;
-      let tracers = [];
-      url.searchParams.forEach((value, key) => {});
-
-      if (mod) {
-        // These are only handling link clicks, so there shouldn't be any body
-        async () => {
-          const { err } = await background.fetch(
-            {
-              route: "/api/tracy/tracers",
-              method: "POST",
-              body: JSON.stringify({
-                RawRequest: `${r.method} ${url.pathname}${url.search}  HTTP/1.1
-Host: ${url.host}`,
-                RequestURL: newURL,
-                RequestMethod: r.method,
-                Tracers: tracers
-              })
-            },
-            null,
-            () => {}
-          );
-          if (err) console.error(err);
-        };
-      }
-    },
-    { urls: ["<all_urls>"] },
-    ["requestBody"]
   );
 })();
