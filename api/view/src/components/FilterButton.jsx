@@ -1,34 +1,23 @@
 import React, { Component } from "react";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 
-class FilterButton extends Component {
+export default class FilterButton extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
       enabled: false
     };
-
-    this.handleClick = this.handleClick.bind(this);
   }
 
-  shouldComponentUpdate(nextProps, nextState) {
-    let ret = false;
-    if (nextState.enabled !== this.state.enabled) {
-      ret = true;
-    }
-
-    return ret;
-  }
-
-  componentDidMount() {
+  componentDidMount = () => {
     // If the value is in localStorage, we need to enable the filter.
     if (this.get(this.props.name)) {
       this.handleClick(this.props.name);
     }
-  }
+  };
 
-  get(rowKey) {
+  get = rowKey => {
     const key = "filters";
     var ret = false;
     try {
@@ -42,15 +31,15 @@ class FilterButton extends Component {
     }
 
     return ret;
-  }
+  };
 
-  store(rowKeys) {
-    var value = rowKeys;
+  store = rowKeys => {
+    let value = rowKeys;
     if (!Array.isArray(rowKeys)) {
       value = [].concat(rowKeys);
     }
     const key = "filters";
-    var old;
+    let old;
     try {
       old = JSON.parse(localStorage.getItem(key));
     } catch (e) {
@@ -65,15 +54,15 @@ class FilterButton extends Component {
     value = Array.from(new Set(value));
 
     localStorage.setItem(key, JSON.stringify(value));
-  }
+  };
 
-  remove(rowKeys) {
-    var value = rowKeys;
+  remove = rowKeys => {
+    let value = rowKeys;
     if (!Array.isArray(rowKeys)) {
       value = [].concat(rowKeys);
     }
     const key = "filters";
-    var old;
+    let old;
     try {
       old = JSON.parse(localStorage.getItem(key));
     } catch (e) {
@@ -93,9 +82,9 @@ class FilterButton extends Component {
     }
 
     localStorage.setItem(key, JSON.stringify(value));
-  }
+  };
 
-  handleClick(evt) {
+  handleClick = evt => {
     let value;
     try {
       value = evt.currentTarget.id;
@@ -104,37 +93,34 @@ class FilterButton extends Component {
     }
     const toggle = !this.state.enabled;
     if (!toggle) {
-      this.props.handleChange(value, false);
       this.remove(value);
     } else {
-      this.props.handleChange(value, this.props.filter);
-      // Since the filter is enabled, add it to localStorage to be saved on refresh
+      // Since the filter is enabled, add it to localStorage to be saved on
+      // refresh.
       this.store(value);
     }
-
+    this.props.toggleFilter(this.props.filter);
     this.setState(function(prevState) {
       return {
         enabled: !prevState.enabled
       };
     });
-  }
+  };
 
-  render() {
+  render = () => {
     let className = this.state.enabled ? "filter-active" : "filter-inactive";
-    const img = <FontAwesomeIcon className={className} icon={this.props.img} />;
+    const img = <FontAwesomeIcon icon={this.props.img} />;
 
     return (
-      <div
-        className="icon-button"
+      <li
+        className={className}
         id={this.props.name}
         title={this.props.description}
         onClick={this.handleClick}
         href="#"
       >
         {img}
-      </div>
+      </li>
     );
-  }
+  };
 }
-
-export default FilterButton;

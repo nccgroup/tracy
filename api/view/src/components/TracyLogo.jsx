@@ -1,14 +1,13 @@
 import React, { PureComponent } from "react";
 
 class TracyLogo extends PureComponent {
-	render() {
-		return (
-			<img
-				alt="tracy-mascot"
-				className="logo"
-				title="hoot!"
-				style={{ width: this.props.width + "px" }}
-				src="data:image/svg+xml;base64,PHN2ZyBpZD0nTGF5ZXJfMScgZGF0YS1uYW1lPSdMYXllciAxJyB4bWxucz0naHR0cDovL3d3dy53
+  render() {
+    return (
+      <img
+        alt="tracy-mascot"
+        className="logo"
+        title="hoot!"
+        src="data:image/svg+xml;base64,PHN2ZyBpZD0nTGF5ZXJfMScgZGF0YS1uYW1lPSdMYXllciAxJyB4bWxucz0naHR0cDovL3d3dy53
 My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyMzIuOCAyOTkuNyc+PGRlZnM+PHN0eWxlPi5j
 bHMtMXtmaWxsOiM0MTIwMjA7fS5jbHMtMntmaWxsOiNmYWUyZDA7fS5jbHMtM3tmaWxsOiNmNWNm
 YjI7fS5jbHMtNHtmaWxsOiNlOTRmM2Q7fS5jbHMtNXtmaWxsOm5vbmU7fS5jbHMtNntmaWxsOiM0
@@ -43,9 +42,9 @@ LDg4YTMyLjQsMzIuNCwwLDAsMSwyMy4yLS4zLDQ2LjksNDYuOSwwLDEsMCw5Mi43LDkuOFY1MC43
 SDE3My41Wk01OC41LDEyOS44QTMyLjMsMzIuMywwLDAsMSwyNi4zLDk3LjVWNjUuMkg1OC41QTMy
 LjMsMzIuMywwLDAsMSw1OC41LDEyOS44Wk0yMDUuNyw5Ny41YTMyLjMsMzIuMywwLDEsMS0zMi4z
 LTMyLjNoMzIuM1Y5Ny41WicvPjwvc3ZnPgo="
-			/>
-		);
-	}
+      />
+    );
+  }
 }
 
 export default TracyLogo;

@@ -1,6 +1,4 @@
 import React, { Component } from "react";
-import Col from "react-bootstrap/lib/Col";
-import Row from "react-bootstrap/lib/Row";
 
 class Settings extends Component {
   constructor(props) {
@@ -52,24 +50,20 @@ class Settings extends Component {
     }
 
     return (
-      <Row>
-        <Col md={6}>
-          <input
-            id="ui-host-config"
-            onChange={this.onChange}
-            placeholder={window.tracy.host}
-            type="text"
-          />
-        </Col>
-        <Col md={6}>
-          <input
-            id="ui-port-config"
-            onChange={this.onChange}
-            placeholder={window.tracy.port}
-            type="text"
-          />
-        </Col>
-      </Row>
+      <div>
+        <input
+          id="ui-host-config"
+          onChange={this.onChange}
+          placeholder={window.tracy.host}
+          type="text"
+        />
+        <input
+          id="ui-port-config"
+          onChange={this.onChange}
+          placeholder={window.tracy.port}
+          type="text"
+        />
+      </div>
     );
   }
 }

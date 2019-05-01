@@ -1,54 +1,42 @@
 import React, { Component } from "react";
-import "./App.css";
 import ReactTable from "react-table";
-import "react-table/react-table.css";
+import * as utils from "../utils";
 
-class TracerTable extends Component {
-  constructor(props) {
-    super(props);
-
-    this.onRowSelect = this.onRowSelect.bind(this);
-  }
-
-  onRowSelect(row) {
-    this.props.handleTracerSelection(row);
-  }
-
-  shouldComponentUpdate(nextProps, nextState) {
-    let ret = false;
-    if (
-      (!this.props.tracer && nextProps.tracers) ||
-      nextProps.tracers.length !== this.props.tracers.length ||
-      nextProps.selectedTracerID !== this.props.selectedTracerID
-    ) {
-      ret = true;
-    }
-    return ret;
-  }
-
+export default class TracerTable extends Component {
   render() {
-    let onRowSelect = this.onRowSelect;
+    if (this.props.loading) {
+      utils.getTracers().then(req => {
+        this.props.updateTracers(req.map(utils.formatRequest).flat());
+      });
+    }
+    let data = this.props.tracers;
+    if (this.props.filterInactive) {
+      data = data.filter(utils.filterInactive);
+    }
+
     return (
       <ReactTable
-        data={this.props.tracers}
+        className="tracer-table"
+        data={data}
+        loading={this.props.loading}
         columns={[
           {
             Header: "injection points",
             columns: [
               { Header: "id", accessor: "ID", width: 45 },
-              { Header: "method", accessor: "RequestMethod" },
-              { Header: "host", accessor: "RequestURL", width: 225 },
-              { Header: "path", accessor: "RequestPath" },
-              { Header: "tracer string", accessor: "TracerString" },
+              //              { Header: "method", accessor: "RequestMethod" },
+              { Header: "url", accessor: "RequestURL" },
+              //              { Header: "path", accessor: "RequestPath" },
+              //              { Header: "tracer string", accessor: "TracerString" },
               {
                 Header: "payload",
                 accessor: "TracerPayload",
                 width: 105
               },
               {
-                Header: "severity",
+                Header: "sev",
                 accessor: "OverallSeverity",
-                width: 75
+                width: 45
               }
             ]
           }
@@ -76,7 +64,7 @@ class TracerTable extends Component {
 
             return {
               onClick: (e, handleOriginal) => {
-                onRowSelect(rowInfo.row);
+                this.props.selectTracer(rowInfo.row.ID);
 
                 if (handleOriginal) {
                   handleOriginal();
@@ -99,5 +87,3 @@ class TracerTable extends Component {
     );
   }
 }
-
-export default TracerTable;
