@@ -162,7 +162,16 @@ func cacheMiddleware(next http.Handler) http.Handler {
 
 		// Check if the request is cached
 		eTagHash := r.Header.Get("If-None-Match")
-		sum := sha1.Sum(body)
+	u, ok := r.Context().Value(hh).(*uuid.UUID)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+                w.Write([]byte(""))
+return
+	}
+	us := u.String()
+
+        s := append(body, []byte(us)...)
+		sum := sha1.Sum(s)
 		sumStr := hex.EncodeToString(sum[:len(sum)])
 		if eTagHash == "" {
 			// First time requesting something. There will be no

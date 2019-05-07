@@ -17,6 +17,14 @@ export const TOGGLE_WEBSOCKET_CONNECTED = "TOGGLE_WEBSOCKET_CONNECTED";
 export const TOGGLE_WEBSOCKET_DISCONNECTED = "TOGGLE_WEBSOCKET_DISCONNECTED";
 export const START_REPRODUCTION = "START_REPRODUCTION";
 export const CHANGE_TAB = "CHANGE_TAB";
+export const ADD_API_KEY = "ADD_API_KEY";
+
+export const addAPIKey = apiKey => {
+  return {
+    type: ADD_API_KEY,
+    apiKey: apiKey
+  };
+};
 
 export const changeTab = tabID => {
   return {

@@ -6,7 +6,7 @@ export default class TracerTable extends Component {
   render() {
     if (this.props.loading) {
       utils.getTracers().then(req => {
-        this.props.updateTracers(req.map(utils.formatRequest).flat());
+        this.props.updateTracers(req.map(utils.formatTracer).flat());
       });
     }
     let data = this.props.tracers;

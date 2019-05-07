@@ -2,7 +2,7 @@ const settings = (() => {
   // refresheConfig makes an API request for the latest config from `/config`,
   // pulls configuration from the extension settings page and gets a current
   // list of tracers. refreshConfig is usually called on page load.
-  const refreshConfig = async wsConnect => {
+  const refreshConfig = async () => {
     if (disabled) return;
     const s = await new Promise(r =>
       chrome.storage.local.get(
@@ -12,7 +12,7 @@ const settings = (() => {
     );
 
     restServer = s.restHost + ":" + s.restPort;
-
+    apiKey = s.apiKey;
     const { json, err } = await background.fetch({
       method: "GET",
       route: "/api/tracy/tracers"
@@ -22,10 +22,6 @@ const settings = (() => {
       return;
     }
     tracerPayloads = json.map(r => r.TracerPayload).filter(t => t !== "");
-
-    if (wsConnect) {
-      websocket.websocketConnect();
-    }
   };
 
   // configQuery returns the appropriate configuration information
@@ -79,11 +75,11 @@ const settings = (() => {
 
   let tracerPayloads = [];
   let disabled = false;
-
+  let apiKey = "";
   // Update the configuration on every page load.
   chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
     if (changeInfo.status === "complete") {
-      refreshConfig(false);
+      refreshConfig();
     }
   });
   refreshConfig();

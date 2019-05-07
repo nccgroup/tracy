@@ -1,6 +1,5 @@
-import { combineReducers } from "redux";
 import * as actions from "../actions";
-import { firstIDByID } from "../utils";
+import * as utils from "../utils";
 
 const init = {
   proj: {},
@@ -14,7 +13,26 @@ const init = {
   httpResponsesFilter: false,
   inactiveTracersFilter: false,
   textFilter: false,
-  tabID: "-1"
+  tabID: "-1",
+  tracyHost: "127.0.0.1",
+  tracyPort: 7777,
+  apiKey: "12af65d4-4a3c-4cce-abe4-115d089e75f3"
+};
+
+const addTracer = (state, action) => {
+  const i = utils.firstIDByID(
+    state.tracers,
+    utils.selectedTracerByID(state.tracers, state.selectedTracerID)
+  );
+  // If we aren't updating an existing element, just append it
+  if (i < 0) {
+    return state.tracers.concat(action.tracer);
+  }
+  state.tracers[i] = Object.assign(
+    state.tracers[i],
+    utils.selectedTracerByID(state.tracers, state.selectedTracerID)
+  );
+  return state.tracers;
 };
 
 const rootReducer = (state = init, action) => {
@@ -34,32 +52,30 @@ const rootReducer = (state = init, action) => {
         projs: state.proj.splice(action.i, 1)
       });
     case actions.ADD_TRACER:
-      const i = firstIDByID(state.tracers, action.tracer);
-      // If we aren't updating an existing element, just append it
-      if (i < 0) {
-        return Object.assign({}, state, {
-          tracers: state.tracers.concat(action.tracer)
-        });
-      }
-      state.tracers[i] = Object.assign(state.tracers[i], action.tracer);
-      const j = firstIDByID(state.tracers, state.tracer);
       return Object.assign({}, state, {
-        tracers: state.tracers
+        tracers: addTracer(state, action)
       });
     case actions.ADD_REQUEST:
-      const a = firstIDByID(state.tracers, action.req);
-      // If we aren't updating an existing element, just append it
-      if (a < 0) {
-        return Object.assign({}, state, {
-          tracers: state.tracers.concat(action.req)
-        });
+      let r = state;
+      const t = utils.formatRequest(action.req.Request);
+      for (let i = 0; i < t.length; i++) {
+        const a = utils.firstIDByID(r.tracers, t[i]);
+        if (a < 0) {
+          // If we aren't updating an existing element, just append it.
+          r.tracers[a] = Object.assign(r.tracers[a], {
+            tracers: addTracer(r, action)
+          });
+        } else {
+          // We are probably just updating a tracer for a screenshot.
+          if (t[i].Screenshot !== "") {
+            // We are updating a tracer.
+            r.tracers[a] = Object.assign(r.tracers[a], {
+              screenshot: t[i].Screenshot
+            });
+          }
+        }
       }
-
-      state.tracers[a] = Object.assign(state.tracers[a], action.req);
-      const b = firstIDByID(state.tracers, state.tracer);
-      return Object.assign({}, state, {
-        tracers: state.tracers
-      });
+      return Object.assign({}, r);
     case actions.UPDATE_TRACERS:
       return Object.assign({}, state, {
         tracersLoading: false,
@@ -90,23 +106,20 @@ const rootReducer = (state = init, action) => {
       return Object.assign({}, state, {
         inactiveTracersFilter: !state.inactiveTracersFilter
       });
-      break;
     case actions.TOGGLE_HTTP_RESPONSE_FILTER:
       return Object.assign({}, state, {
         httpResponsesFilter: !state.httpResponsesFilter
       });
-      break;
     case actions.TOGGLE_TEXT_FILTER:
       return Object.assign({}, state, { textFilter: !state.textFilter });
-      break;
     case actions.TOGGLE_WEBSOCKET_CONNECTED:
       return Object.assign({}, state, { webSocketOpen: true });
-      break;
     case actions.TOGGLE_WEBSOCKET_DISCONNECTED:
       return Object.assign({}, state, { webSocketOpen: false });
-      break;
     case actions.CHANGE_TAB:
       return Object.assign({}, state, { tabID: action.tabID });
+    case actions.ADD_API_KEY:
+      return Object.assign({}, state, { apiKey: action.apiKey });
     default:
       return state;
   }

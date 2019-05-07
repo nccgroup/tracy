@@ -6,7 +6,11 @@
   });
 
   (async () => {
-    const res = await util.get({ restHost: "127.0.0.1", restPort: 7777 });
+    const res = await util.get({
+      restHost: "127.0.0.1",
+      restPort: 7777,
+      apiKey: ""
+    });
     const hookInjector = document.createElement("script");
     hookInjector.type = "text/javascript";
     hookInjector.name = "injected";
@@ -14,7 +18,8 @@
 window.tracy = {};
 window.tracy.installed = true;
 window.tracy.host = "${res.restHost}";
-window.tracy.port = ${res.restPort}`;
+window.tracy.port = ${res.restPort};
+window.tracy.apiKey = "${res.apiKey}"`;
     document.body.appendChild(hookInjector);
     hookInjector.parentNode.removeChild(hookInjector);
   })();

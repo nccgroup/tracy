@@ -146,6 +146,7 @@ func AddEvents(w http.ResponseWriter, r *http.Request) {
 			if err = store.DB.First(&tracer, "tracer_payload = ?", tracerPayload).Error; err != nil {
 				// If there was an error getting the tracer, fail fast and continue
 				// to the next one.
+                                log.Error.Printf("tracer: %+v, tracer payload: %s", tracer, tracerPayload)
 				log.Error.Print(err)
 				continue
 			}

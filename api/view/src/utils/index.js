@@ -1,31 +1,28 @@
+import { store } from "../index";
+
 // sleep returns a promise that is resolved after the provided number of ms.
-const sleep = ms => {
+export const sleep = ms => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
 // newTracyRequest generates a request object that should be used with
 // the tracy API.
-const newTracyRequest = async (path, opts) => {
+export const newTracyRequest = async (path, opts) => {
   while (true) {
-    if (!window.tracy || !window.tracy.host || !window.tracy.port) {
-      console.error("the `window.tracy` object hasn't been set yet");
-      await sleep(500);
-      continue;
-    }
-
+    const state = store.getState();
     if (!opts.headers) {
       opts.headers = {};
     }
-    opts.headers.Hoot = "!";
+    opts.headers.Hoot = state.apiKey;
     return new Request(
-      `http://${window.tracy.host}:${window.tracy.port}/api/tracy${path}`,
+      `http://${state.tracyHost}:${state.tracyPort}/api/tracy${path}`,
       opts
     );
   }
 };
 
 // reproduce sends the API request to trigger a reproduction.
-const reproduce = async (tracerID, contextID) => {
+export const reproduce = async (tracerID, contextID) => {
   return await retryRequest(
     newTracyRequest(`/tracers/${tracerID}/events/${contextID}/reproductions`, {
       method: "POST"
@@ -34,7 +31,7 @@ const reproduce = async (tracerID, contextID) => {
 };
 
 // getTracerEvents gets the bulk events via an HTTP GET request.
-const getTracerEvents = async tracerID => {
+export const getTracerEvents = async tracerID => {
   return await retryRequest(
     newTracyRequest(`/tracers/${tracerID}/events`, {
       method: "GET"
@@ -43,7 +40,7 @@ const getTracerEvents = async tracerID => {
 };
 
 // getTracers gets the bulk tracers via an HTTP GET request.
-const getTracers = async () => {
+export const getTracers = async () => {
   return await retryRequest(
     newTracyRequest(`/tracers`, {
       method: "GET"
@@ -52,7 +49,7 @@ const getTracers = async () => {
 };
 
 // getProjects gets the projects available to view.
-const getProjects = async () => {
+export const getProjects = async () => {
   return await retryRequest(
     newTracyRequest(`/projects`, {
       method: "GET"
@@ -61,7 +58,7 @@ const getProjects = async () => {
 };
 
 // delProject issues an API request to delete a project from disk.
-const delProject = async proj => {
+export const delProject = async proj => {
   return await retryRequest(
     newTracyRequest(`/projects?proj=${proj}`, {
       method: "DELETE"
@@ -70,7 +67,7 @@ const delProject = async proj => {
 };
 
 // switchProject makes the API request to switch projects.
-const switchProject = async proj => {
+export const switchProject = async proj => {
   return await retryRequest(
     this.newTracyRequest(`/projects?proj=${proj}`, {
       method: "PUT"
@@ -78,7 +75,7 @@ const switchProject = async proj => {
   );
 };
 
-const retryRequest = async req => {
+export const retryRequest = async req => {
   while (true) {
     try {
       const resp = await fetch(await req);
@@ -97,7 +94,7 @@ const retryRequest = async req => {
 };
 
 // enumerate assigns an object an ID property.
-const enumerate = (event, id) => {
+export const enumerate = (event, id) => {
   event.ID = id + 1;
 
   return event;
@@ -105,7 +102,7 @@ const enumerate = (event, id) => {
 
 // parseURLParameters returns the URL query parameters of a url as a
 // comma-separated list.
-const parseURLParameters = url => {
+export const parseURLParameters = url => {
   const splitOnParam = url.split("?");
   if (splitOnParam.length <= 0) {
     return "";
@@ -114,7 +111,7 @@ const parseURLParameters = url => {
 };
 
 // parseHost returns the hostname from a URL.
-const parseHost = url => {
+export const parseHost = url => {
   // In case the url has a protocol, remove it.
   const protocolSplit = url.split("://");
   let withoutProtocol;
@@ -134,7 +131,7 @@ const parseHost = url => {
 };
 
 // parsePath returns the path for a URL.
-const parsePath = url => {
+export const parsePath = url => {
   // In case the url has a protocol, remove it.
   const protocolSplit = url.split("://");
   let withoutProtocol;
@@ -154,62 +151,28 @@ const parsePath = url => {
 };
 
 // isEmpty returns true or false if the object is empty.
-const isEmpty = obj => {
+export const isEmpty = obj => {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
 };
 
-// stolen from : https://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string
-// Function that count occurrences of a substring in a string;
-// * @param {String} string               The string
-// * @param {String} subString            The sub string to search for
-// * @param {Boolean} [allowOverlapping]  Optional. (Default:false)
-// *
-// * @author Vitim.us https://gist.github.com/victornpb/7736865
-// * @see Unit Test https://jsfiddle.net/Victornpb/5axuh96u/
-// * @see http://stackoverflow.com/questions/4009756/how-to-count-string-occurrence-in-string/7924240#7924240
-const occurrences = (string, subString, allowOverlapping) => {
-  string += "";
-  subString += "";
-  if (subString.length <= 0) return string.length + 1;
-
-  const n = 0,
-    pos = 0,
-    step = allowOverlapping ? 1 : subString.length;
-
-  while (true) {
-    pos = string.indexOf(subString, pos);
-    if (pos >= 0) {
-      ++n;
-      pos += step;
-    } else break;
-  }
-  return n;
-};
-
 // filterResponses filters out events that have the event type of response.
-const filterResponses = context => {
+export const filterResponses = context => {
   return context.EventType.toLowerCase() !== "http response";
 };
 
 // filterInactive filters out tracers that have no events or contexts.
-const filterInactive = tracer => {
+export const filterInactive = tracer => {
   return tracer.HasTracerEvents;
 };
 
 // filterTextNodes filters our events that are text nodes.
-const filterTextNodes = context => {
+export const filterTextNodes = context => {
   return context.EventType.toLowerCase() !== "text";
 };
 
-const contextFilterKeys = [
-  "responses",
-  "exploitable",
-  "archivedContexts",
-  "text"
-];
 // parseVisibleEvents converts raw events from the API into events that can be
 // read by the table.
-const parseVisibleEvents = (events = [], sfilters = []) => {
+export const parseVisibleEvents = (events = [], sfilters = []) => {
   if (events.length <= 0) {
     return [];
   }
@@ -244,15 +207,15 @@ const severity = {
 
 // formatRequest mesages the request objects into a set of tracer data structure so the
 // table can read their columns.
-const formatRequest = req => {
+export const formatRequest = req => {
   return req.Tracers.map(t => formatTracer(t, req));
 };
 
 // formatTracer returns a new tracer object with some its fields
 // changed to be read better by the tables.
-const formatTracer = (tracer, request) => {
-  if (request) {
-    return {
+export const formatTracer = tracer => {
+  if (tracer.Requests.length > 0) {
+    return tracer.Requests.map(request => ({
       ID: tracer.ID,
       RawRequest: request.RawRequest,
       RequestMethod: request.RequestMethod,
@@ -264,30 +227,32 @@ const formatTracer = (tracer, request) => {
       OverallSeverity: tracer.OverallSeverity,
       HasTracerEvents: tracer.HasTracerEvents,
       Screenshot: tracer.Screenshot
-    };
+    }));
   }
 
-  return {
-    ID: tracer.ID,
-    RawRequest: "n/a",
-    RequestMethod: "n/a",
-    RequestURL: "n/a",
-    TracerString: tracer.TracerString,
-    TracerPayload: tracer.TracerPayload,
-    TracerLocationIndex: tracer.TracerLocationIndex,
-    TracerLocationType: tracer.TracerLocationType,
-    OverallSeverity: tracer.OverallSeverity,
-    HasTracerEvents: tracer.HasTracerEvents,
-    Screenshot: tracer.Screenshot
-  };
+  return [
+    {
+      ID: tracer.ID,
+      RawRequest: "n/a",
+      RequestMethod: "n/a",
+      RequestURL: "n/a",
+      TracerString: tracer.TracerString,
+      TracerPayload: tracer.TracerPayload,
+      TracerLocationIndex: tracer.TracerLocationIndex,
+      TracerLocationType: tracer.TracerLocationType,
+      OverallSeverity: tracer.OverallSeverity,
+      HasTracerEvents: tracer.HasTracerEvents,
+      Screenshot: tracer.Screenshot
+    }
+  ];
 };
 
-const formatRowSeverity = (row, rowIdx) => {
+export const formatRowSeverity = (row, rowIdx) => {
   return severity[row.OverallSeverity];
 };
 
 // formatEvent formats an event context into its corresponding columns.
-const formatEvent = (event, eidx) => {
+export const formatEvent = (event, eidx) => {
   if (!event.DOMContexts || event.DOMContexts.length <= 0) {
     // If there are no DOMContexts, it is most likely an HTTP response.
     return {
@@ -320,7 +285,7 @@ const formatEvent = (event, eidx) => {
 };
 
 // isLocalStorage tests if a key is in the localStorage.
-const isInLocalStorage = (key, ID) => {
+export const isInLocalStorage = (key, ID) => {
   try {
     return JSON.parse(localStorage.getItem(key)).indexOf(ID) > -1;
   } catch (e) {
@@ -328,17 +293,13 @@ const isInLocalStorage = (key, ID) => {
   }
 };
 
-const getSavedProject = () => {
-  return localStorage.getItem("project");
-};
-const saveProject = proj => {
-  localStorage.setItem("project", proj);
-};
+export const getSavedProject = () => localStorage.getItem("project");
+export const saveProject = proj => localStorage.setItem("project", proj);
 
 // newTracyNotification checks the browser supports notifications,
 // then either asks permission for notifications, or displays the
 // formatted notification if the user has already granted permission.
-const newTracyNotification = (tracer, context, event) => {
+export const newTracyNotification = (tracer, context, event) => {
   if (!("Notification" in window)) {
     console.error("This browser does not support desktop notification");
     return;
@@ -361,7 +322,7 @@ const newTracyNotification = (tracer, context, event) => {
 
 // tracyNotification creates a notification with the tracy logo
 // and standard default options, such as requiring interaction.
-const tracyNotification = (tracer, context, event) => {
+export const tracyNotification = (tracer, context, event) => {
   const title = "Tracy found XSS!";
   const body = `Tracer Payload: ${tracer.TracerPayload}
 Severity: ${context.Severity}
@@ -396,50 +357,19 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
   };
 };
 
-const selectedTracerByID = (tracers, id) => {
+export const selectedTracerByID = (tracers, id) => {
   return tracers[firstIDByID(tracers, { ID: id })];
 };
 
-const selectedEventByID = (events, id) => {
+export const selectedEventByID = (events, id) => {
   return events[firstIDByID(events, { ID: id })];
 };
 
-const firstIDByID = (set, match) => {
-  for (let i = 0; i < set.length; i++) {
-    if (match.ID === set[i].ID) {
+export const firstIDByID = (s, m) => {
+  for (let i = 0; i < s.length; i++) {
+    if (m.ID === s[i].ID) {
       return i;
     }
   }
   return -1;
-};
-
-export {
-  selectedTracerByID,
-  selectedEventByID,
-  firstIDByID,
-  sleep,
-  newTracyRequest,
-  enumerate,
-  parsePath,
-  parseHost,
-  parseURLParameters,
-  parseVisibleEvents,
-  newTracyNotification,
-  isEmpty,
-  isInLocalStorage,
-  formatEvent,
-  formatRowSeverity,
-  formatTracer,
-  formatRequest,
-  switchProject,
-  delProject,
-  getProjects,
-  getTracers,
-  getTracerEvents,
-  getSavedProject,
-  saveProject,
-  reproduce,
-  filterTextNodes,
-  filterInactive,
-  filterResponses
 };
