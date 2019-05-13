@@ -19,20 +19,25 @@ const init = {
   apiKey: "12af65d4-4a3c-4cce-abe4-115d089e75f3"
 };
 
-const addTracer = (state, action) => {
-  const i = utils.firstIDByID(
-    state.tracers,
-    utils.selectedTracerByID(state.tracers, state.selectedTracerID)
-  );
+// addOrEditTracer appends a new tracer if it doesn't already exist
+// or modifies the tracer's properties if it does.
+const addOrEditTracer = (state, action) => {
+  const i = utils.firstIDByID(state.tracers, { ID: action.tracer.Tracer.ID });
   // If we aren't updating an existing element, just append it
+  const t = utils.formatTracer(action.tracer.Tracer);
   if (i < 0) {
-    return state.tracers.concat(action.tracer);
+    return state.tracers.concat(t);
   }
-  state.tracers[i] = Object.assign(
-    state.tracers[i],
-    utils.selectedTracerByID(state.tracers, state.selectedTracerID)
-  );
-  return state.tracers;
+  // Right now, we are only supporting updating the tracer's severity and
+  // hastracerevents property
+  const newt = Object.assign(state.tracers[i], {
+    HasTracerEvents: t[0].HasTracerEvents,
+    OverallSeverity: t[0].OverallSeverity
+  });
+
+  return state.tracers
+    .filter(tr => tr.ID !== action.tracer.Tracer.ID)
+    .concat([newt]);
 };
 
 const rootReducer = (state = init, action) => {
@@ -53,7 +58,7 @@ const rootReducer = (state = init, action) => {
       });
     case actions.ADD_TRACER:
       return Object.assign({}, state, {
-        tracers: addTracer(state, action)
+        tracers: addOrEditTracer(state, action)
       });
     case actions.ADD_REQUEST:
       let r = state;
@@ -63,7 +68,7 @@ const rootReducer = (state = init, action) => {
         if (a < 0) {
           // If we aren't updating an existing element, just append it.
           r.tracers[a] = Object.assign(r.tracers[a], {
-            tracers: addTracer(r, action)
+            tracers: addOrEditTracer(r, action)
           });
         } else {
           // We are probably just updating a tracer for a screenshot.

@@ -125,6 +125,7 @@ func AddRequests(tracer types.Tracer) ([]byte, error) {
 	}
 
 	//inUpdateChanTracer <- tracer
+	//	log.Error.Printf("ACTUALLY HERE %+v", tracer)
 	UpdateSubscribers(tracer.UUID, tracer)
 	if ret, err = json.Marshal(tracer); err != nil {
 		log.Warning.Printf(err.Error())
@@ -154,6 +155,7 @@ func AddTracers(req types.Request) ([]byte, error) {
 		v.Requests = []types.Request{req}
 		inUpdateChanTracer <- v
 	}*/
+	log.Error.Printf("REQ: %+v", req)
 	UpdateSubscribers(req.UUID, req)
 	if ret, err = json.Marshal(req); err != nil {
 		log.Warning.Printf(err.Error())
@@ -296,6 +298,7 @@ func EditTracer(tracer types.Tracer, id uint) ([]byte, error) {
 	}
 
 	//	inUpdateChanTracer <- t
+	log.Error.Printf("HERE? %+v", t)
 	UpdateSubscribers(tracer.UUID, t)
 
 	return empty, err

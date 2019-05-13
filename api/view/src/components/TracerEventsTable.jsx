@@ -4,7 +4,7 @@ import "react-table/react-table.css";
 import * as utils from "../utils";
 
 export default class TracerEventsTable extends Component {
-  render() {
+  render = () => {
     if (this.props.loading) {
       utils.getTracerEvents(this.props.selectedTracerID).then(events =>
         this.props.updateEvents(
@@ -16,9 +16,6 @@ export default class TracerEventsTable extends Component {
       );
     }
     let data = this.props.events;
-    if (this.props.filterResponses) {
-      data = data.filter(utils.filterResponses);
-    }
     if (this.props.filterTextNodes) {
       data = data.filter(utils.filterTextNodes);
     }
@@ -28,7 +25,6 @@ export default class TracerEventsTable extends Component {
         className="tracer-events-table"
         data={data}
         loading={this.props.loading}
-        manual
         columns={[
           {
             Header: "observed outputs",
@@ -47,18 +43,6 @@ export default class TracerEventsTable extends Component {
             ]
           }
         ]}
-        getTdProps={(state, rowInfo, column) => {
-          return {
-            onClick: (e, handleOriginal) => {
-              if (column.Header === "reproduce") {
-                this.reproduce();
-              }
-              if (handleOriginal) {
-                handleOriginal();
-              }
-            }
-          };
-        }}
         getTrProps={(state, rowInfo, column, instance) => {
           if (rowInfo) {
             let classname = "";
@@ -103,5 +87,5 @@ export default class TracerEventsTable extends Component {
         defaultPageSize={25}
       />
     );
-  }
+  };
 }

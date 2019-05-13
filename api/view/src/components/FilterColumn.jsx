@@ -1,10 +1,6 @@
 import React, { Component } from "react";
 import FilterButton from "../containers/FilterButton";
-import {
-  TOGGLE_TEXT_FILTER,
-  TOGGLE_HTTP_RESPONSE_FILTER,
-  TOGGLE_INACTIVE_FILTER
-} from "../actions";
+import * as actions from "../actions";
 
 export default class FilterColumn extends Component {
   render() {
@@ -14,21 +10,14 @@ export default class FilterColumn extends Component {
           name="text"
           imgType="glyph"
           img="font"
-          filter={TOGGLE_TEXT_FILTER}
+          filter={actions.TOGGLE_TEXT_FILTER}
           description="filter innerText DOM writes"
-        />
-        <FilterButton
-          name="responses"
-          imgType="icon"
-          img="reply"
-          filter={TOGGLE_HTTP_RESPONSE_FILTER}
-          description="filter HTTP responses"
         />
         <FilterButton
           name="inactive"
           imgType="glyph"
           img="filter"
-          filter={TOGGLE_INACTIVE_FILTER}
+          filter={actions.TOGGLE_INACTIVE_FILTER}
           description="filter tracers without events"
         />
       </ul>

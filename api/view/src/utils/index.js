@@ -214,7 +214,7 @@ export const formatRequest = req => {
 // formatTracer returns a new tracer object with some its fields
 // changed to be read better by the tables.
 export const formatTracer = tracer => {
-  if (tracer.Requests.length > 0) {
+  if (tracer.Requests && tracer.Requests.length > 0) {
     return tracer.Requests.map(request => ({
       ID: tracer.ID,
       RawRequest: request.RawRequest,
@@ -357,15 +357,15 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
   };
 };
 
-export const selectedTracerByID = (tracers, id) => {
-  return tracers[firstIDByID(tracers, { ID: id })];
-};
-
-export const selectedEventByID = (events, id) => {
-  return events[firstIDByID(events, { ID: id })];
+export const firstElemByID = (elems, id) => {
+  if (id < 0) return { ID: id };
+  const idt = firstIDByID(elems, { ID: id });
+  if (idt < 0) return { ID: idt };
+  return elems[idt];
 };
 
 export const firstIDByID = (s, m) => {
+  if (m.ID < 0) return -1;
   for (let i = 0; i < s.length; i++) {
     if (m.ID === s[i].ID) {
       return i;

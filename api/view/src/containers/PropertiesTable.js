@@ -1,6 +1,6 @@
 import { connect } from "react-redux";
 import PropertiesTable from "../components/PropertiesTable";
-import { selectedEventByID } from "../utils";
+import { firstElemByID } from "../utils";
 
 const reasonTable = {
   "0":
@@ -24,8 +24,8 @@ const reasonTable = {
 };
 
 const mapStateToProps = state => {
-  const event = selectedEventByID(state.events, state.selectedEventID);
-  if (!event)
+  const event = firstElemByID(state.events, state.selectedEventID);
+  if (!event || event.ID < 0)
     return {
       eventURL: "",
       eventType: "",

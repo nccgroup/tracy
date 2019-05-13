@@ -80,6 +80,7 @@ func updateRouter(update *update) {
 		}
 		switch u := update.Data.(type) {
 		case types.Tracer:
+			//			log.Error.Printf("here!! %+v", u)
 			if err := sub.Sock.WriteJSON(types.TracerWebSocket{u}); err != nil {
 				log.Error.Print(err)
 				continue
@@ -102,11 +103,11 @@ func updateRouter(update *update) {
 				log.Error.Print(err)
 				continue
 			}
-		case types.Reproduction:
-			if err := sub.Sock.WriteJSON(types.ReproductionWebSocket{u}); err != nil {
-				log.Error.Print(err)
-				continue
-			}
+			/*		case types.Reproduction:
+					if err := sub.Sock.WriteJSON(types.ReproductionWebSocket{u}); err != nil {
+						log.Error.Print(err)
+						continue
+					}*/
 		default:
 			log.Error.Printf("not sure what it was: %T", u)
 			continue

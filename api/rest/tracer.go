@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nccgroup/tracy/api/common"
 	"github.com/nccgroup/tracy/api/types"
+	"github.com/nccgroup/tracy/log"
 )
 
 // EditTracer handles the HTTP API request to edit a specific
@@ -76,6 +77,7 @@ func AddRequests(w http.ResponseWriter, r *http.Request) {
 		in.Requests[i].UUID = us
 	}
 
+	log.Error.Print("here")
 	ret, err := common.AddRequests(in)
 	if err != nil {
 		returnError(w, err)

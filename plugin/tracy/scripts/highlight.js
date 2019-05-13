@@ -169,7 +169,7 @@ const highlight = (() => {
     ];
     util.send({
       "message-type": "background-fetch",
-      route: "/api/tracy/tracers",
+      route: "/api/tracy/tracers/requests",
       method: "POST",
       body: JSON.stringify(r.tracers[0])
     });
