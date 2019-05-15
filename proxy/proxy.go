@@ -687,7 +687,9 @@ func writeBack(w io.Writer, resp *http.Response, b []byte) {
 	switch rw := w.(type) {
 	case http.ResponseWriter:
 		for k, v := range resp.Header {
-			rw.Header().Set(k, v[0])
+			for _, h := range v {
+				rw.Header().Add(k, h)
+			}
 		}
 		rw.WriteHeader(resp.StatusCode)
 		rw.Write(b)
