@@ -10,7 +10,7 @@ import (
 // to avoid odd state things like database files.
 func TestAllRest(t *testing.T) {
 	configure.Setup()
-	Configure()
+	Configure(FULL)
 	var table = [][]RequestTestPair{
 		testAddEvent(t),
 		testDuplicateEvent(t),

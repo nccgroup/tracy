@@ -67,5 +67,5 @@ func TestUIRoutesNoProxy(t *testing.T) {
 
 func init() {
 	configure.Setup()
-	Configure()
+	Configure(FULL)
 }
