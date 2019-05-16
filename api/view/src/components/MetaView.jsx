@@ -1,19 +1,16 @@
 import React, { Component } from "react";
-import Screenshot from "../containers/Screenshot";
 import PropertiesTable from "../containers/PropertiesTable";
-import HighLightedElement from "../containers/HighlightedElement";
+import GeneratedMetaView from "../containers/GeneratedMetaView";
+import NonGeneratedMetaView from "../containers/NonGeneratedMetaView";
 export default class MetaView extends Component {
   render = () => {
     return (
       <div className="meta-view">
-        <Screenshot screenshot={this.props.tracer.Screenshot} />
-        <HighLightedElement
-          lang="http"
-          highlightOffset={-1}
-          highlightString={this.props.tracer.TracerPayload}
-          data={this.props.tracer.RawRequest}
-          title="raw request"
-        />
+        {this.props.isGeneratedTracerString ? (
+          <GeneratedMetaView />
+        ) : (
+          <NonGeneratedMetaView />
+        )}
         <PropertiesTable />
       </div>
     );
