@@ -108,7 +108,9 @@ const rootReducer = (state = init, action) => {
       if (action.event.TracerEvent.TracerID !== state.selectedTracerID)
         return state;
       return Object.assign({}, state, {
-        events: state.events.concat(action.event.TracerEvent)
+        events: state.events
+          .concat(utils.formatEvent(action.event.TracerEvent))
+          .map(utils.enumerate)
       });
     case actions.TOGGLE_INACTIVE_FILTER:
       return Object.assign({}, state, {

@@ -210,7 +210,7 @@ export const formatRowSeverity = (row, rowIdx) => {
 };
 
 // formatEvent formats an event context into its corresponding columns.
-export const formatEvent = (event, eidx) => {
+export const formatEvent = event => {
   if (!event.DOMContexts || event.DOMContexts.length <= 0) {
     // If there are no DOMContexts, it is most likely an HTTP response.
     return {

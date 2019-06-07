@@ -3,6 +3,7 @@
 }
 
 main {
+  width: 100vw;
   height: 100vh;
 }
 body {
@@ -10,13 +11,15 @@ body {
 }
 
 main > div.app {
-  display: grid;
-  grid-template-columns: 2% 31% 67%;
-  grid-template-rows: 100%;
+  display: flex;
+  flex-flow: row nowrap;
   height: 100%;
+  width: 100%;
 }
 
 .nav-sidebar {
+  flex: 0 0 auto;
+  width: 55px;
   background-color: #252931;
   display: flex;
   flex-flow: column wrap;
@@ -24,23 +27,28 @@ main > div.app {
 }
 
 .tables {
+  min-width: 600px;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 50% 50%;
   grid-template-rows: 5% 50% 45%;
 }
 
-.tracer-table {
+.table-container-tracers {
   grid-row-start: 2;
 }
 
-.tracer-events-table {
+.grow-table {
   min-height: 0;
   flex: 1 1 auto;
 }
 
 .table-container {
   display: flex;
-  flex-flow: column wrap;
+  flex-flow: column nowrap;
+}
+
+.table-container-events {
   grid-row-start: 3;
   grid-column-start: 1;
   grid-column-end: 3;
@@ -50,7 +58,7 @@ main > div.app {
   flex: 0 0 auto;
 }
 
-.request-table {
+.table-container-requests {
   grid-row-start: 2;
 }
 
@@ -61,6 +69,7 @@ main > div.app {
 }
 
 .details {
+  flex: 3 1 auto;
   display: grid;
   grid-template-columns: 49% 50%;
   grid-template-rows: 55% 44%;
@@ -78,13 +87,13 @@ main > div.app {
 }
 
 .outputs {
-  display: grid;
   grid-row-start: 2;
   grid-column-start: 1;
   grid-column-end: 3;
 }
 
-.output-frame {
+.outputs > div:nth-child(1) {
+  height: 100%;
 }
 
 .details > ul {
@@ -139,10 +148,11 @@ table.properties-table > tbody > tr > th {
 .tracy-screenshot-frame {
   grid-row-start: 1;
   grid-column-start: 2;
+  width: 100%;
 }
 
 .tracy-screenshot {
-  width: 100%;
+  height: 100%;
 }
 
 .frame {
@@ -587,14 +597,14 @@ pre code {
   border-radius: 3px;
   padding: 6px;
   font-size: 1em;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 1);
   background: rgba(0, 0, 0, 0.1);
   transition: all 0.1s ease;
   cursor: pointer;
   outline: none;
 }
 .ReactTable .-pagination .-btn[disabled] {
-  opacity: 0.5;
+  opacity: 0.2;
   cursor: default;
 }
 .ReactTable .-pagination .-btn:not([disabled]):hover {

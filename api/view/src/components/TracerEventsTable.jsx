@@ -21,10 +21,10 @@ export default class TracerEventsTable extends Component {
     }
 
     return (
-      <div className="table-container">
+      <div className="table-container table-container-events">
         <span className="filler" />
         <ReactTable
-          className="tracer-events-table"
+          className="grow-table"
           data={data}
           showPageSizeOptions={false}
           showPageJump={false}
