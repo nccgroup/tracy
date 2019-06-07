@@ -1,68 +1,36 @@
 import React, { Component } from "react";
+import ReactTable from "react-table";
 
 export default class RequestTable extends Component {
   render = () => {
-    if (this.props.loading) {
-      utils.getTracers().then(req => {
-        this.props.updateTracers(req.map(utils.formatTracer).flat());
-      });
-    }
-    let data = this.props.tracers;
-    if (this.props.filterInactive) {
-      data = data.filter(utils.filterInactive);
-    }
-
     return (
       <ReactTable
-        className="tracer-table"
-        data={data}
+        className="request-table"
+        data={this.props.requests}
         loading={this.props.loading}
+        showPageSizeOptions={false}
+        showPageJump={false}
+        loadingText="click a tracer for more details"
         columns={[
           {
-            Header: "injection points",
+            Header: "http injection requests",
             columns: [
               { Header: "id", accessor: "ID", width: 45 },
-              //              { Header: "method", accessor: "RequestMethod" },
-              { Header: "url", accessor: "RequestURL" },
-              //              { Header: "path", accessor: "RequestPath" },
-              //              { Header: "tracer string", accessor: "TracerString" },
-              {
-                Header: "payload",
-                accessor: "TracerPayload",
-                width: 105
-              },
-              {
-                Header: "sev",
-                accessor: "OverallSeverity",
-                width: 45
-              }
+              { Header: "method", accessor: "RequestMethod", width: 45 },
+              { Header: "url", accessor: "RequestURL" }
             ]
           }
         ]}
         getTrProps={(state, rowInfo, column, instance) => {
           if (rowInfo) {
             let classname = "";
-            switch (rowInfo.row.OverallSeverity) {
-              case 1:
-                classname = "suspicious";
-                break;
-              case 2:
-                classname = "probable";
-                break;
-              case 3:
-                classname = "exploitable";
-                break;
-              default:
-                classname = "unexploitable";
-            }
-
-            if (rowInfo.row.ID === this.props.selectedTracerID) {
+            if (rowInfo.row.ID === this.props.selectedRequestID) {
               classname += " row-selected";
             }
 
             return {
               onClick: (e, handleOriginal) => {
-                this.props.selectTracer(rowInfo.row.ID);
+                this.props.selectRequest(rowInfo.row.ID);
 
                 if (handleOriginal) {
                   handleOriginal();

@@ -155,7 +155,7 @@ func AddTracers(req types.Request) ([]byte, error) {
 		v.Requests = []types.Request{req}
 		inUpdateChanTracer <- v
 	}*/
-	log.Error.Printf("REQ: %+v", req)
+
 	UpdateSubscribers(req.UUID, req)
 	if ret, err = json.Marshal(req); err != nil {
 		log.Warning.Printf(err.Error())
@@ -199,12 +199,13 @@ func AddRequest(request types.Request, tracerID uint) ([]byte, error) {
 	if err = store.DB.Model(&tracer).
 		Where("uuid = ?", request.UUID).
 		Association("Requests").
-		Append(request).Error; err != nil {
+		Append(&request).Error; err != nil {
 		log.Warning.Printf(err.Error())
 		return ret, err
 	}
 
 	//	inUpdateChanTracer <- request
+	request.Tracers = []types.Tracer{types.Tracer{Model: gorm.Model{ID: tracerID}}}
 	UpdateSubscribers(request.UUID, request)
 	if ret, err = json.Marshal(request); err != nil { //TODO: Find out what should be returned here
 		log.Warning.Printf(err.Error())

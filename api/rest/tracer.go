@@ -77,7 +77,6 @@ func AddRequests(w http.ResponseWriter, r *http.Request) {
 		in.Requests[i].UUID = us
 	}
 
-	log.Error.Print("here")
 	ret, err := common.AddRequests(in)
 	if err != nil {
 		returnError(w, err)
@@ -107,6 +106,8 @@ func AddTracers(w http.ResponseWriter, r *http.Request) {
 	for i := range in.Tracers {
 		in.Tracers[i].UUID = us
 	}
+
+	log.Error.Printf("Adding a tracer: %+v", in)
 	ret, err := common.AddTracers(in)
 	if err != nil {
 		returnError(w, err)

@@ -33,14 +33,26 @@ const background = (() => {
 
     // If the background fetch is to create a new tracer,
     // update our list of tracer payloads.
+    const payloads = await settings.getTracerPayloads(0);
     if (
       message.route === "/api/tracy/tracers" &&
       message.method.toLowerCase() === "post"
     ) {
       settings.setTracerPayloads(
-        settings
-          .getTracerPayloads()
-          .concat(JSON.parse(message.body).TracerPayload)
+        payloads.concat(
+          JSON.parse(message.body).Tracers.map(t => t.TracerPayload)
+        )
+      );
+    }
+
+    // If the background fetch is to create a new tracer,
+    // update our list of tracer payloads.
+    if (
+      message.route === "/api/tracy/tracers/requests" &&
+      message.method.toLowerCase() === "post"
+    ) {
+      settings.setTracerPayloads(
+        payloads.concat(JSON.parse(message.body).TracerPayload)
       );
     }
 

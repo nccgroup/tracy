@@ -80,7 +80,6 @@ func updateRouter(update *update) {
 		}
 		switch u := update.Data.(type) {
 		case types.Tracer:
-			//			log.Error.Printf("here!! %+v", u)
 			if err := sub.Sock.WriteJSON(types.TracerWebSocket{u}); err != nil {
 				log.Error.Print(err)
 				continue
@@ -91,13 +90,11 @@ func updateRouter(update *update) {
 				continue
 			}
 		case types.TracerEvent:
-			// Only send event updates for the subscribed tracer.
-			if u.TracerID == sub.Tracer {
-				if err := sub.Sock.WriteJSON(types.TracerEventsWebSocket{u}); err != nil {
-					log.Error.Print(err)
-					continue
-				}
+			if err := sub.Sock.WriteJSON(types.TracerEventsWebSocket{u}); err != nil {
+				log.Error.Print(err)
+				continue
 			}
+
 		case types.Notification:
 			if err := sub.Sock.WriteJSON(types.NotificationWebSocket{u}); err != nil {
 				log.Error.Print(err)

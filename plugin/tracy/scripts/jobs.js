@@ -37,11 +37,11 @@ const jobs = (() => {
     sendResponse(true);
   };
 
-  const processDOMEvents = () => {
+  const processDOMEvents = async () => {
     // Send any jobs off to the web worker.
     worker.postMessage({
       jobs: j,
-      tracerPayloads: settings.getTracerPayloads()
+      tracerPayloads: await settings.getTracerPayloads(0)
     });
 
     // Clear out the jobs.
@@ -57,6 +57,9 @@ const jobs = (() => {
   const worker = new Worker(loc);
   // Any that come back get sent out the API server.
   worker.addEventListener("message", e => bulkAddEvents(e.data));
-  chrome.alarms.onAlarm.addListener(processDOMEvents);
+  chrome.alarms.onAlarm.addListener(alarm => {
+    if (alarm.name !== "processDOMEvents") return;
+    processDOMEvents();
+  });
   return { add: add };
 })();

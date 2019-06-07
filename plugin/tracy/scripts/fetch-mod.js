@@ -51,25 +51,20 @@
       });
 
       return argsp.then(args => {
+        // If any tracers were added to this form, send API request to log them.
+        if (tracersa.length > 0) {
+        }
+
         if (args.tracers.length !== 0) {
           (async () => {
-            window.postMessage(
-              {
-                "message-type": "background-fetch",
-                route: "/api/tracy/tracers",
-                method: "POST",
-                body: JSON.stringify({
-                  RawRequest: await buildRequestFromFetch(args.al),
-                  RequestURL: al[0].startsWith("http")
-                    ? new URL(url).toString()
-                    : new URL(`${document.location.href}/${al[0]}`).toString(),
-                  RequestMethod:
-                    args.al.length > 1 && args.al.method
-                      ? args.al.method
-                      : "GET",
-                  Tracers: args.tracers
-                })
-              },
+            args.tracers.map(
+              t =>
+                window.postMessage({
+                  "message-type": "background-fetch",
+                  route: "/api/tracy/tracers/requests",
+                  method: "POST",
+                  body: JSON.stringify(t)
+                }),
               "*"
             );
           })();
@@ -78,36 +73,4 @@
       });
     }
   });
-
-  // buildRequestFromFetch builds an HTTP request string that is expected
-  // to be produced from the fetch arguments.
-  const version = "HTTP/1.1";
-  const buildRequestFromFetch = async al => {
-    const method = al.length > 1 && al.method ? al.method : "GET";
-    const url = al[0].startsWith("http") ? new URL(url).pathname : al[0];
-    const host = al[0].startsWith("http")
-      ? new URL(url).host
-      : document.location.host;
-    let headers = "";
-    if (al[1].headers) {
-      for (let i of al[1].headers) {
-        headers += `
-${i[0]}: ${i[1]}`;
-      }
-    }
-
-    // Build a request object from the fetch parameters and use the Body mixins.
-    // Much easier than parsing everything individually.
-    const req = new Request(al[0], al[1]);
-    const bodyBlob = await req.blob();
-    const reader = new FileReader();
-    const body = await new Promise(r => {
-      reader.addEventListener("loadend", e => r(e.srcElement.result));
-      reader.readAsText(bodyBlob);
-    });
-    return `${method} ${url} ${version}
-Host: ${host}${headers}
-    
-${body}`;
-  };
 })();

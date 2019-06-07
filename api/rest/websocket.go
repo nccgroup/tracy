@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/nccgroup/tracy/api/common"
-	"github.com/nccgroup/tracy/log"
 )
 
 // upgrader is used a configuration struct when upgrading the websocket
@@ -33,7 +32,6 @@ func WebSocket(w http.ResponseWriter, r *http.Request) {
 	var key string
 	key, err = common.AddSubscriber(conn)
 	if err != nil {
-		log.Error.Print(err)
 		conn.Close()
 		return
 	}

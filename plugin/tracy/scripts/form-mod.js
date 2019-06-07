@@ -43,17 +43,14 @@ const form = (() => {
 
         // If any tracers were added to this form, send API request to log them.
         if (tracersa.length > 0) {
-          util.send({
-            "message-type": "background-fetch",
-            route: "/api/tracy/tracers",
-            method: "POST",
-            body: JSON.stringify({
-              RawRequest: buildRequestFromForm(evt.target, params),
-              RequestURL: document.location.href,
-              RequestMethod: evt.target.getAttribute("method") || "GET",
-              Tracers: tracersa
+          tracersa.map(t =>
+            util.send({
+              "message-type": "background-fetch",
+              route: "/api/tracy/tracers/requests",
+              method: "POST",
+              body: JSON.stringify(t)
             })
-          });
+          );
         }
       });
     };
@@ -63,35 +60,6 @@ const form = (() => {
     } else {
       [...elem.getElementsByTagName("form")].map(t => addEventListener(t));
     }
-  };
-
-  // buildRequestFromForm transforms an HTML form object into a string
-  // of the expected HTTP request it will generate.
-  const buildRequestFromForm = (form, params) => {
-    const method = form.getAttribute("method") || "GET";
-    const url = form.getAttribute("action") || document.location.href;
-    const host = url.startsWith("http")
-      ? new URL(url).host
-      : document.location.host;
-
-    const enctype =
-      form.getAttribute("enctype") || "application/x-www-form-urlencoded";
-
-    const body = params
-      .filter(t => t.type.toLowerCase() !== "submit" || t.value)
-      .map(t => `${encodeURIComponent(t.name)}=${encodeURIComponent(t.value)}`)
-      .join("&");
-    if (method.toLowerCase() === "get" || method.toLowerCase() === "head") {
-      return `${method} ${url}?${body} HTTP/1.1
-Host: ${host}
-Content-Type: ${enctype}`;
-    }
-
-    return `${method} ${url} HTTP/1.1
-Host: ${host}
-Content-Type: ${enctype}
-
-${body}`;
   };
 
   return { addOnSubmit: addOnSubmit };

@@ -13,6 +13,7 @@ class WebSocketRouter extends Component {
 
     this.ws.onmessage = msg => {
       const data = JSON.parse(msg.data);
+      console.log("[WEBSOCKET-IN]", data);
       switch (Object.keys(data)[0]) {
         case "Tracer":
           this.props.handleNewTracer(data);
@@ -60,6 +61,7 @@ class WebSocketRouter extends Component {
     if (this.props.isOpen && this.ws !== null) {
       // If we have a websocket connection, send a subscription notice
       // which channel we want to receive events for.
+      console.log("[WEBSOCKET-OUT]", JSON.stringify([this.props.apiKey]));
       this.ws.send(JSON.stringify([this.props.apiKey]));
       return <div title="websocket connected">{this.check}</div>;
     }

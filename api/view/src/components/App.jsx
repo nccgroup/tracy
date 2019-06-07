@@ -5,6 +5,7 @@ import TracerEventsTable from "../containers/TracerEventsTable";
 import FilterColumn from "../components/FilterColumn";
 import TracyLogo from "../components/TracyLogo";
 import WebSocketRouter from "../containers/WebSocketRouter";
+import RequestTable from "../containers/RequestTable";
 import "../styles/App.css";
 
 export default class App extends Component {
@@ -18,6 +19,7 @@ export default class App extends Component {
         <div className="tables">
           <FilterColumn />
           <TracerTable />
+          <RequestTable />
           <TracerEventsTable />
         </div>
         <DetailsViewer />

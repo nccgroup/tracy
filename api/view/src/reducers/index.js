@@ -10,13 +10,16 @@ const init = {
   eventsLoading: false,
   selectedEventID: -1,
   selectedTracerID: -1,
+  selectedRequestID: -1,
   httpResponsesFilter: false,
   inactiveTracersFilter: false,
   textFilter: false,
   tabID: "-1",
-  tracyHost: "127.0.0.1",
-  tracyPort: 7777,
-  apiKey: "12af65d4-4a3c-4cce-abe4-115d089e75f3"
+  tracyHost: window.tracy ? window.tracy.host : "127.0.0.1",
+  tracyPort: window.tracy ? window.tracy.port : 7777,
+  apiKey: window.tracy
+    ? window.tracy.apiKey
+    : "12af65d4-4a3c-4cce-abe4-115d089e75f3"
 };
 
 // addOrEditTracer appends a new tracer if it doesn't already exist
@@ -24,15 +27,15 @@ const init = {
 const addOrEditTracer = (state, action) => {
   const i = utils.firstIDByID(state.tracers, { ID: action.tracer.Tracer.ID });
   // If we aren't updating an existing element, just append it
-  const t = utils.formatTracer(action.tracer.Tracer);
+  const t = action.tracer.Tracer;
   if (i < 0) {
-    return state.tracers.concat(t);
+    return state.tracers.concat([t]);
   }
   // Right now, we are only supporting updating the tracer's severity and
   // hastracerevents property
   const newt = Object.assign(state.tracers[i], {
-    HasTracerEvents: t[0].HasTracerEvents,
-    OverallSeverity: t[0].OverallSeverity
+    HasTracerEvents: t.HasTracerEvents,
+    OverallSeverity: t.OverallSeverity
   });
 
   return state.tracers
@@ -61,26 +64,23 @@ const rootReducer = (state = init, action) => {
         tracers: addOrEditTracer(state, action)
       });
     case actions.ADD_REQUEST:
-      let r = state;
-      const t = utils.formatRequest(action.req.Request);
-      for (let i = 0; i < t.length; i++) {
-        const a = utils.firstIDByID(r.tracers, t[i]);
-        if (a < 0) {
-          // If we aren't updating an existing element, just append it.
-          r.tracers[a] = Object.assign(r.tracers[a], {
-            tracers: addOrEditTracer(r, action)
-          });
-        } else {
-          // We are probably just updating a tracer for a screenshot.
-          if (t[i].Screenshot !== "") {
-            // We are updating a tracer.
-            r.tracers[a] = Object.assign(r.tracers[a], {
-              screenshot: t[i].Screenshot
+      const ids = action.req.Request.Tracers.map(t => t.ID);
+      delete action.req.Request.Tracers;
+      return Object.assign({}, state, {
+        tracers: ids.reduce((accum, curr) => {
+          const i = utils.firstIDByID(accum, { ID: curr });
+          if (i < 0) return accum;
+          let newt;
+          if (accum[i].Requests) {
+            newt = Object.assign(accum[i], {
+              Requests: [...accum[i].Requests, action.req.Request]
             });
+          } else {
+            newt = Object.assign(accum[i], { Requests: [action.req.Request] });
           }
-        }
-      }
-      return Object.assign({}, r);
+          return [...accum.filter(tr => tr.ID !== curr), newt];
+        }, state.tracers)
+      });
     case actions.UPDATE_TRACERS:
       return Object.assign({}, state, {
         tracersLoading: false,
@@ -104,8 +104,11 @@ const rootReducer = (state = init, action) => {
         events: action.events
       });
     case actions.ADD_EVENT:
+      // Only add an event if it belongs to the tracer currently selected.
+      if (action.event.TracerEvent.TracerID !== state.selectedTracerID)
+        return state;
       return Object.assign({}, state, {
-        events: state.events.concat(action.event)
+        events: state.events.concat(action.event.TracerEvent)
       });
     case actions.TOGGLE_INACTIVE_FILTER:
       return Object.assign({}, state, {
@@ -125,6 +128,8 @@ const rootReducer = (state = init, action) => {
       return Object.assign({}, state, { tabID: action.tabID });
     case actions.ADD_API_KEY:
       return Object.assign({}, state, { apiKey: action.apiKey });
+    case actions.SELECT_REQUEST:
+      return Object.assign({}, state, { selectedRequestID: action.id });
     default:
       return state;
   }

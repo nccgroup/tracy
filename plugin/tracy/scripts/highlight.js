@@ -100,17 +100,17 @@ const highlight = (() => {
 
   // captureSceenshot sends a command to the background page
   // take a screenshot given the dimensions specified by the
-  // parent element of the target passed in. padding is the amount
+  // frame element of the target passed in. padding is the amount
   // of space on each side of the element
-  async function captureScreenshot(e, padding) {
+  async function captureScreenshot(e, padding = 0) {
     e.classList.add("screenshot");
     const dURIp = util.send({ "message-type": "screenshot" });
-    const rec = e.getBoundingClientRect();
+    const rec = document.body.getBoundingClientRect();
     const dim = {
       top: rec.top - padding,
       left: rec.left - padding,
       width: rec.width + 2 * padding,
-      height: rec.height + 2 * padding,
+      height: window.innerHeight + 2 * padding, // I think
       ratio: 1
     };
     const dURI = await dURIp;
@@ -159,14 +159,7 @@ const highlight = (() => {
   async function fillGenPayload(elem, tracerString) {
     const r = replace.str(tracerString);
     simulateInputType(elem, elem.value + r.str);
-    r.tracers[0].Screenshot = await captureScreenshot(elem, 200);
-    r.tracers[0].Requests = [
-      {
-        RawRequest: "GENERATED",
-        RequestMethod: "GENERATED",
-        RequestURL: document.location.href
-      }
-    ];
+    r.tracers[0].Screenshot = await captureScreenshot(elem);
     util.send({
       "message-type": "background-fetch",
       route: "/api/tracy/tracers/requests",

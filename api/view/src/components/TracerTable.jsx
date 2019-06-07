@@ -5,10 +5,9 @@ import * as utils from "../utils";
 export default class TracerTable extends Component {
   render() {
     if (this.props.loading) {
-      utils.getTracers().then(req => {
-        this.props.updateTracers(req.map(utils.formatTracer).flat());
-      });
+      utils.getTracers().then(req => this.props.updateTracers(req));
     }
+
     let data = this.props.tracers;
     if (this.props.filterInactive) {
       data = data.filter(utils.filterInactive);
@@ -19,25 +18,16 @@ export default class TracerTable extends Component {
         className="tracer-table"
         data={data}
         loading={this.props.loading}
+        showPageSizeOptions={false}
+        showPageJump={false}
         columns={[
           {
             Header: "injection points",
             columns: [
               { Header: "id", accessor: "ID", width: 45 },
-              //              { Header: "method", accessor: "RequestMethod" },
-              { Header: "url", accessor: "RequestURL" },
-              //              { Header: "path", accessor: "RequestPath" },
-              //              { Header: "tracer string", accessor: "TracerString" },
-              {
-                Header: "payload",
-                accessor: "TracerPayload",
-                width: 105
-              },
-              {
-                Header: "sev",
-                accessor: "OverallSeverity",
-                width: 45
-              }
+              { Header: "tracer string", accessor: "TracerString", width: 105 },
+              { Header: "payload", accessor: "TracerPayload", width: 105 },
+              { Header: "sev", accessor: "OverallSeverity", width: 45 }
             ]
           }
         ]}

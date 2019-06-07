@@ -39,6 +39,41 @@ const settings = (() => {
     }
   };
 
+  const getRandomInt = (min, max) => {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  };
+
+  // getTracerPaylods returns the current collected payloads. Sometimes, we
+  //  want to wait for some events to come in that would add a tracer that
+  // we can't block the browser from, so this function takes an optional delay
+  // option in miliseconds before resolving the promise.
+  const promiseMap = {};
+
+  chrome.alarms.onAlarm.addListener(alarm => {
+    if (!alarm.name.startsWith("deliver-")) {
+      return;
+    }
+    // Get the promise associated with this alarm and deliver
+    // the current set of tracer payloads for it.
+    const rand = alarm.name.split("deliver-")[1];
+    const resolve = promiseMap[rand];
+    resolve(tracerPayloads);
+    // Delete the promise from the promise map.
+    delete promiseMap[rand];
+  });
+
+  const getTracerPayloads = (delay = 500) => {
+    return new Promise(r => {
+      const rand = getRandomInt(0, 1000000000);
+      promiseMap[`${rand}`] = r;
+      chrome.alarms.create(`deliver-${rand}`, {
+        when: Date.now() + delay
+      });
+    });
+  };
+
   // Configuration defaults
   let restServer = "127.0.0.1:443";
   // TODO: move these to chrome storage
@@ -87,7 +122,7 @@ const settings = (() => {
   return {
     getServer: () => restServer,
     getTracerStrings: () => tracerStringTypes,
-    getTracerPayloads: () => tracerPayloads,
+    getTracerPayloads: getTracerPayloads,
     setTracerPayloads: tp => (tracerPayloads = tp),
     isDisabled: () => disabled,
     setDisabled: b => (disabled = b),

@@ -205,48 +205,6 @@ const severity = {
   3: "exploitable"
 };
 
-// formatRequest mesages the request objects into a set of tracer data structure so the
-// table can read their columns.
-export const formatRequest = req => {
-  return req.Tracers.map(t => formatTracer(t, req));
-};
-
-// formatTracer returns a new tracer object with some its fields
-// changed to be read better by the tables.
-export const formatTracer = tracer => {
-  if (tracer.Requests && tracer.Requests.length > 0) {
-    return tracer.Requests.map(request => ({
-      ID: tracer.ID,
-      RawRequest: request.RawRequest,
-      RequestMethod: request.RequestMethod,
-      RequestURL: request.RequestURL,
-      TracerString: tracer.TracerString,
-      TracerPayload: tracer.TracerPayload,
-      TracerLocationIndex: tracer.TracerLocationIndex,
-      TracerLocationType: tracer.TracerLocationType,
-      OverallSeverity: tracer.OverallSeverity,
-      HasTracerEvents: tracer.HasTracerEvents,
-      Screenshot: tracer.Screenshot
-    }));
-  }
-
-  return [
-    {
-      ID: tracer.ID,
-      RawRequest: "n/a",
-      RequestMethod: "n/a",
-      RequestURL: "n/a",
-      TracerString: tracer.TracerString,
-      TracerPayload: tracer.TracerPayload,
-      TracerLocationIndex: tracer.TracerLocationIndex,
-      TracerLocationType: tracer.TracerLocationType,
-      OverallSeverity: tracer.OverallSeverity,
-      HasTracerEvents: tracer.HasTracerEvents,
-      Screenshot: tracer.Screenshot
-    }
-  ];
-};
-
 export const formatRowSeverity = (row, rowIdx) => {
   return severity[row.OverallSeverity];
 };

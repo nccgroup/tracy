@@ -1,24 +1,20 @@
 (() => {
-  const sendToAPI = async (xhr, body = "", tracers = []) => {
+  // sendToAPI sends the tracers generated from an XHR request to
+  // the API for storage.
+  const sendToAPI = async (xhr, tracers = []) => {
     if (!xhr.tracers) xhr.tracers = [];
-    const t = xhr.tracers.concat(tracers);
-    if (t.length === 0) {
+    const tr = xhr.tracers.concat(tracers);
+    if (tr.length === 0) {
       return;
     }
-    window.postMessage(
-      {
-        "message-type": "background-fetch",
-        route: "/api/tracy/tracers",
-        method: "POST",
-        body: JSON.stringify({
-          RawRequest: await buildRequestFromXHR(xhr, body),
-          RequestURL: xhr.url.startsWith("http")
-            ? new URL(xhr.url).toString()
-            : `${document.location.origin}${xhr.url}`,
-          RequestMethod: xhr.method,
-          Tracers: t
-        })
-      },
+    tr.map(
+      t =>
+        window.postMessage({
+          "message-type": "background-fetch",
+          route: "/api/tracy/tracers/requests",
+          method: "POST",
+          body: JSON.stringify(t)
+        }),
       "*"
     );
   };
@@ -31,7 +27,7 @@
       }
 
       replace.body(al[0]).then(r => {
-        sendToAPI(thisa, r.body, r.tracers);
+        sendToAPI(thisa, r.tracers);
 
         return r.tracers.length === 0
           ? Reflect.apply(t, thisa, al)
@@ -74,36 +70,4 @@ ${key.str}: ${value.str}`;
       }
     }
   );
-
-  const buildRequestFromXHR = async (xhr, body) => {
-    const path = xhr.url.startsWith("http")
-      ? new URL(xhr.url).pathname
-      : xhr.url;
-    const host = xhr.url.startsWith("http")
-      ? new URL(xhr.url).host
-      : document.location.host;
-    const search = xhr.url.startsWith("http") ? new URL(xhr.url).search : "";
-
-    // Build a request object from the XHR parameters and use the Body mixins.
-    // Much easier than parsing everything individually.
-    const lc = xhr.method.toLowerCase();
-    let opts;
-    if (lc === "get" || lc === "header") {
-      opts = { method: xhr.method };
-    } else {
-      opts = { method: xhr.method, body: body };
-    }
-    const req = new Request(path, opts);
-    const bodyBlob = await req.blob();
-    const reader = new FileReader();
-    const b = await new Promise(r => {
-      reader.addEventListener("loadend", e => r(e.srcElement.result));
-      reader.readAsText(bodyBlob);
-    });
-
-    return `${xhr.method} ${path}${search} HTTP/1.1
-Host: ${host}${xhr.headers || ""}
-
-${b}`;
-  };
 })();
