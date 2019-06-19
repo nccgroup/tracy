@@ -34,7 +34,7 @@ const restoreOptions = async () => {
         restPort: 7777,
         //      autoFill: false,
         //        autoFillPayload: "GEN-XSS",
-        apiKey: ""
+        apiKey: generateUUID()
       },
       settings => r(settings)
     )

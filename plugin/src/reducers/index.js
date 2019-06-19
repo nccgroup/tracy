@@ -1,6 +1,8 @@
-/* eslint-disable no-undef */
 import * as actions from "../actions";
 import * as utils from "../utils";
+
+// for testing purposes
+const chrome = chrome ? chrome : null;
 
 const init = {
   proj: {},

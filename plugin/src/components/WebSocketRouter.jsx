@@ -72,7 +72,7 @@ class WebSocketRouter extends Component {
       return <div title="websocket connected">{this.check}</div>;
     }
 
-    chrome.storage.get;
+    //    chrome.storage.get;
     return (
       <div title="websocketed disconnected. retrying...">{this.spinner}</div>
     );

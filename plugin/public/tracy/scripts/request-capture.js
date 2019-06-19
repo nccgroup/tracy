@@ -4,6 +4,7 @@
     r => {
       const url = new URL(r.url);
       if (url.hostname === "tracy") {
+        console.log("here2", ui);
         return { redirectUrl: ui };
       }
       const copy = new URLSearchParams();
@@ -177,9 +178,7 @@ ${body}`;
         }
         return accum;
       }, tracers);
-      console.log("before request", r);
       requests[r.requestId] = { body: r.requestBody || "", tracers: tracersn };
-      console.log("state", r.requestId, requests);
     },
     { urls: ["<all_urls>"] },
     ["requestBody"]
