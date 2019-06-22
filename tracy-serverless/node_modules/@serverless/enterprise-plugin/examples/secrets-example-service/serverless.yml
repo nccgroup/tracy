@@ -1,0 +1,16 @@
+service: secrets-example-service
+
+tenant: mytenant # REPLACE with your tenant name
+app: my-app # REPLACE with your app name
+
+plugins:
+  - '@serverless/enterprise-plugin'
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  credentials: ${secrets:my-secret} # REPLACE my-secret with the name you chose
+
+functions:
+  hello:
+    handler: handler.hello

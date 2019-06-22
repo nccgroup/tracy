@@ -1,0 +1,20 @@
+import { ScheduledEvent, S3Event, KinesisStreamEvent, DynamoDBStreamEvent, SQSEvent, SNSEvent, CloudWatchLogsEvent } from "aws-lambda";
+import { AlexaSmartHomeEvent, AlexaSkillEvent, CloudWatchEvent } from "aws-lambda";
+declare const dictionary: {
+    "aws:sns": SNSEvent;
+    "aws:sqs": SQSEvent;
+    "aws:apiGateway": import("aws-lambda").APIGatewayProxyEvent;
+    "aws:scheduled": ScheduledEvent;
+    "aws:s3": S3Event;
+    "aws:kinesis": KinesisStreamEvent;
+    "aws:dynamo": DynamoDBStreamEvent;
+    "aws:cloudWatchLog": CloudWatchLogsEvent;
+    "aws:alexaSmartHome": AlexaSmartHomeEvent;
+    "aws:alexaSkill": AlexaSkillEvent;
+    "aws:cloudWatch": CloudWatchEvent;
+    "aws:iot": any;
+    "aws:cognitoUserPool": import("aws-lambda").CognitoUserPoolTriggerEvent;
+    "aws:websocket": import("aws-lambda").APIGatewayProxyEvent;
+};
+export default function createEvent<T extends keyof typeof dictionary, B>(eventType: T, body: typeof dictionary[T]): typeof dictionary[T];
+export {};

@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../src/safeguards/index.js"],"names":["default"],"mappings":";;;;;;;;;;;kDAASA,O","file":"index.js","sourcesContent":["export { default as getSafeguards } from './getSafeguards'\n"]}

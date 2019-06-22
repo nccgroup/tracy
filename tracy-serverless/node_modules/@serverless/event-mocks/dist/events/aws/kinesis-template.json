@@ -1,0 +1,20 @@
+{
+    "Records": [
+        {
+            "eventSource": "aws:kinesis",
+            "eventVersion": "1.0",
+            "eventID": "shardId-000000000000:49574408222142592692164662027912822768781511344925966338",
+            "eventName": "aws:kinesis:record",
+            "invokeIdentityArn": "arn:aws:iam::999999999999:role/lambda_kinesis",
+            "awsRegion": "ap-northeast-1",
+            "eventSourceARN": "arn:aws:kinesis:ap-northeast-1:999999999999:stream/test",
+            "kinesis": {
+                "kinesisSchemaVersion": "1.0",
+                "partitionKey": "pk_7319",
+                "sequenceNumber": "49574408222142592692164662027912822768781511344925966338",
+                "data": "eyJldmVudF90eXBlIjoiZGFzaGJvYXJkX2V2ZW50cyIsImV2ZW50X3ZlcnNpb24iOjEsImV2ZW50X3RpbWVzdGFtcCI6MTQ5OTY3MjI0MjU0MCwiZXZlbnRfaWQiOiI5Yzc3NGFjMC02NTQyLTExZTctODg4OC1mNTQ4Y2Y2Mzg0NDMiLCJwYXlsb2FkIjp7InZpcnR1YWxfaWQiOjE5NzU1LCJib3hfaWQiOiJJTlRFLUVEOTYtRUQzNC05RjQyLTJDNkEiLCJ0eXBlIjo3LCJtZW1iZXJfaWQiOiIxNDk1MTkyMDkxOTcxIiwiZGV2aWNlX2lkIjoiMTQ6ZGQ6YTk6N2M6ZWE6YzQiLCJjYXRfaWQiOiIzIiwiY29udGVudCI6ODUyMjE1LCJjcmVhdGVkIjoxNDk5NjcyMjM4MDAwLCJzZWN1cml0eUxvZyI6W3siYXBwaWQiOjg1MjIxNSwibWFjIjoiMTQ6ZGQ6YTk6N2M6ZWE6YzQiLCJ0aW1lIjoxNDk5NjcyMjM4LCJuYW1lIjp7ImphX0pQIjoiVGFvYmFvIiwiZW5fVVMiOiJUYW9iYW8ifSwidXJsIjoiIiwiaWNvbiI6IiIsImNhdE5hbWUiOnsiamFfSlAiOiLjgrfjg6fjg4Pjg5Tjg7PjgrAv5bqD5ZGKIiwiZW5fVVMiOiJTaG9wcGluZyBvciBBZHZlcnRpc2VtZW50In0sImNhdF9pZCI6IjMifV19fQ==",
+                "approximateArrivalTimestamp": 1499672242.6
+            }
+        }
+    ]
+}

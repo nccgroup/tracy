@@ -1,0 +1,27 @@
+{
+  "name": "service",
+  "version": "1.0.0",
+  "description": "A project template to get started with Serverless Enterprise",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/serverless/enterprise-template.git"
+  },
+  "keywords": [
+    "serverless",
+    "enterprise"
+  ],
+  "author": "Serverless, Inc <service@serverless.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/serverless/enterprise-template/issues"
+  },
+  "homepage": "https://github.com/serverless/enterprise-template#readme",
+  "devDependencies": {
+    "serverless": "latest",
+    "@serverless/enterprise-plugin": "next"
+  }
+}

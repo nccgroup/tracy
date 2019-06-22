@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../src/logs/index.js"],"names":["default"],"mappings":";;;;;;;;;;;sDAASA,O;;;;;;;;;sDACAA,O","file":"index.js","sourcesContent":["export { default as getLogDestination } from './createDestination'\nexport { default as removeLogDestination } from './removeDestination'\n"]}

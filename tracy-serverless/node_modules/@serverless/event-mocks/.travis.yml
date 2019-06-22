@@ -1,0 +1,23 @@
+language: node_js
+matrix:
+  include:
+  - node_js: 6
+  - node_js: 8
+  - node_js: '10.15'
+install:
+- npm install
+script:
+- npm run lint
+- npm run test
+- npm run build
+deploy:
+  - provider: npm
+    email: services@serverless.com
+    skip_cleanup: true
+    tag: latest
+    on:
+      node: 10.15
+      tags: true
+      repo: serverless/event-mocks
+    api_key:
+      secure: "taCa56B/6O1glO83f5G1h6QyfAfLiyYmfbKOtqkVG90QqJEugupQ9RRK/uDgNMKhDhXx9zFYPoj8GK1WPQ+bNn0PEPflRgmgsJBjqLlqUTzVk+0HPPQz9I09IoS0CmQJyo54g8Twl/sEp4N2mObrvBwj03QMrJDmFup6FI9vi7inxhMTnBNMAxIm6f4VfrV1olBeyNhiXbTpTp3WINUcikospxTiGPZot+gOOpEJyXqr0M+b7tiqsYKsyUYz08gjSaYIjGpdZnWvLj+siQYNKlywogY/VEu7W9k5NRVMbfp9edaDEZ4Rk7h/20/Mv5AScIbCX/eKbbCvi8VVyqpNoGyPuOPd1MXZ7NoweZsypYi0KVHyV2aTF63SbUE5gSGYCojYRA2kUMRWj1DJzrY21UEOCw0PrL8xmsAPYBD25GDC5Fdc9idSUsC61S5WP/j6m7lggpmgQbne8nfe2qeAKwH7fOWydcvqmRnozSzzo5zTT07B0qb79LzbuCXA0baMkCpFFqtRwgXBxk7lRHA9G84XDwRjfzRg54mhCgML6EgagIYfSH/3VW6w8jJs09kP0tbHiqmPLjDIxaPiaf4hjj4zSMmGeSYV8OZOvukET31kGdieYK262Qh5DRWT0xC/56Okadl4q4mUVWFKapqfmmLtUjqmbg+gow8VUuSvWDE="

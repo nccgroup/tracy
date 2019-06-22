@@ -1,0 +1,17 @@
+{
+    "version": 2,
+    "triggerSource": "string",
+    "region": "us-east-1",
+    "userPoolId": "abcd123",
+    "userName": "myNameIsAJ",
+    "callerContext": {
+        "awsSdkVersion": "1",
+        "clientId": "abc1234"
+    },
+    "request": {
+        "userAttributes": {
+            "someAttr": "someValue"
+        }
+    },
+    "response": {}
+}
