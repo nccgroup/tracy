@@ -19,7 +19,12 @@ export const START_REPRODUCTION = "START_REPRODUCTION";
 export const CHANGE_TAB = "CHANGE_TAB";
 export const ADD_API_KEY = "ADD_API_KEY";
 export const SELECT_REQUEST = "SELECT_REQUEST";
+export const CHANGE_SETTING = "CHANGE_SETTING";
 
+export const changeSetting = setting => ({
+  type: CHANGE_SETTING,
+  setting: setting
+});
 export const selectRequest = id => ({ type: SELECT_REQUEST, id: id });
 export const addAPIKey = apiKey => ({ type: ADD_API_KEY, apiKey: apiKey });
 export const changeTab = tabID => ({ type: CHANGE_TAB, tabID: tabID });

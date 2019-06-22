@@ -1,8 +1,6 @@
+/* global chrome */
 import * as actions from "../actions";
 import * as utils from "../utils";
-
-// for testing purposes
-const chrome = chrome ? chrome : null;
 
 const init = {
   proj: {},
@@ -18,14 +16,10 @@ const init = {
   inactiveTracersFilter: false,
   textFilter: false,
   tabID: "-1",
-  tracyHost: window.tracy ? window.tracy.host : "127.0.0.1",
-  tracyPort: window.tracy ? window.tracy.port : 7777,
-  settingsPage: chrome
-    ? chrome.runtime.getURL("tracy/html/options.html")
-    : "moz-extension://d50300d6-6f58-4e05-aedc-83a28859d5b0/tracy/html/options.html",
-  apiKey: window.tracy
-    ? window.tracy.apiKey
-    : "12af65d4-4a3c-4cce-abe4-115d089e75f3"
+  tracyHost: "127.0.0.1",
+  tracyPort: 7777,
+  settingsPage: chrome.runtime.getURL("tracy/html/options.html"),
+  apiKey: "12af65d4-4a3c-4cce-abe4-115d089e75f3"
 };
 
 // addOrEditTracer appends a new tracer if it doesn't already exist
@@ -51,6 +45,16 @@ const addOrEditTracer = (state, action) => {
 
 const rootReducer = (state = init, action) => {
   switch (action.type) {
+    case actions.CHANGE_SETTING:
+      switch (action.setting) {
+        case "rest-host":
+          return Object.assign({}, state, { tracyHost: action.setting });
+        case "rest-port":
+          return Object.assign({}, state, { tracyPort: action.setting });
+        case "api-key":
+          return Object.assign({}, state, { apiKey: action.setting });
+      }
+      return state;
     case actions.SELECT_PROJ:
       // When a new project is selected, clear the app.
       return Object.assign({}, state, {

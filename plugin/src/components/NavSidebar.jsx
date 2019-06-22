@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import TracyLogo from "../components/TracyLogo";
 import WebSocketRouter from "../containers/WebSocketRouter";
-import FontAwesomeIcon from "@fortawesome/react-fontawesome";
+import Settings from "../containers/Settings";
 export default class NavSidebar extends Component {
   render = () => (
     <div className="nav-sidebar">
@@ -9,13 +9,7 @@ export default class NavSidebar extends Component {
         <TracyLogo />
       </div>
       <div className="lower-nav">
-        <div
-          title="settings"
-          className="settings clickable"
-          onClick={() => window.open(this.props.settingsPage)}
-        >
-          <FontAwesomeIcon icon="cog" />
-        </div>
+        <Settings />
         <WebSocketRouter />
       </div>
     </div>

@@ -1,4 +1,12 @@
 const settings = (() => {
+  // Stolen from : https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+  const generateUUID = () =>
+    ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+      (
+        c ^
+        (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+      ).toString(16)
+    );
   // refresheConfig makes an API request for the latest config from `/config`,
   // pulls configuration from the extension settings page and gets a current
   // list of tracers. refreshConfig is usually called on page load.
@@ -6,7 +14,7 @@ const settings = (() => {
     if (disabled) return;
     const s = await new Promise(r =>
       chrome.storage.local.get(
-        { restHost: "127.0.0.1", restPort: 7777, apiKey: "" },
+        { restHost: "127.0.0.1", restPort: 7777, apiKey: generateUUID() },
         res => r(res)
       )
     );
@@ -123,6 +131,7 @@ const settings = (() => {
     getServer: () => restServer,
     getTracerStrings: () => tracerStringTypes,
     getTracerPayloads: getTracerPayloads,
+    getAPIKey: () => apiKey,
     setTracerPayloads: tp => (tracerPayloads = tp),
     isDisabled: () => disabled,
     setDisabled: b => (disabled = b),

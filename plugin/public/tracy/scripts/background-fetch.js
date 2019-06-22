@@ -2,9 +2,7 @@ const background = (() => {
   // fetchNoCallback just makes a fetch with all the default options
   // to the API.
   const fetchNoCallback = async o => {
-    const apiKey = await new Promise(r =>
-      chrome.storage.local.get({ apiKey: "" }, resp => r(resp.apiKey))
-    );
+    const apiKey = settings.getAPIKey();
     let opts = {
       method: o.method,
       headers: { Hoot: apiKey },
