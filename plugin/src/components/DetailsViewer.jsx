@@ -4,7 +4,10 @@ import Outputs from "../containers/Outputs";
 export default class DetailsViewer extends Component {
   render = () => {
     return (
-      <div className="details">
+      <div
+        style={this.props.hidden ? { display: "none" } : {}}
+        className="details"
+      >
         <Inputs />
         <Outputs />
       </div>

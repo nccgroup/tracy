@@ -14,7 +14,7 @@ export default class TracerTable extends Component {
     }
 
     return (
-      <div className="table-container table-container-tracers">
+      <div className="table-contPainer table-container-tracers">
         <span className="filler" />
 
         <ReactTable

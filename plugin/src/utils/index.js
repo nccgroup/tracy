@@ -8,17 +8,15 @@ export const sleep = ms => {
 // newTracyRequest generates a request object that should be used with
 // the tracy API.
 export const newTracyRequest = async (path, opts) => {
-  while (true) {
-    const state = store.getState();
-    if (!opts.headers) {
-      opts.headers = {};
-    }
-    opts.headers.Hoot = state.apiKey;
-    return new Request(
-      `http://${state.tracyHost}:${state.tracyPort}/api/tracy${path}`,
-      opts
-    );
+  const state = store.getState();
+  if (!opts.headers) {
+    opts.headers = {};
   }
+  opts.headers.Hoot = state.apiKey;
+  return new Request(
+    `http://${state.tracyHost}:${state.tracyPort}/api/tracy${path}`,
+    opts
+  );
 };
 
 // reproduce sends the API request to trigger a reproduction.

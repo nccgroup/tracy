@@ -1,5 +1,5 @@
 export const SELECT_PROJ = "SELECT_PROJ";
-export const UPDATE_PROJECTS = "UPDATE_PROJECT";
+export const UPDATE_PROJECTS = "UPDATE_PROJECTS";
 export const DEL_PROJECT = "DEL_PROJECT";
 export const SELECT_TRACER = "SELECT_TRACER";
 export const ADD_TRACER = "ADD_TRACER";
@@ -20,6 +20,27 @@ export const CHANGE_TAB = "CHANGE_TAB";
 export const ADD_API_KEY = "ADD_API_KEY";
 export const SELECT_REQUEST = "SELECT_REQUEST";
 export const CHANGE_SETTING = "CHANGE_SETTING";
+export const NAVIGATE_TO_SETTINGS_PAGE = "NAVIGATE_TO_SETTINGS_PAGE";
+export const NAVIGATE_TO_UI_PAGE = "NAVIGATE_TO_UI_PAGE";
+export const APP_INITIALIZED = "APP_INITIALIZED";
+export const UPDATE_SETTINGS = "UPDATE_SETTINGS";
+
+export const updateSettings = settings => ({
+  type: UPDATE_SETTINGS,
+  settings: settings
+});
+
+export const appInitialized = init => ({
+  type: APP_INITIALIZED,
+  init: init
+});
+export const navigateToUIPage = () => ({
+  type: NAVIGATE_TO_UI_PAGE
+});
+
+export const navigateToSettingsPage = () => ({
+  type: NAVIGATE_TO_SETTINGS_PAGE
+});
 
 export const changeSetting = setting => ({
   type: CHANGE_SETTING,

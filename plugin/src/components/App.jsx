@@ -5,19 +5,34 @@ import TracerEventsTable from "../containers/TracerEventsTable";
 import FilterColumn from "../components/FilterColumn";
 import RequestTable from "../containers/RequestTable";
 import NavSidebar from "../containers/NavSidebar";
+import Options from "../containers/Options";
 import "../styles/App.css";
 
 export default class App extends Component {
-  render = () => (
-    <div className="app">
-      <NavSidebar />
-      <div className="tables">
-        <FilterColumn />
-        <TracerTable />
-        <RequestTable />
-        <TracerEventsTable />
+  render = () => {
+    if (this.props.appInitialized) {
+      return (
+        <div className="app">
+          <NavSidebar />
+          <Options hidden={!this.props.onSettingsPage} />
+          <div
+            style={this.props.onSettingsPage ? { display: "none" } : {}}
+            className="tables"
+          >
+            <FilterColumn />
+            <TracerTable />
+            <RequestTable />
+            <TracerEventsTable />
+          </div>
+          <DetailsViewer hidden={this.props.onSettingsPage} />
+        </div>
+      );
+    }
+
+    return (
+      <div className="app">
+        <span>loading</span>
       </div>
-      <DetailsViewer />
-    </div>
-  );
+    );
+  };
 }

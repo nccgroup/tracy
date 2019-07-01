@@ -3,14 +3,19 @@ import { sleep, newTracyNotification } from "../utils";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
 
 class WebSocketRouter extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      apiKey: ""
-    };
-  }
   componentDidMount = () => {
     this.connectToWebSocket();
+  };
+
+  disconnect = () => {
+    this.ws.onclose = null;
+    this.ws.close();
+    this.ws = null;
+    this.props.webSocketDisconnected();
+  };
+
+  componentWillUnmount = () => {
+    this.disconnect();
   };
 
   connectToWebSocket = () => {
@@ -20,7 +25,6 @@ class WebSocketRouter extends Component {
 
     this.ws.onmessage = msg => {
       const data = JSON.parse(msg.data);
-      console.log("[WEBSOCKET-IN]", data);
       switch (Object.keys(data)[0]) {
         case "Tracer":
           this.props.handleNewTracer(data);
@@ -52,8 +56,7 @@ class WebSocketRouter extends Component {
     };
 
     this.ws.onclose = () => {
-      this.ws = null;
-      this.props.webSocketDisconnected();
+      this.disconnect();
       sleep(1500);
       this.connectToWebSocket();
     };
@@ -64,15 +67,14 @@ class WebSocketRouter extends Component {
   check = <FontAwesomeIcon className="check" icon="check" />;
 
   render = () => {
-    if (this.props.isOpen && this.ws !== null && this.state.apiKey) {
+    if (this.props.isOpen && this.ws && this.props.apiKey) {
       // If we have a websocket connection, send a subscription notice
       // which channel we want to receive events for.
-      console.log("[WEBSOCKET-OUT]", JSON.stringify([this.state.apiKey]));
-      this.ws.send(JSON.stringify([this.state.apiKey]));
+      console.log("[WEBSOCKET-OUT]", JSON.stringify([this.props.apiKey]));
+      this.ws.send(JSON.stringify([this.props.apiKey]));
       return <div title="websocket connected">{this.check}</div>;
     }
 
-    //    chrome.storage.get;
     return (
       <div title="websocketed disconnected. retrying...">{this.spinner}</div>
     );

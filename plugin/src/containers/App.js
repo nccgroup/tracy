@@ -1,4 +1,9 @@
 import { connect } from "react-redux";
 import App from "../components/App";
 
-export default connect()(App);
+const mapStateToProps = state => ({
+  appInitialized: state.appInitialized,
+  onSettingsPage: state.onSettingsPage
+});
+
+export default connect(mapStateToProps)(App);

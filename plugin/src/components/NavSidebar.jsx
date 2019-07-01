@@ -10,7 +10,7 @@ export default class NavSidebar extends Component {
       </div>
       <div className="lower-nav">
         <Settings />
-        <WebSocketRouter />
+        {!this.props.tracyLocal ? <WebSocketRouter /> : ""}
       </div>
     </div>
   );

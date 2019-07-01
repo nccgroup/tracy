@@ -29,10 +29,13 @@
     }
   };
 
+  const UI = chrome.runtime.getURL("/index.html");
+  const openUI = () => chrome.tabs.create({ url: UI });
+
   paintIcon(settings.isDisabled());
   chrome.browserAction.onClicked.addListener(tab => {
-    console.log("hello", tab, settings.isDisabled());
-    settings.setDisabled(!settings.isDisabled());
-    paintIcon(settings.isDisabled());
+    openUI();
+    // settings.setDisabled(!settings.isDisabled());
+    //    paintIcon(settings.isDisabled());
   });
 })();
