@@ -1,4 +1,4 @@
-import { store } from "../index";
+/* global chrome */
 
 // sleep returns a promise that is resolved after the provided number of ms.
 export const sleep = ms => {
@@ -8,67 +8,74 @@ export const sleep = ms => {
 // newTracyRequest generates a request object that should be used with
 // the tracy API.
 export const newTracyRequest = async (path, opts) => {
-  const state = store.getState();
   if (!opts.headers) {
     opts.headers = {};
   }
-  opts.headers.Hoot = state.apiKey;
-  return new Request(
-    `http://${state.tracyHost}:${state.tracyPort}/api/tracy${path}`,
-    opts
+
+  const { apiKey, tracyHost, tracyPort } = await new Promise(r =>
+    chrome.storage.local.get(
+      {
+        apiKey: "",
+        tracyHost: "",
+        tracyPort: ""
+      },
+      res => r(res)
+    )
   );
+  opts.Headers.Hoot = apiKey;
+  return new Request(`http://${tracyHost}:${tracyPort}/api/tracy${path}`, opts);
 };
 
-// reproduce sends the API request to trigger a reproduction.
-export const reproduce = async (tracerID, contextID) => {
-  return await retryRequest(
-    newTracyRequest(`/tracers/${tracerID}/events/${contextID}/reproductions`, {
-      method: "POST"
-    })
+// getTracerEvents returns all the tracer events for a given tracer.
+export const getTracerEvents = async tracerPayload => {
+  const { tracyLocal } = await new Promise(r =>
+    chrome.storage.local.get({ tracyLocal: true }, res => r(res))
   );
-};
 
-// getTracerEvents gets the bulk events via an HTTP GET request.
-export const getTracerEvents = async tracerID => {
+  // If the user has selected they want to use the local version
+  // query the local database. Otherwise, make an API request.
+  if (tracyLocal) {
+    return await new Promise(r =>
+      chrome.runtime.sendMessage(
+        {
+          "message-type": "database",
+          query: "getTracerEventsByPayload",
+          tracerPayload: tracerPayload
+        },
+        res => r(res)
+      )
+    );
+  }
+
   return await retryRequest(
-    newTracyRequest(`/tracers/${tracerID}/events`, {
+    newTracyRequest(`/tracers/${tracerPayload}/events`, {
       method: "GET"
     })
   );
 };
 
-// getTracers gets the bulk tracers via an HTTP GET request.
+// getTracers returns all the tracers.
 export const getTracers = async () => {
+  const { tracyLocal } = await new Promise(r =>
+    chrome.storage.local.get({ tracyLocal: true }, res => r(res))
+  );
+
+  // If the user has selected they want to use the local version
+  // query the local database. Otherwise, make an API request.
+  if (tracyLocal) {
+    return await new Promise(r =>
+      chrome.runtime.sendMessage(
+        {
+          "message-type": "database",
+          query: "getAllTracers"
+        },
+        res => r(res)
+      )
+    );
+  }
   return await retryRequest(
     newTracyRequest(`/tracers`, {
       method: "GET"
-    })
-  );
-};
-
-// getProjects gets the projects available to view.
-export const getProjects = async () => {
-  return await retryRequest(
-    newTracyRequest(`/projects`, {
-      method: "GET"
-    })
-  );
-};
-
-// delProject issues an API request to delete a project from disk.
-export const delProject = async proj => {
-  return await retryRequest(
-    newTracyRequest(`/projects?proj=${proj}`, {
-      method: "DELETE"
-    })
-  );
-};
-
-// switchProject makes the API request to switch projects.
-export const switchProject = async proj => {
-  return await retryRequest(
-    this.newTracyRequest(`/projects?proj=${proj}`, {
-      method: "PUT"
     })
   );
 };
@@ -203,7 +210,7 @@ const severity = {
   3: "exploitable"
 };
 
-export const formatRowSeverity = (row, rowIdx) => {
+export const formatRowSeverity = row => {
   return severity[row.OverallSeverity];
 };
 
@@ -248,9 +255,6 @@ export const isInLocalStorage = (key, ID) => {
     return false;
   }
 };
-
-export const getSavedProject = () => localStorage.getItem("project");
-export const saveProject = proj => localStorage.setItem("project", proj);
 
 // newTracyNotification checks the browser supports notifications,
 // then either asks permission for notifications, or displays the

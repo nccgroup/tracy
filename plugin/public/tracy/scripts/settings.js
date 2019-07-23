@@ -21,7 +21,7 @@ const settings = (() => {
 
     restServer = s.restHost + ":" + s.restPort;
     apiKey = s.apiKey;
-    const { json, err } = await background.fetch({
+    /*    const { json, err } = await background.fetch({
       method: "GET",
       route: "/api/tracy/tracers"
     });
@@ -29,7 +29,7 @@ const settings = (() => {
       console.error(err);
       return;
     }
-    tracerPayloads = json.map(r => r.TracerPayload).filter(t => t !== "");
+    tracerPayloads = json.map(r => r.TracerPayload).filter(t => t !== "");*/
   };
 
   // configQuery returns the appropriate configuration information
@@ -54,7 +54,7 @@ const settings = (() => {
   };
 
   // getTracerPaylods returns the current collected payloads. Sometimes, we
-  //  want to wait for some events to come in that would add a tracer that
+  // want to wait for some events to come in that would add a tracer that
   // we can't block the browser from, so this function takes an optional delay
   // option in miliseconds before resolving the promise.
   const promiseMap = {};
@@ -118,21 +118,28 @@ const settings = (() => {
 
   let tracerPayloads = [];
   let disabled = false;
-  let apiKey = "";
+  const getAPIKey = async () =>
+    await new Promise(r =>
+      chrome.storage.local.get({ apiKey: generateUUID() }, res => {
+        chrome.storage.local.set({ apiKey: res.apiKey });
+        r(res.apiKey);
+      })
+    );
+
   // Update the configuration on every page load.
-  chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
+  /*  chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
     if (changeInfo.status === "complete") {
       refreshConfig();
     }
   });
-  refreshConfig();
+  refreshConfig();*/
 
   return {
     getServer: () => restServer,
     getTracerStrings: () => tracerStringTypes,
-    getTracerPayloads: getTracerPayloads,
-    getAPIKey: () => apiKey,
-    setTracerPayloads: tp => (tracerPayloads = tp),
+    //    getTracerPayloads: getTracerPayloads,
+    getAPIKey: getAPIKey,
+    //setTracerPayloads: tp => (tracerPayloads = tp),
     isDisabled: () => disabled,
     setDisabled: b => (disabled = b),
     query: query

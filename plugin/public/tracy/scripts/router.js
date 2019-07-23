@@ -15,12 +15,39 @@
         case "screenshot":
           screenshot.take(message, sender, sendResponse);
           return true;
+        case "database":
+          let dbprom;
+          switch (message["query"]) {
+            case "getTracers":
+              dbprom = database.getTracers();
+              break;
+            case "getTracerByPayload":
+              dbprom = database.getTracersByPayload(message["tracerPayload"]);
+              break;
+            case "getTracerEventsByPayload":
+              dbprom = database.getTracerEventsByPayload(
+                message["tracerPayload"]
+              );
+              break;
+            case "addTracer":
+              dbprom = database.addTracer(message["tracer"]);
+              break;
+            case "addRequestToTracer":
+              dbprom = database.addRequestToTracer(
+                message["request"],
+                message["tracerPayload"]
+              );
+              break;
+            case "addEvent":
+              dbprom = database.addEvent(message["event"]);
+              break;
+            default:
+              break;
+          }
+          dbprom.then(t => sendResponse(t));
+          return true;
       }
-    } /*else if (message.r) {
-      // Changed the format of the message so we
-      // wouldn't have such a long XSS payload.
-      reproductions.updateReproduction(message, sender);
-    }*/
+    }
   };
 
   // Any time the page sends a message to the extension, the above handler should

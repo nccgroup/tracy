@@ -158,13 +158,13 @@ const highlight = (() => {
   // take a screenshot of the surrounding area and attack that to the tracer.
   async function fillGenPayload(elem, tracerString) {
     const r = replace.str(tracerString);
+    const tracer = r.tracers.pop();
     simulateInputType(elem, elem.value + r.str);
-    r.tracers[0].Screenshot = await captureScreenshot(elem);
+    tracer.Screenshot = await captureScreenshot(elem);
     util.send({
-      "message-type": "background-fetch",
-      route: "/api/tracy/tracers/requests",
-      method: "POST",
-      body: JSON.stringify(r.tracers[0])
+      "message-type": "database",
+      query: "addTracer",
+      tracer: tracer
     });
   }
 

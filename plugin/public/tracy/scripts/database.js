@@ -20,24 +20,40 @@ const database = (() => {
     });
   };
 
-  const version = 1;
+  const version = 2;
   const join = "TracerPayload";
   const tracersTable = "tracers";
   const eventsTable = "events";
+  const uuid = "UUID";
   let tracersDB;
   let eventsDB;
 
-  const getAllTracers = async () =>
-    await new Promise((res, rej) => {
+  // getTracers returns all the tracer objects filtered by the current project ID
+  const getTracers = async () => {
+    const key = await settings.getAPIKey();
+    return await new Promise((res, rej) => {
       const req = tracersDB
         .transaction(tracersTable)
         .objectStore(tracersTable)
-        .getAll();
+        .index(uuid)
+        .openCursor(IDBKeyRange.only(key));
 
-      req.onsuccess = e => res(e.target.result);
+      const tracers = [];
+
+      req.onsuccess = e => {
+        const cursor = e.target.result;
+        if (cursor) {
+          tracers.push(cursor.value);
+          cursor.continue();
+        } else {
+          res(tracers);
+        }
+      };
       req.onerror = e => rej(e);
     });
-
+  };
+  // getTracerByPayload returns a tracer that is keyed with the given tracer payload.
+  // Since tracer payloads are unique, we shouldn't need to use the UUID index.
   const getTracerByPayload = async tracerPayload =>
     await new Promise((res, rej) => {
       const req = tracersDB
@@ -49,6 +65,8 @@ const database = (() => {
       req.onerror = e => rej(e);
     });
 
+  // getTracerEventsByPayload returns all the tracer events associated with a
+  // tracer payload.
   const getTracerEventsByPayload = async tracerPayload =>
     await new Promise((res, rej) => {
       const req = eventsDB
@@ -61,17 +79,22 @@ const database = (() => {
       req.onerror = e => rej(e);
     });
 
-  const addTracer = async tracer =>
-    await new Promise((res, rej) => {
+  // addTracer adds a tracer to the database.
+  const addTracer = async tracer => {
+    // Add the API key to the tracer object so we know what project is belongs to.
+    tracer[uuid] = await settings.getAPIKey();
+    return await new Promise((res, rej) => {
       const req = tracersDB
         .transaction(tracersTable, "readwrite")
         .objectStore(tracersTable)
-        .add(tracer);
+        .put(tracer);
 
       req.onsuccess = e => res(e.target.result);
       req.onerror = e => rej(e);
     });
+  };
 
+  // addRequestToTracer adds a request to a tracer object already in the database.
   const addRequestToTracer = async (request, tracerPayload) =>
     await new Promise((res, rej) => {
       const store = tracersDB
@@ -87,66 +110,47 @@ const database = (() => {
       req.onerror = e => rej(e);
     });
 
-  const addEventToTracer = async event =>
+  // addEvent adds a single event to the database.
+  const addEvent = async event =>
     await new Promise((res, rej) => {
       const req = eventsDB
         .transaction(eventsTable, "readwrite")
         .objectStore(eventsTable)
-        .add(event);
+        .put(event);
 
       req.onsuccess = e => res(e.target.result);
       req.onerror = e => rej(e);
-    });
-  const addEventsToTracer = async events =>
-    await new Promise((res, rej) => {
-      const store = tracersDB
-        .transaction(tracersTable, "readwrite")
-        .objectStore(tracersTable);
-
-      // Wait for all the writes to finish
-      Promise.all(
-        events.map(e => {
-          return new Promise((done, err) => {
-            const req = store.add(e);
-            req.onsuccess = e => done(e);
-            req.onerror = e => err(e);
-          });
-        })
-      )
-        .then(e => res(e))
-        .catch(e => rej(e));
     });
 
   (async () => {
     try {
       tracersDB = await openDB(tracersTable, version, async db => {
-        return await createStore(db, tracersTable, { keyPath: join });
+        return await createStore(db, tracersTable, { keyPath: join }, store => {
+          store.createIndex(uuid, uuid, { unique: false });
+        });
       });
-      console.log(tracersDB);
       eventsDB = await openDB(eventsTable, version, async db => {
         return await createStore(
           db,
           eventsTable,
-          { autoIncrement: true },
+          { keyPath: ["RawEvent", "TracerPayload"] },
           store => {
             // Index on events' tracer payload so we can group these store together.
             store.createIndex(join, join, { unique: false });
           }
         );
       });
-      console.log(eventsDB);
     } catch (e) {
       console.error(e);
     }
   })();
 
   return {
-    getAllTracers: getAllTracers,
+    getTracers: getTracers,
     getTracerByPayload: getTracerByPayload,
     getTracerEventsByPayload: getTracerEventsByPayload,
     addTracer: addTracer,
     addRequestToTracer: addRequestToTracer,
-    addEventToTracer: addEventToTracer,
-    addEventsToTracer: addEventsToTracer
+    addEvent: addEvent
   };
 })();

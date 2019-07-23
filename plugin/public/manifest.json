@@ -21,7 +21,8 @@
       "tracy/scripts/screenshot.js",
       "tracy/scripts/background-fetch.js",
       "tracy/scripts/jobs.js",
-      "tracy/scripts/ui.js"
+      "tracy/scripts/ui.js",
+      "tracy/scripts/database.js"
     ]
   },
   "content_scripts": [

@@ -4,7 +4,6 @@
     r => {
       const url = new URL(r.url);
       if (url.hostname === "tracy") {
-        console.log("here2", ui);
         return { redirectUrl: ui };
       }
       const copy = new URLSearchParams();
@@ -33,28 +32,8 @@
         url.search = copy.toString();
         const newURL = url.toString();
 
-        // These are only handling link clicks, so there shouldn't be any body
-        /*        async () => {
-                   const { err } = await background.fetch(
-                   {
-                   route: "/api/tracy/tracers",
-                   method: "POST",
-                   body: JSON.stringify({
-                   RawRequest: `${r.method} ${url.pathname}${url.search}  HTTP/1.1
-                   Host: ${url.host}`,
-                   RequestURL: newURL,
-                   RequestMethod: r.method,
-                   Tracers: tracers
-                   })
-                   },
-                   null,
-                   () => {}
-                   );
-                   if (err) console.error(err);
-                   };*/
-
         // I would like to know when this is happening.
-        console.error("[REDIRECTING]", r.url, newURL);
+        console.log("[REDIRECTING]", r.url, newURL);
         return { redirectUrl: newURL };
       }
     },
@@ -126,23 +105,17 @@ ${h.name}: ${h.value}`,
                       
 ${body}`;
 
-        tracers.map(async t => {
-          // Add a request for each of the tracers found in it.
-          const { err } = await background.fetch(
+        // Add a request for each of the tracers found in it.
+        tracers.map(t =>
+          database.addRequestToTracer(
             {
-              route: `/api/tracy/tracers/${t}/request`,
-              method: "POST",
-              body: JSON.stringify({
-                RawRequest: rr,
-                RequestURL: url.toString(),
-                RequestMethod: r.method
-              })
+              RawRequest: rr,
+              RequestURL: url.toString(),
+              RequestMethod: r.method
             },
-            null,
-            () => {}
-          );
-          if (err) console.error(err);
-        });
+            t
+          )
+        );
       })();
     },
     { urls: ["<all_urls>"] },

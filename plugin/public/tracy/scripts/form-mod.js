@@ -11,10 +11,10 @@ const form = (() => {
         // be the last to execute. I don't think there would ever be a way for another event
         // handler to change this state while this handler was executing.
         if (evt.target.defaultPrevented) return;
-        let tracersa = [];
+
         const formID = evt.target.ID;
         // First, get all input elements under the form.
-        const params = [...evt.target.getElementsByTagName("input")]
+        const tracersa = [...evt.target.getElementsByTagName("input")]
           .concat(
             // Textareas are also considered input to forms.
             [...evt.target.getElementsByTagName("textarea")]
@@ -36,22 +36,20 @@ const form = (() => {
             const b = replace.str(t.value);
             if (b.tracers.length > 0) {
               t.value = b.str;
-              tracersa = tracersa.concat(b.tracers);
+              return b.tracers;
             }
-            return t;
-          });
+            return [];
+          })
+          .flat();
 
         // If any tracers were added to this form, send API request to log them.
-        if (tracersa.length > 0) {
-          tracersa.map(t =>
-            util.send({
-              "message-type": "background-fetch",
-              route: "/api/tracy/tracers/requests",
-              method: "POST",
-              body: JSON.stringify(t)
-            })
-          );
-        }
+        tracersa.map(t =>
+          util.send({
+            "message-type": "database",
+            query: "addTracer",
+            tracer: t
+          })
+        );
       });
     };
 

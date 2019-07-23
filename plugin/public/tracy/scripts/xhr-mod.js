@@ -10,10 +10,9 @@
     tr.map(
       t =>
         window.postMessage({
-          "message-type": "background-fetch",
-          route: "/api/tracy/tracers/requests",
-          method: "POST",
-          body: JSON.stringify(t)
+          "message-type": "database",
+          query: "addTracer",
+          tracer: t
         }),
       "*"
     );
