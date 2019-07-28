@@ -32,6 +32,14 @@
         url.search = copy.toString();
         const newURL = url.toString();
 
+        // If any tracers were created, add them to the database.
+        tracers.map(t => {
+          t.Requests = [];
+          t.OverallSeverity = 0;
+          t.HasTracerEvents = false;
+          database.addTracer(t);
+        });
+
         // I would like to know when this is happening.
         console.log("[REDIRECTING]", r.url, newURL);
         return { redirectUrl: newURL };
@@ -54,73 +62,109 @@
   // parameters and body.
   chrome.webRequest.onBeforeSendHeaders.addListener(
     async r => {
-      // Don't worry about requests to the API.
-      const url = new URL(r.url);
-      if (url.pathname.startsWith("/api/tracy/")) return;
-      const payloads = await settings.getTracerPayloads(2000);
-      // Grab the object created by the onBeforeRequest event handler for this request.
-      // It should always be there.
-      const p = requests[r.requestId];
-      if (!p) {
-        console.error(
-          "[SHOULDN'T HAPPEN] no request with requestId",
-          r,
-          requests
-        );
+      let t = [];
+      try {
+        // Need to wait a period of time so we get all the tracers after
+        // they have been collected from the various handlers. This includes
+        // the request capture function above and all the *-mod javascript files.
+        // If informal testing, without a delay, we'd miss some tracers due to timing
+        // issues.
+        t = await database.getTracersDelayed(2000);
+      } catch (e) {
+        console.error(e);
         return;
       }
 
-      (async () => {
-        const headers = r.requestHeaders.reduce(
-          (accum, h) => `${accum}
+      const payloads = t.map(t => t.TracerPayload);
+      // Grab the object created by the onBeforeRequest event handler for this request.
+      // It should always be there.
+      let p = requests[r.requestId];
+      if (!p) {
+        p = await new Promise(res => {
+          request[r.requestId] = res;
+        });
+      }
+
+      const headers = r.requestHeaders.reduce(
+        (accum, h) => `${accum}
 ${h.name}: ${h.value}`,
-          ""
-        );
+        ""
+      );
 
-        // Resolve the promise to get the data from the previous event handler.
-        let { body, tracers } = p;
+      // Get the data from the previous event handler.
+      let { body, tracers } = p;
 
-        // Search through the headers for tracers.
-        tracers = [
-          ...new Set(
-            payloads
-              .map(payload =>
-                r.requestHeaders
-                  .map(h => {
-                    const nid = h.name.indexOf(payload);
-                    const vid = h.value.indexOf(payload);
+      // Search through the headers for tracers.
+      const allTracers = [
+        ...new Set(
+          payloads
+            .map(p =>
+              r.requestHeaders
+                .map(h => {
+                  const nid = h.name.indexOf(p);
+                  const vid = h.value.indexOf(p);
 
-                    if (nid !== -1 || vid !== -1) {
-                      return payload;
-                    }
-                  })
-                  .filter(t => t)
-              )
-              .flat()
-              .concat(tracers)
-          )
-        ];
-
-        const rr = `${r.method} ${url.pathname}${url.search}  HTTP/1.1${headers}
+                  if (nid !== -1 || vid !== -1) {
+                    return p;
+                  }
+                })
+                .filter(Boolean)
+            )
+            .flat()
+            .concat(tracers)
+        )
+      ];
+      const url = new URL(r.url);
+      const rr = `${r.method} ${url.pathname}${url.search}  HTTP/1.1${headers}
                       
 ${body}`;
 
-        // Add a request for each of the tracers found in it.
-        tracers.map(t =>
-          database.addRequestToTracer(
-            {
-              RawRequest: rr,
-              RequestURL: url.toString(),
-              RequestMethod: r.method
-            },
-            t
-          )
-        );
-      })();
+      // Add a request for each of the tracers found in it.
+      allTracers.map(t =>
+        add({
+          request: {
+            RawRequest: rr.trim(),
+            RequestURL: url.toString(),
+            RequestMethod: r.method
+          },
+          tracer: t
+        })
+      );
     },
     { urls: ["<all_urls>"] },
     ["requestHeaders"]
   );
+
+  const createJobQueue = () => {
+    let jobs = [];
+    const saveAllRequests = () => {
+      // Clone the jobs right away.
+      const work = [...jobs];
+      // Reset our jobs.
+      jobs = [];
+      (async () => {
+        for (r of work) {
+          // Need to wait for each request to finish so that we don't
+          // hit any race conditions.
+          await database.addRequestToTracer(r.request, r.tracer);
+        }
+      })();
+    };
+    chrome.alarms.onAlarm.addListener(alarm => {
+      if (alarm.name !== "saveAllRequests") return;
+      saveAllRequests();
+    });
+    return async job => {
+      if (jobs.length === 0) {
+        chrome.alarms.create("saveAllRequests", {
+          when: Date.now() + 1500
+        });
+      }
+      // Add a job.
+      jobs = [...jobs, job];
+    };
+  };
+  const add = createJobQueue();
 
   // Event handler used to capture all request bodies so that we can search
   // them for tracers we have seen before. Since headers are parsed in a
@@ -129,29 +173,46 @@ ${body}`;
   // doesn't matter that we do this for every request.
   chrome.webRequest.onBeforeRequest.addListener(
     async r => {
-      const url = new URL(r.url);
       let tracers = [];
-
-      // Don't worry about requests to the API.
-      if (url.pathname.startsWith("/api/tracy/")) return;
-
-      const payloads = await settings.getTracerPayloads(2000);
-      const tracersn = payloads.reduce((accum, curr) => {
-        // Search through all the query parameters for tracers.
-        if (r.url.indexOf(curr) !== -1) {
-          accum.push(curr);
-        }
-
-        // Search through the request body for tracers.
-        if (r.requestBody) {
-          bid = r.requestBody.indexOf(curr);
-          if (bid !== -1) {
-            accum.push(curr);
+      try {
+        // Need to wait a period of time so we get all the tracers after
+        // they have been collected from the various handlers. This includes
+        // the request capture function above and all the *-mod javascript files.
+        // If informal testing, without a delay, we'd miss some tracers due to timing
+        // issues.
+        tracers = await database.getTracersDelayed(2000);
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+      const payloads = tracers.map(t => t.TracerPayload);
+      const tracersn = payloads
+        .map(p => {
+          // Search through all the query parameters for tracers.
+          if (r.url.indexOf(p) !== -1) {
+            return p;
           }
-        }
-        return accum;
-      }, tracers);
-      requests[r.requestId] = { body: r.requestBody || "", tracers: tracersn };
+
+          // If there weren't payloads in the query parameters, search
+          // through the request body for tracers.
+          if (r.requestBody) {
+            if (r.requestBody.indexOf(p) !== -1) {
+              return p;
+            }
+          }
+        })
+        .filter(Boolean);
+      const p = requests[r.requestId];
+      const data = { body: r.requestBody || "", tracers: tracersn };
+      // If a promise function already exists there, that means the other
+      // callback executed first and is waiting for this one to finish.
+      // Resolve it's promise function with the data.
+      if (p) {
+        p(data);
+      } else {
+        // If nothing was there, add the data.
+        requests[r.requestId] = data;
+      }
     },
     { urls: ["<all_urls>"] },
     ["requestBody"]

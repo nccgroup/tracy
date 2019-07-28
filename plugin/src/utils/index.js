@@ -67,7 +67,7 @@ export const getTracers = async () => {
       chrome.runtime.sendMessage(
         {
           "message-type": "database",
-          query: "getAllTracers"
+          query: "getTracers"
         },
         res => r(res)
       )
@@ -97,6 +97,11 @@ export const retryRequest = async req => {
     }
   }
 };
+
+// zip combines two sets of arrays together:
+// [[1,2], [3,4]] => [[1,3],[2,4]]
+// https://stackoverflow.com/questions/4856717/javascript-equivalent-of-pythons-zip-function
+export const zip = rows => rows[0].map((_, c) => rows.map(row => row[c]));
 
 // enumerate assigns an object an ID property.
 export const enumerate = (event, id) => {

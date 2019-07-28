@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import ReactTable from "react-table";
-
+import * as utils from "../utils/index";
 export default class RequestTable extends Component {
   render = () => {
     return (
@@ -9,7 +9,7 @@ export default class RequestTable extends Component {
 
         <ReactTable
           className="grow-table"
-          data={this.props.requests}
+          data={this.props.requests.map(utils.enumerate)}
           loading={this.props.loading}
           showPageSizeOptions={false}
           showPageJump={false}

@@ -161,6 +161,10 @@ const highlight = (() => {
     const tracer = r.tracers.pop();
     simulateInputType(elem, elem.value + r.str);
     tracer.Screenshot = await captureScreenshot(elem);
+    // When creating a tracer, make sure the Requests attribute is there.
+    tracer.Requests = [];
+    tracer.OverallSeverity = 0;
+    tracer.HasTracerEvents = false;
     util.send({
       "message-type": "database",
       query: "addTracer",

@@ -1,11 +1,53 @@
+/* global chrome */
 import React, { Component } from "react";
 import ReactTable from "react-table";
 import * as utils from "../utils";
 
 export default class TracerTable extends Component {
+  componentDidMount() {
+    const port = chrome.runtime.connect({ name: "TracerTable" });
+    port.onMessage.addListener(msg => {
+      switch (Object.keys(msg).pop()) {
+        case "addTracer":
+          this.props.addOrUpdateTracer(Object.values(msg).pop(), false);
+          break;
+        case "addRequestToTracer":
+          if (this.props.selectedTracerPayload === "") {
+            return;
+          }
+          const req = Object.values(msg).pop();
+          const tp = req.tracerPayload;
+          let tracer = {
+            ...this.props.tracers.filter(t => t.TracerPayload === tp).pop()
+          };
+          if (tracer.Requests) {
+            tracer.Requests = [...tracer.Requests, req.request];
+          } else {
+            tracer.Requests = [req.request];
+          }
+
+          this.props.addOrUpdateTracer(tracer, false);
+          break;
+        case "updateTracerOverallSeverity":
+          console.log("updaing overallseverity", msg);
+          this.props.addOrUpdateTracer(Object.values(msg).pop().tracer);
+        default:
+          break;
+      }
+    });
+    port.onDisconnect.addListener(() => console.log("disconnected"));
+    this.refresh();
+  }
+
+  refresh = async () => {
+    const tracers = await utils.getTracers();
+    console.log("tracers", tracers);
+    this.props.updateTracers(tracers);
+  };
+
   render() {
     if (this.props.loading) {
-      utils.getTracers().then(req => this.props.updateTracers(req));
+      this.refresh();
     }
 
     let data = this.props.tracers;
@@ -19,7 +61,7 @@ export default class TracerTable extends Component {
 
         <ReactTable
           className="grow-table"
-          data={data}
+          data={data.map(utils.enumerate)}
           loading={this.props.loading}
           showPageSizeOptions={false}
           showPageJump={false}
@@ -55,13 +97,15 @@ export default class TracerTable extends Component {
                   classname = "unexploitable";
               }
 
-              if (rowInfo.row.ID === this.props.selectedTracerID) {
+              if (
+                rowInfo.row.TracerPayload === this.props.selectedTracerPayload
+              ) {
                 classname += " row-selected";
               }
 
               return {
                 onClick: (e, handleOriginal) => {
-                  this.props.selectTracer(rowInfo.row.ID);
+                  this.props.selectTracer(rowInfo.row.TracerPayload);
 
                   if (handleOriginal) {
                     handleOriginal();

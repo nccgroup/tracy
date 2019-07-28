@@ -7,30 +7,6 @@ const settings = (() => {
         (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
       ).toString(16)
     );
-  // refresheConfig makes an API request for the latest config from `/config`,
-  // pulls configuration from the extension settings page and gets a current
-  // list of tracers. refreshConfig is usually called on page load.
-  const refreshConfig = async () => {
-    if (disabled) return;
-    const s = await new Promise(r =>
-      chrome.storage.local.get(
-        { restHost: "127.0.0.1", restPort: 7777, apiKey: generateUUID() },
-        res => r(res)
-      )
-    );
-
-    restServer = s.restHost + ":" + s.restPort;
-    apiKey = s.apiKey;
-    /*    const { json, err } = await background.fetch({
-      method: "GET",
-      route: "/api/tracy/tracers"
-    });
-    if (err) {
-      console.error(err);
-      return;
-    }
-    tracerPayloads = json.map(r => r.TracerPayload).filter(t => t !== "");*/
-  };
 
   // configQuery returns the appropriate configuration information
   // that is requested from the content script.
@@ -47,43 +23,7 @@ const settings = (() => {
     }
   };
 
-  const getRandomInt = (min, max) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
-  // getTracerPaylods returns the current collected payloads. Sometimes, we
-  // want to wait for some events to come in that would add a tracer that
-  // we can't block the browser from, so this function takes an optional delay
-  // option in miliseconds before resolving the promise.
-  const promiseMap = {};
-
-  chrome.alarms.onAlarm.addListener(alarm => {
-    if (!alarm.name.startsWith("deliver-")) {
-      return;
-    }
-    // Get the promise associated with this alarm and deliver
-    // the current set of tracer payloads for it.
-    const rand = alarm.name.split("deliver-")[1];
-    const resolve = promiseMap[rand];
-    resolve(tracerPayloads);
-    // Delete the promise from the promise map.
-    delete promiseMap[rand];
-  });
-
-  const getTracerPayloads = (delay = 500) => {
-    return new Promise(r => {
-      const rand = getRandomInt(0, 1000000000);
-      promiseMap[`${rand}`] = r;
-      chrome.alarms.create(`deliver-${rand}`, {
-        when: Date.now() + delay
-      });
-    });
-  };
-
   // Configuration defaults
-  let restServer = "127.0.0.1:443";
   // TODO: move these to chrome storage
   const tracerSwap = "[[ID]]";
   let tracerStringTypes = [
@@ -116,30 +56,23 @@ const settings = (() => {
     });
   });
 
-  let tracerPayloads = [];
   let disabled = false;
   const getAPIKey = async () =>
     await new Promise(r =>
-      chrome.storage.local.get({ apiKey: generateUUID() }, res => {
-        chrome.storage.local.set({ apiKey: res.apiKey });
-        r(res.apiKey);
+      chrome.storage.local.get({ apiKey: "" }, res => {
+        let { apiKey } = res;
+        if (!apiKey) {
+          let apiKey = generateUUID();
+          chrome.storage.local.set({ apiKey: apiKey });
+        }
+
+        r(apiKey);
       })
     );
 
-  // Update the configuration on every page load.
-  /*  chrome.tabs.onUpdated.addListener((tabID, changeInfo, tab) => {
-    if (changeInfo.status === "complete") {
-      refreshConfig();
-    }
-  });
-  refreshConfig();*/
-
   return {
-    getServer: () => restServer,
     getTracerStrings: () => tracerStringTypes,
-    //    getTracerPayloads: getTracerPayloads,
     getAPIKey: getAPIKey,
-    //setTracerPayloads: tp => (tracerPayloads = tp),
     isDisabled: () => disabled,
     setDisabled: b => (disabled = b),
     query: query

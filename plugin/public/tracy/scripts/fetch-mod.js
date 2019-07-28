@@ -57,15 +57,21 @@
 
         if (args.tracers.length !== 0) {
           (async () => {
-            args.tracers.map(
-              t =>
-                window.postMessage({
+            args.tracers.map(t => {
+              // When creating a tracer, make sure the Requests and OverallSeverity
+              // attributes are there.
+              t.Requests = [];
+              t.OverallSeverity = 0;
+              t.HasTracerEvents = false;
+              window.postMessage(
+                {
                   "message-type": "database",
                   query: "addTracer",
                   tracer: t
-                }),
-              "*"
-            );
+                },
+                "*"
+              );
+            });
           })();
         }
         return Reflect.apply(t, thisa, args.al);

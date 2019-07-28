@@ -1,9 +1,12 @@
 import { connect } from "react-redux";
 import RawView from "../components/RawView";
-import { firstElemByID } from "../utils/index";
+
 const mapStateToProps = state => ({
-  tracer: firstElemByID(state.tracers, state.selectedTracerID) || {},
-  event: firstElemByID(state.events, state.selectedEventID) || {}
+  tracer:
+    state.tracers
+      .filter(t => t.TracerPayload === state.selectedTracerPayload)
+      .pop() || {},
+  event: state.events.filter(e => e.ID === state.selectedEventID).pop() || {}
 });
 
 export default connect(mapStateToProps)(RawView);

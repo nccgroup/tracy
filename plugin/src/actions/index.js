@@ -49,15 +49,23 @@ export const changeSetting = setting => ({
 export const selectRequest = id => ({ type: SELECT_REQUEST, id: id });
 export const addAPIKey = apiKey => ({ type: ADD_API_KEY, apiKey: apiKey });
 export const changeTab = tabID => ({ type: CHANGE_TAB, tabID: tabID });
-export const addTracer = tracer => ({ type: ADD_TRACER, tracer: tracer });
-export const updateTracers = tracers => ({
+export const addTracer = (tracer, skipReload) => ({
+  type: ADD_TRACER,
+  tracer: tracer,
+  skipReload: skipReload
+});
+export const updateTracers = (tracers, reload) => ({
   type: UPDATE_TRACERS,
-  tracers: tracers
+  tracers: tracers,
+  skipReload: reload
 });
 export const addRequest = req => ({ type: ADD_REQUEST, req: req });
 export const addEvent = event => ({ type: ADD_EVENT, event: event });
 export const delProject = i => ({ type: DEL_PROJECT, i: i });
-export const selectTracer = id => ({ type: SELECT_TRACER, id: id });
+export const selectTracer = payload => ({
+  type: SELECT_TRACER,
+  tracerPayload: payload
+});
 export const selectEvent = id => ({ type: SELECT_EVENT, id: id });
 export const updateEvents = events => ({ type: UPDATE_EVENTS, events: events });
 export const startReproduction = () => ({ type: START_REPRODUCTION });

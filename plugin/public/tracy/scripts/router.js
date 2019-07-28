@@ -42,6 +42,8 @@
               dbprom = database.addEvent(message["event"]);
               break;
             default:
+              console.log("[BAD MESSAGE QUERY]", message["query"]);
+              dbprom = new Promise(r => r("BAD"));
               break;
           }
           dbprom.then(t => sendResponse(t));

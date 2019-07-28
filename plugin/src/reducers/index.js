@@ -2,16 +2,7 @@
 import * as actions from "../actions";
 import * as utils from "../utils";
 import { store } from "../index";
-/*const chrome = {
-   runtime: {
-   getURL: url => url
-   },
-   storage: {
-   local: {
-   set: v => console.log("setting storage", v)
-   }
-   }
-   };*/
+
 const loadState = settings => {
   chrome.storage.local.get(settings, r => {
     const e = chrome.runtime.lastError;
@@ -35,7 +26,7 @@ const init = {
   tracersLoading: true,
   eventsLoading: false,
   selectedEventID: -1,
-  selectedTracerID: -1,
+  selectedTracerPayload: "",
   selectedRequestID: -1,
   httpResponsesFilter: false,
   inactiveTracersFilter: false,
@@ -54,87 +45,83 @@ loadState(Object.keys(init));
 // addOrEditTracer appends a new tracer if it doesn't already exist
 // or modifies the tracer's properties if it does.
 const addOrEditTracer = (state, action) => {
-  const i = utils.firstIDByID(state.tracers, { ID: action.tracer.Tracer.ID });
+  const existing = state.tracers.filter(
+    t => t.TracerPayload === action.tracer.TracerPayload
+  );
   // If we aren't updating an existing element, just append it
-  const t = action.tracer.Tracer;
-  if (i < 0) {
+  const t = action.tracer;
+  if (existing && existing.length === 0) {
     return state.tracers.concat([t]);
   }
+
   // Right now, we are only supporting updating the tracer's severity and
-  // hastracerevents property
-  const newt = Object.assign(state.tracers[i], {
+  // hastracerevents, and the requests property
+  const e = existing.pop();
+  const newt = Object.assign({}, e, {
     HasTracerEvents: t.HasTracerEvents,
-    OverallSeverity: t.OverallSeverity
+    OverallSeverity: t.OverallSeverity,
+    Requests: t.Requests
   });
 
   return state.tracers
-    .filter(tr => tr.ID !== action.tracer.Tracer.ID)
+    .filter(tr => tr.TracerPayload !== action.tracer.TracerPayload)
     .concat([newt]);
 };
-//
+
 const rootReducer = (state = init, action) => {
   console.log("ACTION", action);
-  let newState = state;
+  let change = {};
   switch (action.type) {
     case actions.UPDATE_SETTINGS:
-      newState = Object.assign({}, state, action.settings);
+      change = action.settings;
       break;
     case actions.APP_INITIALIZED:
-      newState = Object.assign({}, state, { appInitialized: action.init });
+      change = { appInitialized: action.init };
       break;
     case actions.CHANGE_SETTING:
       switch (Object.keys(action.setting).pop()) {
         case "tracyHost":
-          newState = Object.assign({}, state, {
-            tracyHost: action.setting.tracyHost
-          });
+          change = { tracyHost: action.setting.tracyHost };
           break;
         case "tracyPort":
-          newState = Object.assign({}, state, {
-            tracyPort: action.setting.tracyPort
-          });
+          change = { tracyPort: action.setting.tracyPort };
           break;
         case "proj":
-          newState = Object.assign({}, state, {
+          change = {
             projName: action.setting.proj.name,
             apiKey: action.setting.proj.apiKey,
             tracers: [],
             events: [],
             tracersLoading: true
-          });
+          };
           break;
         case "tracyEnabled":
-          newState = Object.assign({}, state, {
-            tracyEnabled: action.setting.tracyEnabled
-          });
+          change = { tracyEnabled: action.setting.tracyEnabled };
           break;
         case "tracyLocal":
-          newState = Object.assign({}, state, {
-            tracyLocal: action.setting.tracyLocal
-          });
+          change = { tracyLocal: action.setting.tracyLocal };
           break;
         default:
-          newState = state;
           break;
       }
       break;
     case actions.UPDATE_PROJECTS:
-      newState = Object.assign({}, state, { projs: action.projs });
+      change = { projs: action.projs };
       break;
     case actions.DEL_PROJECT:
-      newState = Object.assign({}, state, {
-        projs: state.proj.splice(action.i, 1)
-      });
+      change = { projs: state.proj.splice(action.i, 1) };
       break;
     case actions.ADD_TRACER:
-      newState = Object.assign({}, state, {
-        tracers: addOrEditTracer(state, action)
-      });
+      change = {
+        tracers: addOrEditTracer(state, action).sort(
+          (a, b) => a.Created - b.Created
+        )
+      };
       break;
     case actions.ADD_REQUEST:
       const ids = action.req.Request.Tracers.map(t => t.ID);
       delete action.req.Request.Tracers;
-      newState = Object.assign({}, state, {
+      change = {
         tracers: ids.reduce((accum, curr) => {
           const i = utils.firstIDByID(accum, { ID: curr });
           if (i < 0) return accum;
@@ -148,85 +135,77 @@ const rootReducer = (state = init, action) => {
           }
           return [...accum.filter(tr => tr.ID !== curr), newt];
         }, state.tracers)
-      });
+      };
       break;
     case actions.UPDATE_TRACERS:
-      newState = Object.assign({}, state, {
+      change = {
         tracersLoading: false,
-        tracers: action.tracers,
-        selectedTracerID: -1
-      });
+        tracers: action.tracers.sort((a, b) => a.Created - b.Created),
+        selectedTracerPayload: ""
+      };
       break;
     case actions.SELECT_TRACER:
-      newState = Object.assign({}, state, {
+      change = {
         eventsLoading: true,
-        selectedTracerID: action.id,
+        selectedTracerPayload: action.tracerPayload,
         events: [],
         selectedEventID: -1
-      });
+      };
       break;
     case actions.SELECT_EVENT:
-      newState = Object.assign({}, state, {
+      change = {
         selectedEventID: action.id
-      });
+      };
       break;
     case actions.UPDATE_EVENTS:
-      newState = Object.assign({}, state, {
+      change = {
         eventsLoading: false,
-        events: action.events
-      });
+        events: action.events.map(utils.enumerate)
+      };
       break;
     case actions.ADD_EVENT:
-      // Only add an event if it belongs to the tracer currently selected.
-      if (action.event.TracerEvent.TracerID !== state.selectedTracerID) {
-        return state;
-      }
-      newState = Object.assign({}, state, {
-        events: state.events
-          .concat(utils.formatEvent(action.event.TracerEvent))
-          .map(utils.enumerate)
-      });
+      change = { events: [...state.events, action.event].map(utils.enumerate) };
       break;
     case actions.TOGGLE_INACTIVE_FILTER:
-      newState = Object.assign({}, state, {
-        inactiveTracersFilter: !state.inactiveTracersFilter
-      });
+      change = { inactiveTracersFilter: !state.inactiveTracersFilter };
       break;
     case actions.TOGGLE_HTTP_RESPONSE_FILTER:
-      newState = Object.assign({}, state, {
-        httpResponsesFilter: !state.httpResponsesFilter
-      });
+      change = { httpResponsesFilter: !state.httpResponsesFilter };
       break;
     case actions.TOGGLE_TEXT_FILTER:
-      newState = Object.assign({}, state, { textFilter: !state.textFilter });
+      change = { textFilter: !state.textFilter };
       break;
     case actions.TOGGLE_WEBSOCKET_CONNECTED:
-      newState = Object.assign({}, state, { webSocketOpen: true });
+      change = { webSocketOpen: true };
       break;
     case actions.TOGGLE_WEBSOCKET_DISCONNECTED:
-      newState = Object.assign({}, state, { webSocketOpen: false });
+      change = { webSocketOpen: false };
       break;
     case actions.CHANGE_TAB:
-      newState = Object.assign({}, state, { tabID: action.tabID });
+      change = { tabID: action.tabID };
       break;
     case actions.ADD_API_KEY:
-      newState = Object.assign({}, state, { apiKey: action.apiKey });
+      change = { apiKey: action.apiKey };
       break;
     case actions.SELECT_REQUEST:
-      newState = Object.assign({}, state, { selectedRequestID: action.id });
+      change = { selectedRequestID: action.id };
       break;
     case actions.NAVIGATE_TO_SETTINGS_PAGE:
-      newState = Object.assign({}, state, { onSettingsPage: true });
+      change = { onSettingsPage: true };
       break;
     case actions.NAVIGATE_TO_UI_PAGE:
-      newState = Object.assign({}, state, { onSettingsPage: false });
+      change = { onSettingsPage: false };
       break;
     default:
-      newState = state;
       break;
   }
-  chrome.storage.local.set(newState);
-  return newState;
+
+  // Sometimes, we don't want to write to local storage again because
+  // it can create loops based on the handlers.
+  if (!action.skipReload) {
+    chrome.storage.local.set(change);
+  }
+  return Object.assign({}, state, change);
 };
 
 export default rootReducer;

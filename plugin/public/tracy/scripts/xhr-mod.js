@@ -7,15 +7,20 @@
     if (tr.length === 0) {
       return;
     }
-    tr.map(
-      t =>
-        window.postMessage({
+    tr.map(t => {
+      // When creating a tracer, make sure the Requests attribute is there.
+      t.Requests = [];
+      t.OverallSeverity = 0;
+      t.HasTracerEvents = false;
+      window.postMessage(
+        {
           "message-type": "database",
           query: "addTracer",
           tracer: t
-        }),
-      "*"
-    );
+        },
+        "*"
+      );
+    });
   };
 
   XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, {

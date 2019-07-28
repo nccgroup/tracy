@@ -1,19 +1,38 @@
+/* global chrome */
 import React, { Component } from "react";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 import * as utils from "../utils";
 
 export default class TracerEventsTable extends Component {
+  componentDidMount() {
+    const port = chrome.runtime.connect({ name: "TracerEventsTable" });
+    port.onMessage.addListener(msg => {
+      switch (Object.keys(msg).pop()) {
+        case "addEvent":
+          const event = Object.values(msg).pop().event;
+          // Only add an event if it belongs to the tracer currently selected.
+          if (event.TracerPayload !== this.props.selectedTracerPayload) {
+            return;
+          }
+          this.props.addEvent(event, false);
+          break;
+        default:
+          break;
+      }
+    });
+    port.onDisconnect.addListener(() => console.log("disconnected"));
+    this.refresh();
+  }
+  refresh = async () => {
+    const events = await utils.getTracerEvents(
+      this.props.selectedTracerPayload
+    );
+    this.props.updateEvents(events);
+  };
   render = () => {
     if (this.props.loading) {
-      utils.getTracerEvents(this.props.selectedTracerID).then(events =>
-        this.props.updateEvents(
-          events
-            .map(utils.formatEvent)
-            .flat()
-            .map(utils.enumerate)
-        )
-      );
+      this.refresh();
     }
     let data = this.props.events;
     if (this.props.filterTextNodes) {
@@ -28,7 +47,9 @@ export default class TracerEventsTable extends Component {
           data={data}
           showPageSizeOptions={false}
           showPageJump={false}
-          loading={this.props.loading || this.props.selectedTracerID === -1}
+          loading={
+            this.props.loading || this.props.selectedTracerPayload === ""
+          }
           loadingText={
             this.props.loading
               ? "loading..."

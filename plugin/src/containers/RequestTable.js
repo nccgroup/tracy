@@ -3,12 +3,20 @@ import { connect } from "react-redux";
 import * as actions from "../actions";
 const mapStateToProps = state => {
   return {
-    requests:
-      state.selectedTracerID === -1
-        ? []
-        : state.tracers.filter(t => t.ID === state.selectedTracerID)[0]
-            .Requests || [],
-    loading: state.selectedTracerID === -1,
+    requests: (() => {
+      if (state.selectedTracerPayload === "") {
+        return [];
+      } else {
+        const reqs = state.tracers
+          .filter(t => t.TracerPayload === state.selectedTracerPayload)
+          .pop();
+        if (reqs) {
+          return reqs.Requests;
+        }
+        return [];
+      }
+    })(),
+    loading: state.selectedTracerPayload === "",
     selectedRequestID: state.selectedRequestID
   };
 };

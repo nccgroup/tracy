@@ -43,13 +43,17 @@ const form = (() => {
           .flat();
 
         // If any tracers were added to this form, send API request to log them.
-        tracersa.map(t =>
+        tracersa.map(t => {
+          // When creating a tracer, make sure the Requests attribute is there.
+          t.Requests = [];
+          t.OverallSeverity = 0;
+          t.HasTracerEvents = false;
           util.send({
             "message-type": "database",
             query: "addTracer",
             tracer: t
-          })
-        );
+          });
+        });
       });
     };
 
