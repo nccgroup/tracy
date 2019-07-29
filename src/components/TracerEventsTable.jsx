@@ -15,6 +15,7 @@ export default class TracerEventsTable extends Component {
           if (event.TracerPayload !== this.props.selectedTracerPayload) {
             return;
           }
+          console.log("here?");
           this.props.addEvent(event, false);
           break;
         default:
@@ -33,7 +34,8 @@ export default class TracerEventsTable extends Component {
             this.props.selectedEventTableIndex - 1,
             this.props.events.length
           ),
-          -1
+          -1,
+          false
         ),
       () =>
         this.props.selectEvent(
@@ -41,7 +43,8 @@ export default class TracerEventsTable extends Component {
             this.props.selectedEventTableIndex + 1,
             this.props.events.length
           ),
-          -1
+          -1,
+          false
         )
     );
   }
@@ -115,13 +118,21 @@ export default class TracerEventsTable extends Component {
               if (rowInfo.viewIndex === this.props.selectedEventTableIndex) {
                 classname += " row-selected";
                 if (this.props.selectedEventID < 0) {
-                  this.props.selectEvent(rowInfo.viewIndex, rowInfo.row.ID);
+                  this.props.selectEvent(
+                    rowInfo.viewIndex,
+                    rowInfo.row.ID,
+                    false
+                  );
                 }
               }
 
               return {
                 onClick: (e, handleOriginal) => {
-                  this.props.selectEvent(rowInfo.viewIndex, rowInfo.row.ID);
+                  this.props.selectEvent(
+                    rowInfo.viewIndex,
+                    rowInfo.row.ID,
+                    true
+                  );
 
                   if (handleOriginal) {
                     handleOriginal();

@@ -46,10 +46,11 @@ export const changeSetting = setting => ({
   type: CHANGE_SETTING,
   setting: setting
 });
-export const selectRequest = (index, id) => ({
+export const selectRequest = (index, id, clicked) => ({
   type: SELECT_REQUEST,
   id: id,
-  index: index
+  index: index,
+  clicked: clicked
 });
 export const addAPIKey = apiKey => ({ type: ADD_API_KEY, apiKey: apiKey });
 export const changeTab = tabID => ({ type: CHANGE_TAB, tabID: tabID });
@@ -66,15 +67,17 @@ export const updateTracers = (tracers, reload) => ({
 export const addRequest = req => ({ type: ADD_REQUEST, req: req });
 export const addEvent = event => ({ type: ADD_EVENT, event: event });
 export const delProject = i => ({ type: DEL_PROJECT, i: i });
-export const selectTracer = (index, payload) => ({
+export const selectTracer = (index, payload, clicked) => ({
   type: SELECT_TRACER,
   tracerPayload: payload,
-  index: index
+  index: index,
+  clicked: clicked
 });
-export const selectEvent = (index, id) => ({
+export const selectEvent = (index, id, clicked) => ({
   type: SELECT_EVENT,
   id: id,
-  index: index
+  index: index,
+  clicked: clicked
 });
 export const updateEvents = events => ({ type: UPDATE_EVENTS, events: events });
 export const startReproduction = () => ({ type: START_REPRODUCTION });

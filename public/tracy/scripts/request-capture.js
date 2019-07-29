@@ -78,7 +78,7 @@
       const payloads = t.map(t => t.TracerPayload);
       // Grab the object created by the onBeforeRequest event handler for this request.
       // It should always be there.
-      let p = requests[r.requestId];
+      let p = requests[`${r.requestId}:${r.url}`];
       if (!p) {
         p = await new Promise(res => {
           request[r.requestId] = res;
@@ -93,7 +93,6 @@ ${h.name}: ${h.value}`,
 
       // Get the data from the previous event handler.
       let { body, tracers } = p;
-
       // Search through the headers for tracers.
       const allTracers = [
         ...new Set(
@@ -202,7 +201,7 @@ ${body}`;
           }
         })
         .filter(Boolean);
-      const p = requests[r.requestId];
+      const p = requests[`${r.requestId}:${r.url}`];
       const data = { body: r.requestBody || "", tracers: tracersn };
       // If a promise function already exists there, that means the other
       // callback executed first and is waiting for this one to finish.
@@ -211,7 +210,7 @@ ${body}`;
         p(data);
       } else {
         // If nothing was there, add the data.
-        requests[r.requestId] = data;
+        requests[`${r.requestId}:${r.url}`] = data;
       }
     },
     { urls: ["<all_urls>"] },

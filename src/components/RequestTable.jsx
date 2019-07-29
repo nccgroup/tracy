@@ -12,7 +12,8 @@ export default class RequestTable extends Component {
             this.props.selectedRequestTableIndex - 1,
             this.props.requests.length
           ),
-          -1
+          -1,
+          false
         ),
       () =>
         this.props.selectRequest(
@@ -20,7 +21,8 @@ export default class RequestTable extends Component {
             this.props.selectedRequestTableIndex + 1,
             this.props.requests.length
           ),
-          -1
+          -1,
+          false
         )
     );
   };
@@ -52,13 +54,21 @@ export default class RequestTable extends Component {
               if (rowInfo.viewIndex === this.props.selectedRequestTableIndex) {
                 classname += " row-selected";
                 if (this.props.selectedRequestID < 0) {
-                  this.props.selectRequest(rowInfo.viewIndex, rowInfo.row.ID);
+                  this.props.selectRequest(
+                    rowInfo.viewIndex,
+                    rowInfo.row.ID,
+                    false
+                  );
                 }
               }
 
               return {
                 onClick: (e, handleOriginal) => {
-                  this.props.selectRequest(rowInfo.viewIndex, rowInfo.row.ID);
+                  this.props.selectRequest(
+                    rowInfo.viewIndex,
+                    rowInfo.row.ID,
+                    true
+                  );
 
                   if (handleOriginal) {
                     handleOriginal();

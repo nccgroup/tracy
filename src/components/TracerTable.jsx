@@ -30,6 +30,7 @@ export default class TracerTable extends Component {
           break;
         case "updateTracer":
           this.props.addOrUpdateTracer(Object.values(msg).pop().tracer);
+          break;
         default:
           break;
       }
@@ -46,7 +47,8 @@ export default class TracerTable extends Component {
             this.props.selectedTracerTableIndex - 1,
             this.props.tracers.length
           ),
-          ""
+          "",
+          false
         ),
       () =>
         this.props.selectTracer(
@@ -54,7 +56,8 @@ export default class TracerTable extends Component {
             this.props.selectedTracerTableIndex + 1,
             this.props.tracers.length
           ),
-          ""
+          "",
+          false
         )
     );
   }
@@ -116,20 +119,41 @@ export default class TracerTable extends Component {
               }
 
               if (rowInfo.viewIndex === this.props.selectedTracerTableIndex) {
-                classname += " row-selected";
-                if (this.props.selectedTracerPayload === "") {
-                  this.props.selectTracer(
-                    rowInfo.viewIndex,
-                    rowInfo.row.TracerPayload
-                  );
+                // Check to make sure the table entries haven't changed. If they have correct it.
+                if (
+                  rowInfo.row.TracerPayload !== this.props.selectedTracerPayload
+                ) {
+                  if (this.props.selectedTracerPayload === "") {
+                    this.props.selectTracer(
+                      rowInfo.viewIndex,
+                      rowInfo.row.TracerPayload,
+                      false
+                    );
+                  } else {
+                    state.pageRows
+                      .filter(
+                        d =>
+                          d.TracerPayload === this.props.selectedTracerPayload
+                      )
+                      .map(d => d._viewIndex)
+                      .map(i => {
+                        this.props.selectTracer(
+                          i,
+                          this.props.selectedTracerPayload,
+                          false
+                        );
+                      });
+                  }
                 }
+                classname += " row-selected";
               }
 
               return {
                 onClick: (e, handleOriginal) => {
                   this.props.selectTracer(
                     rowInfo.viewIndex,
-                    rowInfo.row.TracerPayload
+                    rowInfo.row.TracerPayload,
+                    true
                   );
 
                   if (handleOriginal) {

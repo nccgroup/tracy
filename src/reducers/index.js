@@ -73,7 +73,6 @@ const addOrEditTracer = (state, action) => {
 };
 
 const rootReducer = (state = init, action) => {
-  console.log("ACTION", action);
   let change = {};
   switch (action.type) {
     case actions.UPDATE_SETTINGS:
@@ -153,23 +152,28 @@ const rootReducer = (state = init, action) => {
         eventsLoading: true,
         selectedTracerPayload: action.tracerPayload,
         events: [],
-        selectedEventID: -1,
-        selectedTracerTableIndex: action.index,
-        lastSelectedTable: "tracer"
+        selectedEventID: 0,
+        selectedTracerTableIndex: action.index
       };
+      if (action.clicked) {
+        change.lastSelectedTable = "tracer";
+      }
       break;
     case actions.SELECT_EVENT:
       change = {
         selectedEventID: action.id,
-        selectedEventTableIndex: action.index,
-        lastSelectedTable: "event"
+        selectedEventTableIndex: action.index
       };
+
+      if (action.clicked) {
+        change.lastSelectedTable = "event";
+      }
       break;
     case actions.UPDATE_EVENTS:
       change = {
         eventsLoading: false,
         events: action.events.map(utils.enumerate),
-        selectedEventID: 0,
+        selectedEventID: -1,
         selectedEventTableIndex: 0
       };
       break;
@@ -200,9 +204,11 @@ const rootReducer = (state = init, action) => {
     case actions.SELECT_REQUEST:
       change = {
         selectedRequestID: action.id,
-        lastSelectedTable: "request",
         selectedRequestTableIndex: action.index
       };
+      if (action.clicked) {
+        change.lastSelectedTable = "request";
+      }
       break;
     case actions.NAVIGATE_TO_SETTINGS_PAGE:
       change = { onSettingsPage: true };
