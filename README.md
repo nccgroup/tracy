@@ -16,18 +16,11 @@ DOM write, server response, or call to `eval`.
 For guides and reference materials about `tracy`, see [the documentation](https://github.com/nccgroup/tracy/wiki).
 
 ## Installation
-It is strongly recommended that you use a released version. Release binaries are available
-on the [releases](https://github.com/nccgroup/tracy/releases) page. Download the appropriate 
-release binary and run it:
 
-```bash
-# Run the proxy server and the tracer API. Pick the binary that works for your host.
-$ ./tracy-linux-amd64
-```
+Tracy is now only a browser extension! No more binaries, just download it from the Chrome or Firefox store.
 
-Then, install the browser extension with [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tracyplugin/) or [Chrome](https://chrome.google.com/webstore/detail/tracy/lcgbimfijafcjjijgjoodgpblgmkckhn).
+* [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tracyplugin/)
+* [Chrome](https://chrome.google.com/webstore/detail/tracy/lcgbimfijafcjjijgjoodgpblgmkckhn).
 
-Once `tracy` is running and the plugin is installed, install the generated certificate into your browser's certificate store (the certifcate is located in `~/.tracy/`) and configure your browser to use the `tracy` proxy (localhost:7777) 
-
-*Note:* The `tracy` binary and browser extension work together. Running one without the other 
-will result in unexpected behavior.
+And that's it! As long as tracy is installed in your browser, you are ready to find XSS. There is no longer
+any requirements to configure a proxy or certificates.
