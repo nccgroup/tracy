@@ -1,7 +1,4 @@
 .idea
-vendor/*
-bin/*
-tracer/rest/bindata_assetfs.go
 flymake*
-plugin/node_modules/*
-plugin/build/*
+node_modules/*
+build/*
