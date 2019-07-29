@@ -136,13 +136,13 @@ export default class TracerTable extends Component {
                           d.TracerPayload === this.props.selectedTracerPayload
                       )
                       .map(d => d._viewIndex)
-                      .map(i => {
+                      .map(i =>
                         this.props.selectTracer(
                           i,
                           this.props.selectedTracerPayload,
                           false
-                        );
-                      });
+                        )
+                      );
                   }
                 }
                 classname += " row-selected";

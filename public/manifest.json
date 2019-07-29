@@ -2,7 +2,7 @@
   "name": "Tracy",
   "description":
     "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
-  "version": "0.6.2",
+  "version": "0.7",
   "permissions": [
     "<all_urls>",
     "storage",
@@ -28,7 +28,6 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*"],
       "all_frames": true,
       "js": [
         "tracy/scripts/util.js",
@@ -42,13 +41,11 @@
     },
     {
       "matches": ["<all_urls>"],
-      "exclude_matches": ["*://localhost/*", "*://127.0.0.1/*"],
       "all_frames": true,
       "js": ["tracy/scripts/form-mod.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://localhost/*", "*://127.0.0.1/*"],
       "all_frames": true,
       "js": ["tracy/scripts/util.js", "tracy/scripts/installed.js"],
       "run_at": "document_start"
