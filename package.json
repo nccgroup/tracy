@@ -7,8 +7,6 @@
     "@fortawesome/fontawesome-free-brands": "^5.0.8",
     "@fortawesome/fontawesome-free-solid": "^5.0.8",
     "@fortawesome/react-fontawesome": "0.0.18",
-    "code-prettify": "^0.1.0",
-    "immutability-helper": "^2.6.0",
     "react": "^16.7.0",
     "react-code-prettify": "0.0.1",
     "react-dom": "^16.7.0",
@@ -35,10 +33,5 @@
       "node": true
     }
   },
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ]
+  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"]
 }
