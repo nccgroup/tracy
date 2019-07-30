@@ -3,7 +3,7 @@ import WebSocketRouter from "../components/WebSocketRouter";
 import {
   addTracer,
   addRequest,
-  addEvent,
+  addEvents,
   webSocketConnect,
   webSocketDisconnect
 } from "../actions";
@@ -18,7 +18,7 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
   handleNewTracer: tracer => dispatch(addTracer(tracer)),
   handleNewRequest: req => dispatch(addRequest(req)),
-  handleNewEvent: event => dispatch(addEvent(event)),
+  handleNewEvent: event => dispatch(addEvents(event)),
   webSocketConnected: () => dispatch(webSocketConnect()),
   webSocketDisconnected: () => dispatch(webSocketDisconnect())
 });

@@ -11,19 +11,19 @@ export default class TracerTable extends Component {
         case "addTracer":
           this.props.addOrUpdateTracer(Object.values(msg).pop(), false);
           break;
-        case "addRequestToTracer":
+        case "addRequestsToTracer":
           if (this.props.selectedTracerPayload === "") {
             return;
           }
-          const req = Object.values(msg).pop();
-          const tp = req.tracerPayload;
+          const reqs = Object.values(msg).pop();
+          const tp = reqs.tracerPayload;
           let tracer = {
             ...this.props.tracers.filter(t => t.TracerPayload === tp).pop()
           };
           if (tracer.Requests) {
-            tracer.Requests = [...tracer.Requests, req.request];
+            tracer.Requests = [...tracer.Requests, ...reqs.requests];
           } else {
-            tracer.Requests = [req.request];
+            tracer.Requests = reqs.requests;
           }
 
           this.props.addOrUpdateTracer(tracer, false);

@@ -23,7 +23,7 @@ class HighlightedElement extends PureComponent {
     let highlightIndex = -1;
     if (textNodes && textNodes.length > 0) {
       for (let i = 0; i < textNodes.length; i++) {
-        const data = textNodes[i].textContent;
+        const data = textNodes[i].data;
         const idx = data.indexOf(this.props.highlightString);
         if (idx !== -1) {
           const pre = data.substring(0, idx);
@@ -35,56 +35,39 @@ class HighlightedElement extends PureComponent {
             idx + this.props.highlightString.length,
             data.length
           );
+          let styledSpan = document.createElement("span");
+          styledSpan.classList.add("highlight");
+          styledSpan.innerText = highlight;
 
-          if (textNodes[i].parentNode.nodeName.toLowerCase() === "span") {
-            let styledSpan = document.createElement("span");
-            styledSpan.classList.add("highlight");
-            styledSpan.innerText = highlight;
+          let preSpan = document.createElement("span");
+          preSpan.innerText = pre;
 
-            let preSpan = document.createElement("span");
-            preSpan.innerText = pre;
+          let postSpan = document.createElement("span");
+          postSpan.innerText = post;
 
-            let postSpan = document.createElement("span");
-            postSpan.innerText = post;
+          let parent = textNodes[i].parentNode;
 
-            let parent = textNodes[i].parentNode;
-            parent.removeChild(textNodes[i]);
-            parent.appendChild(preSpan);
-            parent.appendChild(styledSpan);
-            parent.appendChild(postSpan);
+          // For attributes, we can just take the parent node and add
+          // our newly generated nodes because attribute names and values
+          // get wrapped in a div. The classnames that define if its an attribute
+          // are below:
 
-            highlightIndex++;
-            if (highlightIndex === this.props.highlightOffset) {
-              styledSpan.scrollIntoView();
-            }
-          } else if (
-            textNodes[i].parentNode.nodeName.toLowerCase() === "code" &&
-            textNodes[i].previousSibling
-          ) {
-            let styledSpan = document.createElement("span");
-            styledSpan.classList.add("highlight");
-            styledSpan.innerText = highlight;
-
-            let preSpan = document.createElement("span");
-            preSpan.innerText = pre;
-
-            let postSpan = document.createElement("span");
-            postSpan.innerText = post;
-
-            let parent = textNodes[i].parentNode;
-            let sibling = textNodes[i].previousSibling;
-
-            parent.removeChild(textNodes[i]);
+          // hljs is the root node of the <code> tage
+          if ([...parent.classList].includes("hljs")) {
+            const sibling = textNodes[i].previousSibling;
             sibling.appendChild(preSpan);
             sibling.appendChild(styledSpan);
             sibling.appendChild(postSpan);
-
-            highlightIndex++;
-            if (highlightIndex === this.props.highlightOffset) {
-              styledSpan.scrollIntoView();
-            }
           } else {
-            console.error("panic");
+            parent.appendChild(preSpan);
+            parent.appendChild(styledSpan);
+            parent.appendChild(postSpan);
+          }
+          parent.removeChild(textNodes[i]);
+
+          highlightIndex++;
+          if (highlightIndex === this.props.highlightOffset) {
+            styledSpan.scrollIntoView();
           }
         }
       }

@@ -177,8 +177,10 @@ const rootReducer = (state = init, action) => {
         selectedEventTableIndex: 0
       };
       break;
-    case actions.ADD_EVENT:
-      change = { events: [...state.events, action.event].map(utils.enumerate) };
+    case actions.ADD_EVENTS:
+      change = {
+        events: [...state.events, ...action.events].map(utils.enumerate)
+      };
       break;
     case actions.TOGGLE_INACTIVE_FILTER:
       change = { inactiveTracersFilter: !state.inactiveTracersFilter };

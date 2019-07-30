@@ -189,54 +189,144 @@ const database = (() => {
 
   // addRequestToTracer adds a request to a tracer object already in the database.
   const addRequestToTracer = async (request, tracerPayload) => {
-    // Get the tracer we are updating.
-    let tracer;
-    try {
-      tracer = await getTracerByPayload(tracerPayload);
-    } catch (e) {
-      throw e;
-    }
-
-    return await new Promise((res, rej) => {
-      // Create a new tracer object based on the old one, but with the
-      // new request object added.
-      let up;
-      if (Object.keys(tracer).includes("Requests")) {
-        // Make sure these requests are unique. If any of the raw requests
-        // are the same, we don't need to make any changes.
-        const dupes = tracer.Requests.filter(
-          r => r.RawRequest.trim() === request.RawRequest.trim()
-        );
-        if (dupes.length > 0) {
-          res(true);
-          return;
-        }
-
-        up = Object.assign({}, tracer, {
-          Requests: tracer.Requests.concat(request)
-        });
-      } else {
-        up = Object.assign({}, tracer, {
-          Requests: [request]
-        });
-      }
-
-      // Write the update.
+    return new Promise((res, rej) => {
       const req = tracersDB
         .transaction(tracersTable, "readwrite")
         .objectStore(tracersTable)
-        .put(up);
+        .openCursor(IDBKeyRange.only(tracerPayload));
+
+      req.onsuccess = e => {
+        const cursor = e.target.result;
+        let up;
+        if (cursor) {
+          if (Object.keys(cursor.value).includes("Requests")) {
+            // Make sure these requests are unique. If any of the raw requests
+            // are the same, we don't need to make any changes.
+            const dupes = cursor.value.Requests.filter(
+              r => r.RawRequest.trim() === request.RawRequest.trim()
+            );
+            if (dupes.length > 0) {
+              res(true);
+              return;
+            }
+
+            up = Object.assign({}, cursor.value, {
+              Requests: cursor.value.Requests.concat(request)
+            });
+          } else {
+            up = Object.assign({}, cursor.value, {
+              Requests: [request]
+            });
+          }
+          const upreq = cursor.update(up);
+          upreq.onsuccess = e => {
+            publish({
+              addRequestToTracer: {
+                request: request,
+                tracerPayload: tracerPayload
+              }
+            });
+            res(e.target.result);
+          };
+          upreq.onerror = e => rej(e);
+        }
+      };
 
       req.onerror = e => rej(e);
-      req.onsuccess = e => {
-        publish({
-          addRequestToTracer: { request: request, tracerPayload: tracerPayload }
-        });
-        res(e.target.result);
-      };
     });
   };
 
+  // addEvents adds multiple events to the database in one transaction.
+  const addEvents = async events =>
+    await new Promise((res, rej) => {
+      // Get a database transaction
+      const tx = eventsDB.transaction(eventsTable, "readwrite");
+      // For each of the events, use the transaction to open the
+      // store and add an event.
+      const eventsWritten = [];
+      events.map(event => {
+        const req = tx.objectStore(eventsTable).add(event);
+        req.onerror = e => {
+          e.preventDefault();
+        };
+        req.onsuccess = e => {
+          eventsWritten.push(event);
+        };
+      });
+
+      tx.oncomplete = e => {
+        publish({ addEvents: { events: eventsWritten } });
+        eventsWritten.map(e => updateTracerBasedOnEvent(e.TracerPayload));
+        res(e.target.result);
+      };
+      tx.onerror = e => {
+        e.preventDefault();
+      };
+
+      txonabort = e => {
+        rej(e);
+      };
+    });
+
+  const updateTracerBasedOnEvent = async tracerPayload => {
+    return new Promise((res, rej) => {
+      const eventsReq = eventsDB
+        .transaction(eventsTable, "readonly")
+        .objectStore(eventsTable)
+        .index(join)
+        .openCursor(IDBKeyRange.only(tracerPayload));
+
+      const events = [];
+      eventsReq.onsuccess = e => {
+        const cursor = e.target.result;
+        // If the cursor is there, we are still collecting
+        // all the events.
+        if (cursor) {
+          events.push(cursor.value);
+          cursor.continue();
+          return;
+        }
+
+        // When it's not, we can start doing something with them.
+        if (events.length === 0) {
+          res();
+          return;
+        }
+        const highestSev = events.sort((a, b) => a.Severity - b.Severity).pop()
+          .Severity;
+        const tracersReq = tracersDB
+          .transaction(tracersTable, "readwrite")
+          .objectStore(tracersTable)
+          .openCursor(IDBKeyRange.only(tracerPayload));
+
+        tracersReq.onsuccess = e => {
+          const cursor = e.target.result;
+          if (!cursor) {
+            res();
+            return;
+          }
+
+          const tracer = cursor.value;
+          // No need to update if there is nothing to update.
+          if (tracer.HasTracerEvents && tracer.OverallSeverity === highestSev) {
+            res();
+            return;
+          }
+
+          tracer.OverallSeverity = highestSev;
+          tracer.HasTracerEvents = true;
+          const upReq = cursor.update(tracer);
+          upReq.onsuccess = e => {
+            publish({ updateTracer: { tracer: tracer } });
+            res(e);
+          };
+          upReq.onerror = e => rej(e);
+        };
+        tracersReq.onerror = e => rej(e);
+      };
+      eventsReq.onerror = e => rej(e);
+    });
+  };
   // addEvent adds a single event to the database.
   const addEvent = async event =>
     await new Promise((res, rej) => {
@@ -250,36 +340,61 @@ const database = (() => {
         updateTracerBasedOnEvent(event.TracerPayload);
         res(e.target.result);
       };
-      req.onerror = e => {
-        rej(e);
-      };
+      req.onerror = e => rej(e);
     });
 
-  const updateTracerBasedOnEvent = async tracerPayload => {
-    const events = getTracerEventsByPayload(tracerPayload);
-    const tracer = getTracerByPayload(tracerPayload);
-    let up = await tracer;
-    if ((await events).length > 0) {
-      const highestSev = (await events)
-        .sort((a, b) => a.Severity - b.Severity)
-        .pop().Severity;
-      const up = await tracer;
-      up.OverallSeverity = highestSev;
-      up.HasTracerEvents = true;
-    }
+  // addRequestsToTracer adds a request to a tracer object already in the database.
+  const addRequestsToTracer = async (requests, tracerPayload) => {
     return new Promise((res, rej) => {
       const req = tracersDB
         .transaction(tracersTable, "readwrite")
         .objectStore(tracersTable)
-        .put(up);
+        .openCursor(IDBKeyRange.only(tracerPayload));
+
+      req.onsuccess = e => {
+        const cursor = e.target.result;
+        let up;
+        if (!cursor) return;
+        const tracer = cursor.value;
+        if (Object.keys(tracer).includes("Requests")) {
+          // Make sure these requests are unique. If any of the raw requests
+          // are the same, we don't need to make any changes.
+          const dupes = requests
+            .map(re =>
+              tracer.Requests.filter(
+                r => r.RawRequest.trim() === re.RawRequest.trim()
+              )
+            )
+            .flat()
+            .filter(r => r.length > 0);
+          if (dupes.length > 0) {
+            res(true);
+            return;
+          }
+
+          up = Object.assign({}, tracer, {
+            Requests: tracer.Requests.concat(requests)
+          });
+        } else {
+          up = Object.assign({}, tracer, {
+            Requests: requests
+          });
+        }
+
+        const upreq = cursor.update(up);
+        upreq.onsuccess = e => {
+          publish({
+            addRequestsToTracer: {
+              requests: requests,
+              tracerPayload: tracerPayload
+            }
+          });
+          res(e.target.result);
+        };
+        upreq.onerror = e => rej(e);
+      };
 
       req.onerror = e => rej(e);
-      req.onsuccess = e => {
-        publish({
-          updateTracer: { tracer: up }
-        });
-        res(e.target.result);
-      };
     });
   };
 
@@ -296,7 +411,7 @@ const database = (() => {
           eventsTable,
           // We want to use the key path to dedupe the events. The RawEvent and
           // TracerPayload should be unique across all the data.
-          { keyPath: ["RawEvent", join] },
+          { keyPath: ["RawEvent", "RawEventIndex", join] },
           store => {
             // Index on events' tracer payload so we can group these store together.
             store.createIndex(join, join, { unique: false });
@@ -314,7 +429,8 @@ const database = (() => {
     getTracerByPayload: getTracerByPayload,
     getTracerEventsByPayload: getTracerEventsByPayload,
     addTracer: addTracer,
-    addRequestToTracer: addRequestToTracer,
-    addEvent: addEvent
+    addRequestsToTracer: addRequestsToTracer,
+    addEvent: addEvent,
+    addEvents: addEvents
   };
 })();

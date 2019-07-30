@@ -62,6 +62,7 @@
   // parameters and body.
   chrome.webRequest.onBeforeSendHeaders.addListener(
     async r => {
+      if (new URL(r.url).protocol.startsWith("data")) return;
       let t = [];
       try {
         // Need to wait a period of time so we get all the tracers after
@@ -81,7 +82,7 @@
       let p = requests[`${r.requestId}:${r.url}`];
       if (!p) {
         p = await new Promise(res => {
-          request[r.requestId] = res;
+          requests[`${r.requestId}:${r.url}`] = res;
         });
       }
 
@@ -113,6 +114,7 @@ ${h.name}: ${h.value}`,
             .concat(tracers)
         )
       ];
+
       const url = new URL(r.url);
       const rr = `${r.method} ${url.pathname}${url.search}  HTTP/1.1${headers}
                       
@@ -120,13 +122,10 @@ ${body}`;
 
       // Add a request for each of the tracers found in it.
       allTracers.map(t =>
-        add({
-          request: {
-            RawRequest: rr.trim(),
-            RequestURL: url.toString(),
-            RequestMethod: r.method
-          },
-          tracer: t
+        add(t, {
+          RawRequest: rr.trim(),
+          RequestURL: url.toString(),
+          RequestMethod: r.method
         })
       );
     },
@@ -135,32 +134,33 @@ ${body}`;
   );
 
   const createJobQueue = () => {
-    let jobs = [];
-    const saveAllRequests = () => {
+    let jobs = {};
+    const saveAllRequests = async () => {
       // Clone the jobs right away.
-      const work = [...jobs];
+      const work = { ...jobs };
       // Reset our jobs.
-      jobs = [];
-      (async () => {
-        for (r of work) {
-          // Need to wait for each request to finish so that we don't
-          // hit any race conditions.
-          await database.addRequestToTracer(r.request, r.tracer);
-        }
-      })();
+      jobs = {};
+
+      for (tracer in work) {
+        database.addRequestsToTracer(work[tracer], tracer);
+      }
     };
     chrome.alarms.onAlarm.addListener(alarm => {
       if (alarm.name !== "saveAllRequests") return;
       saveAllRequests();
     });
-    return async job => {
-      if (jobs.length === 0) {
+    return async (tracer, job) => {
+      if (Object.keys(jobs).length === 0) {
         chrome.alarms.create("saveAllRequests", {
           when: Date.now() + 1500
         });
       }
       // Add a job.
-      jobs = [...jobs, job];
+      if (jobs[tracer]) {
+        jobs[tracer] = [...jobs[tracer], job];
+      } else {
+        jobs[tracer] = [job];
+      }
     };
   };
   const add = createJobQueue();
@@ -172,6 +172,7 @@ ${body}`;
   // doesn't matter that we do this for every request.
   chrome.webRequest.onBeforeRequest.addListener(
     async r => {
+      if (new URL(r.url).protocol.startsWith("data")) return;
       let tracers = [];
       try {
         // Need to wait a period of time so we get all the tracers after
@@ -193,8 +194,11 @@ ${body}`;
           }
 
           // If there weren't payloads in the query parameters, search
-          // through the request body for tracers.
-          if (r.requestBody) {
+          // through the request body for tracers. Currently, in Chrome
+          // there is a weird issue going one where this is getting set to
+          //{error: "Unknown error."}
+          // Haven't idenified the issue yet.
+          if (r.requestBody && typeof r.requestBody === "string") {
             if (r.requestBody.indexOf(p) !== -1) {
               return p;
             }
@@ -203,6 +207,7 @@ ${body}`;
         .filter(Boolean);
       const p = requests[`${r.requestId}:${r.url}`];
       const data = { body: r.requestBody || "", tracers: tracersn };
+
       // If a promise function already exists there, that means the other
       // callback executed first and is waiting for this one to finish.
       // Resolve it's promise function with the data.

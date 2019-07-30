@@ -4,12 +4,12 @@ const router = e => {
   switch (e.data.type) {
     case "search":
       return search(e.data.jobs, e.data.tracerPayloads);
-    case "walk":
-      return walk();
+    default:
+      return {};
   }
 };
 
-// requestHandler takes the current set of jobs from the page, filters them
+// search takes the current set of jobs from the page, filters them
 // against the current set of tracer payloads, and sends them as a batch API
 // request to the API. Events should contain a list of DOM events.
 const search = (domEvents, tracerPayloads) => {

@@ -7,7 +7,7 @@ export const ADD_REQUEST = "ADD_REQUEST";
 export const UPDATE_TRACERS = "UPDATE_TRACERS";
 export const SELECT_EVENT = "SELECT_EVENT";
 export const UPDATE_EVENTS = "UPDATE_EVENTS";
-export const ADD_EVENT = "ADD_EVENT";
+export const ADD_EVENTS = "ADD_EVENTS";
 export const TOGGLE_LOADING_EVENTS = "TOGGLE_LOADING_EVENTS";
 export const TOGGLE_LOADING_TRACERS = "TOGGLE_LOADING_TRACERS";
 export const TOGGLE_INACTIVE_FILTER = "TOGGLE_INACTIVE_FILTER";
@@ -65,7 +65,7 @@ export const updateTracers = (tracers, reload) => ({
   skipReload: reload
 });
 export const addRequest = req => ({ type: ADD_REQUEST, req: req });
-export const addEvent = event => ({ type: ADD_EVENT, event: event });
+export const addEvents = events => ({ type: ADD_EVENTS, events: events });
 export const delProject = i => ({ type: DEL_PROJECT, i: i });
 export const selectTracer = (index, payload, clicked) => ({
   type: SELECT_TRACER,

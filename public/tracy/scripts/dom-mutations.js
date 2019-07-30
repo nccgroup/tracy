@@ -36,7 +36,6 @@
                 location: document.location.href
               });
               highlight.addClickToFill(node, false);
-              //         form.addOnSubmit(node);
               retryingAddOnSubmit(node);
             } else if (node.nodeType == Node.TEXT_NODE) {
               retryingSend({
@@ -68,8 +67,8 @@
         } else if (mutation.type == "characterData") {
           retryingSend({
             "message-type": "job",
-            type: "dom",
-            msg: mutation.target.parentNode.outerHTML,
+            type: "text",
+            msg: mutation.target.nodeValue,
             location: document.location.href
           });
         }
@@ -82,6 +81,7 @@
     attributes: true,
     childList: true,
     characterData: true,
+    characterDataOldValue: true,
     subtree: true
   };
 

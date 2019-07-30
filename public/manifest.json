@@ -44,11 +44,6 @@
       "all_frames": true,
       "js": ["tracy/scripts/form-mod.js"],
       "run_at": "document_idle"
-    },
-    {
-      "all_frames": true,
-      "js": ["tracy/scripts/util.js", "tracy/scripts/installed.js"],
-      "run_at": "document_start"
     }
   ],
   "browser_action": {

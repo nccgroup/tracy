@@ -9,14 +9,13 @@ export default class TracerEventsTable extends Component {
     const port = chrome.runtime.connect({ name: "TracerEventsTable" });
     port.onMessage.addListener(msg => {
       switch (Object.keys(msg).pop()) {
-        case "addEvent":
-          const event = Object.values(msg).pop().event;
-          // Only add an event if it belongs to the tracer currently selected.
-          if (event.TracerPayload !== this.props.selectedTracerPayload) {
-            return;
-          }
-          console.log("here?");
-          this.props.addEvent(event, false);
+        case "addEvents":
+          const events = Object.values(msg)
+            .pop()
+            .events.filter(
+              e => e.TracerPayload === this.props.selectedTracerPayload
+            );
+          this.props.addEvents(events);
           break;
         default:
           break;

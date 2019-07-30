@@ -11,50 +11,40 @@ const jobs = (() => {
     const worker = new Worker(loc);
     const dp = new DOMParser();
     worker.addEventListener("message", async e => {
-      let tracers;
-      try {
-        tracers = await database.getTracers();
-      } catch (e) {
-        console.error(e);
-        return;
-      }
-
-      // Get all the tracer payloads for the current project.
-      const tps = tracers.map(t => t.TracerPayload);
-      //TODO: may want to move these loops into a web worker
-      const eventsp = await Promise.all(
-        tps.map(async tp => {
-          const events = await Promise.all(
-            e.data.map(async event => {
-              const dom = dp.parseFromString(event.RawEvent, "text/html");
-              const tw = document.createTreeWalker(dom, NodeFilter.SHOW_ALL);
-              return findDOMContexts(event, tp, tw);
-            })
-          );
-          return events.flat();
+      // The only reason this isn't in a web worker is because I can't
+      // copy the DOM nodes to the worker and I can't create a DOM parser in the worker.
+      // The best we can do is use async :/
+      const events = (await Promise.all(
+        e.data.map(async event => {
+          const dom = dp.parseFromString(event.RawEvent, "text/html");
+          const tw = document.createTreeWalker(dom, NodeFilter.SHOW_ALL);
+          // Search through the DOM event for instances of the tracer payload.
+          // If one is found, assign it a severity rating and collect data about
+          // its surrounding.
+          const nodes = [];
+          while (tw.nextNode()) {
+            nodes.push(tw.currentNode);
+          }
+          return findDOMContexts(event, nodes);
         })
-      );
+      )).flat();
 
-      try {
-        await Promise.all(eventsp.flat().map(database.addEvent));
-      } catch (err) {
-        // This database call will probably throw a lot of errors because of
-        // duplicate entries for events. I don't think we need to worry too much.
-      }
+      return await database.addEvents(events);
     });
 
     return {
       processDOMEvents: async () => {
+        const work = [...j];
+
+        // Clear out the jobs.
+        j = [];
         // Send any jobs off to the web worker.
         const tracers = await database.getTracers();
         worker.postMessage({
           type: "search",
-          jobs: j,
+          jobs: work,
           tracerPayloads: tracers.map(t => t.TracerPayload)
         });
-
-        // Clear out the jobs.
-        j = [];
       },
       add: async (message, sender, sendResponse) => {
         if (!settings.isDisabled()) {
@@ -74,13 +64,29 @@ const jobs = (() => {
     };
   };
   const worker = createJobWorker();
-  const textCommentNodeCheck = (cur, event, tp) => {
-    if (cur.data.toLowerCase().indexOf(tp.toLowerCase()) !== -1) {
+  const textCommentNodeCheck = (cur, event) => {
+    if (
+      cur.data.toLowerCase().indexOf(event.TracerPayload.toLowerCase()) !== -1
+    ) {
+      // Leaf node of a script tag has a little bit higher severity.
+      if (
+        nodeType[cur.nodeType] == "TEXT_NODE" &&
+        cur.parentNode.nodeName.toLowerCase() === "script"
+      ) {
+        return [
+          {
+            HTMLNodeType: cur.parentNode.nodeName,
+            HTMLLocationType: nodeType[cur.nodeType],
+            Severity: 1,
+            Reason: "LEAF NODE SCRIPT TAG"
+          }
+        ];
+      }
+      // Otherwise, it's just a regular leaf, with no severity.
       return [
         {
           HTMLNodeType: cur.parentNode.nodeName,
           HTMLLocationType: nodeType[cur.nodeType],
-          EventContext: event.RawEvent,
           Severity: 0,
           Reason: "LEAF"
         }
@@ -88,10 +94,14 @@ const jobs = (() => {
     }
     return [];
   };
-  const leafNodeCheck = (cur, event, tp) => {
+  const svgNodeCheck = (cur, event) => {
     // SVG nodes don't have an innerText method
     if (cur.nodeName.toLowerCase() === "svg" || cur.viewportElement) {
-      if (cur.innerHTML.toLowerCase().indexOf(tp.toLowerCase()) !== -1) {
+      if (
+        cur.innerHTML
+          .toLowerCase()
+          .indexOf(event.TracerPayload.toLowerCase()) !== -1
+      ) {
         let sev = 1;
         // Text writes indicate the DOM was written with an API such as .innerText.
         // These are likely not exploitable.
@@ -103,41 +113,21 @@ const jobs = (() => {
           {
             HTMLNodeType: cur.parentNode.nodeName,
             HTMLLocationType: "TEXT",
-            EventContext: event.RawEvent,
             Severity: sev,
             Reason: "LEAF NODE SVG TAG"
           }
         ];
       }
-    } else {
-      // Check for leaf nodes.
-      if (cur.innerText.toLowerCase().indexOf(tp.toLowerCase()) !== -1) {
-        let sev = 1;
-        // Text writes indicate the DOM was written with an API such as .innerText.
-        // These are likely not exploitable.
-        if (event.EventType.toLowerCase() === "text") {
-          sev = 0;
-        }
-        // Lead node of a script tage
-        if (cur.parentNode.nodeName.toLowerCase() === "script") {
-          return [
-            {
-              HTMLNodeType: cur.parentNode.nodeName,
-              HTMLLocationType: "TEXT",
-              EventContext: event.RawEvent,
-              Severity: sev,
-              Reason: "LEAF NODE SCRIPT TAG"
-            }
-          ];
-        }
-      }
     }
     return [];
   };
 
-  const nodeNameCheck = (cur, event, tp) => {
+  const nodeNameCheck = (cur, event) => {
     // Checking the node names
-    if (cur.nodeName.toLowerCase().indexOf(tp.toLowerCase()) !== -1) {
+    if (
+      cur.nodeName.toLowerCase().indexOf(event.TracerPayload.toLowerCase()) !==
+      -1
+    ) {
       let sev = 3;
       // Text writes indicate the DOM was written with an API such as .innerText.
       // These are likely not exploitable.
@@ -148,7 +138,6 @@ const jobs = (() => {
         {
           HTMLNodeType: cur.parentNode.nodeName,
           HTMLLocationType: "NODE NAME",
-          EventContext: event.RawEvent,
           Severity: sev,
           Reason: "NODE NAME"
         }
@@ -157,13 +146,17 @@ const jobs = (() => {
     return [];
   };
 
-  const attributesCheck = (cur, event, tp) => {
+  const attributesCheck = (cur, event) => {
     // Checking the attributes
     return [...cur.attributes]
       .map(a => {
         let agg = [];
         // the attribute name contains a tracer
-        if (a.nodeName.toLowerCase().indexOf(tp.toLowerCase()) !== -1) {
+        if (
+          a.nodeName
+            .toLowerCase()
+            .indexOf(event.TracerPayload.toLowerCase()) !== -1
+        ) {
           let sev = 3;
           // Text writes indicate the DOM was written with an API such as .innerText.
           // These are likely not exploitable.
@@ -173,9 +166,8 @@ const jobs = (() => {
           agg = [
             ...agg,
             {
-              HTMLNodeType: cur.parentNode.nodeName,
+              HTMLNodeType: cur.nodeName,
               HTMLLocationType: "ATTRIBUTE NAME",
-              EventContext: event.RawEvent,
               Severity: sev,
               Reason: "ATTRIBUTE NAME"
             }
@@ -183,7 +175,9 @@ const jobs = (() => {
         }
 
         // the attribute value contains a tracer
-        const i = a.value.toLowerCase().indexOf(tp.toLowerCase());
+        const i = a.value
+          .toLowerCase()
+          .indexOf(event.TracerPayload.toLowerCase());
         if (i !== -1) {
           let sev = 1;
           let reason = "ATTRIBUTE VALUE";
@@ -207,9 +201,8 @@ const jobs = (() => {
           agg = [
             ...agg,
             {
-              HTMLNodeType: cur.parentNode.nodeName,
+              HTMLNodeType: cur.nodeName,
               HTMLLocationType: "ATTRIBUTE VALUE",
-              EventContext: event.RawEvent,
               Severity: sev,
               Reason: reason
             }
@@ -225,15 +218,8 @@ const jobs = (() => {
   // DOMParser API and TreeWalker API. Based on the placement of the tracer
   // payload in the DOM, it assigns severities to all areas where a tracer
   // payload is written to the DOM. Returns an arrays of events.
-  const findDOMContexts = (event, tp, tw) => {
-    // Search through the DOM event for instances of the tracer payload.
-    // If one is found, assign it a severity rating and collect data about
-    // its surrounding.
-    const nodes = [];
-    while (tw.nextNode()) {
-      nodes.push(tw.currentNode);
-    }
-    return [
+  const findDOMContexts = (event, nodes) => {
+    const contexts = [
       // First only do the non-text and non-comment nodes since those are special cases.
       ...nodes
         .filter(
@@ -242,9 +228,9 @@ const jobs = (() => {
             nodeType[cur.nodeType] !== "COMMENT_NODE"
         )
         .map(cur => [
-          ...leafNodeCheck(cur, event, tp),
-          ...nodeNameCheck(cur, event, tp),
-          ...attributesCheck(cur, event, tp)
+          ...svgNodeCheck(cur, event),
+          ...nodeNameCheck(cur, event),
+          ...attributesCheck(cur, event)
         ]),
       // Then, do the text and comment nodes. These don't have innerText attributes
       ...nodes
@@ -253,14 +239,16 @@ const jobs = (() => {
             nodeType[cur.nodeType] === "TEXT_NODE" ||
             nodeType[cur.nodeType] === "COMMENT_NODE"
         )
-        .map(cur => [...textCommentNodeCheck(cur, event, tp)])
+        .map(cur => [...textCommentNodeCheck(cur, event)])
     ]
       .filter(e => e.length !== 0)
-      .map(c => ({
+      .map((c, i) => ({
         ...event,
         ...c.pop(),
-        TracerPayload: tp
+        TracerPayload: event.TracerPayload,
+        RawEventIndex: i
       }));
+    return contexts;
   };
 
   const nodeType = {

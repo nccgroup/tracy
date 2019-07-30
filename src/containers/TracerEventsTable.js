@@ -14,7 +14,7 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch => ({
-  addEvent: event => dispatch(actions.addEvent(event)),
+  addEvents: events => dispatch(actions.addEvents(events)),
   updateEvents: events => dispatch(actions.updateEvents(events)),
   selectEvent: (index, id, clicked) =>
     dispatch(actions.selectEvent(index, id, clicked))
