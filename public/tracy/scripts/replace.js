@@ -110,8 +110,10 @@ const replace = (() => {
   // keep the original body types.
   const body = async body => {
     if (body instanceof Blob) {
-      //TODO: maybe we shouldn't support blobs of data?
-      return await replaceBlob(body);
+      // Stringifying this data wasn't really working well and was messing up
+      // the data. Since the data here is in a binary format, I don't really
+      // want to corrupt and data otherwise web browsing experience will be bad.
+      return { body: body, tracers: [] }; // await replaceBlob(body);
     } else if (body instanceof ArrayBuffer) {
       return replaceBufferSource(body);
     } else if (body instanceof FormData) {
@@ -164,12 +166,12 @@ const replace = (() => {
     const reader = new FileReader();
     return new Promise(r => {
       reader.addEventListener("loadend", e => {
-        ({ str, tracers } = str(e.srcElement.result));
+        const replacement = str(e.srcElement.result);
         r({
-          body: new Blob([str], {
+          body: new Blob([replacement.str], {
             type: blob.type
           }),
-          tracers: tracers
+          tracers: replacement.tracers
         });
       });
       reader.readAsText(blob);
