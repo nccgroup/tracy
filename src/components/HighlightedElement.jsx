@@ -55,9 +55,18 @@ class HighlightedElement extends PureComponent {
           // hljs is the root node of the <code> tage
           if ([...parent.classList].includes("hljs")) {
             const sibling = textNodes[i].previousSibling;
-            sibling.appendChild(preSpan);
-            sibling.appendChild(styledSpan);
-            sibling.appendChild(postSpan);
+            let topDiv;
+            if (sibling) {
+              topDiv = sibling;
+            } else {
+              // This case only happens when there is only one line in the code snippet
+              // and there aren't any siblings
+              topDiv = parent;
+            }
+
+            topDiv.appendChild(preSpan);
+            topDiv.appendChild(styledSpan);
+            topDiv.appendChild(postSpan);
           } else {
             parent.appendChild(preSpan);
             parent.appendChild(styledSpan);

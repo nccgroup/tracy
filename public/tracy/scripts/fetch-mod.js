@@ -51,29 +51,23 @@
       });
 
       return argsp.then(args => {
-        // If any tracers were added to this form, send API request to log them.
-        if (tracersa.length > 0) {
-        }
-
-        if (args.tracers.length !== 0) {
-          (async () => {
-            args.tracers.map(t => {
-              // When creating a tracer, make sure the Requests and OverallSeverity
-              // attributes are there.
-              t.Requests = [];
-              t.OverallSeverity = 0;
-              t.HasTracerEvents = false;
-              window.postMessage(
-                {
-                  "message-type": "database",
-                  query: "addTracer",
-                  tracer: t
-                },
-                "*"
-              );
-            });
-          })();
-        }
+        (async () => {
+          args.tracers.map(t => {
+            // When creating a tracer, make sure the Requests and OverallSeverity
+            // attributes are there.
+            t.Requests = [];
+            t.OverallSeverity = 0;
+            t.HasTracerEvents = false;
+            window.postMessage(
+              {
+                "message-type": "database",
+                query: "addTracer",
+                tracer: t
+              },
+              "*"
+            );
+          });
+        })();
         return Reflect.apply(t, thisa, args.al);
       });
     }
