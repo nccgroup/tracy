@@ -149,6 +149,7 @@ export default class TracerEventsTable extends Component {
               desc: true
             }
           ]}
+          defaultPageSize={10}
         />
       </div>
     );

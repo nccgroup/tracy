@@ -86,7 +86,7 @@ export default class RequestTable extends Component {
               desc: true
             }
           ]}
-          defaultPageSize={25}
+          defaultPageSize={10}
         />
       </div>
     );
