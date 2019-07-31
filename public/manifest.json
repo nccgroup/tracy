@@ -1,0 +1,75 @@
+{
+  "name": "Tracy",
+  "description":
+    "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
+  "version": "0.7.1",
+  "permissions": [
+    "<all_urls>",
+    "storage",
+    "contextMenus",
+    "alarms",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+  "background": {
+    "scripts": [
+      "tracy/scripts/replace.js",
+      "tracy/scripts/router.js",
+      "tracy/scripts/request-capture.js",
+      "tracy/scripts/reproductions.js",
+      "tracy/scripts/settings.js",
+      "tracy/scripts/screenshot.js",
+      "tracy/scripts/background-fetch.js",
+      "tracy/scripts/jobs.js",
+      "tracy/scripts/ui.js",
+      "tracy/scripts/database.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "js": [
+        "tracy/scripts/util.js",
+        "tracy/scripts/highlight.js",
+        "tracy/scripts/replace.js",
+        "tracy/scripts/dom-mutations.js",
+        "tracy/scripts/method-hooking-injector.js"
+      ],
+      "css": ["tracy/css/dropdown.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "js": ["tracy/scripts/form-mod.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_action": {
+    "default_title": "Tracy",
+    "default_icon": {
+      "16": "tracy/images/tracy_16x16.png",
+      "48": "tracy/images/tracy_48x48.png",
+      "96": "tracy/images/tracy_96x96.png",
+      "128": "tracy/images/tracy_128x128.png"
+    }
+  },
+  "web_accessible_resources": [
+    "tracy/scripts/replace.js",
+    "tracy/scripts/xhr-mod.js",
+    "tracy/scripts/fetch-mod.js",
+    "tracy/scripts/inner-html-mod.js",
+    "tracy/scripts/repro.js",
+    "tracy/scripts/worker.js",
+    "tracy/scripts/method-hooking.js",
+    "tracy/images/tracy_svg.svg"
+  ],
+  "manifest_version": 2,
+  "icons": {
+    "16": "tracy/images/tracy_16x16.png",
+    "48": "tracy/images/tracy_48x48.png",
+    "96": "tracy/images/tracy_96x96.png",
+    "128": "tracy/images/tracy_128x128.png"
+  }
+}
