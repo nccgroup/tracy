@@ -194,19 +194,50 @@ ${body}`;
           }
 
           // If there weren't payloads in the query parameters, search
-          // through the request body for tracers. Currently, in Chrome
-          // there is a weird issue going one where this is getting set to
-          //{error: "Unknown error."}
-          // Haven't idenified the issue yet.
-          if (r.requestBody && typeof r.requestBody === "string") {
-            if (r.requestBody.indexOf(p) !== -1) {
-              return p;
-            }
+          // through the request body for tracers. This object either has
+          // an error, formData, or raw data.
+          if (r.requestBody) {
+            return Object.keys(r.requestBody)
+              .map(k => {
+                switch (k) {
+                  case "error":
+                    return [];
+                  case "formData":
+                    const search = (accum, cur) => {
+                      if (cur.indexOf(p) !== -1) return [...accum, p];
+                      return accum;
+                    };
+                    const form = r.requestBody.formData;
+                    return [
+                      ...Object.keys(form).reduce(search, []),
+                      ...Object.values(form)
+                        .flat()
+                        .reduce(search, [])
+                    ];
+                  case "raw":
+                    // I think this is similar to the Blob situation. Let's just
+                    // log this and not look for tracers since the data is
+                    // going to be in a binary format.
+
+                    const str = String.fromCharCode.apply(
+                      null,
+                      new Uint16Array(r.requestBody.raw.pop())
+                    );
+
+                    if (str.indexOf(p) !== -1) {
+                      return [p];
+                    }
+                    return [];
+                  default:
+                    return [];
+                }
+              })
+              .flat();
           }
         })
         .filter(Boolean);
       const p = requests[`${r.requestId}:${r.url}`];
-      const data = { body: r.requestBody || "", tracers: tracersn };
+      const data = { body: formatBody(r.requestBody) || "", tracers: tracersn };
 
       // If a promise function already exists there, that means the other
       // callback executed first and is waiting for this one to finish.
@@ -221,6 +252,36 @@ ${body}`;
     { urls: ["<all_urls>"] },
     ["requestBody"]
   );
+
+  const formatBody = body => {
+    if (!body) return "";
+    return Object.keys(body)
+      .map(k => {
+        switch (k) {
+          case "error":
+            return "";
+          case "formData":
+            const form = body.formData;
+            let formStr = "";
+            for (i in form) {
+              formStr = `${formStr}${i}=${form[i]}&`;
+            }
+            return formStr.substring(0, formStr.length - 1);
+          case "raw":
+            // I think this is similar to the Blob situation. Let's just
+            // log this and not look for tracers since the data is
+            // going to be in a binary format.
+            return String.fromCharCode.apply(
+              null,
+              new Uint16Array(r.requestBody.raw.pop())
+            );
+          default:
+            console.log("new key in request body", r.requestBody);
+            return "";
+        }
+      })
+      .pop();
+  };
 
   const removeAfter = async (id, time = 10000) => {
     await new Promise(resolve => setTimeout(resolve, time));
