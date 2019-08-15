@@ -186,6 +186,7 @@ ${body}`;
         return;
       }
       const payloads = tracers.map(t => t.TracerPayload);
+
       const tracersn = payloads
         .map(p => {
           // Search through all the query parameters for tracers.
@@ -215,16 +216,11 @@ ${body}`;
                         .reduce(search, [])
                     ];
                   case "raw":
-                    // I think this is similar to the Blob situation. Let's just
-                    // log this and not look for tracers since the data is
-                    // going to be in a binary format.
-
-                    const str = String.fromCharCode.apply(
-                      null,
-                      new Uint16Array(r.requestBody.raw.pop())
-                    );
-
-                    if (str.indexOf(p) !== -1) {
+                    // JSON blobs come this way.
+                    const body = String.fromCharCode
+                      .apply(null, new Uint8Array(r.requestBody.raw[0]))
+                      .toLowerCase();
+                    if (body.indexOf(p) !== -1) {
                       return [p];
                     }
                     return [];
