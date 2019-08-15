@@ -117,12 +117,6 @@ export default class TracerTable extends Component {
                 default:
                   classname = "unexploitable";
               }
-              console.log(
-                "rowINFO",
-
-                state,
-                this.props.selectedTracerTableIndex
-              );
               if (rowInfo.viewIndex === this.props.selectedTracerTableIndex) {
                 // Check to make sure the table entries haven't changed. If they have correct it.
                 if (
