@@ -35,7 +35,7 @@ const search = (domEvents, tracerPayloads) => {
 
       // If a tracer was found, add it to the list of tracers found for this event.
       // Continue to the rest of the recorded.
-      const tracerLocation = domEvent.msg.indexOf(tracerPayload);
+      const tracerLocation = domEvent.msg.toLowerCase().indexOf(tracerPayload);
       if (tracerLocation != -1) {
         // Add this location data to the list of tracers per DOM event.
         tracersPerDomEvent.push(tracerPayload);
