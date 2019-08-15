@@ -198,7 +198,7 @@ ${body}`;
           // through the request body for tracers. This object either has
           // an error, formData, or raw data.
           if (r.requestBody) {
-            return Object.keys(r.requestBody)
+            const bodySearch = Object.keys(r.requestBody)
               .map(k => {
                 switch (k) {
                   case "error":
@@ -218,7 +218,7 @@ ${body}`;
                   case "raw":
                     // JSON blobs come this way.
                     const body = String.fromCharCode
-                      .apply(null, new Uint8Array(r.requestBody.raw[0]))
+                      .apply(null, new Uint8Array(r.requestBody.raw[0].bytes))
                       .toLowerCase();
                     if (body.indexOf(p) !== -1) {
                       return [p];
@@ -228,10 +228,16 @@ ${body}`;
                     return [];
                 }
               })
-              .flat();
+              .flat()
+              .filter(t => t.length > 0)
+
+              if (bodySearch.length > 0) {
+                  return p;
+              }
           }
         })
-        .filter(Boolean);
+        .filter(Boolean)
+
       const p = requests[`${r.requestId}:${r.url}`];
       const data = { body: formatBody(r.requestBody) || "", tracers: tracersn };
 
@@ -269,14 +275,12 @@ ${body}`;
             // going to be in a binary format.
             return String.fromCharCode.apply(
               null,
-              new Uint16Array(r.requestBody.raw.pop())
+              new Uint8Array(body.raw[0].bytes)
             );
           default:
-            console.log("new key in request body", r.requestBody);
             return "";
         }
-      })
-      .pop();
+      })[0]
   };
 
   const removeAfter = async (id, time = 10000) => {
