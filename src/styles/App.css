@@ -269,18 +269,18 @@ pre.raw-data {
   color: #e6e6e8;
 }
 
-.exploitable {
+.exploitable, .row-selected.exploitable {
   color: #ff9994;
 }
 
 .unexploitable {
 }
 
-.suspicious {
+.suspicious, .row-selected.suspicious {
   color: #fdfd96;
 }
 
-.probable {
+.probable, .row-selected.probable {
   color: #ffb347;
 }
 
