@@ -7,14 +7,15 @@ export default class RawView extends Component {
       return <div className="raw-view" />;
     }
     let lang;
-    let data;
+    let data = "...\n...\n";
     try {
-      data = JSON.stringify(JSON.parse(this.props.event.RawEvent), null, "  ");
+      data += JSON.stringify(JSON.parse(this.props.event.RawEvent), null, "  ");
       lang = "json";
     } catch (e) {
-      data = this.props.event.RawEvent;
+      data += this.props.event.RawEvent;
       lang = "html";
     }
+    data += "\n...\n...";
     return (
       <EventDetails
         data={data}

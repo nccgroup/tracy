@@ -77,6 +77,7 @@ class HighlightedElement extends PureComponent {
           highlightIndex++;
           if (highlightIndex === this.props.highlightOffset) {
             styledSpan.scrollIntoView();
+            return;
           }
         }
       }

@@ -246,9 +246,32 @@ const jobs = (() => {
         ...event,
         ...c.pop(),
         TracerPayload: event.TracerPayload,
-        RawEventIndex: i
+        RawEvent: truncateStringAround(
+          event.RawEvent,
+          event.TracerPayload,
+          1000,
+          i
+        ),
+        RawEventIndex: 0
       }));
     return contexts;
+  };
+
+  // truncateStringAround truncates a provided string based on another string
+  // found within it and does so with the provided number of padding. It provides
+  // an optional parameter for including which instance of the string occurance
+  // to center around, but will default to the first instance.
+  const truncateStringAround = (str, around, padding, instance = 0) => {
+    let instanceIndex = -1;
+    for (let i = -1; i < instance; i++) {
+      instanceIndex = str.toLowerCase().indexOf(around.toLowerCase());
+    }
+    if (instanceIndex === -1) {
+      console.log(`error finding ${around} in ${str} of instance ${instance}`);
+      return "";
+    }
+
+    return str.substring(instanceIndex - padding, instanceIndex + padding + 1);
   };
 
   const nodeType = {

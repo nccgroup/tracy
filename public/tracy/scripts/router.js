@@ -46,7 +46,20 @@
               dbprom = new Promise(r => r("BAD"));
               break;
           }
-          dbprom.then(t => sendResponse(t));
+          dbprom.then(t => {
+            try {
+              sendResponse(t);
+            } catch (e) {
+              console.error(
+                "failed to send a response to a database request",
+                message,
+                t,
+                e
+              );
+              // Send an empty response to make sure the UI doesn't get stuck.
+              sendResponse([]);
+            }
+          });
           return true;
       }
     }
