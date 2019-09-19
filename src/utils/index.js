@@ -55,30 +55,16 @@ export const getTracerEvents = async tracerPayload => {
 };
 
 // getTracers returns all the tracers.
-export const getTracers = async () => {
-  const { tracyLocal } = await new Promise(r =>
-    chrome.storage.local.get({ tracyLocal: true }, res => r(res))
+export const getTracers = async () =>
+  await new Promise(r =>
+    chrome.runtime.sendMessage(
+      {
+        "message-type": "database",
+        query: "getTracers"
+      },
+      res => r(res)
+    )
   );
-
-  // If the user has selected they want to use the local version
-  // query the local database. Otherwise, make an API request.
-  if (tracyLocal) {
-    return await new Promise(r =>
-      chrome.runtime.sendMessage(
-        {
-          "message-type": "database",
-          query: "getTracers"
-        },
-        res => r(res)
-      )
-    );
-  }
-  return await retryRequest(
-    newTracyRequest(`/tracers`, {
-      method: "GET"
-    })
-  );
-};
 
 export const retryRequest = async req => {
   while (true) {

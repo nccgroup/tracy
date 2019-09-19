@@ -1,3 +1,4 @@
+/* global chrome */
 import React from "react";
 
 export default class Options extends React.Component {
@@ -43,11 +44,20 @@ export default class Options extends React.Component {
   };
 
   createFirstProject = () => {
-    const proj = {
-      proj: { name: "first project", apiKey: this.generateUUID() }
-    };
-    this.props.updateProjects(this.props.projs.concat(proj));
-    this.props.changeSetting(proj);
+    // When we create the first project, make sure an API key wasn't already
+    // created for that project (can happen if you start to insert tracers before
+    // the UI ever opens). If so, use that API key.
+    chrome.storage.local.get({ apiKey: "" }, o => {
+      let key = o.apiKey;
+      if (!key) {
+        key = this.generateUUID();
+      }
+      const proj = {
+        proj: { name: "first project", apiKey: key }
+      };
+      this.props.updateProjects(this.props.projs.concat(proj));
+      this.props.changeSetting(proj);
+    });
   };
 
   render = () => (
@@ -82,28 +92,3 @@ export default class Options extends React.Component {
     </div>
   );
 }
-
-/*     <h3>Tracy Local</h3>
-<input
-type="checkbox"
-id="tracyLocal"
-checked={this.props.tracyLocal}
-onChange={this.handleOnChange}
-/>
-<h3>Server Host</h3>
-<input
-type="text"
-id="tracyHost"
-value={this.props.tracyHost}
-onChange={this.handleOnChange}
-disabled={this.props.tracyLocal}
-/>
-<h3>Server Port</h3>
-<input
-type="text"
-id="tracyPort"
-value={this.props.tracyPort}
-onChange={this.handleOnChange}
-disabled={this.props.tracyLocal}
-/>
-*/
