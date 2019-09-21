@@ -18,7 +18,7 @@ jobs:
         CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
         REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
         API_KEY: ${{ secrets.FIREFOX_JWT_ISSUER }}
-        API_SECRET: $${{ secrets.FIREFOX_JWT_SECRET }}
+        API_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
       run: |
         env
         echo $API_KEY
