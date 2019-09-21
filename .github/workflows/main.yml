@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Build the new extension version.
     steps:
+    - uses: actions/checkout@master
+    - uses: actions/setup-node@master
     - name: npm install, build, and deploy
       env:
         CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
