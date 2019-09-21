@@ -11,9 +11,13 @@ jobs:
     name: Build the new extension version.
     steps:
     - name: npm install, build, and deploy
-    run: |
-      npm install
-      npm run build
-      npx web-ext build -s ./public/
-      npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn
+      env:
+        CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+        CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+        REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+      run: |
+        npm install
+        npm run build
+        npx web-ext build -s ./public/
+        npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn
 
