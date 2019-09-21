@@ -24,4 +24,4 @@ jobs:
         npm run build
         npx web-ext build -s ./public/
         npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn
-        npx web-ext sign --api-key $API_KEY --api-secret $API_SECRET -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} -v 2>/dev/null
+        npx web-ext sign --api-key "$API_KEY" --api-secret "$API_SECRET" -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} -v
