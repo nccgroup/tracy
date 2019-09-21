@@ -20,9 +20,6 @@ jobs:
         API_KEY: ${{ secrets.FIREFOX_JWT_ISSUER }}
         API_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
       run: |
-        env
-        echo $API_KEY
-        echo $API_SECRET
         npm install
         npm run build
         npx web-ext build -s ./public/
