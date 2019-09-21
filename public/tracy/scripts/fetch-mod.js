@@ -42,34 +42,42 @@
               }
             });
           } else {
-            if (headers) al[1].headers = headers.headers;
-            r({ al: al, tracers: u.tracers.concat(headers.tracers) });
+            if (headers) {
+              al[1].headers = headers.headers;
+              r({ al: al, tracers: u.tracers.concat(headers.tracers) });
+            } else {
+              r({ al: al, tracers: u.tracers });
+            }
           }
         } else {
           r({ al: al, tracers: u.tracers });
         }
       });
 
-      return argsp.then(args => {
-        (async () => {
-          args.tracers.map(t => {
-            // When creating a tracer, make sure the Requests and OverallSeverity
-            // attributes are there.
-            t.Requests = [];
-            t.OverallSeverity = 0;
-            t.HasTracerEvents = false;
-            window.postMessage(
-              {
-                "message-type": "database",
-                query: "addTracer",
-                tracer: t
-              },
-              "*"
-            );
-          });
-        })();
-        return Reflect.apply(t, thisa, args.al);
-      });
+      return argsp
+        .then(args => {
+          (async () => {
+            args.tracers.map(t => {
+              // When creating a tracer, make sure the Requests and OverallSeverity
+              // attributes are there.
+              t.Requests = [];
+              t.OverallSeverity = 0;
+              t.HasTracerEvents = false;
+              window.postMessage(
+                {
+                  "message-type": "database",
+                  query: "addTracer",
+                  tracer: t
+                },
+                "*"
+              );
+            });
+          })();
+          return Reflect.apply(t, thisa, args.al);
+        })
+        .catch(e => {
+          console.error("[FETCH-MOD]: ", e);
+        });
     }
   });
 })();
