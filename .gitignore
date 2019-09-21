@@ -2,3 +2,4 @@
 flymake*
 node_modules/*
 build/*
+web-ext-artifacts/*

@@ -20,10 +20,8 @@ jobs:
         API_KEY: ${{ secrets.FIREFOX_JWT_ISSUER }}
         API_SECRET: $${{ secrets.FIREFOX_JWT_SECRET }}
       run: |
-        echo $(pwd)
-        ls -l ./
         npm install
         npm run build
         npx web-ext build -s ./public/
         npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn
-        npx web-ext sign --api-key $API_KEY --api-secret $API_SECRET -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} -v
+        npx web-ext sign --api-key $API_KEY --api-secret $API_SECRET -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} -v 2>/dev/null
