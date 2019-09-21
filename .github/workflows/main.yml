@@ -8,11 +8,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build the new extension version.
+    name: Build the new extension version and upload it the Chrome and Firefox stores.
     steps:
     - uses: actions/checkout@master
     - uses: actions/setup-node@master
-    - name: npm install, build, and deploy
+    - name: npm run deploy
       env:
         CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
         CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
@@ -20,8 +20,4 @@ jobs:
         API_KEY: ${{ secrets.FIREFOX_JWT_ISSUER }}
         API_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
       run: |
-        npm install
-        npm run build
-        npx web-ext build -s ./public/
-        npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn
-        npx web-ext sign --api-key "$API_KEY" --api-secret "$API_SECRET" -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} -v
+        npm run deploy
