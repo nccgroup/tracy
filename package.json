@@ -24,7 +24,8 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
-    "babel-core": "^6.26.0"
+    "babel-core": "^6.26.0",
+    "chrome-webstore-upload-cli": "^1.2.0"
   },
   "eslintConfig": {
     "env": {
@@ -33,5 +34,10 @@
       "node": true
     }
   },
-  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"]
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }
