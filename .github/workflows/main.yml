@@ -17,8 +17,8 @@ jobs:
         CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
         CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
         REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-        FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
-        FIREFOX_JWT_SECRET: $${{ secrets.FIREFOX_JWT_SECRET }}
+        API_KEY: ${{ secrets.FIREFOX_JWT_ISSUER }}
+        API_SECRET: $${{ secrets.FIREFOX_JWT_SECRET }}
       run: |
         echo $(pwd)
         ls -l ./
@@ -26,4 +26,4 @@ jobs:
         npm run build
         npx web-ext build -s ./public/
         npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn
-        npx web-ext sign --api-key $FIREFOX_JWT_ISSUER --api-secret $FIREFOX_JWT_SECRET -s ./build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} -v
+        npx web-ext sign --api-key $API_KEY --api-secret $API_SECRET -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} -v
