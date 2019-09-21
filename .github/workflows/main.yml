@@ -1,0 +1,19 @@
+name: Extension Deployment
+
+on: 
+  push:
+    branches:
+    - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build the new extension version.
+    steps:
+    - name: npm install, build, and deploy
+    run: |
+      npm install
+      npm run build
+      npx web-ext build -s ./public/
+      npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn
+
