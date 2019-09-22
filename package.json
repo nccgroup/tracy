@@ -17,21 +17,18 @@
     "redux": "^4.0.1"
   },
   "scripts": {
-    "start":
-      "npx web-ext run -s build --no-input true & echo \"$(find public) $(find src)\" | entr sh -c \"npm run build\" ",
+    "start": "npx web-ext run -s build --no-input true & echo \"$(find public) $(find src)\" | entr sh -c \"npm run build\" ",
     "build": "INLINE_RUNTIME_CHUNK=false react-scripts build",
     "compile-ext": "npx web-ext build --overwrite-dest -s ./build/",
-    "deploy-chrome":
-      "npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn",
-    "deploy-firefox":
-      "npx web-ext sign --api-key \"$API_KEY\" --api-secret \"$API_SECRET\" -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} --api-url-prefix https://addons.mozilla.org/api/v4 -v",
-    "deploy":
-      "npm install;npm run build;npm run compile-ext;npm run deploy-chrome;npm run deploy-firefox"
+    "deploy-chrome": "npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn",
+    "deploy-firefox": "npx web-ext-submit --api-key \"$API_KEY\" --api-secret \"$API_SECRET\" -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} --api-url-prefix https://addons.mozilla.org/api/v4",
+    "deploy": "npm install;npm run build;npm run compile-ext;npm run deploy-chrome;npm run deploy-firefox"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
     "chrome-webstore-upload-cli": "^1.2.0",
-    "web-ext": "^3.1.1"
+    "web-ext": "^3.1.1",
+    "web-ext-submit": "^3.1.1"
   },
   "eslintConfig": {
     "env": {
@@ -40,5 +37,10 @@
       "node": true
     }
   },
-  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"]
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }
