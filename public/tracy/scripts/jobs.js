@@ -252,7 +252,7 @@ const jobs = (() => {
           1000,
           i
         ),
-        RawEventIndex: 0
+        RawEventIndex: i
       }));
     return contexts;
   };
@@ -262,9 +262,11 @@ const jobs = (() => {
   // an optional parameter for including which instance of the string occurance
   // to center around, but will default to the first instance.
   const truncateStringAround = (str, around, padding, instance = 0) => {
-    let instanceIndex = -1;
+    let instanceIndex = 0;
     for (let i = -1; i < instance; i++) {
-      instanceIndex = str.toLowerCase().indexOf(around.toLowerCase());
+      instanceIndex = str
+        .toLowerCase()
+        .indexOf(around.toLowerCase(), instanceIndex);
     }
     if (instanceIndex === -1) {
       console.log(`error finding ${around} in ${str} of instance ${instance}`);

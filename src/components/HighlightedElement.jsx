@@ -26,56 +26,57 @@ class HighlightedElement extends PureComponent {
         const data = textNodes[i].data;
         const idx = data.indexOf(this.props.highlightString);
         if (idx !== -1) {
-          const pre = data.substring(0, idx);
-          const highlight = data.substring(
-            idx,
-            idx + this.props.highlightString.length
-          );
-          const post = data.substring(
-            idx + this.props.highlightString.length,
-            data.length
-          );
-          let styledSpan = document.createElement("span");
-          styledSpan.classList.add("highlight");
-          styledSpan.innerText = highlight;
-
-          let preSpan = document.createElement("span");
-          preSpan.innerText = pre;
-
-          let postSpan = document.createElement("span");
-          postSpan.innerText = post;
-
-          let parent = textNodes[i].parentNode;
-
-          // For attributes, we can just take the parent node and add
-          // our newly generated nodes because attribute names and values
-          // get wrapped in a div. The classnames that define if its an attribute
-          // are below:
-
-          // hljs is the root node of the <code> tage
-          if ([...parent.classList].includes("hljs")) {
-            const sibling = textNodes[i].previousSibling;
-            let topDiv;
-            if (sibling) {
-              topDiv = sibling;
-            } else {
-              // This case only happens when there is only one line in the code snippet
-              // and there aren't any siblings
-              topDiv = parent;
-            }
-
-            topDiv.appendChild(preSpan);
-            topDiv.appendChild(styledSpan);
-            topDiv.appendChild(postSpan);
-          } else {
-            parent.appendChild(preSpan);
-            parent.appendChild(styledSpan);
-            parent.appendChild(postSpan);
-          }
-          parent.removeChild(textNodes[i]);
-
           highlightIndex++;
+          // Only highlight one payload per section
           if (highlightIndex === this.props.highlightOffset) {
+            const pre = data.substring(0, idx);
+            const highlight = data.substring(
+              idx,
+              idx + this.props.highlightString.length
+            );
+            const post = data.substring(
+              idx + this.props.highlightString.length,
+              data.length
+            );
+            let styledSpan = document.createElement("span");
+            styledSpan.classList.add("highlight");
+            styledSpan.innerText = highlight;
+
+            let preSpan = document.createElement("span");
+            preSpan.innerText = pre;
+
+            let postSpan = document.createElement("span");
+            postSpan.innerText = post;
+
+            let parent = textNodes[i].parentNode;
+
+            // For attributes, we can just take the parent node and add
+            // our newly generated nodes because attribute names and values
+            // get wrapped in a div. The classnames that define if its an attribute
+            // are below:
+
+            // hljs is the root node of the <code> tage
+            if ([...parent.classList].includes("hljs")) {
+              const sibling = textNodes[i].previousSibling;
+              let topDiv;
+              if (sibling) {
+                topDiv = sibling;
+              } else {
+                // This case only happens when there is only one line in the code snippet
+                // and there aren't any siblings
+                topDiv = parent;
+              }
+
+              topDiv.appendChild(preSpan);
+              topDiv.appendChild(styledSpan);
+              topDiv.appendChild(postSpan);
+            } else {
+              parent.appendChild(preSpan);
+              parent.appendChild(styledSpan);
+              parent.appendChild(postSpan);
+            }
+            parent.removeChild(textNodes[i]);
+
             styledSpan.scrollIntoView();
             return;
           }
