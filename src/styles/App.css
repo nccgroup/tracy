@@ -35,8 +35,8 @@ main > div.app {
 
 .lower-nav {
   display: flex;
-  flex-flow: row wrap;
-  justify-content: center;
+  flex-flow: column wrap;
+  align-content: center;
   margin-bottom: 10px;
 }
 
@@ -46,6 +46,19 @@ main > div.app {
   display: grid;
   grid-template-columns: 50% 50%;
   grid-template-rows: 5% 50% 45%;
+}
+
+.settings-wrapper {
+  width: 100%;
+  align-content: flex-start;
+  display: flex;
+  flex-flow: column wrap;
+}
+
+.settings-row {
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: flex-start;
 }
 
 .table-container-tracers {
@@ -269,18 +282,21 @@ pre.raw-data {
   color: #e6e6e8;
 }
 
-.exploitable, .row-selected.exploitable {
+.exploitable,
+.row-selected.exploitable {
   color: #ff9994;
 }
 
 .unexploitable {
 }
 
-.suspicious, .row-selected.suspicious {
+.suspicious,
+.row-selected.suspicious {
   color: #fdfd96;
 }
 
-.probable, .row-selected.probable {
+.probable,
+.row-selected.probable {
   color: #ffb347;
 }
 

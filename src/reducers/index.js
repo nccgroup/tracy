@@ -101,9 +101,6 @@ const rootReducer = (state = init, action) => {
         case "tracyEnabled":
           change = { tracyEnabled: action.setting.tracyEnabled };
           break;
-        case "tracyLocal":
-          change = { tracyLocal: action.setting.tracyLocal };
-          break;
         default:
           break;
       }

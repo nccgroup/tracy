@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import TracyLogo from "../components/TracyLogo";
-import WebSocketRouter from "../containers/WebSocketRouter";
-import Settings from "../containers/Settings";
+import SettingsIcon from "../containers/SettingsIcon";
+import HomeIcon from "../containers/HomeIcon";
 export default class NavSidebar extends Component {
   render = () => (
     <div className="nav-sidebar">
@@ -9,8 +9,8 @@ export default class NavSidebar extends Component {
         <TracyLogo />
       </div>
       <div className="lower-nav">
-        <Settings />
-        {!this.props.tracyLocal ? <WebSocketRouter /> : ""}
+        <HomeIcon />
+        <SettingsIcon />
       </div>
     </div>
   );

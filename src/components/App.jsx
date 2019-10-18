@@ -5,7 +5,7 @@ import TracerEventsTable from "../containers/TracerEventsTable";
 import FilterColumn from "../components/FilterColumn";
 import RequestTable from "../containers/RequestTable";
 import NavSidebar from "../containers/NavSidebar";
-import Options from "../containers/Options";
+import Settings from "../containers/Settings";
 import "../styles/App.css";
 
 export default class App extends Component {
@@ -14,7 +14,7 @@ export default class App extends Component {
       return (
         <div className="app">
           <NavSidebar />
-          <Options hidden={!this.props.onSettingsPage} />
+          <Settings hidden={!this.props.onSettingsPage} />
           <div
             style={this.props.onSettingsPage ? { display: "none" } : {}}
             className="tables"
