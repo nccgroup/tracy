@@ -43,14 +43,10 @@
   XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, {
     apply: (t, thisa, al) => {
       if (al.length < 2) return Reflect.apply(t, thisa, al);
-      thisa.method = al[0];
-      thisa.url = al[1];
       const b = replace.str(al[1]);
       if (b.tracers.length === 0) return Reflect.apply(t, thisa, al);
-      thisa.url = b.str;
       if (!thisa.tracers) thisa.tracers = [];
       thisa.tracers = thisa.tracers.concat(b.tracers);
-
       al[1] = b.str;
       return Reflect.apply(t, thisa, al);
     }
@@ -67,9 +63,6 @@
         if (tracers.length === 0) return Reflect.apply(t, thisa, al);
         if (!thisa.tracers) thisa.tracers = [];
         thisa.tracers = thisa.tracers.concat(tracers);
-        if (!thisa.headers) thisa.headers = "";
-        thisa.headers = `${thisa.headers}
-${key.str}: ${value.str}`;
         return Reflect.apply(t, thisa, [key.str, value.str]);
       }
     }
