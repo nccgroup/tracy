@@ -18,8 +18,7 @@ const search = (domEvents, tracerPayloads) => {
   let filteredEvents = [];
 
   // For each DOM write, search for all the tracer strings and collect their location.
-  for (let domEventKey in domEvents) {
-    const domEvent = domEvents[domEventKey];
+  for (let domEvent of domEvents) {
     // Some websites seem to not always write strings to the DOM. In those cases,
     // we don't care about searching.
     if (typeof domEvent.msg !== "string") {
@@ -30,9 +29,7 @@ const search = (domEvents, tracerPayloads) => {
 
     // The request is a batched list of DOM events. Iterate through each of them
     // looking for a tracer string.
-    for (let id in tracerPayloads) {
-      const tracerPayload = tracerPayloads[id];
-
+    for (let tracerPayload of tracerPayloads) {
       // If a tracer was found, add it to the list of tracers found for this event.
       // Continue to the rest of the recorded.
       const tracerLocation = domEvent.msg.toLowerCase().indexOf(tracerPayload);

@@ -35,7 +35,7 @@ const settings = (() => {
   // TODO: can't figure out why Firefox is throwing an error here
   // about duplicate IDs.
   let err;
-  tracerStringTypes.forEach(i => {
+  for (let i of tracerStringTypes) {
     chrome.contextMenus.remove(i[0], () => {
       err = chrome.runtime.lastError;
       if (err) {
@@ -54,7 +54,7 @@ const settings = (() => {
         }
       });
     });
-  });
+  }
 
   let disabled = false;
   const getAPIKey = async () =>

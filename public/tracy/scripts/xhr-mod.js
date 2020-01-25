@@ -51,7 +51,6 @@
       return Reflect.apply(t, thisa, al);
     }
   });
-
   XMLHttpRequest.prototype.setRequestHeader = new Proxy(
     XMLHttpRequest.prototype.setRequestHeader,
     {

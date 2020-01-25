@@ -11,7 +11,7 @@ export default class Inputs extends Component {
       <div className="frame">
         <HighLightedElement
           lang="http"
-          highlightOffset={-1}
+          highlightOffset={0}
           highlightString={this.props.tracer.TracerPayload}
           data={this.props.request.RawRequest}
           title="raw request"

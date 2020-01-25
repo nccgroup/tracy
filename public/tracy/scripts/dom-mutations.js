@@ -4,7 +4,7 @@
   const observer = new MutationObserver(mutations => {
     let parentNode = null;
 
-    mutations.forEach(mutation => {
+    for (let mutation of mutations) {
       if (mutation.addedNodes.length > 0) {
         mutation.addedNodes.forEach(node => {
           // Ignore scripts injected from the background page.
@@ -73,7 +73,7 @@
           });
         }
       }
-    });
+    }
   });
 
   // The configuration for the observer. We want to pretty much watch for everything.

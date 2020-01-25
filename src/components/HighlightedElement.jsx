@@ -22,8 +22,8 @@ class HighlightedElement extends PureComponent {
     let textNodes = this.textNodesUnder(node);
     let highlightIndex = -1;
     if (textNodes && textNodes.length > 0) {
-      for (let i = 0; i < textNodes.length; i++) {
-        const data = textNodes[i].data;
+      for (let textNode of textNodes) {
+        const data = textNode.data;
         const idx = data.indexOf(this.props.highlightString);
         if (idx !== -1) {
           highlightIndex++;
@@ -48,7 +48,7 @@ class HighlightedElement extends PureComponent {
             let postSpan = document.createElement("span");
             postSpan.innerText = post;
 
-            let parent = textNodes[i].parentNode;
+            let parent = textNode.parentNode;
 
             // For attributes, we can just take the parent node and add
             // our newly generated nodes because attribute names and values
@@ -57,7 +57,7 @@ class HighlightedElement extends PureComponent {
 
             // hljs is the root node of the <code> tage
             if ([...parent.classList].includes("hljs")) {
-              const sibling = textNodes[i].previousSibling;
+              const sibling = textNode.previousSibling;
               let topDiv;
               if (sibling) {
                 topDiv = sibling;
@@ -75,7 +75,7 @@ class HighlightedElement extends PureComponent {
               parent.appendChild(styledSpan);
               parent.appendChild(postSpan);
             }
-            parent.removeChild(textNodes[i]);
+            parent.removeChild(textNode);
 
             styledSpan.scrollIntoView();
             return;

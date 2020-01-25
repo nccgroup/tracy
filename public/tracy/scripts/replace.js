@@ -25,10 +25,7 @@ const replace = (() => {
     if (typeof msg !== "string") return { str: msg, tracers: [] };
     let copy = msg;
     const tracers = [];
-    const tracerTypes = getTracerTypes();
-    for (let i in tracerTypes) {
-      const tracerType = tracerTypes[i];
-
+    for (let tracerType of getTracerTypes()) {
       // Only do replacements if there is a tracer type in the message.
       if (msg.indexOf(tracerType[0]) === -1) {
         continue;
