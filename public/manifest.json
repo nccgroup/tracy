@@ -2,14 +2,13 @@
   "name": "Tracy",
   "description":
     "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "permissions": [
     "<all_urls>",
     "storage",
     "contextMenus",
     "alarms",
-    "webRequest",
-    "webRequestBlocking"
+    "webRequest"
   ],
   "background": {
     "scripts": [
