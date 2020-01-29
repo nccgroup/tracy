@@ -1,54 +1,4 @@
 (() => {
-  const ui = chrome.runtime.getURL("index.html");
-  chrome.webRequest.onBeforeRequest.addListener(
-    r => {
-      const url = new URL(r.url);
-      if (url.hostname === "tracy") {
-        return { redirectUrl: ui };
-      }
-      const copy = new URLSearchParams();
-      let mod = false;
-      let tracers = [];
-      url.searchParams.forEach((value, key) => {
-        const keyr = replace.str(key);
-        const valuer = replace.str(value);
-
-        if (keyr.tracers.length !== 0 || valuer.tracers.length !== 0) {
-          tracers = tracers.concat(keyr.tracers).concat(valuer.tracers);
-          mod = true;
-        }
-        copy.append(keyr.str, valuer.str);
-      });
-
-      // Not a fan of doing this, but luckily this only happens when you click
-      // a link that has a zzPLAINzz or zzXSSzz in it, which I imagine won't be the usual
-      // case. We could try to hook link clicks like how we hook onsubmit with forms.
-      // This is also used for navigation through document.location, which I am pretty
-      // sure is un-hookable. I keep getting the following error:
-      // TypeError: can't redefine non-configurable property "location"
-      // Looks like this also happens for img requests and the like (pixel trackers and other
-      // things that make outbound requests)
-      if (mod) {
-        url.search = copy.toString();
-        const newURL = url.toString();
-
-        // If any tracers were created, add them to the database.
-        tracers.map(t => {
-          t.Requests = [];
-          t.OverallSeverity = 0;
-          t.HasTracerEvents = false;
-          database.addTracer(t);
-        });
-
-        // I would like to know when this is happening.
-        console.log("[REDIRECTING]", r.url, newURL);
-        return { redirectUrl: newURL };
-      }
-    },
-    { urls: ["<all_urls>"] },
-    ["blocking"]
-  );
-
   // requests holds an object of objects. Each entry corresponds
   // to a request identified by its requestId. This is done to
   // use two different event handlers to collect all the headers and
@@ -229,14 +179,14 @@ ${body}`;
                 }
               })
               .flat()
-              .filter(t => t.length > 0)
+              .filter(t => t.length > 0);
 
-              if (bodySearch.length > 0) {
-                  return p;
-              }
+            if (bodySearch.length > 0) {
+              return p;
+            }
           }
         })
-        .filter(Boolean)
+        .filter(Boolean);
 
       const p = requests[`${r.requestId}:${r.url}`];
       const data = { body: formatBody(r.requestBody) || "", tracers: tracersn };
@@ -257,30 +207,29 @@ ${body}`;
 
   const formatBody = body => {
     if (!body) return "";
-    return Object.keys(body)
-      .map(k => {
-        switch (k) {
-          case "error":
-            return "";
-          case "formData":
-            const form = body.formData;
-            let formStr = "";
-            for (i in form) {
-              formStr = `${formStr}${i}=${form[i]}&`;
-            }
-            return formStr.substring(0, formStr.length - 1);
-          case "raw":
-            // I think this is similar to the Blob situation. Let's just
-            // log this and not look for tracers since the data is
-            // going to be in a binary format.
-            return String.fromCharCode.apply(
-              null,
-              new Uint8Array(body.raw[0].bytes)
-            );
-          default:
-            return "";
-        }
-      })[0]
+    return Object.keys(body).map(k => {
+      switch (k) {
+        case "error":
+          return "";
+        case "formData":
+          const form = body.formData;
+          let formStr = "";
+          for (i in form) {
+            formStr = `${formStr}${i}=${form[i]}&`;
+          }
+          return formStr.substring(0, formStr.length - 1);
+        case "raw":
+          // I think this is similar to the Blob situation. Let's just
+          // log this and not look for tracers since the data is
+          // going to be in a binary format.
+          return String.fromCharCode.apply(
+            null,
+            new Uint8Array(body.raw[0].bytes)
+          );
+        default:
+          return "";
+      }
+    })[0];
   };
 
   const removeAfter = async (id, time = 10000) => {

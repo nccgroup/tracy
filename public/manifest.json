@@ -34,6 +34,7 @@
         "tracy/scripts/highlight.js",
         "tracy/scripts/replace.js",
         "tracy/scripts/dom-mutations.js",
+        "tracy/scripts/location-mod.js",
         "tracy/scripts/method-hooking-injector.js"
       ],
       "css": ["tracy/css/dropdown.css"],
