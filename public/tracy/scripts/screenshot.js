@@ -3,7 +3,10 @@ const screenshot = (() => {
   // then sends it back to the request tab so that it can be
   // used in the input capture.
   const take = async (message, sender, callback) => {
-    callback(await captureScreenshot(sender.tab.id));
+    callback({
+      "message-type": "screenshot-done",
+      dURI: await captureScreenshot(sender.tab.id)
+    });
   };
 
   // captureScreenshot creates an image of that tab with the specified dimensions

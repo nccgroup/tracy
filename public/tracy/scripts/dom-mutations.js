@@ -36,7 +36,13 @@
                 location: document.location.href
               });
               highlight.addClickToFill(node, false);
-              retryingAddOnSubmit(node);
+              window.postMessage(
+                {
+                  "message-type": "dom",
+                  type: "form"
+                },
+                "*"
+              );
             } else if (node.nodeType == Node.TEXT_NODE) {
               retryingSend({
                 "message-type": "job",
@@ -95,32 +101,5 @@
       }
     }
   };
-  const pageLoaded = new Promise(r =>
-    document.addEventListener("DOMContentLoaded", () => r(true))
-  );
-  const pageComplete = (async () => {
-    for (;;) {
-      //TODO: might consider putting a screen over the page until this
-      // finishes so that we know the form scripts have been loaded properly.
-      if (document.readyState !== "complete") {
-        await new Promise(r => setTimeout(r, 250));
-        continue;
-      }
-      return true;
-    }
-  })();
-
-  const retryingAddOnSubmit = async node => {
-    for (;;) {
-      try {
-        await Promise.all([pageComplete, pageLoaded]);
-        return form.addOnSubmit(node);
-      } catch (e) {
-        console.log("retrying...", e);
-        await new Promise(r => setTimeout(r, 1000));
-      }
-    }
-  };
-
   observer.observe(document.documentElement, observerConfig);
 })();

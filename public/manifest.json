@@ -38,12 +38,6 @@
       ],
       "css": ["tracy/css/dropdown.css"],
       "run_at": "document_start"
-    },
-    {
-      "matches": ["<all_urls>"],
-      "all_frames": true,
-      "js": ["tracy/scripts/form-mod.js"],
-      "run_at": "document_idle"
     }
   ],
   "browser_action": {
@@ -59,6 +53,7 @@
     "tracy/scripts/replace.js",
     "tracy/scripts/xhr-mod.js",
     "tracy/scripts/fetch-mod.js",
+    "tracy/scripts/form-mod.js",
     "tracy/scripts/inner-html-mod.js",
     "tracy/scripts/repro.js",
     "tracy/scripts/worker.js",

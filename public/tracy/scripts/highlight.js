@@ -113,7 +113,7 @@ const highlight = (() => {
       height: window.innerHeight + 2 * padding, // I think
       ratio: 1
     };
-    const dURI = await dURIp;
+    const { dURI } = await dURIp;
     const imgP = dataURIToImage(dURI, dim);
     e.classList.add("screenshot-done");
     e.classList.remove("screenshot");
