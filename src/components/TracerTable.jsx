@@ -35,7 +35,9 @@ export default class TracerTable extends Component {
           break;
       }
     });
-    port.onDisconnect.addListener(() => console.log("disconnected"));
+    port.onDisconnect.addListener(e => {
+      console.log("disconnected", chrome.runtime.lastError, e);
+    });
     this.refresh();
 
     utils.createKeyDownHandler(

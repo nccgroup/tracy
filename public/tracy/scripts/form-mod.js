@@ -136,16 +136,24 @@ const form = (() => {
       return;
     }
 
+    // Since we can't pass the exact DOM node from the mutation observer,
+    // take the forms we have already proxied with a custom class.
     [...document.getElementsByTagName("form")]
+      .filter(f => !f.classList.contains("tracy-form-mod"))
       .map(f => addEventListener(f))
-      .map(
-        f =>
-          (f.submit = new Proxy(f.submit, {
-            apply: (t, thisa, al) => {
-              replaceFormInputs(f);
-              Reflect.apply(t, thisa, al);
-            }
-          }))
-      );
+      .map(f => {
+        f.classList.add("tracy-form-mod");
+        return f;
+      })
+      .map(f => {
+        console.log("setting proxy on form");
+        f.submit = new Proxy(f.submit, {
+          apply: (t, thisa, al) => {
+            console.log(t);
+            replaceFormInputs(f);
+            Reflect.apply(t, thisa, al);
+          }
+        });
+      });
   });
 })();

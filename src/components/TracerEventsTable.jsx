@@ -10,18 +10,29 @@ export default class TracerEventsTable extends Component {
     port.onMessage.addListener(msg => {
       switch (Object.keys(msg).pop()) {
         case "addEvents":
-          const events = Object.values(msg)
-            .pop()
-            .events.filter(
-              e => e.TracerPayload === this.props.selectedTracerPayload
+          const allEvents = Object.values(msg).pop().events;
+          const selectedEvents = allEvents.filter(
+            e => e.TracerPayload === this.props.selectedTracerPayload
+          );
+          const highSevEvents = allEvents.filter(e => e.Severity >= 2);
+          if (highSevEvents.length > 0) {
+            highSevEvents.map(s =>
+              utils.newTracyNotification(
+                this.props.selectedTracerPayload,
+                s,
+                () => console.log("clicked!")
+              )
             );
-          this.props.addEvents(events);
+          }
+          this.props.addEvents(selectedEvents);
           break;
         default:
           break;
       }
     });
-    port.onDisconnect.addListener(() => console.log("disconnected"));
+    port.onDisconnect.addListener(() =>
+      console.log("disconnected", chrome.runtime.lastError)
+    );
     this.refresh();
 
     utils.createKeyDownHandler(
