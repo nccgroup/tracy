@@ -16,10 +16,12 @@ const mapStateToProps = state => {
         return [];
       }
     })(),
+    selectedTracerPayload: state.selectedTracerPayload,
     loading: state.selectedTracerPayload === "",
     selectedRequestID: state.selectedRequestID,
     lastSelectedTable: state.lastSelectedTable,
-    selectedRequestTableIndex: state.selectedRequestTableIndex
+    selectedRequestTableIndex: state.selectedRequestTableIndex,
+    refererFilter: state.refererFilter
   };
 };
 

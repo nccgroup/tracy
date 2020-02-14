@@ -33,7 +33,7 @@ export default class TracerEventsTable extends Component {
     port.onDisconnect.addListener(() =>
       console.log("disconnected", chrome.runtime.lastError)
     );
-    this.refresh();
+    this.props.eventsLoading();
 
     utils.createKeyDownHandler(
       "event",
@@ -60,7 +60,9 @@ export default class TracerEventsTable extends Component {
   }
   refresh = async () => {
     this.props.updateEvents(
-      await utils.getTracerEvents(this.props.selectedTracerPayload)
+      await utils.getTracerEvents(this.props.selectedTracerPayload),
+      this.props.selectedEventID,
+      this.props.selectedEventTableIndex
     );
   };
   render = () => {

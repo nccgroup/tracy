@@ -14,9 +14,11 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
   addOrUpdateTracer: (tracer, skipReload) =>
     dispatch(actions.addTracer(tracer, skipReload)),
-  updateTracers: tracers => dispatch(actions.updateTracers(tracers)),
+  updateTracers: (tracers, payload) =>
+    dispatch(actions.updateTracers(tracers, payload)),
   selectTracer: (index, payload, clicked) =>
-    dispatch(actions.selectTracer(index, payload, clicked))
+    dispatch(actions.selectTracer(index, payload, clicked)),
+  tracersLoading: () => dispatch(actions.tracersLoading())
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(TracyTable);

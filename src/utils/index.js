@@ -5,27 +5,6 @@ export const sleep = ms => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
-// newTracyRequest generates a request object that should be used with
-// the tracy API.
-export const newTracyRequest = async (path, opts) => {
-  if (!opts.headers) {
-    opts.headers = {};
-  }
-
-  const { apiKey, tracyHost, tracyPort } = await new Promise(r =>
-    chrome.storage.local.get(
-      {
-        apiKey: "",
-        tracyHost: "",
-        tracyPort: ""
-      },
-      res => r(res)
-    )
-  );
-  opts.Headers.Hoot = apiKey;
-  return new Request(`http://${tracyHost}:${tracyPort}/api/tracy${path}`, opts);
-};
-
 // getTracerEvents returns all the tracer events for a given tracer.
 export const getTracerEvents = async tracerPayload =>
   await new Promise(r =>
@@ -51,24 +30,6 @@ export const getTracers = async () =>
     )
   );
 
-export const retryRequest = async req => {
-  while (true) {
-    try {
-      const resp = await fetch(await req);
-      if (!resp.ok) {
-        console.error("was not able to make connection to:", req);
-        await sleep(1500);
-        continue;
-      }
-
-      return await resp.json();
-    } catch (err) {
-      console.error(err);
-      await sleep(1500);
-    }
-  }
-};
-
 // enumerate assigns an object an ID property.
 export const enumerate = (event, id) => {
   event.ID = id + 1;
@@ -87,13 +48,28 @@ export const filterResponses = context => {
 };
 
 // filterInactive filters out tracers that have no events or contexts.
-export const filterInactive = tracer => {
-  return tracer.HasTracerEvents;
-};
+export const filterInactive = tracer => tracer.HasTracerEvents;
 
-// filterTextNodes filters our events that are text nodes.
-export const filterTextNodes = context => {
-  return context.EventType.toLowerCase() !== "text";
+// filterTextNodes filters out events that are text nodes.
+export const filterTextNodes = context =>
+  context.EventType.toLowerCase() !== "text";
+
+// filterReferrer filters out HTTP requests that have a tracer string in a referrer header
+export const filterReferers = tracer => request => {
+  const refRequests = request.RawRequest.toLowerCase()
+    .split("\n")
+    .filter(line => line.startsWith("refer"));
+  if (refRequests.length === 0) {
+    return true;
+  }
+  return (
+    refRequests
+      .pop()
+      .split(":")
+      .pop()
+      .trim()
+      .indexOf(tracer) === -1
+  );
 };
 
 // Enum to human-readable structure to translate the different severity ratings.
@@ -129,15 +105,6 @@ export const createKeyDownHandler = (
       }
     }
   });
-};
-
-// isLocalStorage tests if a key is in the localStorage.
-export const isInLocalStorage = (key, ID) => {
-  try {
-    return JSON.parse(localStorage.getItem(key)).indexOf(ID) > -1;
-  } catch (e) {
-    return false;
-  }
 };
 
 // newTracyNotification checks the browser supports notifications,

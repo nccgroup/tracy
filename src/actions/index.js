@@ -13,8 +13,7 @@ export const TOGGLE_LOADING_TRACERS = "TOGGLE_LOADING_TRACERS";
 export const TOGGLE_INACTIVE_FILTER = "TOGGLE_INACTIVE_FILTER";
 export const TOGGLE_HTTP_RESPONSE_FILTER = "TOGGLE_HTTP_RESPONSE_FILTER";
 export const TOGGLE_TEXT_FILTER = "TOGGLE_TEXT_FILTER";
-export const TOGGLE_WEBSOCKET_CONNECTED = "TOGGLE_WEBSOCKET_CONNECTED";
-export const TOGGLE_WEBSOCKET_DISCONNECTED = "TOGGLE_WEBSOCKET_DISCONNECTED";
+export const TOGGLE_REFERER_FILTER = "TOGGLE_REFERER_FILTER";
 export const START_REPRODUCTION = "START_REPRODUCTION";
 export const CHANGE_TAB = "CHANGE_TAB";
 export const ADD_API_KEY = "ADD_API_KEY";
@@ -24,7 +23,11 @@ export const NAVIGATE_TO_SETTINGS_PAGE = "NAVIGATE_TO_SETTINGS_PAGE";
 export const NAVIGATE_TO_UI_PAGE = "NAVIGATE_TO_UI_PAGE";
 export const APP_INITIALIZED = "APP_INITIALIZED";
 export const UPDATE_SETTINGS = "UPDATE_SETTINGS";
+export const TRACERS_LOADING = "TRACERS_LOADING";
+export const EVENTS_LOADING = "EVENTS_LOADING";
 
+export const eventsLoading = () => ({ type: EVENTS_LOADING });
+export const tracersLoading = () => ({ type: TRACERS_LOADING });
 export const updateSettings = settings => ({
   type: UPDATE_SETTINGS,
   settings: settings
@@ -59,9 +62,10 @@ export const addTracer = (tracer, skipReload) => ({
   tracer: tracer,
   skipReload: skipReload
 });
-export const updateTracers = (tracers, reload) => ({
+export const updateTracers = (tracers, payload, reload) => ({
   type: UPDATE_TRACERS,
   tracers: tracers,
+  payload: payload,
   skipReload: reload
 });
 export const addRequest = req => ({ type: ADD_REQUEST, req: req });
@@ -79,7 +83,12 @@ export const selectEvent = (index, id, clicked) => ({
   index: index,
   clicked: clicked
 });
-export const updateEvents = events => ({ type: UPDATE_EVENTS, events: events });
+export const updateEvents = (events, eventID, tableID) => ({
+  type: UPDATE_EVENTS,
+  events: events,
+  eventID: eventID,
+  tableID: tableID
+});
 export const startReproduction = () => ({ type: START_REPRODUCTION });
 export const toggleFilter = type => {
   switch (type) {
@@ -89,21 +98,18 @@ export const toggleFilter = type => {
       return toggleHTTPResponseFilter();
     case TOGGLE_TEXT_FILTER:
       return toggleTextFilter();
+    case TOGGLE_REFERER_FILTER:
+      return toggleRefererFilter();
     default:
       console.error("PANIC");
   }
 };
-
+export const toggleRefererFilter = () => ({ type: TOGGLE_REFERER_FILTER });
 export const toggleInactiveFilter = () => ({ type: TOGGLE_INACTIVE_FILTER });
 export const toggleHTTPResponseFilter = () => ({
   type: TOGGLE_HTTP_RESPONSE_FILTER
 });
 export const toggleTextFilter = () => ({ type: TOGGLE_TEXT_FILTER });
-export const webSocketDisconnect = () => ({
-  type: TOGGLE_WEBSOCKET_DISCONNECTED
-});
-
-export const webSocketConnect = () => ({ type: TOGGLE_WEBSOCKET_CONNECTED });
 export const updateProjects = projs => ({
   type: UPDATE_PROJECTS,
   projs: projs

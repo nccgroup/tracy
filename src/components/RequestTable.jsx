@@ -27,13 +27,20 @@ export default class RequestTable extends Component {
     );
   };
   render = () => {
+    let requests = this.props.requests.map(utils.enumerate);
+    if (this.props.refererFilter) {
+      requests = requests.filter(
+        utils.filterReferers(this.props.selectedTracerPayload)
+      );
+    }
+
     return (
       <div className="table-container table-container-requests">
         <span className="filler" />
 
         <ReactTable
           className="grow-table"
-          data={this.props.requests.map(utils.enumerate)}
+          data={requests}
           loading={this.props.loading}
           showPageSizeOptions={false}
           showPageJump={false}

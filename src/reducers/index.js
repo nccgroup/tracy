@@ -34,6 +34,7 @@ const init = {
   httpResponsesFilter: false,
   inactiveTracersFilter: false,
   textFilter: false,
+  refererFilter: false,
   tracyHost: "127.0.0.1",
   tracyPort: 7777,
   apiKey: "12af65d4-4a3c-4cce-abe4-115d089e75f3",
@@ -75,6 +76,12 @@ const addOrEditTracer = (state, action) => {
 const rootReducer = (state = init, action) => {
   let change = {};
   switch (action.type) {
+    case actions.TRACERS_LOADING:
+      change = { tracersLoading: true };
+      break;
+    case actions.EVENTS_LOADING:
+      change = { eventsLoading: true };
+      break;
     case actions.UPDATE_SETTINGS:
       change = action.settings;
       break;
@@ -141,7 +148,7 @@ const rootReducer = (state = init, action) => {
       change = {
         tracersLoading: false,
         tracers: action.tracers.sort((a, b) => a.Created - b.Created),
-        selectedTracerPayload: ""
+        selectedTracerPayload: action.payload
       };
       break;
     case actions.SELECT_TRACER:
@@ -170,8 +177,8 @@ const rootReducer = (state = init, action) => {
       change = {
         eventsLoading: false,
         events: action.events.map(utils.enumerate),
-        selectedEventID: -1,
-        selectedEventTableIndex: 0
+        selectedEventID: action.eventID,
+        selectedEventTableIndex: action.tableID
       };
       break;
     case actions.ADD_EVENTS:
@@ -188,11 +195,8 @@ const rootReducer = (state = init, action) => {
     case actions.TOGGLE_TEXT_FILTER:
       change = { textFilter: !state.textFilter };
       break;
-    case actions.TOGGLE_WEBSOCKET_CONNECTED:
-      change = { webSocketOpen: true };
-      break;
-    case actions.TOGGLE_WEBSOCKET_DISCONNECTED:
-      change = { webSocketOpen: false };
+    case actions.TOGGLE_REFERER_FILTER:
+      change = { refererFilter: !state.refererFilter };
       break;
     case actions.CHANGE_TAB:
       change = { tabID: action.tabID };

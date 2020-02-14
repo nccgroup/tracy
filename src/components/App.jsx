@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import TracerTable from "../containers/TracerTable";
 import DetailsViewer from "../containers/DetailsViewer";
 import TracerEventsTable from "../containers/TracerEventsTable";
-import FilterColumn from "../components/FilterColumn";
+import FilterColumn from "../containers/FilterColumn";
 import RequestTable from "../containers/RequestTable";
 import NavSidebar from "../containers/NavSidebar";
 import Settings from "../containers/Settings";

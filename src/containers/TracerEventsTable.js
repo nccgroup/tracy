@@ -15,9 +15,11 @@ const mapStateToProps = state => ({
 
 const mapDispatchToProps = dispatch => ({
   addEvents: events => dispatch(actions.addEvents(events)),
-  updateEvents: events => dispatch(actions.updateEvents(events)),
+  updateEvents: (events, eventID, tableID) =>
+    dispatch(actions.updateEvents(events, eventID, tableID)),
   selectEvent: (index, id, clicked) =>
-    dispatch(actions.selectEvent(index, id, clicked))
+    dispatch(actions.selectEvent(index, id, clicked)),
+  eventsLoading: () => dispatch(actions.eventsLoading())
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(TracyEventsTable);
