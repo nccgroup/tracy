@@ -17,7 +17,7 @@ const mapDispatchToProps = dispatch => ({
   addEvents: events => dispatch(actions.addEvents(events)),
   updateEvents: (events, eventID, tableID) =>
     dispatch(actions.updateEvents(events, eventID, tableID)),
-  selectEvent: (index, id, clicked) =>
+  selectRow: (index, id, clicked, _) =>
     dispatch(actions.selectEvent(index, id, clicked)),
   eventsLoading: () => dispatch(actions.eventsLoading())
 });

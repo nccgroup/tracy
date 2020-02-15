@@ -26,7 +26,7 @@ const mapStateToProps = state => {
 };
 
 const mapDispatchToProps = dispatch => ({
-  selectRequest: (index, id, clicked) =>
+  selectRow: (index, id, clicked, _) =>
     dispatch(actions.selectRequest(index, id, clicked))
 });
 export default connect(mapStateToProps, mapDispatchToProps)(RequestTable);

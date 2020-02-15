@@ -101,7 +101,7 @@ const form = (() => {
       const ss = await captureScreenshot(form);
       // When creating a tracer, make sure the Requests attribute is there.
       t.Requests = [];
-      t.OverallSeverity = 0;
+      t.Severity = 0;
       t.HasTracerEvents = false;
       t.Screenshot = ss;
       window.postMessage({
@@ -146,10 +146,8 @@ const form = (() => {
         return f;
       })
       .map(f => {
-        console.log("setting proxy on form");
         f.submit = new Proxy(f.submit, {
           apply: (t, thisa, al) => {
-            console.log(t);
             replaceFormInputs(f);
             Reflect.apply(t, thisa, al);
           }

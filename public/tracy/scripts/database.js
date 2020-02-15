@@ -308,12 +308,12 @@ const database = (() => {
 
           const tracer = cursor.value;
           // No need to update if there is nothing to update.
-          if (tracer.HasTracerEvents && tracer.OverallSeverity === highestSev) {
+          if (tracer.HasTracerEvents && tracer.Severity === highestSev) {
             res();
             return;
           }
 
-          tracer.OverallSeverity = highestSev;
+          tracer.Severity = highestSev;
           tracer.HasTracerEvents = true;
           const upReq = cursor.update(tracer);
           upReq.onsuccess = e => {

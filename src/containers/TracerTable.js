@@ -16,8 +16,14 @@ const mapDispatchToProps = dispatch => ({
     dispatch(actions.addTracer(tracer, skipReload)),
   updateTracers: (tracers, payload) =>
     dispatch(actions.updateTracers(tracers, payload)),
-  selectTracer: (index, payload, clicked) =>
-    dispatch(actions.selectTracer(index, payload, clicked)),
+  selectRow: (index, _, clicked, row) =>
+    dispatch(
+      actions.selectTracer(
+        index,
+        row === null ? "" : row.TracerPayload,
+        clicked
+      )
+    ),
   tracersLoading: () => dispatch(actions.tracersLoading())
 });
 

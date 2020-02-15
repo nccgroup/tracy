@@ -1,6 +1,6 @@
 /* global chrome */
 import React, { Component } from "react";
-import ReactTable from "react-table";
+import ArrowNavigationTable from "./ArrowNavigationTable";
 import * as utils from "../utils";
 
 export default class TracerTable extends Component {
@@ -39,29 +39,6 @@ export default class TracerTable extends Component {
       console.log("disconnected", chrome.runtime.lastError, e);
     });
     this.props.tracersLoading();
-
-    utils.createKeyDownHandler(
-      "tracer",
-      () => this.props.lastSelectedTable,
-      () =>
-        this.props.selectTracer(
-          utils.mod(
-            this.props.selectedTracerTableIndex - 1,
-            this.props.tracers.length
-          ),
-          "",
-          false
-        ),
-      () =>
-        this.props.selectTracer(
-          utils.mod(
-            this.props.selectedTracerTableIndex + 1,
-            this.props.tracers.length
-          ),
-          "",
-          false
-        )
-    );
   }
 
   refresh = async () => {
@@ -84,13 +61,10 @@ export default class TracerTable extends Component {
     return (
       <div className="table-container table-container-tracers">
         <span className="filler" />
-
-        <ReactTable
-          className="grow-table"
+        <ArrowNavigationTable
+          {...this.props}
+          tableType="tracer"
           data={data.map(utils.enumerate)}
-          loading={this.props.loading}
-          showPageSizeOptions={false}
-          showPageJump={false}
           columns={[
             {
               Header: "injection points",
@@ -102,74 +76,10 @@ export default class TracerTable extends Component {
                   width: 105
                 },
                 { Header: "payload", accessor: "TracerPayload", width: 105 },
-                { Header: "sev", accessor: "OverallSeverity", width: 45 }
+                { Header: "sev", accessor: "Severity", width: 45 }
               ]
             }
           ]}
-          getTrProps={(state, rowInfo, column, instance) => {
-            if (rowInfo) {
-              let classname = "";
-              switch (rowInfo.row.OverallSeverity) {
-                case 1:
-                  classname = "suspicious";
-                  break;
-                case 2:
-                  classname = "probable";
-                  break;
-                case 3:
-                  classname = "exploitable";
-                  break;
-                default:
-                  classname = "unexploitable";
-              }
-              if (rowInfo.viewIndex === this.props.selectedTracerTableIndex) {
-                // Check to make sure the table entries haven't changed. If they have correct it.
-                if (
-                  rowInfo.row.TracerPayload !== this.props.selectedTracerPayload
-                ) {
-                  if (this.props.selectedTracerPayload === "") {
-                    this.props.selectTracer(
-                      rowInfo.viewIndex,
-                      rowInfo.row.TracerPayload,
-                      false
-                    );
-                  } else {
-                    state.pageRows
-                      .filter(
-                        d =>
-                          d.TracerPayload === this.props.selectedTracerPayload
-                      )
-                      .map(d => d._viewIndex)
-                      .map(i =>
-                        this.props.selectTracer(
-                          i,
-                          this.props.selectedTracerPayload,
-                          false
-                        )
-                      );
-                  }
-                }
-                classname += " row-selected";
-              }
-
-              return {
-                onClick: (e, handleOriginal) => {
-                  this.props.selectTracer(
-                    rowInfo.viewIndex,
-                    rowInfo.row.TracerPayload,
-                    true
-                  );
-
-                  if (handleOriginal) {
-                    handleOriginal();
-                  }
-                },
-                className: classname
-              };
-            } else {
-              return {};
-            }
-          }}
           defaultSorted={[
             {
               id: "id",

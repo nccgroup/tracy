@@ -10,7 +10,7 @@
     tr.map(t => {
       // When creating a tracer, make sure the Requests attribute is there.
       t.Requests = [];
-      t.OverallSeverity = 0;
+      t.Severity = 0;
       t.HasTracerEvents = false;
       window.postMessage(
         {

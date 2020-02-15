@@ -61,7 +61,7 @@
               // When creating a tracer, make sure the Requests and OverallSeverity
               // attributes are there.
               t.Requests = [];
-              t.OverallSeverity = 0;
+              t.Severity = 0;
               t.HasTracerEvents = false;
               window.postMessage(
                 {

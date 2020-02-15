@@ -81,9 +81,12 @@ const severity = {
 };
 
 export const formatRowSeverity = row => {
-  return severity[row.OverallSeverity];
+  return severity[row.Severity];
 };
 
+// mod is a helper mod function if you are dealing with negative
+// numbers such as page table flips (when you flip the first page left,
+// the page index will be -1 which doesn't work well with mod)
 export const mod = (x, n) => (x % n + n) % n;
 export const createKeyDownHandler = (
   tableName,

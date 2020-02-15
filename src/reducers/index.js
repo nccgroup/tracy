@@ -64,7 +64,7 @@ const addOrEditTracer = (state, action) => {
   const e = existing.pop();
   const newt = Object.assign({}, e, {
     HasTracerEvents: t.HasTracerEvents,
-    OverallSeverity: t.OverallSeverity,
+    Severity: t.Severity,
     Requests: t.Requests
   });
 

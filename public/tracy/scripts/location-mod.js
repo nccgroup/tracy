@@ -25,7 +25,7 @@
     // If any tracers were created, add them to the database.
     tracers.map(t => {
       t.Requests = [];
-      t.OverallSeverity = 0;
+      t.Severity = 0;
       t.HasTracerEvents = false;
       window.postMessage({
         "message-type": "database",

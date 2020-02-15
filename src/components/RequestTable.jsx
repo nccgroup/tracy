@@ -1,31 +1,7 @@
 import React, { Component } from "react";
-import ReactTable from "react-table";
+import ArrowNavigationTable from "./ArrowNavigationTable";
 import * as utils from "../utils/index";
 export default class RequestTable extends Component {
-  componentDidMount = () => {
-    utils.createKeyDownHandler(
-      "request",
-      () => this.props.lastSelectedTable,
-      () =>
-        this.props.selectRequest(
-          utils.mod(
-            this.props.selectedRequestTableIndex - 1,
-            this.props.requests.length
-          ),
-          -1,
-          false
-        ),
-      () =>
-        this.props.selectRequest(
-          utils.mod(
-            this.props.selectedRequestTableIndex + 1,
-            this.props.requests.length
-          ),
-          -1,
-          false
-        )
-    );
-  };
   render = () => {
     let requests = this.props.requests.map(utils.enumerate);
     if (this.props.refererFilter) {
@@ -33,18 +9,15 @@ export default class RequestTable extends Component {
         utils.filterReferers(this.props.selectedTracerPayload)
       );
     }
-
     return (
       <div className="table-container table-container-requests">
         <span className="filler" />
 
-        <ReactTable
-          className="grow-table"
+        <ArrowNavigationTable
+          {...this.props}
+          tableType="request"
           data={requests}
           loading={this.props.loading}
-          showPageSizeOptions={false}
-          showPageJump={false}
-          loadingText="click a tracer for more details"
           columns={[
             {
               Header: "http injection requests",
@@ -55,45 +28,13 @@ export default class RequestTable extends Component {
               ]
             }
           ]}
-          getTrProps={(state, rowInfo, column, instance) => {
-            if (rowInfo) {
-              let classname = "";
-              if (rowInfo.viewIndex === this.props.selectedRequestTableIndex) {
-                classname += " row-selected";
-                if (this.props.selectedRequestID < 0) {
-                  this.props.selectRequest(
-                    rowInfo.viewIndex,
-                    rowInfo.row.ID,
-                    false
-                  );
-                }
-              }
-
-              return {
-                onClick: (e, handleOriginal) => {
-                  this.props.selectRequest(
-                    rowInfo.viewIndex,
-                    rowInfo.row.ID,
-                    true
-                  );
-
-                  if (handleOriginal) {
-                    handleOriginal();
-                  }
-                },
-                className: classname
-              };
-            } else {
-              return {};
-            }
-          }}
+          defaultPageSize={10}
           defaultSorted={[
             {
               id: "id",
               desc: true
             }
           ]}
-          defaultPageSize={10}
         />
       </div>
     );
