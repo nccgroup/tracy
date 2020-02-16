@@ -9,9 +9,6 @@
         case "config":
           settings.query(message, sender, sendResponse);
           break;
-        case "background-fetch":
-          background.fetchWithCallback(message, sender, sendResponse);
-          return true;
         case "screenshot":
           screenshot.take(message, sender, sendResponse);
           return true;
@@ -67,7 +64,5 @@
     }
   };
 
-  // Any time the page sends a message to the extension, the above handler should
-  // take care of it.
   chrome.runtime.onMessage.addListener(messageRouter);
 })();
