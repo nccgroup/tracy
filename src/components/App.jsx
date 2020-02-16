@@ -33,7 +33,7 @@ export default class App extends Component {
 
     return (
       <div className="app">
-        <span>loading</span>
+        <span>loading...</span>
       </div>
     );
   };

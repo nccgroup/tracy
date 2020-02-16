@@ -19,7 +19,7 @@
   "scripts": {
     "start":
       "npx web-ext run -s build --no-input true & echo \"$(find public) $(find src)\" | entr sh -c \"npm run build\" ",
-    "build": "INLINE_RUNTIME_CHUNK=false react-scripts build --profile",
+    "build": "INLINE_RUNTIME_CHUNK=false react-scripts build",
     "compile-ext": "npx web-ext build --overwrite-dest -s ./build/",
     "deploy-chrome":
       "npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn",
