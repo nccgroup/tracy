@@ -84,6 +84,7 @@ export default class TracerEventsTable extends Component {
         {...this.props}
         className="grow-table"
         loading={this.props.loading}
+        loadingText="Loading..."
         page={this.state.page}
         showPageSizeOptions={false}
         showPageJump={false}

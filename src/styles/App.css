@@ -208,6 +208,12 @@ table.properties-table > tbody > tr > th {
   margin-right: 10px;
 }
 
+.refresh-button {
+  grid-column-start: 1;
+  list-style: none;
+  padding: 10px;
+}
+
 .app-with-sidebar {
   padding-left: 880px;
 }

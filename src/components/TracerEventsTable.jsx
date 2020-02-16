@@ -65,14 +65,6 @@ export default class TracerEventsTable extends Component {
               desc: true
             }
           ]}
-          loading={
-            this.props.loading || this.props.selectedTracerPayload === ""
-          }
-          loadingText={
-            this.props.loading
-              ? "loading..."
-              : "click a tracer for more details"
-          }
           defaultPageSize={10}
           columns={[
             {

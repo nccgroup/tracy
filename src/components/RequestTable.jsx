@@ -17,7 +17,6 @@ export default class RequestTable extends Component {
           {...this.props}
           tableType="request"
           data={requests}
-          loading={this.props.loading}
           columns={[
             {
               Header: "http injection requests",

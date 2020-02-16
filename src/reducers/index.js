@@ -76,6 +76,9 @@ const addOrEditTracer = (state, action) => {
 const rootReducer = (state = init, action) => {
   let change = {};
   switch (action.type) {
+    case actions.REFRESH:
+      change = { tracersLoading: true, eventsLoading: true };
+      break;
     case actions.TRACERS_LOADING:
       change = { tracersLoading: true };
       break;

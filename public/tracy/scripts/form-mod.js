@@ -65,7 +65,7 @@ const form = (() => {
     });
   };
 
-  const replaceFormInputs = form => {
+  const replaceFormInputs = async form => {
     const formID = form.ID;
     // First, get all input elements under the form.
     const tracersa = [...form.getElementsByTagName("input")]
@@ -97,22 +97,24 @@ const form = (() => {
       .flat();
 
     // If any tracers were added to this form, send API request to log them.
-    tracersa.map(async t => {
-      const ss = await captureScreenshot(form);
-      // When creating a tracer, make sure the Requests attribute is there.
-      t.Requests = [];
-      t.Severity = 0;
-      t.HasTracerEvents = false;
-      t.Screenshot = ss;
-      window.postMessage({
-        "message-type": "database",
-        query: "addTracer",
-        tracer: t
-      });
-    });
+    await Promise.all(
+      tracersa.map(async t => {
+        const ss = await captureScreenshot(form);
+        // When creating a tracer, make sure the Requests attribute is there.
+        t.Requests = [];
+        t.Severity = 0;
+        t.HasTracerEvents = false;
+        t.Screenshot = ss;
+        window.postMessage({
+          "message-type": "database",
+          query: "addTracer",
+          tracer: t
+        });
+      })
+    );
   };
   const addEventListener = elem => {
-    elem.addEventListener("submit", evt => {
+    elem.addEventListener("submit", async evt => {
       // If the form isn't submitting, we shouldn't really do anything.
       // If this state changes and the form becomes like a normal form again,
       // and the user hit submit again,
@@ -122,7 +124,9 @@ const form = (() => {
       // be the last to execute. I don't think there would ever be a way for another event
       // handler to change this state while this handler was executing.
       if (evt.target.defaultPrevented) return;
-      replaceFormInputs(evt.target);
+      evt.preventDefault();
+      await replaceFormInputs(evt.target);
+      evt.target.submit();
     });
 
     return elem;
@@ -148,8 +152,9 @@ const form = (() => {
       .map(f => {
         f.submit = new Proxy(f.submit, {
           apply: (t, thisa, al) => {
-            replaceFormInputs(f);
-            Reflect.apply(t, thisa, al);
+            replaceFormInputs(f).then(() => {
+              Reflect.apply(t, thisa, al);
+            });
           }
         });
       });

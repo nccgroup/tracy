@@ -6,6 +6,7 @@ import FilterColumn from "../containers/FilterColumn";
 import RequestTable from "../containers/RequestTable";
 import NavSidebar from "../containers/NavSidebar";
 import Settings from "../containers/Settings";
+import RefreshButton from "../components/RefreshButton";
 import "../styles/App.css";
 
 export default class App extends Component {
@@ -19,6 +20,7 @@ export default class App extends Component {
             style={this.props.onSettingsPage ? { display: "none" } : {}}
             className="tables"
           >
+            <RefreshButton />
             <FilterColumn />
             <TracerTable />
             <RequestTable />

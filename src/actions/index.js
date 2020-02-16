@@ -25,7 +25,8 @@ export const APP_INITIALIZED = "APP_INITIALIZED";
 export const UPDATE_SETTINGS = "UPDATE_SETTINGS";
 export const TRACERS_LOADING = "TRACERS_LOADING";
 export const EVENTS_LOADING = "EVENTS_LOADING";
-
+export const REFRESH = "REFRESH";
+export const refresh = () => ({ type: REFRESH });
 export const eventsLoading = () => ({ type: EVENTS_LOADING });
 export const tracersLoading = () => ({ type: TRACERS_LOADING });
 export const updateSettings = settings => ({
