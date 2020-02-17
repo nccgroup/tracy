@@ -2,7 +2,7 @@
   "name": "Tracy",
   "description":
     "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "permissions": [
     "<all_urls>",
     "storage",
@@ -15,7 +15,6 @@
       "tracy/scripts/replace.js",
       "tracy/scripts/router.js",
       "tracy/scripts/request-capture.js",
-      "tracy/scripts/reproductions.js",
       "tracy/scripts/settings.js",
       "tracy/scripts/screenshot.js",
       "tracy/scripts/jobs.js",
