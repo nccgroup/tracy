@@ -15,7 +15,7 @@ const RefreshButton = props => {
         className="clickable "
         title="refresh tracers and events"
       >
-        <FontAwesomeIcon icon="circle" />
+        <FontAwesomeIcon icon="sync" />
       </li>
     </ul>
   );

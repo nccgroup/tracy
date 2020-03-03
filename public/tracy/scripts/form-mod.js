@@ -5,13 +5,16 @@ const form = (() => {
   // of space on each side of the element
   const screenshotHandler = resolve => {
     return e => {
-      if (e.data && e.data["message-type"] !== "screenshot-done") {
+      console.log("screenshot handlers", e);
+
+      if (!e.data || e.data["message-type"] !== "screenshot-done") {
         return;
       }
       resolve(e.data.dURI);
     };
   };
   async function captureScreenshot(e, padding = 0) {
+    console.log("capturing sceenshot", e);
     e.classList.add("screenshot");
 
     let handler;
@@ -65,71 +68,82 @@ const form = (() => {
     });
   };
 
-  const replaceFormInputs = async form => {
-    const formID = form.ID;
-    // First, get all input elements under the form.
-    const tracersa = [...form.getElementsByTagName("input")]
-      .concat(
-        // Textareas are also considered input to forms.
-        [...form.getElementsByTagName("textarea")]
-      )
-      // Need to look for elements that would be submitted using the form
-      // attribute.
-      .concat(
-        [...document.getElementsByTagName("input")].filter(
-          t => t.form === formID
-        )
-      )
-      // Textareas also get submitted.
-      .concat(
-        [...document.getElementsByTagName("textarea")].filter(
-          t => t.form === formID
-        )
-      )
-      .map(t => {
-        const b = replace.str(t.value);
-        if (b.tracers.length > 0) {
-          t.value = b.str;
-          return b.tracers;
+  const inputStr = "input";
+  const replaceFormInputs = form =>
+    // Turns out we can use this nice API to get all the data that wouldn't normally
+    // get submitted with a form.
+    [...new FormData(form)]
+      .map(([nameAttr, value]) => {
+        const { tracers, str } = replace.str(value);
+        if (tracers.length <= 0) {
+          return [];
         }
-        return [];
+
+        // If there was tracers in the input value, find the input element
+        // associated with that name and replace it's value. This probably
+        // won't work for all elements, TODO: should find alternate ways of grabbing the element
+        const elems = document.getElementsByName(nameAttr);
+        if (
+          elems.length !== 1 &&
+          elems[0].nodeName.toLowerCase() !== inputStr
+        ) {
+          // There shouldn't be more than one input element who's name is this
+          console.error("Couldn't find the element to replace!");
+          return [];
+        }
+        elems[0].value = str;
+        return tracers;
       })
       .flat();
 
-    // If any tracers were added to this form, send API request to log them.
-    await Promise.all(
-      tracersa.map(async t => {
-        const ss = await captureScreenshot(form);
-        // When creating a tracer, make sure the Requests attribute is there.
-        t.Requests = [];
-        t.Severity = 0;
-        t.HasTracerEvents = false;
-        t.Screenshot = ss;
-        window.postMessage({
-          "message-type": "database",
-          query: "addTracer",
-          tracer: t
-        });
-      })
-    );
-  };
-  const addEventListener = elem => {
-    elem.addEventListener("submit", async evt => {
-      // If the form isn't submitting, we shouldn't really do anything.
-      // If this state changes and the form becomes like a normal form again,
-      // and the user hit submit again,
-      // we can collect tracers, but I can't think of a case where the form was
-      // defaultPrevented and we still needed to collect tracers from the form.
-      // Also, since we are the last form onsubmit handler to register, we should
-      // be the last to execute. I don't think there would ever be a way for another event
-      // handler to change this state while this handler was executing.
-      if (evt.target.defaultPrevented) return;
-      evt.preventDefault();
-      await replaceFormInputs(evt.target);
-      evt.target.submit();
+  const storeTracers = (tracers, ss = null) =>
+    tracers.map(t => {
+      // When creating a tracer, make sure the Requests attribute is there.
+      t.Requests = [];
+      t.Severity = 0;
+      t.HasTracerEvents = false;
+      t.Screenshot = ss;
+      window.postMessage({
+        "message-type": "database",
+        query: "addTracer",
+        tracer: t
+      });
     });
 
-    return elem;
+  const formSubmitListener = evt => {
+    const tracers = replaceFormInputs(evt.target);
+    if (tracers.length === 0) {
+      return;
+    }
+    evt.preventDefault();
+    // Ideally, we'd like to take a screenshot here, but its a little tricky.
+    // 1.) If we try to take a screenshot now, it won't finish in time before the
+    //     form is submitted because capturing a screenshot is asynchronouns the
+    //     form submission won't wait for it.
+    // 2.) We can prevent default the behavior of the form, then submit the form
+    //     using .submit(), but.submit() is different than clicking the submit button
+    //     any in some applications won't submit all the fields (those with type=submit,
+    //     in cases where there are multiple buttons to submit a form, this field is sent as a POST body
+    //     argument to indicate which button was clicked)
+    // 3.) We double submit the form, capturing the screenshot the first round, then doing
+    //     the button click again. This would cause issues with double doing all the onsubmit
+    //     event listeners in the page.
+
+    // #2 is the best option, but we just need to remove the type=submit from button
+    // that submitted the forms so that it will get sent as a regular POST body
+    // parameter. This button is found in evt.explictOriginalTarget. Creat of copy
+    // of this element minus the type=submit and embed it into the form. We also
+    // want make sure its hidden so it doesn't look funky.
+    const i = document.createElement("input");
+    [...evt.explicitOriginalTarget.attributes]
+      .filter(a => a.nodeName !== "type" && a.value !== "submit")
+      .map(a => i.setAttribute(a.nodeName, a.value));
+    i.setAttribute("type", "hidden");
+    evt.target.appendChild(i);
+    captureScreenshot(evt.currentTarget).then(ss => {
+      storeTracers(tracers, ss);
+      evt.target.submit();
+    });
   };
 
   window.addEventListener("message", e => {
@@ -144,17 +158,43 @@ const form = (() => {
     // take the forms we have already proxied with a custom class.
     [...document.getElementsByTagName("form")]
       .filter(f => !f.classList.contains("tracy-form-mod"))
-      .map(f => addEventListener(f))
+      .map(f => {
+        f.addEventListener("submit", formSubmitListener);
+        return f;
+      })
       .map(f => {
         f.classList.add("tracy-form-mod");
         return f;
       })
       .map(f => {
-        f.submit = new Proxy(f.submit, {
+        // We need to proxy the submit function call because the submit
+        // function call doesn't trigger submit events and therefor
+        // our handler code won't get called
+        const submitProxy = {
           apply: (t, thisa, al) => {
-            replaceFormInputs(f).then(() => {
+            // Replace the tracers, and since we are not in an onsubmit handler
+            // we can wait for the screen capture to finish and then submit the form.
+            const tracers = replaceFormInputs(f);
+            captureScreenshot(f).then(ss => {
+              storeTracers(tracers, ss);
               Reflect.apply(t, thisa, al);
             });
+          }
+        };
+        f.submit = new Proxy(f.submit, submitProxy);
+        return f;
+      })
+      .map(f => {
+        f.addEventListener = new Proxy(f.addEventListener, {
+          apply: (t, thisa, al) => {
+            // If the page adds a submit listener, we need to move our
+            // listeners back to the bottom of the bubbling so that
+            // we can ensure we are the last submit handler to be called
+            if (al[0] === "submit") {
+              f.removeEventListener("submit", formSubmitListener);
+              Reflect.apply(t, thisa, al);
+              Reflect.apply(t, thisa, [al[0], formSubmitListener, al[2]]);
+            }
           }
         });
       });
