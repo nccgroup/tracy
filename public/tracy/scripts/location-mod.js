@@ -3,6 +3,12 @@
   const copy = new URLSearchParams();
   let mod = false;
   let tracers = [];
+  const pathReplace = replace.str(url.pathname);
+  if (pathReplace.tracers.length > 0) {
+    tracers = tracers.concat(pathReplace.tracers);
+    mod = true;
+  }
+
   for (const [key, value] of url.searchParams) {
     const keyr = replace.str(key);
     const valuer = replace.str(value);
@@ -22,6 +28,7 @@
   if (mod) {
     url.search = copy.toString();
     url.hash = newHash.str;
+    url.pathname = pathReplace.str;
     // If any tracers were created, add them to the database.
     tracers.map(t => {
       t.Requests = [];

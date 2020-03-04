@@ -14,6 +14,9 @@
   // scripts so that injected scripts can talk to the extension via window.postMessage.
   window.addEventListener("message", async event => {
     // We don't want to forward all communications.
+    if (!event.data) {
+      return;
+    }
     if (event.data["message-type"] === "dom" && event.data["type"] === "form") {
       return;
     }
