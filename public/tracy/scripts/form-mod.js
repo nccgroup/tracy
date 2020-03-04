@@ -5,8 +5,6 @@ const form = (() => {
   // of space on each side of the element
   const screenshotHandler = resolve => {
     return e => {
-      console.log("screenshot handlers", e);
-
       if (!e.data || e.data["message-type"] !== "screenshot-done") {
         return;
       }
@@ -14,7 +12,6 @@ const form = (() => {
     };
   };
   async function captureScreenshot(e, padding = 0) {
-    console.log("capturing sceenshot", e);
     e.classList.add("screenshot");
 
     let handler;
@@ -175,6 +172,11 @@ const form = (() => {
             // Replace the tracers, and since we are not in an onsubmit handler
             // we can wait for the screen capture to finish and then submit the form.
             const tracers = replaceFormInputs(f);
+            if (tracers.length === 0) {
+              Reflect.apply(t, thisa, al);
+              return;
+            }
+            // If there were tracers that were swapped out, take a screenshot.
             captureScreenshot(f).then(ss => {
               storeTracers(tracers, ss);
               Reflect.apply(t, thisa, al);
