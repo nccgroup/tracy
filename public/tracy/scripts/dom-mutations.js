@@ -36,13 +36,15 @@
                 location: document.location.href
               });
               highlight.addClickToFill(node, false);
-              window.postMessage(
-                {
-                  "message-type": "dom",
-                  type: "form"
-                },
-                "*"
-              );
+              if (node.outerHTML.includes("form")) {
+                window.postMessage(
+                  {
+                    "message-type": "dom",
+                    type: "form"
+                  },
+                  "*"
+                );
+              }
             } else if (node.nodeType == Node.TEXT_NODE) {
               retryingSend({
                 "message-type": "job",

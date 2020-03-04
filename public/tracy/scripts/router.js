@@ -1,6 +1,9 @@
 (() => {
   // Routes messages from the extension to various functions on the background.
   const messageRouter = (message, sender, sendResponse) => {
+    if (message === null) {
+      return;
+    }
     if (message["message-type"]) {
       switch (message["message-type"]) {
         case "job":
@@ -60,6 +63,8 @@
             })
             .catch(e => console.log("[DB ERROR]", e));
           return true;
+        default:
+          sendResponse({});
       }
     }
   };

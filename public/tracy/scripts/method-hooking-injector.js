@@ -13,6 +13,10 @@
   // Create a listener on the shared window between content scripts and injected
   // scripts so that injected scripts can talk to the extension via window.postMessage.
   window.addEventListener("message", async event => {
+    // We don't want to forward all communications.
+    if (event.data["message-type"] === "dom" && event.data["type"] === "form") {
+      return;
+    }
     try {
       const resp = await util.send(event.data);
       window.postMessage(resp, "*");
