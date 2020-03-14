@@ -9,6 +9,9 @@
         case "job":
           jobs.add(message, sender, sendResponse);
           break;
+        case "bulk-jobs":
+          jobs.bulkAdd(message, sender, sendResponse);
+          break;
         case "config":
           settings.query(message, sender, sendResponse);
           break;

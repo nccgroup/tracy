@@ -12,14 +12,14 @@
       t.Requests = [];
       t.Severity = 0;
       t.HasTracerEvents = false;
-      window.postMessage(
-        {
+      const event = new CustomEvent("tracyMessage", {
+        detail: {
           "message-type": "database",
           query: "addTracer",
           tracer: t
-        },
-        "*"
-      );
+        }
+      });
+      window.dispatchEvent(event);
     });
   };
 

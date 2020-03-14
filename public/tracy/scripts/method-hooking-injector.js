@@ -12,17 +12,16 @@
 
   // Create a listener on the shared window between content scripts and injected
   // scripts so that injected scripts can talk to the extension via window.postMessage.
-  window.addEventListener("message", async event => {
-    // We don't want to forward all communications.
-    if (!event.data) {
-      return;
-    }
-    if (event.data["message-type"] === "dom" && event.data["type"] === "form") {
-      return;
-    }
+  window.addEventListener("tracyMessage", async ({ detail }) => {
     try {
-      const resp = await util.send(event.data);
-      window.postMessage(resp, "*");
+      const respp = util.send(detail);
+      if (detail.channel) {
+        const resp = await respp;
+        const event = new CustomEvent(`tracyResponse-${channel}`, {
+          detail: resp
+        });
+        window.dispatchEvent(event);
+      }
     } catch (e) {
       console.error(e);
     }

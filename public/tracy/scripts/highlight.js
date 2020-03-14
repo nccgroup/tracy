@@ -213,29 +213,19 @@ const highlight = (() => {
   // Find all the inputs and style them with the extension.
   // autom indicates if the user wants to fill the page without
   // modifying their settings.
-  async function addClickToFill(elem, autom) {
-    const autop = util.get({ autoFill: false, autoFillPayload: "zzXSSzz" });
-    const ifs = [
+  const addClickToFill = async elem =>
+    [
       ...elem.getElementsByTagName("input"),
       ...elem.getElementsByTagName("textarea")
-    ].filter(
-      tag =>
-        ["text", "url", "search"].includes(tag.type) ||
-        tag.nodeName.toLowerCase() == "textarea"
-    );
-
-    // Register event listeners for all types of elements we'd like to allow for a
-    // tracer.
-    ifs.map(t => t.addEventListener("mousedown", rightSideInputHandler));
-    const auto = await autop;
-    // If the user configured the plugin to autofill inputs, do that here.
-    if (!auto.autoFill && !autom) {
-      return true;
-    }
-
-    ifs.map(t => fillElement(t, auto.autoFillPayload));
-    return true;
-  }
+    ]
+      .filter(
+        tag =>
+          ["text", "url", "search"].includes(tag.type) ||
+          tag.nodeName.toLowerCase() == "textarea"
+      )
+      // Register event listeners for all types of elements we'd like to allow for a
+      // tracer.
+      .map(t => t.addEventListener("mousedown", rightSideInputHandler));
 
   // on mouseUp listener on whole window to capture all mouse up events.
   document.addEventListener("mousedown", e => {

@@ -4,12 +4,18 @@ const form = (() => {
   // frame element of the target passed in. padding is the amount
   // of space on each side of the element
   const screenshotHandler = resolve => {
-    return e => {
-      if (!e.data || e.data["message-type"] !== "screenshot-done") {
+    return ({ detail }) => {
+      if (!detail || detail["message-type"] !== "screenshot-done") {
         return;
       }
-      resolve(e.data.dURI);
+      resolve(detail.dURI);
     };
+  };
+
+  const getRandomInt = (min, max) => {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   };
   async function captureScreenshot(e, padding = 0) {
     e.classList.add("screenshot");
@@ -17,8 +23,18 @@ const form = (() => {
     let handler;
     const dURIp = new Promise(r => {
       handler = screenshotHandler(r);
-      window.addEventListener("message", handler);
-      window.postMessage({ "message-type": "screenshot" }, "*");
+      const channel = getRandomInt(0, 100000);
+      window.addEventListener(`tracyResponse-${channel}`, handler, {
+        once: true
+      });
+
+      const event = new CustomEvent("tracyMessage", {
+        detail: {
+          "message-type": "screenshot",
+          channel: channel
+        }
+      });
+      window.dispatchEvent(event);
     });
 
     const rec = document.body.getBoundingClientRect();
@@ -30,7 +46,6 @@ const form = (() => {
       ratio: 1
     };
     const dURI = await dURIp;
-    window.removeEventListener("message", handler);
     const imgP = dataURIToImage(dURI, dim);
     e.classList.add("screenshot-done");
     e.classList.remove("screenshot");
@@ -100,11 +115,15 @@ const form = (() => {
       t.Severity = 0;
       t.HasTracerEvents = false;
       t.Screenshot = ss;
-      window.postMessage({
-        "message-type": "database",
-        query: "addTracer",
-        tracer: t
+
+      const event = new CustomEvent("tracyMessage", {
+        detail: {
+          "message-type": "database",
+          query: "addTracer",
+          tracer: t
+        }
       });
+      window.dispatch(event);
     });
 
   const formSubmitListener = evt => {
@@ -131,26 +150,21 @@ const form = (() => {
     // parameter. This button is found in evt.explictOriginalTarget. Creat of copy
     // of this element minus the type=submit and embed it into the form. We also
     // want make sure its hidden so it doesn't look funky.
-    const i = document.createElement("input");
-    [...evt.explicitOriginalTarget.attributes]
-      .filter(a => a.nodeName !== "type" && a.value !== "submit")
-      .map(a => i.setAttribute(a.nodeName, a.value));
-    i.setAttribute("type", "hidden");
-    evt.target.appendChild(i);
+    if (evt.explicitOriginalTarget) {
+      const i = document.createElement("input");
+      [...evt.explicitOriginalTarget.attributes]
+        .filter(a => a.nodeName !== "type" && a.value !== "submit")
+        .map(a => i.setAttribute(a.nodeName, a.value));
+      i.setAttribute("type", "hidden");
+      evt.target.appendChild(i);
+    }
     captureScreenshot(evt.currentTarget).then(ss => {
       storeTracers(tracers, ss);
       evt.target.submit();
     });
   };
 
-  window.addEventListener("message", e => {
-    if (
-      e.data &&
-      (e.data["message-type"] !== "dom" || e.data.type !== "form")
-    ) {
-      return;
-    }
-
+  window.addEventListener("formAddedToDOM", _ => {
     // Since we can't pass the exact DOM node from the mutation observer,
     // take the forms we have already proxied with a custom class.
     [...document.getElementsByTagName("form")]

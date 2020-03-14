@@ -46,19 +46,37 @@ const jobs = (() => {
           tracerPayloads: tracers.map(t => t.TracerPayload)
         });
       },
-      add: async (message, sender, sendResponse) => {
-        if (!settings.isDisabled()) {
-          // If it is the first job added, set a timer to process the jobs.
-          if (j.length === 0) {
-            chrome.alarms.create("processDOMEvents", {
-              when: Date.now() + 1500
-            });
-          }
-          j.push(message);
+      add: async (message, _, sendResponse) => {
+        if (settings.isDisabled()) {
+          sendResponse();
+          return;
         }
+        // If it is the first job added, set a timer to process the jobs.
+        if (j.length === 0) {
+          chrome.alarms.create("processDOMEvents", {
+            when: Date.now() + 1500
+          });
+        }
+        j.push(message);
 
         // This is needed for the general way we pass messages to the background.
         // All message handlers need to return something.
+        sendResponse(true);
+      },
+      bulkAdd: async (message, _, sendResponse) => {
+        if (settings.isDisabled()) {
+          sendResponse();
+          return;
+        }
+
+        // If it is the first job added, set a timer to process the jobs.
+        if (j.length === 0) {
+          chrome.alarms.create("processDOMEvents", {
+            when: Date.now() + 1500
+          });
+        }
+
+        message.msg.map(m => j.push(m));
         sendResponse(true);
       }
     };
@@ -295,5 +313,5 @@ const jobs = (() => {
     if (alarm.name !== "processDOMEvents") return;
     worker.processDOMEvents();
   });
-  return { add: worker.add };
+  return { add: worker.add, bulkAdd: worker.bulkAdd };
 })();

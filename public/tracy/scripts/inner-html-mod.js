@@ -13,16 +13,16 @@
     set: function(value) {
       // Send a message to the extension to check the arguments of any
       // call to innerHTML have user-controlled input.
-      window.postMessage(
-        {
+      const event = new CustomEvent("tracyMessage", {
+        detail: {
           "message-type": "job",
           type: "innerHTML",
           msg: value,
           extras: { stack: new Error().stack },
           location: document.location.href
-        },
-        "*"
-      );
+        }
+      });
+      window.dispatchEvent(event);
 
       //Call the original setter
       return originalSet.call(this, value);

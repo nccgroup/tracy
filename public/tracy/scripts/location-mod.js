@@ -34,11 +34,15 @@
       t.Requests = [];
       t.Severity = 0;
       t.HasTracerEvents = false;
-      window.postMessage({
-        "message-type": "database",
-        query: "addTracer",
-        tracer: t
-      });
+      try {
+        util.send({
+          "message-type": "database",
+          query: "addTracer",
+          tracer: t
+        });
+      } catch (e) {
+        console.error("Failed to addTracer", t, e);
+      }
     });
 
     window.location = url.toString();
