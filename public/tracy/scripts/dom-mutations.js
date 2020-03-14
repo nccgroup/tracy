@@ -51,7 +51,7 @@
   const addedNodesHandler = addedNodes => nextStep(null, addedNodes);
 
   const nextStep = (parentNode, addedNodes, i = 0) => {
-    if (i < addedNodes.length - 1) {
+    if (i < addedNodes.length) {
       window.requestAnimationFrame(() => {
         addedNodeHandler(parentNode, addedNodes, i);
       });

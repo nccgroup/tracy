@@ -1,16 +1,16 @@
 const highlight = (() => {
   // Gets the element offset without jQuery.
   // http://stackoverflow.com/questions/18953144/how-do-i-get-the-offset-top-value-of-an-element-without-using-jquery
-  function getElementOffset(elem) {
+  const getElementOffset = elem => {
     const de = document.documentElement;
     const box = elem.getBoundingClientRect();
     const top = box.top + window.pageYOffset - de.clientTop;
     const left = box.left + window.pageXOffset - de.clientLeft;
     return { top: top, left: left };
-  }
+  };
 
   // isNearLeftEdge identifies if an event happened near the left edge of an element.
-  function isNearLeftEdge(elem, event) {
+  const isNearLeftEdge = (elem, event) => {
     const offset = getElementOffset(elem);
     const rightEdge = elem.getBoundingClientRect().right - offset.left;
     const mouseClickPosition = event.pageX - offset.left;
@@ -25,10 +25,10 @@ const highlight = (() => {
     }
 
     return false;
-  }
+  };
 
   // Simulate input on a input field in hopes to trigger any input validation checks.
-  async function simulateInputType(elem, value) {
+  const simulateInputType = async (elem, value) => {
     elem.focus();
     elem.value = value;
 
@@ -55,15 +55,11 @@ const highlight = (() => {
         return true;
       })
     );
-  }
+  };
 
   // registerRightClickHandler catches a click near the right end of an input field
   // to get a list of tracer strings.
-  async function rightSideInputHandler(e) {
-    // Remember the click event so that the background can tell us if they
-    // used a context menu item and which one is was.
-    cache.set(e.target);
-
+  const rightSideInputHandler = async e => {
     if (!isNearLeftEdge(e.target, e)) {
       return;
     }
@@ -96,13 +92,13 @@ const highlight = (() => {
     document.documentElement.appendChild(tagMenu);
     tagMenu.style.left = e.pageX + "px";
     tagMenu.style.top = e.pageY + "px";
-  }
+  };
 
   // captureSceenshot sends a command to the background page
   // take a screenshot given the dimensions specified by the
   // frame element of the target passed in. padding is the amount
   // of space on each side of the element
-  async function captureScreenshot(e, padding = 0) {
+  const captureScreenshot = async (e, padding = 0) => {
     e.classList.add("screenshot");
     const dURIp = util.send({ "message-type": "screenshot" });
     const rec = document.body.getBoundingClientRect();
@@ -118,29 +114,12 @@ const highlight = (() => {
     e.classList.add("screenshot-done");
     e.classList.remove("screenshot");
     return await imgP;
-  }
-
-  // clickCache is an object that can be used to set and get
-  // the last clicked item without having to store it in a
-  // global variable. clickCache has two functions, get and set.
-  // set takes an HTML element and sets the cache. get returns
-  // the value of the cache.
-  function clickCache() {
-    let lastClicked;
-    return {
-      get: () => {
-        return lastClicked;
-      },
-      set: e => {
-        lastClicked = e;
-      }
-    };
-  }
+  };
 
   // fillElement takes a tracy string and either generates a payload
   // if it starts with "gen" and adds the resultant tracer to the input
   // element specified.
-  async function fillElement(elem, tracerString) {
+  const fillElement = async (elem, tracerString) => {
     if (!elem) {
       console.error("no element to set the tracer string was defined");
       return false;
@@ -151,12 +130,12 @@ const highlight = (() => {
     } else {
       return await fillGenPayload(elem, tracerString);
     }
-  }
+  };
 
   // fillGenPayload generates a payload on-the-fly using the
   // tracer API and inserts it into the element. It will also
   // take a screenshot of the surrounding area and attack that to the tracer.
-  async function fillGenPayload(elem, tracerString) {
+  const fillGenPayload = async (elem, tracerString) => {
     const r = replace.str(tracerString);
     const tracer = r.tracers.pop();
     simulateInputType(elem, elem.value + r.str);
@@ -170,20 +149,19 @@ const highlight = (() => {
       query: "addTracer",
       tracer: tracer
     });
-  }
+  };
 
   // fillNonGenPayload handles the logic for when filling an HTML element
   // with a payload that is not generated on-the-fly.
-  async function fillNonGenPayload(elem, tracerString) {
+  const fillNonGenPayload = async (elem, tracerString) =>
     // TODO: right now, there is no way to do screenshots of non-gen payloads
     // because we don't know what tracer to associate the screenshot with
     // until the network request is made.
-    return await simulateInputType(elem, elem.value + tracerString);
-  }
+    await simulateInputType(elem, elem.value + tracerString);
 
   // Given an data URI and dimensions, create an Image and use the canvas
   // to draw the image.
-  function dataURIToImage(dURI, dim) {
+  const dataURIToImage = (dURI, dim) => {
     return new Promise(res => {
       const canvas = document.createElement("canvas");
       const img = new Image();
@@ -208,7 +186,7 @@ const highlight = (() => {
       };
       img.src = dURI;
     });
-  }
+  };
 
   // Find all the inputs and style them with the extension.
   // autom indicates if the user wants to fill the page without
@@ -228,30 +206,11 @@ const highlight = (() => {
       .map(t => t.addEventListener("mousedown", rightSideInputHandler));
 
   // on mouseUp listener on whole window to capture all mouse up events.
-  document.addEventListener("mousedown", e => {
+  document.addEventListener("mousedown", _ => {
     const menuElement = document.getElementById("tag-menu");
 
     if (menuElement != null) {
       menuElement.parentNode.removeChild(menuElement);
-    }
-  });
-
-  // instantiate our click cache.
-  const cache = clickCache();
-
-  // Event listener from the background thread when a user clicks one
-  // of the context menus.
-  chrome.runtime.onMessage.addListener(msg => {
-    if (msg.cmd == "clickCache") {
-      fillElement(cache.get(), msg.tracerString);
-    }
-  });
-
-  // Event listener from the background thread when a user clicks
-  // the auto-fill context menu.
-  chrome.runtime.onMessage.addListener(msg => {
-    if (msg.cmd == "auto-fill") {
-      clickToFill(document, true);
     }
   });
 

@@ -123,7 +123,7 @@ const form = (() => {
           tracer: t
         }
       });
-      window.dispatch(event);
+      window.dispatchEvent(event);
     });
 
   const formSubmitListener = evt => {

@@ -17,7 +17,7 @@
       const respp = util.send(detail);
       if (detail.channel) {
         const resp = await respp;
-        const event = new CustomEvent(`tracyResponse-${channel}`, {
+        const event = new CustomEvent(`tracyResponse-${detail.channel}`, {
           detail: resp
         });
         window.dispatchEvent(event);
