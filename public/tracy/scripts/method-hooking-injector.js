@@ -16,7 +16,12 @@
     try {
       const respp = util.send(detail);
       if (detail.channel) {
-        const resp = await respp;
+        let resp = await respp;
+        // cloneInto is for FF only. They don't allow passing custom objects
+        // from a privileged script to an unprivileged script without this.
+        if (typeof cloneInto !== "undefined") {
+          resp = cloneInto(resp, window);
+        }
         const event = new CustomEvent(`tracyResponse-${detail.channel}`, {
           detail: resp
         });
