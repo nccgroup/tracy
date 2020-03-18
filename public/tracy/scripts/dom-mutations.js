@@ -1,4 +1,4 @@
-(() => {
+const observer = (isTest => {
   const addedNodeHandler = (parentNode, addedNodes, i) => {
     const node = addedNodes[i];
     // Ignore scripts injected from the background page.
@@ -150,5 +150,11 @@
     };
   };
   const bulkAdd = createBulkAdd();
-  observer.observe(document.documentElement, observerConfig);
-})();
+
+  if (isTest) {
+    return [observer, observerConfig];
+  } else {
+    observer.observe(document.documentElement, observerConfig);
+    return null;
+  }
+})(window.isTest);
