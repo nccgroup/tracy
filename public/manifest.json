@@ -1,6 +1,7 @@
 {
   "name": "Tracy",
-  "description": "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
+  "description":
+    "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
   "version": "0.8.8",
   "permissions": [
     "<all_urls>",

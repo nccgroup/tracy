@@ -1,0 +1,3 @@
+const EventTypes = {
+  innerHTML: "innerHTML"
+};
