@@ -108,7 +108,7 @@ const form = (() => {
       })
       .flat();
 
-  const storeTracers = (tracers, ss = null) =>
+  const storeTracers = (tracers, ss = null) => {
     tracers.map(t => {
       // When creating a tracer, make sure the Requests attribute is there.
       t.Requests = [];
@@ -125,6 +125,7 @@ const form = (() => {
       });
       window.dispatchEvent(event);
     });
+  };
 
   const formSubmitListener = evt => {
     const tracers = replaceFormInputs(evt.target);
@@ -164,7 +165,7 @@ const form = (() => {
     });
   };
 
-  window.addEventListener("formAddedToDOM", _ => {
+  const formAddedToDOM = () => {
     // Since we can't pass the exact DOM node from the mutation observer,
     // take the forms we have already proxied with a custom class.
     [...document.getElementsByTagName("form")]
@@ -183,6 +184,10 @@ const form = (() => {
         // our handler code won't get called
         const submitProxy = {
           apply: (t, thisa, al) => {
+            // Since we are submitting the form with JavaScript, remove the onsubmit handler
+            // for this form. It is only used for regular form submissions.
+            f.removeEventListener("submit", replaceFormInputs);
+
             // Replace the tracers, and since we are not in an onsubmit handler
             // we can wait for the screen capture to finish and then submit the form.
             const tracers = replaceFormInputs(f);
@@ -195,9 +200,14 @@ const form = (() => {
               storeTracers(tracers, ss);
               Reflect.apply(t, thisa, al);
             });
+
+            return tracers;
           }
         };
         f.submit = new Proxy(f.submit, submitProxy);
+        // mainly adding this for testing purposes so tests have access to any
+        // tracers returned from this function
+        f.requestSubmit = new Proxy(f.requestSubmit, submitProxy);
         return f;
       })
       .map(f => {
@@ -214,5 +224,9 @@ const form = (() => {
           }
         });
       });
+  };
+  formAddedToDOM();
+  window.addEventListener("formAddedToDOM", _ => {
+    formAddedToDOM();
   });
 })();
