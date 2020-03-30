@@ -78,7 +78,7 @@ const tests = [
   },
   {
     name: "Form test .submit",
-    description:
+    Description:
       "Test ensures all tracers are converted in forms using the .submit method.",
     test: async pg => {
       pg.forms[0].children[0].value = "zzXSSzz";
