@@ -7,71 +7,37 @@ const settings = (() => {
         (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
       ).toString(16)
     );
+  let disabled = false;
+
+  // add the default tracers to the local storage
+  store.set({ tracerPayloads: DefaultTracerTypes });
 
   // configQuery returns the appropriate configuration information
   // that is requested from the content script.
-  const query = (message, sender, sendResponse) => {
-    if (message && message.config) {
-      switch (message.config) {
-        case "tracer-string-types":
-          sendResponse(tracerStringTypes);
-          break;
-        case "disabled":
-          sendResponse(disabled);
-          break;
-      }
+  const query = async ({ config }, _, sendResponse) => {
+    switch (config) {
+      case "tracer-string-types":
+        const tps = await getTracerStrings();
+        sendResponse(tps.tracerPayloads);
+        break;
+      case "disabled":
+        sendResponse(disabled);
+        break;
     }
   };
 
-  // Configuration defaults
-  // TODO: move these to chrome storage
-  const tracerSwap = "[[ID]]";
-  let tracerStringTypes = [
-    ["zzXSSzz", `\\"'<${tracerSwap}>`],
-    ["GEN-XSS", `\\"'<${tracerSwap}>`],
-    ["GEN-PLAIN", `${tracerSwap}`],
-    ["zzPLAINzz", `${tracerSwap}`]
-  ];
-  // TODO: can't figure out why Firefox is throwing an error here
-  // about duplicate IDs.
-  let err;
-  for (let i of tracerStringTypes) {
-    chrome.contextMenus.remove(i[0], () => {
-      err = chrome.runtime.lastError;
-      if (err) {
-        //Don't really care about this error.
-      }
-      // Context menu for right-clicking on an editable field.
-      chrome.contextMenus.create({
-        id: i[0],
-        title: i[0],
-        contexts: ["editable"],
-        onclick: (info, tab) => {
-          chrome.tabs.sendMessage(tab.id, {
-            cmd: "clickCache",
-            tracerString: i[0]
-          });
-        }
-      });
-    });
-  }
-
-  let disabled = false;
-  const getAPIKey = async () =>
-    await new Promise(r =>
-      chrome.storage.local.get({ apiKey: "" }, res => {
-        let { apiKey } = res;
-        if (!apiKey) {
-          let apiKey = generateUUID();
-          chrome.storage.local.set({ apiKey: apiKey });
-        }
-
-        r(apiKey);
-      })
-    );
+  const getTracerStrings = async () => await store.get({ tracerPayloads: [] });
+  const getAPIKey = async () => {
+    let { apiKey } = await store.get({ apiKey: "" });
+    if (!apiKey) {
+      apiKey = generateUUID();
+      store.set({ apiKey: apiKey });
+    }
+    return apiKey;
+  };
 
   return {
-    getTracerStrings: () => tracerStringTypes,
+    getTracerStrings: getTracerStrings,
     getAPIKey: getAPIKey,
     isDisabled: () => disabled,
     setDisabled: b => (disabled = b),

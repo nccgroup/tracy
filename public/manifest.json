@@ -2,7 +2,7 @@
   "name": "Tracy",
   "description":
     "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "permissions": [
     "<all_urls>",
     "storage",
@@ -12,6 +12,8 @@
   ],
   "background": {
     "scripts": [
+      "tracy/scripts/util.js",
+      "tracy/scripts/constants.js",
       "tracy/scripts/replace.js",
       "tracy/scripts/router.js",
       "tracy/scripts/request-capture.js",
@@ -28,6 +30,7 @@
       "all_frames": true,
       "js": [
         "tracy/scripts/util.js",
+        "tracy/scripts/constants.js",
         "tracy/scripts/highlight.js",
         "tracy/scripts/replace.js",
         "tracy/scripts/dom-mutations.js",
@@ -55,6 +58,8 @@
     "tracy/scripts/inner-html-mod.js",
     "tracy/scripts/worker.js",
     "tracy/scripts/method-hooking.js",
+    "tracy/scripts/constants.js",
+    "tracy/scripts/channel.js",
     "tracy/images/tracy_svg.svg"
   ],
   "manifest_version": 2,

@@ -9,8 +9,8 @@ const highlight = (() => {
     return { top: top, left: left };
   };
 
-  // isNearLeftEdge identifies if an event happened near the left edge of an element.
-  const isNearLeftEdge = (elem, event) => {
+  // isNearRightEdge identifies if an event happened near the left edge of an element.
+  const isNearRightEdge = (elem, event) => {
     const offset = getElementOffset(elem);
     const rightEdge = elem.getBoundingClientRect().right - offset.left;
     const mouseClickPosition = event.pageX - offset.left;
@@ -60,27 +60,28 @@ const highlight = (() => {
   // registerRightClickHandler catches a click near the right end of an input field
   // to get a list of tracer strings.
   const rightSideInputHandler = async e => {
-    if (!isNearLeftEdge(e.target, e)) {
+    if (!isNearRightEdge(e.target, e)) {
       return;
     }
-
-    // This timer is used to check for a long press.
+    e.stopPropagation();
     const tagMenu = document.createElement("div");
+    tagMenu.addEventListener(
+      "mousedown",
+      _ => {
+        tagMenu.parentNode.removeChild(tagMenu);
+      },
+      { once: true, passive: true }
+    );
     const list = document.createElement("ul");
     tagMenu.id = "tag-menu";
     tagMenu.appendChild(list);
 
     // Create the list of tracers types they can choose from. Dynamically
     // create them so we can easily add new types of tracer types.
-    const types = await util.send({
-      "message-type": "config",
-      config: "tracer-string-types"
-    });
-
-    types.map(t => {
+    replace.getTracerPayloads().map(t => {
       const listElement = document.createElement("li");
-      listElement.addEventListener("mousedown", el => {
-        fillElement(e.target, el.target.innerText);
+      listElement.addEventListener("mousedown", _ => {
+        fillElement(e.target, t);
       });
       listElement.classList.add("highlight-on-hover");
       listElement.innerText = t[0];
@@ -99,8 +100,8 @@ const highlight = (() => {
   // frame element of the target passed in. padding is the amount
   // of space on each side of the element
   const captureScreenshot = async (e, padding = 0) => {
-    e.classList.add("screenshot");
-    const dURIp = util.send({ "message-type": "screenshot" });
+    e.classList.add(Strings.SCREENSHOT);
+    const dURIp = channel.send(MessageTypes.Screenshot);
     const rec = document.body.getBoundingClientRect();
     const dim = {
       top: rec.top - padding,
@@ -111,24 +112,19 @@ const highlight = (() => {
     };
     const { dURI } = await dURIp;
     const imgP = dataURIToImage(dURI, dim);
-    e.classList.add("screenshot-done");
-    e.classList.remove("screenshot");
+    e.classList.add(Strings.SCREENSHOT_DONE);
+    e.classList.remove(Strings.SCREENSHOT);
     return await imgP;
   };
 
   // fillElement takes a tracy string and either generates a payload
   // if it starts with "gen" and adds the resultant tracer to the input
   // element specified.
-  const fillElement = async (elem, tracerString) => {
-    if (!elem) {
-      console.error("no element to set the tracer string was defined");
-      return false;
-    }
-
-    if (!tracerString.toLowerCase().startsWith("gen")) {
-      return await fillNonGenPayload(elem, tracerString);
+  const fillElement = async (elem, tracer) => {
+    if (!tracer[0].toLowerCase().startsWith("gen")) {
+      return await fillNonGenPayload(elem, tracer[0]);
     } else {
-      return await fillGenPayload(elem, tracerString);
+      return await fillGenPayload(elem, tracer[0]);
     }
   };
 
@@ -144,19 +140,12 @@ const highlight = (() => {
     tracer.Requests = [];
     tracer.Severity = 0;
     tracer.HasTracerEvents = false;
-    util.send({
-      "message-type": "database",
-      query: "addTracer",
-      tracer: tracer
-    });
+    channel.send({ tracer, ...MessageTypes.AddTracer });
   };
 
   // fillNonGenPayload handles the logic for when filling an HTML element
   // with a payload that is not generated on-the-fly.
   const fillNonGenPayload = async (elem, tracerString) =>
-    // TODO: right now, there is no way to do screenshots of non-gen payloads
-    // because we don't know what tracer to associate the screenshot with
-    // until the network request is made.
     await simulateInputType(elem, elem.value + tracerString);
 
   // Given an data URI and dimensions, create an Image and use the canvas
@@ -205,7 +194,6 @@ const highlight = (() => {
       // tracer.
       .map(t => t.addEventListener("mousedown", rightSideInputHandler));
 
-  // on mouseUp listener on whole window to capture all mouse up events.
   document.addEventListener("mousedown", _ => {
     const menuElement = document.getElementById("tag-menu");
 
@@ -213,6 +201,5 @@ const highlight = (() => {
       menuElement.parentNode.removeChild(menuElement);
     }
   });
-
   return { addClickToFill: addClickToFill };
 })();

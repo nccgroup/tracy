@@ -14,7 +14,7 @@
           break;
         case "config":
           settings.query(message, sender, sendResponse);
-          break;
+          return true;
         case "screenshot":
           screenshot.take(message, sender, sendResponse);
           return true;

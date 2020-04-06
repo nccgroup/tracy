@@ -124,8 +124,8 @@ const observer = (isTest => {
       const send = chunk => {
         window.requestAnimationFrame(() => {
           try {
-            util.send({
-              "message-type": "bulk-jobs",
+            channel.send({
+              ...MessageTypes.BulkJobs,
               location: document.location.href, //all these dom events are going to share the location
               msg: copy.splice(0, chunk)
             });

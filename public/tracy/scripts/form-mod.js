@@ -3,40 +3,9 @@ const form = (() => {
   // take a screenshot given the dimensions specified by the
   // frame element of the target passed in. padding is the amount
   // of space on each side of the element
-  const screenshotHandler = resolve => {
-    return ({ detail }) => {
-      if (!detail || detail["message-type"] !== "screenshot-done") {
-        return;
-      }
-      resolve(detail.dURI);
-    };
-  };
-
-  const getRandomInt = (min, max) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
   async function captureScreenshot(e, padding = 0) {
-    e.classList.add("screenshot");
-
-    let handler;
-    const dURIp = new Promise(r => {
-      handler = screenshotHandler(r);
-      const channel = getRandomInt(0, 100000);
-      window.addEventListener(`tracyResponse-${channel}`, handler, {
-        once: true
-      });
-
-      const event = new CustomEvent("tracyMessage", {
-        detail: {
-          "message-type": "screenshot",
-          channel: channel
-        }
-      });
-      window.dispatchEvent(event);
-    });
-
+    e.classList.add(Strings.SCREENSHOT);
+    const dURIp = channel.send(MessageTypes.Screenshot);
     const rec = document.body.getBoundingClientRect();
     const dim = {
       top: rec.top - padding,
@@ -45,10 +14,10 @@ const form = (() => {
       height: window.innerHeight + 2 * padding, // I think
       ratio: 1
     };
-    const dURI = await dURIp;
+    const { dURI } = await dURIp;
     const imgP = dataURIToImage(dURI, dim);
-    e.classList.add("screenshot-done");
-    e.classList.remove("screenshot");
+    e.classList.add(Strings.SCREENSHOT_DONE);
+    e.classList.remove(Strings.SCREENSHOT);
     return await imgP;
   }
   // Given an data URI and dimensions, create an Image and use the canvas

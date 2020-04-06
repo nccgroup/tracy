@@ -1,61 +1,72 @@
 // the replace package is used for replacing strings, headers,
 // and bodies of HTTP requests with tracer strings.
 const replace = (() => {
-  // tracerSwap is the string that is used to represent where
-  // in a tracer type a random tracer ID should be replaced.
-  const tracerSwap = "[[ID]]";
-
+  let cachedTracers = [];
   // getTracerTypes returns the set of available tracers
   // that need to be replaced  inline before an HTTP request
   // is sent off.
-  // TODO: use the settings.js for this. need to find a way to
-  // get the settings from an injectable script
-  const getTracerTypes = () => [
-    ["zzXSSzz", `\\"'<${tracerSwap}>`],
-    ["GEN-XSS", `\\"'<${tracerSwap}>`],
-    ["GEN-PLAIN", `${tracerSwap}`],
-    ["zzPLAINzz", `${tracerSwap}`]
-  ];
+  const getTracerTypes = async pageType => {
+    switch (pageType) {
+      case ScriptContexts.PAGE:
+      case ScriptContexts.CONTENT:
+        return await channel.send(MessageTypes.TracerStrings);
+      case ScriptContexts.BACKGROUND:
+        return await settings.getTracerStrings();
+      default:
+        return DefaultTracerTypes;
+    }
+  };
+
+  (async () => {
+    cachedTracers = await getTracerTypes(CurrentPageType);
+    setInterval(
+      async () => (cachedTracers = await getTracerTypes(CurrentPageType)),
+      5000
+    );
+  })();
 
   // str replaces any tracer types with their corresponding
   // tracer strings. Returns the replaced string as well
   // as an array of tracers that were replaced and their tracer type.
   const str = msg => {
-    if (!msg) return { str: msg, tracers: [] };
-    if (typeof msg !== "string") return { str: msg, tracers: [] };
-    let copy = msg;
-    const tracers = [];
-    for (let tracerType of getTracerTypes()) {
-      // Only do replacements if there is a tracer type in the message.
-      if (msg.indexOf(tracerType[0]) === -1) {
-        continue;
-      }
-
-      // If there is, do the first replacement.
-      let gen = genTracer();
-      let copyr = copy.replace(
-        tracerType[0],
-        tracerType[1].replace(tracerSwap, gen)
-      );
-      tracers.push({ TracerString: tracerType[0], TracerPayload: gen });
-
-      // Continue to do replacements until we get the same string.
-      for (;;) {
-        gen = genTracer();
-        copy = copyr;
-        copyr = copy.replace(
-          tracerType[0],
-          tracerType[1].replace(tracerSwap, gen)
-        );
-        // if the strings are the same, there is no more replacements
-        if (copyr === copy) {
-          break;
-        } else {
-          tracers.push({ TracerString: tracerType[0], TracerPayload: gen });
-        }
-      }
+    if (!msg) {
+      return { str: msg, tracers: [] };
     }
-    return { str: copy, tracers: tracers };
+    if (typeof msg !== "string") {
+      return { str: msg, tracers: [] };
+    }
+
+    return cachedTracers.reduce(
+      ({ tracers, str }, [tracerString, tracerPayload]) => {
+        const splits = str.split(tracerString);
+        if (splits.length === 1) {
+          return { tracers, str };
+        }
+
+        const last = splits.pop();
+
+        const [addedTracers, replacedStr] = splits.reduce(
+          ([addedTracers, replacedStr], split) => {
+            const gen = genTracer();
+            return [
+              [
+                ...addedTracers,
+                { TracerString: tracerString, TracerPayload: gen }
+              ],
+              replacedStr +
+                split +
+                tracerPayload.replace(Strings.TRACER_SWAP, gen)
+            ];
+          },
+          [tracers, ""]
+        );
+        return {
+          tracers: [...tracers, ...addedTracers],
+          str: replacedStr + last
+        };
+      },
+      { tracers: [], str: msg }
+    );
   };
 
   // genTracer generates a random 10 letter unique ID that serves as a
@@ -64,10 +75,11 @@ const replace = (() => {
     const len = 10;
     const randAlpha = length => {
       let text = "";
-      const possible = "abcdefghijklmnopqrstuvwxyz";
 
       for (let i = 0; i < length; i++)
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
+        text += Strings.ALPHA.charAt(
+          Math.floor(Math.random() * Strings.ALPHA.length)
+        );
 
       return text;
     };
@@ -77,26 +89,8 @@ const replace = (() => {
 
   // headers replaces strings in a Headers object and rebuilds it
   // into a new Header object.
-  const headers = headers => {
-    if (!headers) {
-      return headers;
-    }
-
-    let tracers = [],
-      copy = new Headers();
-    if (!(headers instanceof Headers)) {
-      headers = new Headers(headers);
-    }
-    let key, value;
-    for (let i of headers) {
-      key = str(i[0]);
-      value = str(i[1]);
-      tracers = tracers.concat(key.tracers.concat(value.tracers));
-      copy.append(key.str, value.str);
-    }
-
-    return { headers: copy, tracers: tracers };
-  };
+  const headers = headers =>
+    replaceIterabletype(new Headers(headers), new Headers(), "headers");
 
   // body takes any one of the JavaScript body interfaces
   // and replaces the contents using str, then rebuilds
@@ -105,12 +99,12 @@ const replace = (() => {
   // for more info about the body types.
   // We don't use the body mixins from the Request object because we want to
   // keep the original body types.
-  const body = async body => {
+  const body = body => {
     if (body instanceof Blob) {
       // Stringifying this data wasn't really working well and was messing up
       // the data. Since the data here is in a binary format, I don't really
       // want to corrupt and data otherwise web browsing experience will be bad.
-      return { body: body, tracers: [] }; // await replaceBlob(body);
+      return { body: body, tracers: [] };
     } else if (body instanceof ArrayBuffer) {
       return replaceBufferSource(body);
     } else if (body instanceof FormData) {
@@ -126,53 +120,26 @@ const replace = (() => {
 
   // replaceURLSearchParams replaces each key and value of a URLSearchParams
   // object with tracer strings and rebuilds a URLSearchParams object.
-  const replaceURLSearchParams = usp => {
-    const copy = new URLSearchParams();
-    let key,
-      value,
-      tracers = [];
-    for (let i of usp.entries()) {
-      key = str(i[0]);
-      value = str(i[1]);
-      tracers = tracers.concat(key.tracers.concat(value.tracers));
-      copy.append(key.str, value.str);
-    }
-    return { body: copy, tracers: tracers };
-  };
+  const replaceURLSearchParams = usp =>
+    replaceIterabletype(usp, new URLSearchParams(), "body");
 
   // replaceFormData replaces each key and value of a FormData
   // object with tracer strings and rebuilds a FormData object.
-  const replaceFormData = form => {
-    const copy = new FormData();
-    let key,
-      value,
-      tracers = [];
-    for (let i of form.entries()) {
-      key = str(i[0]);
-      value = str(i[1]);
-      tracers = tracers.concat(key.tracers.concat(value.tracers));
-      copy.append(key.str, value.str);
-    }
-
-    return { body: copy, tracers: tracers };
-  };
-
-  // replaceBlob replaces the blob type with tracer strings and rebuilds a
-  // blob.
-  const replaceBlob = blob => {
-    const reader = new FileReader();
-    return new Promise(r => {
-      reader.addEventListener("loadend", e => {
-        const replacement = str(e.srcElement.result);
-        r({
-          body: new Blob([replacement.str], {
-            type: blob.type
-          }),
-          tracers: replacement.tracers
-        });
-      });
-      reader.readAsText(blob);
-    });
+  const replaceFormData = form =>
+    replaceIterabletype(form, new FormData(), "body");
+  const replaceIterabletype = (iter, iterType, strType) => {
+    [...iter].reduce(
+      ({ [strType]: str, tracers }, [key, value]) => {
+        const { tracers: ktracers, str: kstr } = str(key);
+        const { tracers: vtracers, str: vstr } = str(value);
+        str.append(kstr, vstr);
+        return {
+          [strType]: str,
+          tracers: [...tracers, ...ktracers, ...vtracers]
+        };
+      },
+      { [strType]: iterType, tracers: [] }
+    );
   };
 
   // Helper functions for replaceBufferSource
@@ -192,5 +159,10 @@ const replace = (() => {
     return { body: str2ab(b.str), tracers: b.tracers };
   };
 
-  return { str: str, body: body, headers: headers };
+  return {
+    str: str,
+    body: body,
+    headers: headers,
+    getTracerPayloads: () => cachedTracers
+  };
 })();

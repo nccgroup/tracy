@@ -76,7 +76,9 @@ const jobs = (() => {
           });
         }
 
-        message.msg.map(m => j.push(m));
+        message.msg.map(m =>
+          j.push(Object.assign(m, { location: message.location }))
+        );
         sendResponse(true);
       }
     };

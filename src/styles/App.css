@@ -61,6 +61,12 @@ main > div.app {
   align-items: flex-start;
 }
 
+.settings-describe-text {
+  color: #51545b;
+  font-size: small;
+  margin-bottom: 20px;
+}
+
 .table-container-tracers {
   grid-row-start: 2;
 }
