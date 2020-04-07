@@ -43,12 +43,14 @@
   XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, {
     apply: (t, thisa, al) => {
       if (al.length < 2) return Reflect.apply(t, thisa, al);
-      const b = replace.str(al[1]);
-      if (b.tracers.length === 0) return Reflect.apply(t, thisa, al);
-      if (!thisa.tracers) thisa.tracers = [];
-      thisa.tracers = thisa.tracers.concat(b.tracers);
-      al[1] = b.str;
-      return Reflect.apply(t, thisa, al);
+      return (() => {
+        const b = replace.str(al[1]);
+        if (b.tracers.length === 0) return Reflect.apply(t, thisa, al);
+        if (!thisa.tracers) thisa.tracers = [];
+        thisa.tracers = thisa.tracers.concat(b.tracers);
+        al[1] = b.str;
+        return Reflect.apply(t, thisa, al);
+      })();
     }
   });
   XMLHttpRequest.prototype.setRequestHeader = new Proxy(
@@ -56,13 +58,15 @@
     {
       apply: (t, thisa, al) => {
         if (al.length !== 2) return Reflect.apply(t, thisa, al);
-        const key = replace.str(al[0]);
-        const value = replace.str(al[1]);
-        const tracers = key.tracers.concat(value.tracers);
-        if (tracers.length === 0) return Reflect.apply(t, thisa, al);
-        if (!thisa.tracers) thisa.tracers = [];
-        thisa.tracers = thisa.tracers.concat(tracers);
-        return Reflect.apply(t, thisa, [key.str, value.str]);
+        return (() => {
+          const key = replace.str(al[0]);
+          const value = replace.str(al[1]);
+          const tracers = key.tracers.concat(value.tracers);
+          if (tracers.length === 0) return Reflect.apply(t, thisa, al);
+          if (!thisa.tracers) thisa.tracers = [];
+          thisa.tracers = thisa.tracers.concat(tracers);
+          return Reflect.apply(t, thisa, [key.str, value.str]);
+        })();
       }
     }
   );

@@ -52,5 +52,5 @@ textarea {
   background-size: 16px 18px !important;
   background-position: 98% 50% !important;
   cursor: pointer !important;
-  //  border: solid #67baaf !important;
+  border: solid #67baaf;
 }

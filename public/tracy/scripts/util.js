@@ -1,6 +1,5 @@
-const util = (() => {
-  // send wraps the Chrome sendMessage API in a promise.
-  const send = data => {
+const channel = {
+  send: data => {
     return new Promise((res, rej) => {
       chrome.runtime.sendMessage(data, resp => {
         const err = chrome.runtime.lastError;
@@ -12,10 +11,24 @@ const util = (() => {
         res(resp);
       });
     });
-  };
+  }
+};
 
-  // get wraps the Chrome get storage API in a promise.
-  const get = data => {
+const store = {
+  set: data => {
+    return new Promise((res, rej) => {
+      chrome.storage.local.set(data, resp => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          rej(err);
+          return;
+        }
+
+        res(resp);
+      });
+    });
+  },
+  get: data => {
     return new Promise((res, rej) => {
       chrome.storage.local.get(data, resp => {
         const err = chrome.runtime.lastError;
@@ -27,10 +40,5 @@ const util = (() => {
         res(resp);
       });
     });
-  };
-
-  return {
-    get: get,
-    send: send
-  };
-})();
+  }
+};

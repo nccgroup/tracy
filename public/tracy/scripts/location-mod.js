@@ -35,11 +35,7 @@
       t.Severity = 0;
       t.HasTracerEvents = false;
       try {
-        util.send({
-          "message-type": "database",
-          query: "addTracer",
-          tracer: t
-        });
+        channel.send({ t, ...MessageTypes.AddTracer });
       } catch (e) {
         console.error("Failed to addTracer", t, e);
       }

@@ -14,12 +14,12 @@
   // scripts so that injected scripts can talk to the extension via window.postMessage.
   window.addEventListener("tracyMessage", async ({ detail }) => {
     try {
-      const respp = util.send(detail);
+      const respp = channel.send(detail);
       if (detail.channel) {
         let resp = await respp;
         // cloneInto is for FF only. They don't allow passing custom objects
         // from a privileged script to an unprivileged script without this.
-        if (typeof cloneInto !== "undefined") {
+        if (typeof cloneInto !== Strings.UNDEFINED) {
           resp = cloneInto(resp, window);
         }
         const event = new CustomEvent(`tracyResponse-${detail.channel}`, {
@@ -35,6 +35,8 @@
   // A list of scripts we want to inject into the page rather than have them as
   // a content script.
   const injectionScripts = [
+    "channel.js",
+    "constants.js",
     "inner-html-mod.js",
     "xhr-mod.js",
     "fetch-mod.js",

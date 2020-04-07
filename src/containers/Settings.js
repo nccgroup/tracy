@@ -3,13 +3,11 @@ import * as actions from "../actions/";
 import { connect } from "react-redux";
 
 const mapStateToProps = state => ({
-  tracyHost: state.tracyHost,
-  tracyPort: state.tracyPort,
   tracyEnabled: state.tracyEnabled,
-  tracyLocal: state.tracyLocal,
   apiKey: state.apiKey,
   projName: state.projName,
-  projs: state.projs
+  projs: state.projs,
+  tracerPayloads: state.tracerPayloads
 });
 
 const mapDispatchToProps = dispatch => ({

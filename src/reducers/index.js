@@ -18,11 +18,18 @@ const loadState = settings => {
 };
 
 // init is the default settings when the application is loaded.
+const tracerSwap = "[[ID]]";
 const init = {
   appInitialized: false,
   projs: [],
   tracers: [],
   events: [],
+  tracerPayloads: [
+    ["zzXSSzz", `\\"'<${tracerSwap}>`],
+    ["GEN-XSS", `\\"'<${tracerSwap}>`],
+    ["GEN-PLAIN", `${tracerSwap}`],
+    ["zzPLAINzz", `${tracerSwap}`]
+  ],
   tracersLoading: true,
   eventsLoading: false,
   selectedEventID: -1,
@@ -35,12 +42,9 @@ const init = {
   inactiveTracersFilter: false,
   textFilter: false,
   refererFilter: false,
-  tracyHost: "127.0.0.1",
-  tracyPort: 7777,
   apiKey: "12af65d4-4a3c-4cce-abe4-115d089e75f3",
   projName: "first project",
   tracyEnabled: true,
-  tracyLocal: true,
   onSettingsPage: false,
   lastSelectedTable: "tracer"
 };
@@ -89,16 +93,10 @@ const rootReducer = (state = init, action) => {
       change = action.settings;
       break;
     case actions.APP_INITIALIZED:
-      change = { appInitialized: action.init };
+      change = { ...state, appInitialized: action.init };
       break;
     case actions.CHANGE_SETTING:
       switch (Object.keys(action.setting).pop()) {
-        case "tracyHost":
-          change = { tracyHost: action.setting.tracyHost };
-          break;
-        case "tracyPort":
-          change = { tracyPort: action.setting.tracyPort };
-          break;
         case "proj":
           change = {
             projName: action.setting.proj.name,
@@ -110,6 +108,21 @@ const rootReducer = (state = init, action) => {
           break;
         case "tracyEnabled":
           change = { tracyEnabled: action.setting.tracyEnabled };
+          break;
+        case "addedTracerPayload":
+          change = {
+            tracerPayloads: [
+              ...state.tracerPayloads,
+              action.setting.addedTracerPayload
+            ]
+          };
+          break;
+        case "deletedTracerPayload":
+          change = {
+            tracerPayloads: state.tracerPayloads.filter(
+              tp => tp[0] !== action.setting.deletedTracerPayload
+            )
+          };
           break;
         default:
           break;
@@ -226,11 +239,7 @@ const rootReducer = (state = init, action) => {
       break;
   }
 
-  // Sometimes, we don't want to write to local storage again because
-  // it can create loops based on the handlers.
-  if (!action.skipReload) {
-    chrome.storage.local.set(change);
-  }
+  chrome.storage.local.set(change);
   return Object.assign({}, state, change);
 };
 
