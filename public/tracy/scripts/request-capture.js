@@ -167,6 +167,9 @@ ${body}`;
                     ];
                   case "raw":
                     // JSON blobs come this way.
+                    if (r.requestBody.raw.length === 0) {
+                      return [];
+                    }
                     const body = String.fromCharCode
                       .apply(null, new Uint8Array(r.requestBody.raw[0].bytes))
                       .toLowerCase();
@@ -219,6 +222,9 @@ ${body}`;
           }
           return formStr.substring(0, formStr.length - 1);
         case "raw":
+          if (body.raw.length === 0) {
+            return "";
+          }
           // I think this is similar to the Blob situation. Let's just
           // log this and not look for tracers since the data is
           // going to be in a binary format.
