@@ -129,12 +129,12 @@ const replace = (() => {
     replaceIterabletype(form, new FormData(), "body");
   const replaceIterabletype = (iter, iterType, strType) => {
     [...iter].reduce(
-      ({ [strType]: str, tracers }, [key, value]) => {
+      ({ [strType]: i, tracers }, [key, value]) => {
         const { tracers: ktracers, str: kstr } = str(key);
         const { tracers: vtracers, str: vstr } = str(value);
-        str.append(kstr, vstr);
+        i.append(kstr, vstr);
         return {
-          [strType]: str,
+          [strType]: i,
           tracers: [...tracers, ...ktracers, ...vtracers]
         };
       },
