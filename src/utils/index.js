@@ -1,32 +1,32 @@
 /* global chrome */
 
 // sleep returns a promise that is resolved after the provided number of ms.
-export const sleep = ms => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+export const sleep = (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 // getTracerEvents returns all the tracer events for a given tracer.
-export const getTracerEvents = async tracerPayload =>
-  await new Promise(r =>
+export const getTracerEvents = async (tracerPayload) =>
+  await new Promise((r) =>
     chrome.runtime.sendMessage(
       {
-        "message-type": "database",
+        id: "database",
         query: "getTracerEventsByPayload",
-        tracerPayload: tracerPayload
+        tracerPayload: tracerPayload,
       },
-      res => r(res)
+      (res) => r(res)
     )
   );
 
 // getTracers returns all the tracers.
 export const getTracers = async () =>
-  await new Promise(r =>
+  await new Promise((r) =>
     chrome.runtime.sendMessage(
       {
-        "message-type": "database",
-        query: "getTracers"
+        id: "database",
+        query: "getTracers",
       },
-      res => r(res)
+      (res) => r(res)
     )
   );
 
@@ -38,38 +38,31 @@ export const enumerate = (event, id) => {
 };
 
 // isEmpty returns true or false if the object is empty.
-export const isEmpty = obj => {
+export const isEmpty = (obj) => {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
 };
 
 // filterResponses filters out events that have the event type of response.
-export const filterResponses = context => {
+export const filterResponses = (context) => {
   return context.EventType.toLowerCase() !== "http response";
 };
 
 // filterInactive filters out tracers that have no events or contexts.
-export const filterInactive = tracer => tracer.HasTracerEvents;
+export const filterInactive = (tracer) => tracer.HasTracerEvents;
 
 // filterTextNodes filters out events that are text nodes.
-export const filterTextNodes = context =>
+export const filterTextNodes = (context) =>
   context.EventType.toLowerCase() !== "text";
 
 // filterReferrer filters out HTTP requests that have a tracer string in a referrer header
-export const filterReferers = tracer => request => {
+export const filterReferers = (tracer) => (request) => {
   const refRequests = request.RawRequest.toLowerCase()
     .split("\n")
-    .filter(line => line.startsWith("refer"));
+    .filter((line) => line.startsWith("refer"));
   if (refRequests.length === 0) {
     return true;
   }
-  return (
-    refRequests
-      .pop()
-      .split(":")
-      .pop()
-      .trim()
-      .indexOf(tracer) === -1
-  );
+  return refRequests.pop().split(":").pop().trim().indexOf(tracer) === -1;
 };
 
 // Enum to human-readable structure to translate the different severity ratings.
@@ -77,17 +70,17 @@ const severity = {
   0: "unexploitable",
   1: "suspicious",
   2: "probable",
-  3: "exploitable"
+  3: "exploitable",
 };
 
-export const formatRowSeverity = row => {
+export const formatRowSeverity = (row) => {
   return severity[row.Severity];
 };
 
 // mod is a helper mod function if you are dealing with negative
 // numbers such as page table flips (when you flip the first page left,
 // the page index will be -1 which doesn't work well with mod)
-export const mod = (x, n) => (x % n + n) % n;
+export const mod = (x, n) => ((x % n) + n) % n;
 export const createKeyDownHandler = (
   tableName,
   lastSelectedTable,
@@ -96,7 +89,7 @@ export const createKeyDownHandler = (
 ) => {
   const down = [39, 40];
   const up = [37, 38];
-  document.addEventListener("keydown", event => {
+  document.addEventListener("keydown", (event) => {
     if (
       [...down, ...up].includes(event.keyCode) &&
       lastSelectedTable() === tableName
@@ -125,7 +118,7 @@ export const newTracyNotification = (tracerPayload, context, onclick) => {
     tracyNotification(tracerPayload, context, onclick);
   } else if (Notification.permission !== "denied") {
     // Otherwise, we need to ask the user for permission
-    Notification.requestPermission(permission => {
+    Notification.requestPermission((permission) => {
       // If the user accepts, let's create a notification
       if (permission === "granted") {
         tracyNotification(tracerPayload, context, onclick);
@@ -146,7 +139,7 @@ HTML Parent Tag: ${context.HTMLNodeType}`;
     icon:
       "https://user-images.githubusercontent.com/16947503/38943629-c354d81a-42e6-11e8-9644-cc956d92fbcc.png",
     requireInteraction: true,
-    sticky: true
+    sticky: true,
   };
 
   const n = new Notification(title, opts);

@@ -5,15 +5,9 @@
     if (!xhr.tracers) {
       xhr.tracers = [];
     }
-    [...xhr.tracers, ...tracers].map(async t => {
-      t.Requests = [];
-      t.Severity = 0;
-      t.HasTracerEvents = false;
-      await channel.send({
-        ...MessageTypes.AddTracer,
-        tracer: t
-      });
-    });
+    await Promise.all(
+      [...xhr.tracers, ...tracers].map(async (t) => await rpc.addTracer(t))
+    );
   };
 
   XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, {
@@ -31,7 +25,7 @@
       return tracers.length === 0
         ? Reflect.apply(t, thisa, al)
         : Reflect.apply(t, thisa, [body]);
-    }
+    },
   });
 
   XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, {
@@ -52,7 +46,7 @@
       thisa.tracers = [...thisa.tracers, ...tracers];
       al[1] = str;
       return Reflect.apply(t, thisa, al);
-    }
+    },
   });
   XMLHttpRequest.prototype.setRequestHeader = new Proxy(
     XMLHttpRequest.prototype.setRequestHeader,
@@ -62,11 +56,7 @@
         if (al.length !== 2) {
           return Reflect.apply(t, thisa, al);
         }
-
-        // Try to replace the header name and/or the header value.
-        const { str: skey, tracers: tkey } = replace.str(al[0]);
-        const { str: svalue, tracers: tvalue } = replace.str(al[1]);
-        const tracers = [...tkey, ...tvalue];
+        const { tracers, headers } = replace.headers([[al[0], al[1]]]);
         if (tracers.length === 0) {
           return Reflect.apply(t, thisa, al);
         }
@@ -74,8 +64,8 @@
           thisa.tracers = [];
         }
         thisa.tracers = [...thisa.tracers, ...tracers];
-        return Reflect.apply(t, thisa, [skey, svalue]);
-      }
+        return Reflect.apply(t, thisa, [...headers].pop());
+      },
     }
   );
 })();

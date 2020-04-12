@@ -3,8 +3,8 @@ import * as actions from "../actions";
 import * as utils from "../utils";
 import { store } from "../index";
 
-const loadState = settings => {
-  chrome.storage.local.get(settings, r => {
+const loadState = (settings) => {
+  chrome.storage.local.get(settings, (r) => {
     const e = chrome.runtime.lastError;
     if (e) {
       console.error(e);
@@ -28,7 +28,7 @@ const init = {
     ["zzXSSzz", `\\"'<${tracerSwap}>`],
     ["GEN-XSS", `\\"'<${tracerSwap}>`],
     ["GEN-PLAIN", `${tracerSwap}`],
-    ["zzPLAINzz", `${tracerSwap}`]
+    ["zzPLAINzz", `${tracerSwap}`],
   ],
   tracersLoading: true,
   eventsLoading: false,
@@ -46,7 +46,7 @@ const init = {
   projName: "first project",
   tracyEnabled: true,
   onSettingsPage: false,
-  lastSelectedTable: "tracer"
+  lastSelectedTable: "tracer",
 };
 
 loadState(Object.keys(init));
@@ -55,7 +55,7 @@ loadState(Object.keys(init));
 // or modifies the tracer's properties if it does.
 const addOrEditTracer = (state, action) => {
   const existing = state.tracers.filter(
-    t => t.TracerPayload === action.tracer.TracerPayload
+    (t) => t.TracerPayload === action.tracer.TracerPayload
   );
   // If we aren't updating an existing element, just append it
   const t = action.tracer;
@@ -69,11 +69,11 @@ const addOrEditTracer = (state, action) => {
   const newt = Object.assign({}, e, {
     HasTracerEvents: t.HasTracerEvents,
     Severity: t.Severity,
-    Requests: t.Requests
+    Requests: t.Requests,
   });
 
   return state.tracers
-    .filter(tr => tr.TracerPayload !== action.tracer.TracerPayload)
+    .filter((tr) => tr.TracerPayload !== action.tracer.TracerPayload)
     .concat([newt]);
 };
 
@@ -103,7 +103,7 @@ const rootReducer = (state = init, action) => {
             apiKey: action.setting.proj.apiKey,
             tracers: [],
             events: [],
-            tracersLoading: true
+            tracersLoading: true,
           };
           break;
         case "tracyEnabled":
@@ -113,15 +113,15 @@ const rootReducer = (state = init, action) => {
           change = {
             tracerPayloads: [
               ...state.tracerPayloads,
-              action.setting.addedTracerPayload
-            ]
+              action.setting.addedTracerPayload,
+            ],
           };
           break;
         case "deletedTracerPayload":
           change = {
             tracerPayloads: state.tracerPayloads.filter(
-              tp => tp[0] !== action.setting.deletedTracerPayload
-            )
+              (tp) => tp[0] !== action.setting.deletedTracerPayload
+            ),
           };
           break;
         default:
@@ -138,11 +138,11 @@ const rootReducer = (state = init, action) => {
       change = {
         tracers: addOrEditTracer(state, action).sort(
           (a, b) => a.Created - b.Created
-        )
+        ),
       };
       break;
     case actions.ADD_REQUEST:
-      const ids = action.req.Request.Tracers.map(t => t.ID);
+      const ids = action.req.Request.Tracers.map((t) => t.ID);
       delete action.req.Request.Tracers;
       change = {
         tracers: ids.reduce((accum, curr) => {
@@ -151,20 +151,20 @@ const rootReducer = (state = init, action) => {
           let newt;
           if (accum[i].Requests) {
             newt = Object.assign(accum[i], {
-              Requests: [...accum[i].Requests, action.req.Request]
+              Requests: [...accum[i].Requests, action.req.Request],
             });
           } else {
             newt = Object.assign(accum[i], { Requests: [action.req.Request] });
           }
-          return [...accum.filter(tr => tr.ID !== curr), newt];
-        }, state.tracers)
+          return [...accum.filter((tr) => tr.ID !== curr), newt];
+        }, state.tracers),
       };
       break;
     case actions.UPDATE_TRACERS:
       change = {
         tracersLoading: false,
         tracers: action.tracers.sort((a, b) => a.Created - b.Created),
-        selectedTracerPayload: action.payload
+        selectedTracerPayload: action.payload,
       };
       break;
     case actions.SELECT_TRACER:
@@ -173,7 +173,7 @@ const rootReducer = (state = init, action) => {
         selectedTracerPayload: action.tracerPayload,
         events: [],
         selectedEventID: 0,
-        selectedTracerTableIndex: action.index
+        selectedTracerTableIndex: action.index,
       };
       if (action.clicked) {
         change.lastSelectedTable = "tracer";
@@ -182,7 +182,7 @@ const rootReducer = (state = init, action) => {
     case actions.SELECT_EVENT:
       change = {
         selectedEventID: action.id,
-        selectedEventTableIndex: action.index
+        selectedEventTableIndex: action.index,
       };
 
       if (action.clicked) {
@@ -194,12 +194,12 @@ const rootReducer = (state = init, action) => {
         eventsLoading: false,
         events: action.events.map(utils.enumerate),
         selectedEventID: action.eventID,
-        selectedEventTableIndex: action.tableID
+        selectedEventTableIndex: action.tableID,
       };
       break;
     case actions.ADD_EVENTS:
       change = {
-        events: [...state.events, ...action.events].map(utils.enumerate)
+        events: [...state.events, ...action.events].map(utils.enumerate),
       };
       break;
     case actions.TOGGLE_INACTIVE_FILTER:
@@ -223,7 +223,7 @@ const rootReducer = (state = init, action) => {
     case actions.SELECT_REQUEST:
       change = {
         selectedRequestID: action.id,
-        selectedRequestTableIndex: action.index
+        selectedRequestTableIndex: action.index,
       };
       if (action.clicked) {
         change.lastSelectedTable = "request";

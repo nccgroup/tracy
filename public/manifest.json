@@ -1,7 +1,6 @@
 {
   "name": "Tracy",
-  "description":
-    "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
+  "description": "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
   "version": "0.8.10",
   "permissions": [
     "<all_urls>",
@@ -12,16 +11,16 @@
   ],
   "background": {
     "scripts": [
-      "tracy/scripts/util.js",
+      "tracy/scripts/store.js",
+      "tracy/scripts/database.js",
       "tracy/scripts/constants.js",
+      "tracy/scripts/settings.js",
       "tracy/scripts/replace.js",
       "tracy/scripts/router.js",
       "tracy/scripts/request-capture.js",
-      "tracy/scripts/settings.js",
       "tracy/scripts/screenshot.js",
       "tracy/scripts/jobs.js",
-      "tracy/scripts/ui.js",
-      "tracy/scripts/database.js"
+      "tracy/scripts/ui.js"
     ]
   },
   "content_scripts": [
@@ -29,8 +28,10 @@
       "matches": ["<all_urls>"],
       "all_frames": true,
       "js": [
-        "tracy/scripts/util.js",
         "tracy/scripts/constants.js",
+        "tracy/scripts/channel-cs.js",
+        "tracy/scripts/rpc.js",
+        "tracy/scripts/screenshot-client.js",
         "tracy/scripts/highlight.js",
         "tracy/scripts/replace.js",
         "tracy/scripts/dom-mutations.js",
@@ -52,6 +53,7 @@
   },
   "web_accessible_resources": [
     "tracy/scripts/replace.js",
+    "tracy/scripts/channel-page.js",
     "tracy/scripts/xhr-mod.js",
     "tracy/scripts/fetch-mod.js",
     "tracy/scripts/form-mod.js",
@@ -59,7 +61,8 @@
     "tracy/scripts/worker.js",
     "tracy/scripts/method-hooking.js",
     "tracy/scripts/constants.js",
-    "tracy/scripts/channel.js",
+    "tracy/scripts/rpc.js",
+    "tracy/scripts/screenshot-client.js",
     "tracy/images/tracy_svg.svg"
   ],
   "manifest_version": 2,
