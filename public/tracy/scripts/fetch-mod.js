@@ -2,7 +2,7 @@
   fetch = new Proxy(fetch, {
     apply: async (t, thisa, al) => {
       await Promise.all(
-        replaceFetchArguments(al).map(async (t) => await rpc.addTracer(t))
+        replaceFetchArguments(al).map(async (t) => await tracyRPC.addTracer(t))
       );
       return Reflect.apply(t, thisa, al);
     },

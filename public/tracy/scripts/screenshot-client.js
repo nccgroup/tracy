@@ -5,7 +5,7 @@ const screenshotClient = (() => {
   // of space on each side of the element
   const take = async (e, padding = 0) => {
     e.classList.add(Strings.SCREENSHOT);
-    const dURIp = rpc.captureScreenshot();
+    const dURIp = tracyRPC.captureScreenshot();
     const rec = document.body.getBoundingClientRect();
     const dim = {
       top: rec.top - padding,

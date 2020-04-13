@@ -1,4 +1,4 @@
-const rpc = (() => {
+const tracyRPC = (() => {
   const newTracer = (tracer) =>
     Object.assign(
       {},

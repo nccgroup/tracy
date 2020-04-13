@@ -6,7 +6,7 @@
       xhr.tracers = [];
     }
     await Promise.all(
-      [...xhr.tracers, ...tracers].map(async (t) => await rpc.addTracer(t))
+      [...xhr.tracers, ...tracers].map(async (t) => await tracyRPC.addTracer(t))
     );
   };
 

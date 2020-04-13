@@ -71,7 +71,7 @@ const form = (() => {
       await Promise.all(
         sss.map(async ({ ss, tracer }) => {
           tracer.Screenshot = ss;
-          await rpc.addTracer(tracer);
+          await tracyRPC.addTracer(tracer);
         })
       );
       evt.target.submit();
@@ -113,7 +113,7 @@ const form = (() => {
               await Promise.all(
                 mappings.map(async ({ tracer, ss = null }) => {
                   tracer.Screenshot = ss;
-                  return await rpc.addTracer(tracer);
+                  return await tracyRPC.addTracer(tracer);
                 })
               );
               Reflect.apply(t, thisa, al);

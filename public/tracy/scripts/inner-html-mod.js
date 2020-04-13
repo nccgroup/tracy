@@ -13,7 +13,7 @@
     set: function (value) {
       // Send a message to the extension to check the arguments of any
       // call to innerHTML have user-controlled input.
-      rpc.innerHTMLJob(
+      tracyRPC.innerHTMLJob(
         value,
         { stack: new Error().stack },
         document.location.href

@@ -9,7 +9,7 @@ const replace = (() => {
     switch (pageType) {
       case ScriptContexts.PAGE:
       case ScriptContexts.CONTENT:
-        return await rpc.getTracerStrings();
+        return await tracyRPC.getTracerStrings();
       case ScriptContexts.BACKGROUND:
         return await settings.getTracerStrings();
       default:

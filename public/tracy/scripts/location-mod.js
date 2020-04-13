@@ -16,6 +16,6 @@
   url.hash = hash;
   url.pathname = pathname;
 
-  await Promise.all(tracers.map(async (t) => await rpc.addTracer(t)));
+  await Promise.all(tracers.map(async (t) => await tracyRPC.addTracer(t)));
   window.location = url.toString();
 })();

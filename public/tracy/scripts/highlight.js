@@ -115,7 +115,7 @@ const highlight = (() => {
     const tracer = tracers.pop();
     simulateInputType(elem, elem.value + str);
     tracer.Screenshot = await screenshotClient.take(elem);
-    rpc.addTracer(tracer);
+    tracyRPC.addTracer(tracer);
   };
 
   // fillNonGenPayload handles the logic for when filling an HTML element
