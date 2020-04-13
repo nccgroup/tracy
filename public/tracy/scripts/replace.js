@@ -5,11 +5,11 @@ const replace = (() => {
   // getTracerTypes returns the set of available tracers
   // that need to be replaced  inline before an HTTP request
   // is sent off.
-  const getTracerTypes = async pageType => {
+  const getTracerTypes = async (pageType) => {
     switch (pageType) {
       case ScriptContexts.PAGE:
       case ScriptContexts.CONTENT:
-        return await channel.send(MessageTypes.TracerStrings);
+        return await tracyRPC.getTracerStrings();
       case ScriptContexts.BACKGROUND:
         return await settings.getTracerStrings();
       default:
@@ -28,11 +28,11 @@ const replace = (() => {
   // str replaces any tracer types with their corresponding
   // tracer strings. Returns the replaced string as well
   // as an array of tracers that were replaced and their tracer type.
-  const str = msg => {
+  const str = (msg) => {
     if (!msg) {
       return { str: msg, tracers: [] };
     }
-    if (typeof msg !== "string") {
+    if (typeof msg !== Strings.STRING) {
       return { str: msg, tracers: [] };
     }
 
@@ -51,18 +51,18 @@ const replace = (() => {
             return [
               [
                 ...addedTracers,
-                { TracerString: tracerString, TracerPayload: gen }
+                { TracerString: tracerString, TracerPayload: gen },
               ],
               replacedStr +
                 split +
-                tracerPayload.replace(Strings.TRACER_SWAP, gen)
+                tracerPayload.replace(Strings.TRACER_SWAP, gen),
             ];
           },
           [tracers, ""]
         );
         return {
           tracers: [...tracers, ...addedTracers],
-          str: replacedStr + last
+          str: replacedStr + last,
         };
       },
       { tracers: [], str: msg }
@@ -73,7 +73,7 @@ const replace = (() => {
   // tracer.
   const genTracer = () => {
     const len = 10;
-    const randAlpha = length => {
+    const randAlpha = (length) => {
       let text = "";
 
       for (let i = 0; i < length; i++)
@@ -89,8 +89,8 @@ const replace = (() => {
 
   // headers replaces strings in a Headers object and rebuilds it
   // into a new Header object.
-  const headers = headers =>
-    replaceIterabletype(new Headers(headers), new Headers(), "headers");
+  const headers = (headers) =>
+    replaceIterabletype(new Headers(headers), new Headers(), Strings.HEADERS);
 
   // body takes any one of the JavaScript body interfaces
   // and replaces the contents using str, then rebuilds
@@ -99,7 +99,7 @@ const replace = (() => {
   // for more info about the body types.
   // We don't use the body mixins from the Request object because we want to
   // keep the original body types.
-  const body = body => {
+  const body = (body) => {
     if (body instanceof Blob) {
       // Stringifying this data wasn't really working well and was messing up
       // the data. Since the data here is in a binary format, I don't really
@@ -120,31 +120,30 @@ const replace = (() => {
 
   // replaceURLSearchParams replaces each key and value of a URLSearchParams
   // object with tracer strings and rebuilds a URLSearchParams object.
-  const replaceURLSearchParams = usp =>
-    replaceIterabletype(usp, new URLSearchParams(), "body");
+  const replaceURLSearchParams = (usp) =>
+    replaceIterabletype(usp, new URLSearchParams(), Strings.BODY);
 
   // replaceFormData replaces each key and value of a FormData
   // object with tracer strings and rebuilds a FormData object.
-  const replaceFormData = form =>
-    replaceIterabletype(form, new FormData(), "body");
-  const replaceIterabletype = (iter, iterType, strType) => {
+  const replaceFormData = (form) =>
+    replaceIterabletype(form, new FormData(), Strings.BODY);
+  const replaceIterabletype = (iter, iterType, strType) =>
     [...iter].reduce(
-      ({ [strType]: str, tracers }, [key, value]) => {
+      ({ [strType]: i, tracers }, [key, value]) => {
         const { tracers: ktracers, str: kstr } = str(key);
         const { tracers: vtracers, str: vstr } = str(value);
-        str.append(kstr, vstr);
+        i.append(kstr, vstr);
         return {
-          [strType]: str,
-          tracers: [...tracers, ...ktracers, ...vtracers]
+          [strType]: i,
+          tracers: [...tracers, ...ktracers, ...vtracers],
         };
       },
       { [strType]: iterType, tracers: [] }
     );
-  };
 
   // Helper functions for replaceBufferSource
-  const ab2str = buf => String.fromCharCode.apply(null, new Uint8Array(buf));
-  const str2ab = str => {
+  const ab2str = (buf) => String.fromCharCode.apply(null, new Uint8Array(buf));
+  const str2ab = (str) => {
     var buf = new ArrayBuffer(str.length);
     var bufView = new Uint8Array(buf);
     for (var i = 0, strLen = str.length; i < strLen; i++) {
@@ -154,7 +153,7 @@ const replace = (() => {
   };
   // replaceBufferSource replaces the given buffer source with tracer strings
   // and rebuilds the buffer.
-  const replaceBufferSource = bs => {
+  const replaceBufferSource = (bs) => {
     const b = str(ab2str(bs));
     return { body: str2ab(b.str), tracers: b.tracers };
   };
@@ -163,6 +162,6 @@ const replace = (() => {
     str: str,
     body: body,
     headers: headers,
-    getTracerPayloads: () => cachedTracers
+    getTracerPayloads: () => cachedTracers,
   };
 })();

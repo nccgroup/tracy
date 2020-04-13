@@ -1,6 +1,6 @@
-onmessage = e => postMessage(router(e));
+onmessage = (e) => postMessage(router(e));
 
-const router = e => {
+const router = (e) => {
   switch (e.data.type) {
     case "search":
       return search(e.data.jobs, e.data.tracerPayloads);
@@ -43,12 +43,12 @@ const search = (domEvents, tracerPayloads) => {
     // list of filtered DOM events that will be submitted in bulk to the event API.
     if (tracersPerDomEvent.length > 0) {
       filteredEvents = filteredEvents.concat(
-        tracersPerDomEvent.map(t => ({
+        tracersPerDomEvent.map((t) => ({
           RawEvent: domEvent.msg,
           EventURL: domEvent.location,
           EventType: domEvent.type,
           TracerPayload: t,
-          Extras: JSON.stringify(domEvent.extras)
+          Extras: JSON.stringify(domEvent.extras),
         }))
       );
     }

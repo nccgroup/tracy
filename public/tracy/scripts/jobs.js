@@ -10,24 +10,26 @@ const jobs = (() => {
     const loc = chrome.runtime.getURL("tracy/scripts/worker.js");
     const worker = new Worker(loc);
     const dp = new DOMParser();
-    worker.addEventListener("message", async e => {
+    worker.addEventListener(EventTypes.Message, async (e) => {
       // The only reason this isn't in a web worker is because I can't
       // copy the DOM nodes to the worker and I can't create a DOM parser in the worker.
       // The best we can do is use async :/
-      const events = (await Promise.all(
-        e.data.map(async event => {
-          const dom = dp.parseFromString(event.RawEvent, "text/html");
-          const tw = document.createTreeWalker(dom, NodeFilter.SHOW_ALL);
-          // Search through the DOM event for instances of the tracer payload.
-          // If one is found, assign it a severity rating and collect data about
-          // its surrounding.
-          const nodes = [];
-          while (tw.nextNode()) {
-            nodes.push(tw.currentNode);
-          }
-          return findDOMContexts(event, nodes);
-        })
-      )).flat();
+      const events = (
+        await Promise.all(
+          e.data.map(async (event) => {
+            const dom = dp.parseFromString(event.RawEvent, Strings.TEXT_HTML);
+            const tw = document.createTreeWalker(dom, NodeFilter.SHOW_ALL);
+            // Search through the DOM event for instances of the tracer payload.
+            // If one is found, assign it a severity rating and collect data about
+            // its surrounding.
+            const nodes = [];
+            while (tw.nextNode()) {
+              nodes.push(tw.currentNode);
+            }
+            return findDOMContexts(event, nodes);
+          })
+        )
+      ).flat();
 
       return await database.addEvents(events);
     });
@@ -41,9 +43,9 @@ const jobs = (() => {
         // Send any jobs off to the web worker.
         const tracers = await database.getTracers();
         worker.postMessage({
-          type: "search",
+          type: Strings.SEARCH,
           jobs: work,
-          tracerPayloads: tracers.map(t => t.TracerPayload)
+          tracerPayloads: tracers.map((t) => t.TracerPayload),
         });
       },
       add: async (message, _, sendResponse) => {
@@ -53,8 +55,8 @@ const jobs = (() => {
         }
         // If it is the first job added, set a timer to process the jobs.
         if (j.length === 0) {
-          chrome.alarms.create("processDOMEvents", {
-            when: Date.now() + 1500
+          chrome.alarms.create(Strings.PROCESS_DOM_EVENTS, {
+            when: Date.now() + 1500,
           });
         }
         j.push(message);
@@ -71,16 +73,16 @@ const jobs = (() => {
 
         // If it is the first job added, set a timer to process the jobs.
         if (j.length === 0) {
-          chrome.alarms.create("processDOMEvents", {
-            when: Date.now() + 1500
+          chrome.alarms.create(Strings.PROCESS_DOM_EVENTS, {
+            when: Date.now() + 1500,
           });
         }
 
-        message.msg.map(m =>
+        message.msg.map((m) =>
           j.push(Object.assign(m, { location: message.location }))
         );
         sendResponse(true);
-      }
+      },
     };
   };
   const worker = createJobWorker();
@@ -90,33 +92,33 @@ const jobs = (() => {
     ) {
       // Leaf node of a script tag has a little bit higher severity.
       if (
-        nodeType[cur.nodeType] == "TEXT_NODE" &&
-        cur.parentNode.nodeName.toLowerCase() === "script"
+        NodeTypeMappings[cur.nodeType] == "TEXT_NODE" &&
+        cur.parentNode.nodeName.toLowerCase() === Strings.SCRIPT
       ) {
         return [
           {
             HTMLNodeType: cur.parentNode.nodeName,
-            HTMLLocationType: nodeType[cur.nodeType],
+            HTMLLocationType: NodeTypeMappings[cur.nodeType],
             Severity: 1,
-            Reason: "LEAF NODE SCRIPT TAG"
-          }
+            Reason: "LEAF NODE SCRIPT TAG",
+          },
         ];
       }
       // Otherwise, it's just a regular leaf, with no severity.
       return [
         {
           HTMLNodeType: cur.parentNode.nodeName,
-          HTMLLocationType: nodeType[cur.nodeType],
+          HTMLLocationType: NodeTypeMappings[cur.nodeType],
           Severity: 0,
-          Reason: "LEAF"
-        }
+          Reason: "LEAF",
+        },
       ];
     }
     return [];
   };
   const svgNodeCheck = (cur, event) => {
     // SVG nodes don't have an innerText method
-    if (cur.nodeName.toLowerCase() === "svg" || cur.viewportElement) {
+    if (cur.nodeName.toLowerCase() === Strings.SVG || cur.viewportElement) {
       if (
         cur.innerHTML
           .toLowerCase()
@@ -125,7 +127,7 @@ const jobs = (() => {
         let sev = 1;
         // Text writes indicate the DOM was written with an API such as .innerText.
         // These are likely not exploitable.
-        if (event.EventType.toLowerCase() === "text") {
+        if (event.EventType.toLowerCase() === Strings.TEXT) {
           sev = 0;
         }
         // Lead node of an SVG
@@ -134,8 +136,8 @@ const jobs = (() => {
             HTMLNodeType: cur.parentNode.nodeName,
             HTMLLocationType: "TEXT",
             Severity: sev,
-            Reason: "LEAF NODE SVG TAG"
-          }
+            Reason: "LEAF NODE SVG TAG",
+          },
         ];
       }
     }
@@ -151,7 +153,7 @@ const jobs = (() => {
       let sev = 3;
       // Text writes indicate the DOM was written with an API such as .innerText.
       // These are likely not exploitable.
-      if (event.EventType.toLowerCase() === "text") {
+      if (event.EventType.toLowerCase() === Strings.TEXT) {
         sev = 0;
       }
       return [
@@ -159,8 +161,8 @@ const jobs = (() => {
           HTMLNodeType: cur.parentNode.nodeName,
           HTMLLocationType: "NODE NAME",
           Severity: sev,
-          Reason: "NODE NAME"
-        }
+          Reason: "NODE NAME",
+        },
       ];
     }
     return [];
@@ -169,7 +171,7 @@ const jobs = (() => {
   const attributesCheck = (cur, event) => {
     // Checking the attributes
     return [...cur.attributes]
-      .map(a => {
+      .map((a) => {
         let agg = [];
         // the attribute name contains a tracer
         if (
@@ -180,7 +182,7 @@ const jobs = (() => {
           let sev = 3;
           // Text writes indicate the DOM was written with an API such as .innerText.
           // These are likely not exploitable.
-          if (event.EventType.toLowerCase() === "text") {
+          if (event.EventType.toLowerCase() === Strings.TEXT) {
             sev = 0;
           }
           agg = [
@@ -189,8 +191,8 @@ const jobs = (() => {
               HTMLNodeType: cur.nodeName,
               HTMLLocationType: "ATTRIBUTE NAME",
               Severity: sev,
-              Reason: "ATTRIBUTE NAME"
-            }
+              Reason: "ATTRIBUTE NAME",
+            },
           ];
         }
 
@@ -204,17 +206,17 @@ const jobs = (() => {
           // We only want this event to fire when the user-controlled begins the value
           // of the href, otherwise we probably won't be able to get the javascript
           // protocol in there.
-          if (a.nodeName === "href" && i === 0) {
+          if (a.nodeName === Strings.HREF && i === 0) {
             reason = "ATTRIBUTE VALUE STARTS WITH HREF";
             sev = 2;
-          } else if (a.nodeName.startsWith("on")) {
+          } else if (a.nodeName.startsWith(Strings.ON)) {
             reason = "ATTRIBUTE VALUE STARTS WITH ON";
             sev = 2;
           }
 
           // Text writes indicate the DOM was written with an API such as .innerText.
           // These are likely not exploitable.
-          if (event.EventType.toLowerCase() === "text") {
+          if (event.EventType.toLowerCase() === Strings.TEXT) {
             sev = 0;
           }
 
@@ -224,8 +226,8 @@ const jobs = (() => {
               HTMLNodeType: cur.nodeName,
               HTMLLocationType: "ATTRIBUTE VALUE",
               Severity: sev,
-              Reason: reason
-            }
+              Reason: reason,
+            },
           ];
         }
 
@@ -243,25 +245,25 @@ const jobs = (() => {
       // First only do the non-text and non-comment nodes since those are special cases.
       ...nodes
         .filter(
-          cur =>
-            nodeType[cur.nodeType] !== "TEXT_NODE" &&
-            nodeType[cur.nodeType] !== "COMMENT_NODE"
+          (cur) =>
+            NodeTypeMappings[cur.nodeType] !== "TEXT_NODE" &&
+            NodeTypeMappings[cur.nodeType] !== "COMMENT_NODE"
         )
-        .map(cur => [
+        .map((cur) => [
           ...svgNodeCheck(cur, event),
           ...nodeNameCheck(cur, event),
-          ...attributesCheck(cur, event)
+          ...attributesCheck(cur, event),
         ]),
       // Then, do the text and comment nodes. These don't have innerText attributes
       ...nodes
         .filter(
-          cur =>
-            nodeType[cur.nodeType] === "TEXT_NODE" ||
-            nodeType[cur.nodeType] === "COMMENT_NODE"
+          (cur) =>
+            NodeTypeMappings[cur.nodeType] === "TEXT_NODE" ||
+            NodeTypeMappings[cur.nodeType] === "COMMENT_NODE"
         )
-        .map(cur => [...textCommentNodeCheck(cur, event)])
+        .map((cur) => [...textCommentNodeCheck(cur, event)]),
     ]
-      .filter(e => e.length !== 0)
+      .filter((e) => e.length !== 0)
       .map((c, i) => ({
         ...event,
         ...c.pop(),
@@ -272,7 +274,7 @@ const jobs = (() => {
           1000,
           i
         ),
-        RawEventIndex: i
+        RawEventIndex: i,
       }));
     return contexts;
   };
@@ -296,23 +298,10 @@ const jobs = (() => {
     return str.substring(instanceIndex - padding, instanceIndex + padding + 1);
   };
 
-  const nodeType = {
-    1: "ELEMENT_NODE",
-    2: "ATTRIBUTE_NODE",
-    3: "TEXT_NODE",
-    4: "CDATA_SECTION_NODE",
-    5: "ENTITY_REFERENCE_NODE",
-    6: "ENTITY_NODE",
-    7: "PROCESSING_INSTRUCTION_NODE",
-    8: "COMMENT_NODE",
-    9: "DOCUMENT_NODE",
-    10: "DOCUMENT_TYPE_NODE",
-    11: "DOCUMENT_FRAGMENT_NODE",
-    12: "NOTATION_NODE"
-  };
-
-  chrome.alarms.onAlarm.addListener(alarm => {
-    if (alarm.name !== "processDOMEvents") return;
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name !== Strings.PROCESS_DOM_EVENTS) {
+      return;
+    }
     worker.processDOMEvents();
   });
   return { add: worker.add, bulkAdd: worker.bulkAdd };

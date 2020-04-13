@@ -5,25 +5,26 @@ const channel = (() => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   };
 
-  const send = msg => {
-    const channel = getRandomInt(0, 100000);
-    return new Promise(res => {
+  const send = (msg) => {
+    const chan = getRandomInt(0, 100000);
+    return new Promise((res) => {
       window.addEventListener(
-        `tracyResponse-${channel}`,
+        `${EventTypes.TracyResponse}-${chan}`,
         ({ detail }) => res(detail),
         {
-          once: true
+          once: true,
         }
       );
 
-      const event = new CustomEvent("tracyMessage", {
+      const event = new CustomEvent(EventTypes.TracyMessage, {
         detail: {
           ...msg,
-          channel: channel
-        }
+          chan: chan,
+        },
       });
       window.dispatchEvent(event);
     });
   };
+
   return { send: send };
 })();

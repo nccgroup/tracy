@@ -1,76 +1,52 @@
 (() => {
   // Routes messages from the extension to various functions on the background.
   const messageRouter = (message, sender, sendResponse) => {
-    if (message === null) {
-      return;
-    }
-    if (message["message-type"]) {
-      switch (message["message-type"]) {
-        case "job":
-          jobs.add(message, sender, sendResponse);
-          break;
-        case "bulk-jobs":
-          jobs.bulkAdd(message, sender, sendResponse);
-          break;
-        case "config":
-          settings.query(message, sender, sendResponse);
-          return true;
-        case "screenshot":
-          screenshot.take(message, sender, sendResponse);
-          return true;
-        case "database":
-          let dbprom;
-          switch (message["query"]) {
-            case "getTracers":
-              dbprom = database.getTracers();
-              break;
-            case "getTracerByPayload":
-              dbprom = database.getTracersByPayload(message["tracerPayload"]);
-              break;
-            case "getTracerEventsByPayload":
-              dbprom = database.getTracerEventsByPayload(
-                message["tracerPayload"]
-              );
-              break;
-            case "addTracer":
-              dbprom = database.addTracer(message["tracer"]);
-              break;
-            case "addRequestToTracer":
-              dbprom = database.addRequestToTracer(
-                message["request"],
-                message["tracerPayload"]
-              );
-              break;
-            case "addEvent":
-              dbprom = database.addEvent(message["event"]);
-              break;
-            default:
-              console.log("[BAD MESSAGE QUERY]", message["query"]);
-              dbprom = new Promise(r => r("BAD"));
-              break;
+    const { id } = message;
+    switch (id) {
+      case MessageTypes.InnerHTML.id:
+        jobs.add(message, sender, sendResponse);
+        break;
+      case MessageTypes.BulkJobs.id:
+        jobs.bulkAdd(message, sender, sendResponse);
+        break;
+      case MessageTypes.GetTracerStrings.id:
+        settings.query(message, sender, sendResponse);
+        return true;
+      case MessageTypes.Screenshot.id:
+        screenshot.take(sender, sendResponse);
+        return true;
+      case MessageTypes.AddTracer.id:
+        (async () => {
+          try {
+            const t = await databaseQuery(message);
+            sendResponse(t);
+          } catch (e) {
+            console.error("DATABASE ERROR", e);
+            // Send an empty response to make sure the UI doesn't get stuck.
+            sendResponse([]);
           }
-          dbprom
-            .then(t => {
-              try {
-                sendResponse(t);
-              } catch (e) {
-                console.error(
-                  "failed to send a response to a database request",
-                  message,
-                  t,
-                  e
-                );
-                // Send an empty response to make sure the UI doesn't get stuck.
-                sendResponse([]);
-              }
-            })
-            .catch(e => console.log("[DB ERROR]", e));
-          return true;
-        default:
-          sendResponse({});
-      }
+        })();
+        return true;
+      default:
+        sendResponse({});
     }
   };
 
+  const databaseQuery = async (message) => {
+    const { query } = message;
+    switch (query) {
+      case MessageTypes.GetTracers.query:
+        return database.getTracers();
+      case MessageTypes.GetTracerEvents.query:
+        const { tracerPayload } = message;
+        return database.getTracerEventsByPayload(tracerPayload);
+      case MessageTypes.AddTracer.query:
+        const { tracer } = message;
+        return database.addTracer(tracer);
+      default:
+        console.log("[BAD MESSAGE QUERY]", query);
+        return Promise.resolve("BAD");
+    }
+  };
   chrome.runtime.onMessage.addListener(messageRouter);
 })();

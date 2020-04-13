@@ -3,16 +3,16 @@ import React from "react";
 //
 // Stolen from : https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
 const generateUUID = () =>
-  ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+  ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
     (
       c ^
       (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
     ).toString(16)
   );
 
-const createNewProject = props => {
+const createNewProject = (props) => {
   const p = prompt("Enter a new project name");
-  if (props.projs.filter(p => p.proj.name === p).length > 0) {
+  if (props.projs.filter((p) => p.proj.name === p).length > 0) {
     alert("Make a unique name, there is already a project with that name.");
     return;
   }
@@ -21,17 +21,17 @@ const createNewProject = props => {
   props.changeSetting(proj);
 };
 
-const createFirstProject = props => {
+const createFirstProject = (props) => {
   // When we create the first project, make sure an API key wasn't already
   // created for that project (can happen if you start to insert tracers before
   // the UI ever opens). If so, use that API key.
-  chrome.storage.local.get({ apiKey: "" }, o => {
+  chrome.storage.local.get({ apiKey: "" }, (o) => {
     let key = o.apiKey;
     if (!key) {
       key = generateUUID();
     }
     const proj = {
-      proj: { name: "first project", apiKey: key }
+      proj: { name: "first project", apiKey: key },
     };
     props.updateProjects(props.projs.concat(proj));
     props.changeSetting(proj);
@@ -46,17 +46,17 @@ const handleOnChange = (e, props) => {
     s = e.target.value;
   }
   if (e.target.id === "proj") {
-    const proj = props.projs.filter(p => p.proj.name === e.target.value).pop()
+    const proj = props.projs.filter((p) => p.proj.name === e.target.value).pop()
       .proj;
     s = {
       name: proj.name,
-      apiKey: proj.apiKey
+      apiKey: proj.apiKey,
     };
   }
   props.changeSetting({ [e.target.id]: s });
 };
 
-const addTracerPayload = props => {
+const addTracerPayload = (props) => {
   const tp = prompt(
     "Provide a tracer payload (the identifer for this type fo string)"
   );
@@ -64,7 +64,7 @@ const addTracerPayload = props => {
     return;
   }
 
-  if (props.tracerPayloads.filter(t => t[0] === tp).length > 0) {
+  if (props.tracerPayloads.filter((t) => t[0] === tp).length > 0) {
     alert(
       "There already exists a tracer payload with that name. Pick something unique"
     );
@@ -81,7 +81,7 @@ const deleteTracerPayload = (ts, props) => {
   props.changeSetting({ deletedTracerPayload: ts });
 };
 
-const deleteProject = props => {
+const deleteProject = (props) => {
   const didConfirm = window.confirm(
     `Are you sure you want to delete project ${props.projName}?`
   );
@@ -94,7 +94,7 @@ const deleteProject = props => {
     alert("You need at least one project.");
     return;
   }
-  const n = props.projs.filter(p => p.proj.name !== props.projName);
+  const n = props.projs.filter((p) => p.proj.name !== props.projName);
   props.updateProjects(n);
   props.changeSetting(n[0]);
 };
@@ -108,7 +108,7 @@ const importTracerPayload = () => {
     return;
   }
   chrome.runtime.sendMessage({
-    "message-type": "database",
+    id: "database",
     query: "addTracer",
     tracer: {
       TracerString: "IMPORTED",
@@ -116,12 +116,12 @@ const importTracerPayload = () => {
       HasTracerEvents: false,
       Requests: [],
       Screenshot: null,
-      Severity: 0
-    }
+      Severity: 0,
+    },
   });
 };
 
-const Settings = props => {
+const Settings = (props) => {
   if (props.projs.length === 0) {
     createFirstProject(props);
   }
@@ -171,9 +171,9 @@ const Settings = props => {
             </tr>
           </thead>
           <tbody>
-            {props.tracerPayloads.map(tp => {
+            {props.tracerPayloads.map((tp) => {
               return (
-                <tr onClick={e => deleteTracerPayload(tp[0], props)}>
+                <tr onClick={(e) => deleteTracerPayload(tp[0], props)}>
                   <td>{tp[0]}</td>
                   <td>{tp[1]}</td>
                 </tr>
@@ -212,7 +212,7 @@ const Settings = props => {
             </li>
           </ol>
         </span>
-        <button onClick={e => importTracerPayload()}>
+        <button onClick={(e) => importTracerPayload()}>
           Import tracer payload
         </button>
       </div>
@@ -227,9 +227,9 @@ const Settings = props => {
         <select
           id="proj"
           value={props.projName}
-          onChange={e => handleOnChange(e, props)}
+          onChange={(e) => handleOnChange(e, props)}
         >
-          {props.projs.map(p => (
+          {props.projs.map((p) => (
             <option key={p.proj.apiKey} value={p.proj.name}>
               {p.proj.name}
             </option>
@@ -252,7 +252,7 @@ const Settings = props => {
           type="checkbox"
           id="tracyEnabled"
           checked={props.tracyEnabled}
-          onChange={e => handleOnChange(e, props)}
+          onChange={(e) => handleOnChange(e, props)}
         />
       </div>
     </div>

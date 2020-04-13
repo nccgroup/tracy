@@ -7,16 +7,16 @@ import * as utils from "../utils";
 export default class TracerEventsTable extends Component {
   componentDidMount() {
     const port = chrome.runtime.connect({ name: "TracerEventsTable" });
-    port.onMessage.addListener(msg => {
+    port.onMessage.addListener((msg) => {
       switch (Object.keys(msg).pop()) {
         case "addEvents":
           const allEvents = Object.values(msg).pop().events;
           const selectedEvents = allEvents.filter(
-            e => e.TracerPayload === this.props.selectedTracerPayload
+            (e) => e.TracerPayload === this.props.selectedTracerPayload
           );
-          const highSevEvents = allEvents.filter(e => e.Severity >= 2);
+          const highSevEvents = allEvents.filter((e) => e.Severity >= 2);
           if (highSevEvents.length > 0) {
-            highSevEvents.map(s =>
+            highSevEvents.map((s) =>
               utils.newTracyNotification(
                 this.props.selectedTracerPayload,
                 s,
@@ -62,8 +62,8 @@ export default class TracerEventsTable extends Component {
           defaultSorted={[
             {
               id: "id",
-              desc: true
-            }
+              desc: true,
+            },
           ]}
           defaultPageSize={10}
           columns={[
@@ -74,17 +74,17 @@ export default class TracerEventsTable extends Component {
                 { Header: "url", accessor: "EventURL" },
                 {
                   Header: "type",
-                  accessor: "EventType"
+                  accessor: "EventType",
                 },
                 { Header: "location", accessor: "HTMLLocationType" },
                 { Header: "node", accessor: "HTMLNodeType" },
                 {
                   Header: "sev",
                   accessor: "Severity",
-                  width: 45
-                }
-              ]
-            }
+                  width: 45,
+                },
+              ],
+            },
           ]}
         />
       </div>

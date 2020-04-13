@@ -16,11 +16,11 @@ const settings = (() => {
   // that is requested from the content script.
   const query = async ({ config }, _, sendResponse) => {
     switch (config) {
-      case "tracer-string-types":
+      case MessageTypes.GetTracerStrings.config:
         const tps = await getTracerStrings();
         sendResponse(tps.tracerPayloads);
         break;
-      case "disabled":
+      case MessageTypes.IsDisabled.config:
         sendResponse(disabled);
         break;
     }

@@ -2,72 +2,70 @@
   // sendToAPI sends the tracers generated from an XHR request to
   // the API for storage.
   const sendToAPI = async (xhr, tracers = []) => {
-    if (!xhr.tracers) xhr.tracers = [];
-    const tr = xhr.tracers.concat(tracers);
-    if (tr.length === 0) {
-      return;
+    if (!xhr.tracers) {
+      xhr.tracers = [];
     }
-    tr.map(t => {
-      // When creating a tracer, make sure the Requests attribute is there.
-      t.Requests = [];
-      t.Severity = 0;
-      t.HasTracerEvents = false;
-      const event = new CustomEvent("tracyMessage", {
-        detail: {
-          "message-type": "database",
-          query: "addTracer",
-          tracer: t
-        }
-      });
-      window.dispatchEvent(event);
-    });
+    await Promise.all(
+      [...xhr.tracers, ...tracers].map(async (t) => await tracyRPC.addTracer(t))
+    );
   };
 
   XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, {
     apply: (t, thisa, al) => {
+      // Check if a body was supplied. If not or if the body was null, send the
+      // collected tracers for this request.
       if (al.length !== 1 || !al[0]) {
         sendToAPI(thisa);
         return Reflect.apply(t, thisa, al);
       }
 
-      replace.body(al[0]).then(r => {
-        sendToAPI(thisa, r.tracers);
+      const { body, tracers } = replace.body(al[0]);
+      sendToAPI(thisa, tracers);
 
-        return r.tracers.length === 0
-          ? Reflect.apply(t, thisa, al)
-          : Reflect.apply(t, thisa, [r.body]);
-      });
-    }
+      return tracers.length === 0
+        ? Reflect.apply(t, thisa, al)
+        : Reflect.apply(t, thisa, [body]);
+    },
   });
 
   XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, {
     apply: (t, thisa, al) => {
-      if (al.length < 2) return Reflect.apply(t, thisa, al);
-      return (() => {
-        const b = replace.str(al[1]);
-        if (b.tracers.length === 0) return Reflect.apply(t, thisa, al);
-        if (!thisa.tracers) thisa.tracers = [];
-        thisa.tracers = thisa.tracers.concat(b.tracers);
-        al[1] = b.str;
+      // Sanity check to make sure there are two elements to index.
+      if (al.length < 2) {
         return Reflect.apply(t, thisa, al);
-      })();
-    }
+      }
+
+      const { str, tracers } = replace.str(al[1]);
+      if (tracers.length === 0) {
+        return Reflect.apply(t, thisa, al);
+      }
+
+      if (!thisa.tracers) {
+        thisa.tracers = [];
+      }
+      thisa.tracers = [...thisa.tracers, ...tracers];
+      al[1] = str;
+      return Reflect.apply(t, thisa, al);
+    },
   });
   XMLHttpRequest.prototype.setRequestHeader = new Proxy(
     XMLHttpRequest.prototype.setRequestHeader,
     {
       apply: (t, thisa, al) => {
-        if (al.length !== 2) return Reflect.apply(t, thisa, al);
-        return (() => {
-          const key = replace.str(al[0]);
-          const value = replace.str(al[1]);
-          const tracers = key.tracers.concat(value.tracers);
-          if (tracers.length === 0) return Reflect.apply(t, thisa, al);
-          if (!thisa.tracers) thisa.tracers = [];
-          thisa.tracers = thisa.tracers.concat(tracers);
-          return Reflect.apply(t, thisa, [key.str, value.str]);
-        })();
-      }
+        // Sanity check to make sure there are two elements to index.
+        if (al.length !== 2) {
+          return Reflect.apply(t, thisa, al);
+        }
+        const { tracers, headers } = replace.headers([[al[0], al[1]]]);
+        if (tracers.length === 0) {
+          return Reflect.apply(t, thisa, al);
+        }
+        if (!thisa.tracers) {
+          thisa.tracers = [];
+        }
+        thisa.tracers = [...thisa.tracers, ...tracers];
+        return Reflect.apply(t, thisa, [...headers].pop());
+      },
     }
   );
 })();

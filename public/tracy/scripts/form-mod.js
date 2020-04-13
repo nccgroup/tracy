@@ -1,102 +1,38 @@
 const form = (() => {
-  // captureSceenshot sends a command to the background page
-  // take a screenshot given the dimensions specified by the
-  // frame element of the target passed in. padding is the amount
-  // of space on each side of the element
-  async function captureScreenshot(e, padding = 0) {
-    e.classList.add(Strings.SCREENSHOT);
-    const dURIp = channel.send(MessageTypes.Screenshot);
-    const rec = document.body.getBoundingClientRect();
-    const dim = {
-      top: rec.top - padding,
-      left: rec.left - padding,
-      width: rec.width + 2 * padding,
-      height: window.innerHeight + 2 * padding, // I think
-      ratio: 1
-    };
-    const { dURI } = await dURIp;
-    const imgP = dataURIToImage(dURI, dim);
-    e.classList.add(Strings.SCREENSHOT_DONE);
-    e.classList.remove(Strings.SCREENSHOT);
-    return await imgP;
-  }
-  // Given an data URI and dimensions, create an Image and use the canvas
-  // to draw the image.
-  const dataURIToImage = (dURI, dim) => {
-    return new Promise(res => {
-      const canvas = document.createElement("canvas");
-      const img = new Image();
-      const context = canvas.getContext("2d");
+  const replaceFormInputs = (form) =>
+    [...new FormData(form)].reduce((allTracers, [nameAttr, value]) => {
+      const { tracers, str } = replace.str(value);
+      if (tracers.length <= 0) {
+        return allTracers;
+      }
 
-      img.onload = () => {
-        canvas.width = dim.width;
-        canvas.height = dim.height;
-        context.drawImage(
-          img,
-          dim.left,
-          dim.top,
-          dim.width * dim.ratio,
-          dim.height * dim.ratio,
-          0,
-          0,
-          dim.width,
-          dim.height
-        );
+      // If there was tracers in the input value, find the input element
+      // associated with that name and replace it's value. This probably
+      // won't work for all elements, although new FormData only works for elements that have
+      // name attributes. Other mods should get the other types of elements.
+      const elem = getElementByNameAndValue(nameAttr, value);
+      if (!elem) {
+        return allTracers;
+      }
+      elem.value = str;
+      return [...tracers, ...allTracers];
+    }, []);
 
-        res(canvas.toDataURL());
-      };
-      img.src = dURI;
-    });
+  const getElementByNameAndValue = (name, value) => {
+    const elems = [...document.getElementsByName(name)]
+      .filter(
+        (n) =>
+          n.nodeName.toLowerCase() === Strings.INPUT ||
+          n.nodeName.toLowerCase() === Strings.TEXT_AREA
+      )
+      .filter((n) => value === n.value);
+    if (elems.length !== 1) {
+      return null;
+    }
+    return elems.pop();
   };
 
-  const inputStr = "input";
-  const replaceFormInputs = form =>
-    // Turns out we can use this nice API to get all the data that wouldn't normally
-    // get submitted with a form.
-    [...new FormData(form)]
-      .map(([nameAttr, value]) => {
-        const { tracers, str } = replace.str(value);
-        if (tracers.length <= 0) {
-          return [];
-        }
-
-        // If there was tracers in the input value, find the input element
-        // associated with that name and replace it's value. This probably
-        // won't work for all elements, TODO: should find alternate ways of grabbing the element
-        const elems = document.getElementsByName(nameAttr);
-        if (
-          elems.length !== 1 &&
-          elems[0].nodeName.toLowerCase() !== inputStr
-        ) {
-          // There shouldn't be more than one input element who's name is this
-          console.error("Couldn't find the element to replace!");
-          return [];
-        }
-        elems[0].value = str;
-        return tracers;
-      })
-      .flat();
-
-  const storeTracers = (tracers, ss = null) => {
-    tracers.map(t => {
-      // When creating a tracer, make sure the Requests attribute is there.
-      t.Requests = [];
-      t.Severity = 0;
-      t.HasTracerEvents = false;
-      t.Screenshot = ss;
-
-      const event = new CustomEvent("tracyMessage", {
-        detail: {
-          "message-type": "database",
-          query: "addTracer",
-          tracer: t
-        }
-      });
-      window.dispatchEvent(event);
-    });
-  };
-
-  const formSubmitListener = evt => {
+  const formSubmitListener = (evt) => {
     const tracers = replaceFormInputs(evt.target);
     if (tracers.length === 0) {
       return;
@@ -120,34 +56,42 @@ const form = (() => {
     // parameter. This button is found in evt.explictOriginalTarget. Creat of copy
     // of this element minus the type=submit and embed it into the form. We also
     // want make sure its hidden so it doesn't look funky.
-    if (evt.explicitOriginalTarget) {
-      const i = document.createElement("input");
-      [...evt.explicitOriginalTarget.attributes]
-        .filter(a => a.nodeName !== "type" && a.value !== "submit")
-        .map(a => i.setAttribute(a.nodeName, a.value));
-      i.setAttribute("type", "hidden");
-      evt.target.appendChild(i);
-    }
-    captureScreenshot(evt.currentTarget).then(ss => {
-      storeTracers(tracers, ss);
+    (async () => {
+      if (evt.explicitOriginalTarget) {
+        const i = document.createElement(Strings.INPUT);
+        [...evt.explicitOriginalTarget.attributes]
+          .filter(
+            (a) => a.nodeName !== Strings.TYPE && a.value !== Strings.INPUT
+          )
+          .map((a) => i.setAttribute(a.nodeName, a.value));
+        i.setAttribute(Strings.TYPE, Strings.HIDDEN);
+        evt.target.appendChild(i);
+      }
+      const sss = await screenshotClient.takeForm(evt.target, tracers);
+      await Promise.all(
+        sss.map(async ({ ss, tracer }) => {
+          tracer.Screenshot = ss;
+          await tracyRPC.addTracer(tracer);
+        })
+      );
       evt.target.submit();
-    });
+    })();
   };
 
   const formAddedToDOM = () => {
     // Since we can't pass the exact DOM node from the mutation observer,
     // take the forms we have already proxied with a custom class.
-    [...document.getElementsByTagName("form")]
-      .filter(f => !f.classList.contains("tracy-form-mod"))
-      .map(f => {
-        f.addEventListener("submit", formSubmitListener);
+    [...document.getElementsByTagName(Strings.FORM)]
+      .filter((f) => !f.classList.contains(Strings.TRACY_FORM_MOD))
+      .map((f) => {
+        f.addEventListener(EventTypes.Submit, formSubmitListener);
         return f;
       })
-      .map(f => {
-        f.classList.add("tracy-form-mod");
+      .map((f) => {
+        f.classList.add(Strings.TRACY_FORM_MOD);
         return f;
       })
-      .map(f => {
+      .map((f) => {
         // We need to proxy the submit function call because the submit
         // function call doesn't trigger submit events and therefor
         // our handler code won't get called
@@ -155,7 +99,7 @@ const form = (() => {
           apply: (t, thisa, al) => {
             // Since we are submitting the form with JavaScript, remove the onsubmit handler
             // for this form. It is only used for regular form submissions.
-            f.removeEventListener("submit", replaceFormInputs);
+            f.removeEventListener(EventTypes.Submit, replaceFormInputs);
 
             // Replace the tracers, and since we are not in an onsubmit handler
             // we can wait for the screen capture to finish and then submit the form.
@@ -164,38 +108,44 @@ const form = (() => {
               Reflect.apply(t, thisa, al);
               return;
             }
-            // If there were tracers that were swapped out, take a screenshot.
-            captureScreenshot(f).then(ss => {
-              storeTracers(tracers, ss);
+            (async () => {
+              const mappings = await screenshotClient.takeForm(form, tracers);
+              await Promise.all(
+                mappings.map(async ({ tracer, ss = null }) => {
+                  tracer.Screenshot = ss;
+                  return await tracyRPC.addTracer(tracer);
+                })
+              );
               Reflect.apply(t, thisa, al);
-            });
-
+            })();
             return tracers;
-          }
+          },
         };
         f.submit = new Proxy(f.submit, submitProxy);
         // mainly adding this for testing purposes so tests have access to any
         // tracers returned from this function
-        f.requestSubmit = new Proxy(f.requestSubmit, submitProxy);
+        if (f.requestSubmit) {
+          f.requestSubmit = new Proxy(f.requestSubmit, submitProxy);
+        }
         return f;
       })
-      .map(f => {
+      .map((f) => {
         f.addEventListener = new Proxy(f.addEventListener, {
           apply: (t, thisa, al) => {
             // If the page adds a submit listener, we need to move our
             // listeners back to the bottom of the bubbling so that
             // we can ensure we are the last submit handler to be called
-            if (al[0] === "submit") {
-              f.removeEventListener("submit", formSubmitListener);
+            if (al[0] === EventTypes.Submit) {
+              f.removeEventListener(EventTypes.Submit, formSubmitListener);
               Reflect.apply(t, thisa, al);
               Reflect.apply(t, thisa, [al[0], formSubmitListener, al[2]]);
             }
-          }
+          },
         });
       });
   };
   formAddedToDOM();
-  window.addEventListener("formAddedToDOM", _ => {
+  window.addEventListener(EventTypes.FormAddedToDOM, (_) => {
     formAddedToDOM();
   });
 })();
