@@ -1,12 +1,23 @@
 {
-  "name": "tracy",
-  "version": "0.1.0",
-  "private": true,
+  "name": "Tracy",
+  "license": "MIT License",
+  "repository": "github:heathj/tracy",
+  "description": "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
+  "version": "0.9.0",
+  "scripts": {
+    "start": "npx webpack --config webpack.config.js --mode development",
+    "build": "npx webpack --config webpack.config.js --mode production",
+    "compile-ext": "npx web-ext build --overwrite-dest -s ./build/",
+    "deploy-chrome": "npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn",
+    "deploy-firefox": "npx web-ext-submit --api-key \"$API_KEY\" --api-secret \"$API_SECRET\" -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} --api-url-prefix https://addons.mozilla.org/api/v4",
+    "deploy": "npm i;npm run build;npm run compile-ext;npm run deploy-chrome;npm run deploy-firefox"
+  },
   "dependencies": {
     "@fortawesome/fontawesome": "^1.1.4",
     "@fortawesome/fontawesome-free-brands": "^5.0.8",
     "@fortawesome/fontawesome-free-solid": "^5.0.8",
     "@fortawesome/react-fontawesome": "0.0.18",
+    "lodash": "^4.17.15",
     "react": "^16.12.0",
     "react-code-prettify": "0.0.1",
     "react-dom": "^16.12.0",
@@ -16,36 +27,42 @@
     "react-table": "^6.11.5",
     "redux": "^4.0.5"
   },
-  "scripts": {
-    "start": "npx web-ext run -s build --no-input true & echo \"$(find public) $(find src)\" | entr sh -c \"npm run build\" ",
-    "watch-ext": "npx web-ext run -s public --no-input true",
-    "build": "react-scripts build",
-    "compile-ext": "npx web-ext build --overwrite-dest -s ./build/",
-    "deploy-chrome": "npx chrome-webstore-upload-cli upload --source web-ext-artifacts/*.zip --extension-id lcgbimfijafcjjijgjoodgpblgmkckhn",
-    "deploy-firefox": "npx web-ext-submit --api-key \"$API_KEY\" --api-secret \"$API_SECRET\" -s build --id {9a38284d-6fc8-460a-b3b8-2378cfd30fe4} --api-url-prefix https://addons.mozilla.org/api/v4",
-    "deploy": "npm install;npm run build;npm run compile-ext;npm run deploy-chrome;npm run deploy-firefox"
-  },
   "devDependencies": {
-    "babel-core": "^6.26.0",
+    "@babel/core": "7.7.4",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
+    "@babel/preset-react": "7.7.4",
+    "babel-loader": "8.0.6",
     "chrome-webstore-upload-cli": "^1.2.0",
-    "web-ext": "^3.2.1",
-    "web-ext-submit": "^3.2.1"
+    "copy-webpack-plugin": "5.0.5",
+    "css-loader": "3.2.0",
+    "file-loader": "4.3.0",
+    "html-loader": "0.5.5",
+    "html-webpack-plugin": "3.2.0",
+    "style-loader": "1.0.0",
+    "web-ext-submit": "^4.1.0",
+    "webpack": "4.41.2",
+    "webpack-cli": "3.3.10"
   },
   "jshintConfig": {
-    "esversion": 8
+    "esversion": 9
   },
   "eslintConfig": {
     "env": {
       "browser": true,
       "webextensions": true,
-      "node": true,
-      "es8": true
+      "node": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 9,
+      "sourceType": "module"
     }
   },
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ]
+  "babel": {
+    "presets": [
+      "@babel/react"
+    ],
+    "plugins": [
+      "@babel/plugin-proposal-class-properties"
+    ]
+  }
 }

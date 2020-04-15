@@ -1,0 +1,32 @@
+{
+  "permissions": [
+    "<all_urls>",
+    "storage",
+    "contextMenus",
+    "alarms",
+    "webRequest"
+  ],
+  "background": {
+    "scripts": ["background.bundle.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "css": ["page.css"],
+      "js": ["content.bundle.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "browser_action": {
+    "default_title": "Tracy",
+    "default_icon": {
+      "16": "tracy_16x16.png",
+      "48": "tracy_48x48.png",
+      "96": "tracy_96x96.png",
+      "128": "tracy_128x128.png"
+    }
+  },
+  "web_accessible_resources": ["page.bundle.js"],
+  "manifest_version": 2
+}
