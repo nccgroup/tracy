@@ -16,6 +16,8 @@ export const locationModInit = async (replace, rpc) => {
   url.hash = hash;
   url.pathname = pathname;
 
+  console.log("location mod!ssssss");
   await Promise.all(tracers.map(async (t) => await rpc.addTracer(t)));
+  console.log("here");
   window.location = url.toString();
 };

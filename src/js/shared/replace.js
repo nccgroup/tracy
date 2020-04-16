@@ -5,13 +5,15 @@ import { Strings } from "./constants";
 export const replace = (rpc) => {
   let cachedTracers = [];
 
-  (async () => {
+  const firstCacheProm = (async () => {
     cachedTracers = await rpc.getTracerStrings();
 
     setInterval(
       async () => (cachedTracers = await rpc.getTracerStrings()),
       5000
     );
+
+    return true;
   })();
 
   // str replaces any tracer types with their corresponding
@@ -148,9 +150,10 @@ export const replace = (rpc) => {
   };
 
   return {
-    str: str,
-    body: body,
-    headers: headers,
+    str,
+    body,
+    headers,
     getTracerPayloads: () => cachedTracers,
+    firstCacheProm,
   };
 };

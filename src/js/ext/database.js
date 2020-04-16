@@ -1,4 +1,5 @@
 import { settings } from "./settings";
+import { random } from "lodash";
 export const database = (() => {
   // Long-lived connection to the web app so we can send it notifications
   // whenever data changes in the database
@@ -55,12 +56,6 @@ export const database = (() => {
   let tracersDB;
   let eventsDB;
 
-  const getRandomInt = (min, max) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
   const promiseMap = {};
 
   // Wait for any alarms that are triggered from a delayed tracer call.
@@ -95,7 +90,7 @@ export const database = (() => {
       // Generate a random identifier so that we can resolve
       // our resolution function whenever the alarm below
       // fires off.
-      const rand = getRandomInt(0, 1000000000);
+      const rand = random(0, 1000000000);
       // Store the random identifier and the resolution function
       // for this promise in the promise map.
       promiseMap[`${rand}`] = { resolve: res, reject: rej };

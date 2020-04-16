@@ -8,6 +8,9 @@ import { channel } from "./shared/channel-cs";
 const rp = rpc(channel);
 const re = replace(rp);
 
+(async () => {
+  await re.firstCacheProm;
+  locationModInit(re, rp);
+})();
 domMutationsInit(re, rp);
-locationModInit(re, rp);
 methodHookingInjectorInit();
