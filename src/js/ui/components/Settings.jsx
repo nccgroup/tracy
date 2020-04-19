@@ -1,6 +1,8 @@
 /* global chrome */
 import React from "react";
 import { generateUUID } from "../../shared/ui-helpers";
+import { channel } from "../../shared/channel-cs";
+import { rpc } from "../../shared/rpc";
 
 const createNewProject = (props) => {
   const p = prompt("Enter a new project name");
@@ -99,17 +101,15 @@ const importTracerPayload = () => {
     );
     return;
   }
-  chrome.runtime.sendMessage({
-    id: "database",
-    query: "addTracer",
-    tracer: {
-      TracerString: "IMPORTED",
-      TracerPayload: tp,
-      HasTracerEvents: false,
-      Requests: [],
-      Screenshot: null,
-      Severity: 0,
-    },
+
+  const r = rpc(channel);
+  r.addTracer({
+    TracerString: "IMPORTED",
+    TracerPayload: tp,
+    HasTracerEvents: false,
+    Requests: [],
+    Screenshot: null,
+    Severity: 0,
   });
 };
 

@@ -1,6 +1,6 @@
 import { EventTypes, Strings, NodeTypeMappings } from "../shared/constants";
 import { settings } from "./settings";
-import { database } from "./database";
+import { addEvents, getTracers } from "./database";
 export const jobs = (() => {
   // Bundles up all the requirements for making a job worker in case
   // in the future we need more than one worker.
@@ -10,7 +10,7 @@ export const jobs = (() => {
     // and then send them all off to the database.
     let j = [];
     // Process all the jobs in the current queue.
-    const loc = chrome.runtime.getURL("worker.bundle.js");
+    const loc = chrome.runtime.getURL("searchWorker.bundle.js");
     const worker = new Worker(loc);
     const dp = new DOMParser();
     worker.addEventListener(EventTypes.Message, async (e) => {
@@ -34,7 +34,7 @@ export const jobs = (() => {
         )
       ).flat();
 
-      return await database.addEvents(events);
+      return await addEvents(events);
     });
 
     return {
@@ -44,14 +44,13 @@ export const jobs = (() => {
         // Clear out the jobs.
         j = [];
         // Send any jobs off to the web worker.
-        const tracers = await database.getTracers();
+        const tracers = await getTracers();
         worker.postMessage({
-          type: Strings.SEARCH,
           jobs: work,
           tracerPayloads: tracers.map((t) => t.TracerPayload),
         });
       },
-      add: async (message, _, sendResponse) => {
+      add: async (message) => {
         if (settings.isDisabled()) {
           sendResponse();
           return;
@@ -63,12 +62,8 @@ export const jobs = (() => {
           });
         }
         j.push(message);
-
-        // This is needed for the general way we pass messages to the background.
-        // All message handlers need to return something.
-        sendResponse(true);
       },
-      bulkAdd: async (message, _, sendResponse) => {
+      bulkAdd: async (message) => {
         if (settings.isDisabled()) {
           sendResponse();
           return;
@@ -77,14 +72,13 @@ export const jobs = (() => {
         // If it is the first job added, set a timer to process the jobs.
         if (j.length === 0) {
           chrome.alarms.create(Strings.PROCESS_DOM_EVENTS, {
-            when: Date.now() + 1500,
+            when: Date.now() + 0.5,
           });
         }
 
         message.msg.map((m) =>
           j.push(Object.assign(m, { location: message.location }))
         );
-        sendResponse(true);
       },
     };
   };

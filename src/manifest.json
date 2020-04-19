@@ -27,6 +27,10 @@
       "128": "tracy_128x128.png"
     }
   },
-  "web_accessible_resources": ["page.bundle.js"],
+  "web_accessible_resources": [
+    "page.bundle.js",
+    "databaseWorker.bundle.js",
+    "searchWorker.bundle.js"
+  ],
   "manifest_version": 2
 }

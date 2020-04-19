@@ -1,4 +1,4 @@
-import { database } from "./database";
+import { getTracers, addRequestsToTracer } from "./database";
 export const requestCaptureInit = () => {
   // requests holds an object of objects. Each entry corresponds
   // to a request identified by its requestId. This is done to
@@ -16,12 +16,7 @@ export const requestCaptureInit = () => {
       if (new URL(r.url).protocol.startsWith("data")) return;
       let t = [];
       try {
-        // Need to wait a period of time so we get all the tracers after
-        // they have been collected from the various handlers. This includes
-        // the request capture function above and all the *-mod javascript files.
-        // If informal testing, without a delay, we'd miss some tracers due to timing
-        // issues.
-        t = await database.getTracersDelayed(2000);
+        t = await getTracers();
       } catch (e) {
         console.error(e);
         return;
@@ -93,7 +88,7 @@ ${body}`;
       jobs = {};
 
       for (let tracer in work) {
-        database.addRequestsToTracer(work[tracer], tracer);
+        addRequestsToTracer(work[tracer], tracer);
       }
     };
     chrome.alarms.onAlarm.addListener((alarm) => {
@@ -126,12 +121,7 @@ ${body}`;
       if (new URL(r.url).protocol.startsWith("data")) return;
       let tracers = [];
       try {
-        // Need to wait a period of time so we get all the tracers after
-        // they have been collected from the various handlers. This includes
-        // the request capture function above and all the *-mod javascript files.
-        // If informal testing, without a delay, we'd miss some tracers due to timing
-        // issues.
-        tracers = await database.getTracersDelayed(2000);
+        tracers = await getTracers();
       } catch (e) {
         console.error(e);
         return;

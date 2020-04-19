@@ -1,57 +1,36 @@
 import { jobs } from "./jobs";
 import { settings } from "./settings";
-import { screenshot } from "./screenshot";
-import { database } from "./database";
+import { take } from "./screenshot";
+import { databaseQuery } from "./database";
 import { MessageTypes } from "../shared/constants";
 export const routerInit = () => {
-  // Routes messages from the extension to various functions on the background.
-  const messageRouter = (message, sender, sendResponse) => {
+  const messageRouter = async (message, sender, sendResponse) => {
+    let ans = {};
     const { id } = message;
     switch (id) {
       case MessageTypes.InnerHTML.id:
-        jobs.add(message, sender, sendResponse);
+        ans = await jobs.add(message);
         break;
       case MessageTypes.BulkJobs.id:
-        jobs.bulkAdd(message, sender, sendResponse);
+        ans = await jobs.bulkAdd(message);
         break;
       case MessageTypes.GetTracerStrings.id:
-        settings.query(message, sender, sendResponse);
-        return true;
+        ans = await settings.query(message);
+        break;
       case MessageTypes.Screenshot.id:
-        screenshot.take(sender, sendResponse);
-        return true;
+        ans = await take(sender);
+        break;
       case MessageTypes.AddTracer.id:
-        (async () => {
-          try {
-            const t = await databaseQuery(message);
-            sendResponse(t);
-          } catch (e) {
-            console.error("DATABASE ERROR", e);
-            // Send an empty response to make sure the UI doesn't get stuck.
-            sendResponse([]);
-          }
-        })();
-        return true;
+        ans = await databaseQuery(message);
+        break;
       default:
-        sendResponse({});
+        console.error(`[ROUTER]: Wrong message ID:`, message);
     }
-  };
 
-  const databaseQuery = async (message) => {
-    const { query } = message;
-    switch (query) {
-      case MessageTypes.GetTracers.query:
-        return database.getTracers();
-      case MessageTypes.GetTracerEvents.query:
-        const { tracerPayload } = message;
-        return database.getTracerEventsByPayload(tracerPayload);
-      case MessageTypes.AddTracer.query:
-        const { tracer } = message;
-        return database.addTracer(tracer);
-      default:
-        console.log("[BAD MESSAGE QUERY]", query);
-        return Promise.resolve("BAD");
-    }
+    sendResponse(ans);
   };
-  chrome.runtime.onMessage.addListener(messageRouter);
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    messageRouter(message, sender, sendResponse);
+    return true;
+  });
 };

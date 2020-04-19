@@ -28,7 +28,8 @@ const config = (mode) => {
     entry: {
       page: path.join(...[...jsPath, "page.js"]),
       content: path.join(...[...jsPath, "content.js"]),
-      worker: path.join(...[...jsPath, "worker.js"]),
+      searchWorker: path.join(...[...jsPath, "search-worker.js"]),
+      databaseWorker: path.join(...[...jsPath, "database-worker.js"]),
       background: path.join(...[...jsPath, "background.js"]),
       ui: path.join(...[...jsPath, "ui.js"]),
       test: path.join(...[...jsPath, "test.js"]),

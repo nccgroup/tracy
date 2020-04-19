@@ -1,13 +1,4 @@
-onmessage = (e) => postMessage(router(e));
-
-const router = (e) => {
-  switch (e.data.type) {
-    case "search":
-      return search(e.data.jobs, e.data.tracerPayloads);
-    default:
-      return {};
-  }
-};
+onmessage = (e) => postMessage(search(e.data.jobs, e.data.tracerPayloads));
 
 // search takes the current set of jobs from the page, filters them
 // against the current set of tracer payloads, and sends them as a batch API
@@ -55,8 +46,4 @@ const search = (domEvents, tracerPayloads) => {
   }
 
   return filteredEvents;
-};
-
-const walk = () => {
-  return;
 };

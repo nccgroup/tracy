@@ -7,6 +7,18 @@ export const EventTypes = {
   TracyResponse: "tracyResponse",
 };
 
+export const DatabaseQueryType = {
+  READONLY: "readonly",
+  READWRITE: "readwrite",
+};
+
+export const Database = {
+  JOIN: "TracerPayload",
+  TRACERS_TABLE: "tracers",
+  EVENTS_TABLE: "events",
+  UUID: "UUID",
+};
+
 export const MessageTypes = {
   Screenshot: {
     id: "screenshot",
@@ -26,13 +38,33 @@ export const MessageTypes = {
     id: "database",
     query: "getTracers",
   },
-  GetTracerEvents: {
+  GetTracersDelayed: {
+    id: "database",
+    query: "getTracersDelayed",
+  },
+  GetTracerEventsByPayload: {
     id: "database",
     query: "getTracerEventsByPayload",
+  },
+  GetTracersByPayload: {
+    id: "databaase",
+    query: "getTracersByPayload",
   },
   AddTracer: {
     id: "database",
     query: "addTracer",
+  },
+  AddEvents: {
+    id: "database",
+    query: "addEvents",
+  },
+  AddEvent: {
+    id: "database",
+    query: "addEvent",
+  },
+  AddRequestsToTracer: {
+    id: "database",
+    query: "addRequestsToTracer",
   },
   BulkJobs: {
     id: "bulk-jobs",
@@ -66,7 +98,6 @@ export const Strings = {
   INNER_HTML: "innerHTML",
   UNDEFINED: "undefined",
   INPUT: "input",
-  SCRIPT: "script",
   STRING: "string",
   SVG: "svg",
   TEXT_AREA: "textarea",
@@ -82,7 +113,6 @@ export const Strings = {
   UL: "ul",
   LI: "li",
   HEADERS: "headers",
-  SEARCH: "search",
   MOUSEDOWN: "mousedown",
   ATTRIBUTES: "attributes",
   CHARACTER_DATA: "characterData",

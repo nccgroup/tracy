@@ -9,15 +9,15 @@ export const settings = (() => {
 
   // configQuery returns the appropriate configuration information
   // that is requested from the content script.
-  const query = async ({ config }, _, sendResponse) => {
+  const query = async ({ config }) => {
     switch (config) {
       case MessageTypes.GetTracerStrings.config:
         const tps = await getTracerStrings();
-        sendResponse(tps.tracerPayloads);
-        break;
+        return tps.tracerPayloads;
       case MessageTypes.IsDisabled.config:
-        sendResponse(disabled);
-        break;
+        return disabled;
+      default:
+        return {};
     }
   };
 

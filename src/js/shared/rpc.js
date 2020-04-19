@@ -37,7 +37,7 @@ export const rpc = (channel) => {
   const getTracers = async () => await channel.send(MessageTypes.GetTracers);
   const getTracerEventsByPayload = async (tracerPayload) =>
     await channel.send({
-      ...MessageTypes.GetTracerEvents,
+      ...MessageTypes.GetTracerEventsByPayload,
       tracerPayload: tracerPayload,
     });
 
