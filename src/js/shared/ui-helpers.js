@@ -62,16 +62,16 @@ export const formatRowSeverity = (row) => {
 export const mod = (x, n) => ((x % n) + n) % n;
 export const createKeyDownHandler = (
   tableName,
-  lastSelectedTable,
+  getLastSelectedTable,
   upHandler,
   downHandler
 ) => {
   const down = [39, 40];
   const up = [37, 38];
-  document.addEventListener("keydown", (event) => {
+  const handler = (event) => {
     if (
-      [...down, ...up].includes(event.keyCode) &&
-      lastSelectedTable() === tableName
+      getLastSelectedTable() === tableName &&
+      [...down, ...up].includes(event.keyCode)
     ) {
       if (up.includes(event.keyCode)) {
         upHandler();
@@ -79,5 +79,7 @@ export const createKeyDownHandler = (
         downHandler();
       }
     }
-  });
+  };
+  document.addEventListener("keydown", handler, { passive: true });
+  return () => document.removeEventListener("keydown", handler);
 };

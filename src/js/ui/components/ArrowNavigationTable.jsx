@@ -1,163 +1,147 @@
-import React, { Component } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactTable from "react-table";
 import "react-table/react-table.css";
 import { createKeyDownHandler, mod } from "../../shared/ui-helpers";
+import { Severity } from "../../shared/constants";
 
 // If the page index goes from top to bottom or vice versa,
 // we knoew we are flipping the page.
-const calcPageFlipped = (prev, curr, size) => {
-  return [Math.abs(prev - curr) >= size - 1, prev - curr < 0 ? -1 : 1];
-};
+const calcPageFlipped = (prev, curr, size) => Math.abs(prev - curr) >= size - 1;
 
-export default class TracerEventsTable extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      pages: Math.ceil(this.props.data.length / this.props.defaultPageSize),
-      pageRows: this.props.pageSize,
-      page: 0,
-      pageIndex: 0,
-      tableIndex: 0,
-    };
-  }
+// the number of rows with data in them
+const numRows = 10;
+const rowSelected = "row-selected";
 
-  componentDidMount() {
-    createKeyDownHandler(
-      this.props.tableType,
-      () => this.props.lastSelectedTable,
-      () => {
-        this.setState((prevState) => {
-          const nextPageIdx = mod(prevState.pageIndex - 1, this.state.pageRows);
-          const [wasPageFlipped, pageDirection] = calcPageFlipped(
-            prevState.pageIndex,
-            nextPageIdx,
-            this.state.pageRows
-          );
+const ArrowNavigationTable = (props) => {
+  // keep track of the left and right IDs of the currently sorted table
+  // so that selecting them with the arrow keys is simpler
+  const [adjIDs, setAdjacentIDs] = useState([]);
+  const tableRef = useRef(null);
+  // the total number of rows available
+  const numPages = Math.ceil(props.data.length / props.defaultPageSize);
 
-          this.props.selectRow(nextPageIdx, -1, false, null);
-          return {
-            pageIndex: nextPageIdx,
-            tableIndex: -1,
-            page: wasPageFlipped
-              ? mod(prevState.page + pageDirection, this.state.pages)
-              : prevState.page,
-          };
-        });
-      },
-      () => {
-        this.setState((prevState) => {
-          const nextPageIdx = mod(prevState.pageIndex + 1, this.state.pageRows);
-          const [wasPageFlipped, pageDirection] = calcPageFlipped(
-            prevState.pageIndex,
-            nextPageIdx,
-            this.state.pageRows
-          );
-          this.props.selectRow(nextPageIdx, -1, false, null);
-          return {
-            pageIndex: nextPageIdx,
-            tableIndex: -1,
-            page: wasPageFlipped
-              ? mod(prevState.page + pageDirection, this.state.pages)
-              : prevState.page,
-          };
-        });
+  // the current page number
+  const [curPage, setCurPage] = useState(0);
+
+  // the index of the row selected and the page it was selected on
+  const [
+    [selectedPageRow, selectedPage],
+    setSelectedPageRowAndPage,
+  ] = useState([0, 0]);
+
+  const findAdjacentIDsByID = (data, id) => {
+    let left = data.length - 1;
+    let right = 1;
+    for (
+      let i = 0;
+      i < data.length;
+      i++, right = (right + 1) % data.length, left = (left + 1) % data.length
+    ) {
+      if (data[i].ID == id) {
+        break;
       }
-    );
-  }
-
-  render() {
-    const pages = Math.ceil(
-      this.props.data.length / this.props.defaultPageSize
-    );
-    if (this.state.pages !== pages) {
-      this.setState((prevState) => ({ pages: pages }));
     }
 
-    return (
-      <ReactTable
-        {...this.props}
-        className="grow-table"
-        loading={this.props.loading}
-        loadingText="Loading..."
-        page={this.state.page}
-        showPageSizeOptions={false}
-        showPageJump={false}
-        onPageChange={(pageIndex) => {
-          this.setState((state) => ({
-            page: pageIndex,
-          }));
-        }}
-        getTableProps={(s) => {
-          if (this.state.pageRows !== s.pageRows.length) {
-            this.setState((prevState) => ({
-              pageRows: s.pageRows.length,
-              pageIndex: prevState.pageIndex === 0 ? 0 : s.pageRows.length - 1,
-              tableIndex: -1,
-            }));
-          }
-          return {};
-        }}
-        getTrProps={(state, rowInfo, column, instance) => {
-          if (rowInfo) {
-            let classname = "";
-            switch (rowInfo.row.Severity) {
-              case 1:
-                classname = "suspicious";
-                break;
-              case 2:
-                classname = "probable";
-                break;
-              case 3:
-                classname = "exploitable";
-                break;
-              default:
-                classname = "unexploitable";
-            }
+    return [data[left].ID, data[right].ID];
+  };
 
-            if (rowInfo.viewIndex === this.state.pageIndex) {
-              // -1 indicates we used a relative row movement and can't know the actual data
-              // we moved to because of different sorting. At this point, we will know which
-              // row in the viewable table, though. Use that value to grab whatever is data is
-              // there.
-              if (this.state.tableIndex < 0) {
-                this.props.selectRow(
-                  this.state.pageIndex,
-                  rowInfo.row.ID,
-                  false,
-                  rowInfo.row
-                );
-                this.setState((prevState) => ({
-                  tableIndex: rowInfo.row.ID,
-                }));
-              } else if (this.state.tableIndex === rowInfo.row.ID) {
-                classname += " row-selected";
-              }
-            }
+  const keyDownHandler = (direction) => {
+    // get the next index on the page. if we flipped a page, we
+    // loop from top to bottom and bottom to top
+    let numDataRows = numRows;
+    // If we are on the last page, we might not have a full page of data rows
+    if (curPage + 1 === numPages && direction === 1) {
+      numDataRows = props.data.length % numRows;
+    }
 
-            return {
-              onClick: (e, handleOriginal) => {
-                this.setState((prevState) => ({
-                  pageIndex: rowInfo.viewIndex,
-                  tableIndex: rowInfo.row.ID,
-                }));
-                this.props.selectRow(
-                  rowInfo.viewIndex,
-                  rowInfo.row.ID,
-                  true,
-                  rowInfo.row
-                );
+    // if we are flipping to the front page to the back page, we need to know what
+    // row we can select
+    if (curPage === 0 && direction === -1 && selectedPageRow === 0) {
+      numDataRows = props.data.length % numRows;
+    }
 
-                if (handleOriginal) {
-                  handleOriginal();
-                }
-              },
-              className: classname,
-            };
-          } else {
-            return {};
-          }
-        }}
-      />
+    const nextSelectedRow = mod(selectedPageRow + direction, numDataRows);
+
+    // if page was flipped
+    const wasPageFlipped = calcPageFlipped(
+      selectedPageRow,
+      nextSelectedRow,
+      numDataRows
     );
-  }
-}
+    const nextPage = wasPageFlipped
+      ? mod(curPage + direction, numPages)
+      : curPage;
+
+    setSelectedPageRowAndPage([nextSelectedRow, nextPage]);
+
+    if (wasPageFlipped) {
+      setCurPage(nextPage);
+    }
+
+    const [leftID, rightID] = adjIDs;
+    const directionID = direction === -1 ? leftID : rightID;
+    setAdjacentIDs(
+      findAdjacentIDsByID(tableRef.current.state.sortedData, directionID)
+    );
+    props.selectRow(nextSelectedRow, directionID, false);
+  };
+
+  useEffect(
+    () =>
+      createKeyDownHandler(
+        props.tableType,
+        () => props.lastSelectedTable,
+        () => keyDownHandler(-1),
+        () => keyDownHandler(1)
+      ),
+    [props.lastSelectedTable, curPage, selectedPageRow, adjIDs]
+  );
+
+  return (
+    <ReactTable
+      {...props}
+      className="grow-table"
+      loading={props.loading}
+      loadingText="Loading..."
+      ref={tableRef}
+      page={curPage}
+      showPageSizeOptions={false}
+      showPageJump={false}
+      onPageChange={(pageIndex) => setCurPage(pageIndex)}
+      getTrProps={(state, rowInfo) => {
+        if (!rowInfo) {
+          return {};
+        }
+        let classname = Severity[rowInfo.row.Severity];
+
+        // if we are on the page of our currently selected row and we are the row of the currently
+        // selected row.
+        if (curPage === selectedPage && selectedPageRow === rowInfo.viewIndex) {
+          classname += ` ${rowSelected}`;
+        }
+
+        return {
+          onClick: (_, handleOriginal) => {
+            setSelectedPageRowAndPage([rowInfo.viewIndex, curPage]);
+            setAdjacentIDs(
+              findAdjacentIDsByID(state.sortedData, rowInfo.row.ID)
+            );
+            props.selectRow(
+              rowInfo.viewIndex,
+              rowInfo.row.ID,
+              true,
+              rowInfo.row
+            );
+
+            if (handleOriginal) {
+              handleOriginal();
+            }
+          },
+          className: classname,
+        };
+      }}
+    />
+  );
+};
+
+export default ArrowNavigationTable;

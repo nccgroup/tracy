@@ -8,39 +8,8 @@ import { enumerate, filterInactive } from "../../shared/ui-helpers";
 const r = rpc(channel);
 export default class TracerTable extends Component {
   componentDidMount() {
-    const port = chrome.runtime.connect({ name: "TracerTable" });
-    port.onMessage.addListener((msg) => {
-      switch (Object.keys(msg).pop()) {
-        case "addTracer":
-          this.props.addOrUpdateTracer(Object.values(msg).pop(), false);
-          break;
-        case "addRequestsToTracer":
-          if (this.props.selectedTracerPayload === "") {
-            return;
-          }
-          const reqs = Object.values(msg).pop();
-          const tp = reqs.tracerPayload;
-          let tracer = {
-            ...this.props.tracers.filter((t) => t.TracerPayload === tp).pop(),
-          };
-          if (tracer.Requests) {
-            tracer.Requests = [...tracer.Requests, ...reqs.requests];
-          } else {
-            tracer.Requests = reqs.requests;
-          }
-
-          this.props.addOrUpdateTracer(tracer, false);
-          break;
-        case "updateTracer":
-          this.props.addOrUpdateTracer(Object.values(msg).pop().tracer);
-          break;
-        default:
-          break;
-      }
-    });
-    port.onDisconnect.addListener((e) => {
-      console.log("disconnected", chrome.runtime.lastError, e);
-    });
+    this.refresh();
+    setInterval(this.refresh, 5000);
     this.props.tracersLoading();
   }
 
@@ -62,7 +31,7 @@ export default class TracerTable extends Component {
     }
 
     return (
-      <div className="table-container table-container-tracers">
+      <div id="tracer" className="table-container table-container-tracers">
         <span className="filler" />
         <ArrowNavigationTable
           {...this.props}
@@ -70,7 +39,7 @@ export default class TracerTable extends Component {
           data={data.map(enumerate)}
           columns={[
             {
-              Header: "injection pointszzzzzzzzzz",
+              Header: "injection points",
               columns: [
                 { Header: "id", accessor: "ID", width: 45 },
                 {

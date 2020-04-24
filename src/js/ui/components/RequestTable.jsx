@@ -10,7 +10,7 @@ export default class RequestTable extends Component {
       );
     }
     return (
-      <div className="table-container table-container-requests">
+      <div id="request" className="table-container table-container-requests">
         <span className="filler" />
 
         <ArrowNavigationTable

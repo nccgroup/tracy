@@ -163,9 +163,9 @@ const Settings = (props) => {
             </tr>
           </thead>
           <tbody>
-            {props.tracerPayloads.map((tp) => {
+            {props.tracerPayloads.map((tp, i) => {
               return (
-                <tr onClick={(e) => deleteTracerPayload(tp[0], props)}>
+                <tr key={i} onClick={(e) => deleteTracerPayload(tp[0], props)}>
                   <td>{tp[0]}</td>
                   <td>{tp[1]}</td>
                 </tr>

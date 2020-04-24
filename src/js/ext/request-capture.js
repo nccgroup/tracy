@@ -118,14 +118,16 @@ ${body}`;
   // doesn't matter that we do this for every request.
   chrome.webRequest.onBeforeRequest.addListener(
     async (r) => {
-      if (new URL(r.url).protocol.startsWith("data")) return;
-      let tracers = [];
-      try {
-        tracers = await getTracers();
-      } catch (e) {
-        console.error(e);
+      const url = new URL(r.url);
+      if (
+        url.protocol.startsWith("data") ||
+        url.protocol.startsWith("chrome") ||
+        url.protocol.startsWith("moz")
+      ) {
         return;
       }
+
+      const tracers = await getTracers();
       const payloads = tracers.map((t) => t.TracerPayload);
 
       const tracersn = payloads

@@ -31,7 +31,7 @@ const config = (mode) => {
       searchWorker: path.join(...[...jsPath, "search-worker.js"]),
       databaseWorker: path.join(...[...jsPath, "database-worker.js"]),
       background: path.join(...[...jsPath, "background.js"]),
-      ui: path.join(...[...jsPath, "ui.js"]),
+      ui: path.join(...[...jsPath, "ui.jsx"]),
       test: path.join(...[...jsPath, "test.js"]),
     },
     output: {
