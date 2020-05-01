@@ -1,7 +1,7 @@
 import React, { Component } from "react";
-import TracyLogo from "../components/TracyLogo";
-import SettingsIcon from "../containers/SettingsIcon";
-import HomeIcon from "../containers/HomeIcon";
+import TracyLogo from "./TracyLogo";
+import SettingsIcon from "./SettingsIcon";
+import HomeIcon from "./HomeIcon";
 export default class NavSidebar extends Component {
   render = () => (
     <div className="nav-sidebar">

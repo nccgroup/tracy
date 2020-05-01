@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import RawView from "../containers/RawView";
+import RawView from "./RawView";
 
 export default class Outputs extends Component {
   render = () => (

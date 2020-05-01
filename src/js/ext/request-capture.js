@@ -62,7 +62,7 @@ ${h.name}: ${h.value}`,
       ];
 
       const url = new URL(r.url);
-      const rr = `${r.method} ${url.pathname}${url.search}  HTTP/1.1${headers}
+      const rr = `${r.method} ${url.pathname}${url.search}${url.hash}  HTTP/1.1${headers}
                       
 ${body}`;
 

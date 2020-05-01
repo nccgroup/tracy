@@ -1,6 +1,6 @@
 /* global chrome */
 import * as actions from "../actions";
-import { enumerate, firstIDByID } from "../../shared/ui-helpers";
+import { firstIDByID } from "../../shared/ui-helpers";
 import { store } from "../../ui";
 
 const loadState = (settings) => {
@@ -32,12 +32,14 @@ const init = {
   ],
   tracersLoading: true,
   eventsLoading: false,
+  rawEventLoading: true,
+  tracersRefresh: false,
+  eventsRefresh: false,
   selectedEventID: -1,
   selectedEventTableIndex: -1,
   selectedTracerPayload: "",
   selectedTracerTableIndex: -1,
   selectedRequestID: -1,
-  selectedRequestTableIndex: -1,
   httpResponsesFilter: false,
   inactiveTracersFilter: false,
   textFilter: false,
@@ -47,6 +49,7 @@ const init = {
   tracyEnabled: true,
   onSettingsPage: false,
   lastSelectedTable: "tracer",
+  selectedEventRawEvent: "",
 };
 
 loadState(Object.keys(init));
@@ -80,8 +83,21 @@ const addOrEditTracer = (state, action) => {
 const rootReducer = (state = init, action) => {
   let change = {};
   switch (action.type) {
+    case actions.SET_RAW_EVENT:
+      change = {
+        selectedEventRawEvent: action.rawEvent,
+        rawEventLoading: false,
+      };
+      break;
+    case actions.RAW_EVENT_LOADING:
+      change = { rawEventLoading: true };
+      break;
     case actions.REFRESH:
-      change = { tracersLoading: true, eventsLoading: true };
+      if (action.background) {
+        change = { tracersRefresh: true, eventsRefresh: true };
+      } else {
+        change = { tracersLoading: true, eventsLoading: true };
+      }
       break;
     case actions.TRACERS_LOADING:
       change = { tracersLoading: true };
@@ -163,17 +179,30 @@ const rootReducer = (state = init, action) => {
     case actions.UPDATE_TRACERS:
       change = {
         tracersLoading: false,
+        tracersRefresh: false,
         tracers: action.tracers.sort((a, b) => a.Created - b.Created),
         selectedTracerPayload: action.payload,
       };
       break;
     case actions.SELECT_TRACER:
+      const tracerPayload =
+        action.tracerPayload === ""
+          ? state.tracers.filter((t) => t.ID === action.tracerID).pop()
+              .TracerPayload
+          : action.tracerPayload;
+
+      if (tracerPayload === state.selectedTracerPayload) {
+        break;
+      }
       change = {
         eventsLoading: true,
-        selectedTracerPayload: action.tracerPayload,
+        selectedTracerPayload: tracerPayload,
         events: [],
-        selectedEventID: 0,
+        selectedEventID: -1,
         selectedTracerTableIndex: action.index,
+        selectedEventRawEvent: "",
+        selectedRequestID: -1,
+        rawEventLoading: true,
       };
       if (action.clicked) {
         change.lastSelectedTable = "tracer";
@@ -192,14 +221,17 @@ const rootReducer = (state = init, action) => {
     case actions.UPDATE_EVENTS:
       change = {
         eventsLoading: false,
-        events: action.events.map(enumerate),
+        eventsRefresh: false,
+        events: action.events,
         selectedEventID: action.eventID,
         selectedEventTableIndex: action.tableID,
+        selectedEventRawEvent: action.rawEvent,
+        rawEventLoading: false,
       };
       break;
     case actions.ADD_EVENTS:
       change = {
-        events: [...state.events, ...action.events].map(enumerate),
+        events: [...state.events, ...action.events],
       };
       break;
     case actions.TOGGLE_INACTIVE_FILTER:
@@ -223,7 +255,6 @@ const rootReducer = (state = init, action) => {
     case actions.SELECT_REQUEST:
       change = {
         selectedRequestID: action.id,
-        selectedRequestTableIndex: action.index,
       };
       if (action.clicked) {
         change.lastSelectedTable = "request";

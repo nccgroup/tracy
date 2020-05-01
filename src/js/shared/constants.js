@@ -13,6 +13,8 @@ export const DatabaseQueryType = {
 };
 
 export const Database = {
+  TRACER_PAYLOAD_INDEX: "TracerPayload",
+  RAW_EVENT_INDEX: "raw event, raw event index, tracer payload",
   JOIN: "TracerPayload",
   TRACERS_TABLE: "tracers",
   EVENTS_TABLE: "events",
@@ -33,6 +35,10 @@ export const MessageTypes = {
   IsDisabled: {
     id: "config",
     config: "disabled",
+  },
+  GetRawEvent: {
+    id: "database",
+    query: "getRawEvent",
   },
   GetTracers: {
     id: "database",

@@ -1,4 +1,5 @@
 import { Severity } from "./constants";
+
 // Stolen from : https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
 export const generateUUID = () =>
   ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -16,17 +17,6 @@ export const firstIDByID = (s, m) => {
     }
   }
   return -1;
-};
-// sleep returns a promise that is resolved after the provided number of ms.
-export const sleep = (ms) => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-};
-
-// enumerate assigns an object an ID property.
-export const enumerate = (event, id) => {
-  event.ID = id + 1;
-
-  return event;
 };
 
 // filterResponses filters out events that have the event type of response.

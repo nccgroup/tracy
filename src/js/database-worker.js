@@ -24,22 +24,6 @@ const createStore = (db, name, options, onStoreCreate) => {
     store.transaction.oncomplete = (e) => res(e);
   });
 };
-
-// getTracersDelayed gets all the tracers after a given
-// delay period.
-const getTracersDelayed = (tracersDB, delay = 500) => {
-  return new Promise((res, rej) => {
-    setTimeout(async () => {
-      try {
-        const tracers = await getTracers(tracersDB);
-        res(tracers);
-      } catch (e) {
-        rej(e);
-      }
-    }, delay);
-  });
-};
-
 // getTracers returns all the tracer objects filtered by the current project
 // ID.
 const getTracers = async (tracersDB, key) => {
@@ -72,6 +56,7 @@ const getTracerByPayload = async (tracersDB, tracerPayload) =>
     const req = tracersDB
       .transaction(Database.TRACERS_TABLE)
       .objectStore(Database.TRACERS_TABLE)
+      .index(Database.TRACER_PAYLOAD_INDEX)
       .get(tracerPayload);
 
     req.onsuccess = (e) => res(e.target.result);
@@ -93,12 +78,34 @@ const getTracerEventsByPayload = async (eventsDB, tracerPayload) =>
     req.onsuccess = (e) => {
       const cursor = e.target.result;
       if (cursor) {
+        // by default, don't get the RawEvents just yet
+        delete cursor.value["RawEvent"];
         events.push(cursor.value);
         cursor.continue();
       } else {
         res(events);
       }
     };
+    req.onerror = (e) => rej(e);
+  });
+
+// getRawEvent returns the raw event for a particular event. These events
+// can be large which is why we have a separate call to get them.
+const getRawEvent = async (eventsDB, eventID) =>
+  await new Promise((res, rej) => {
+    const req = eventsDB
+      .transaction(Database.EVENTS_TABLE, DatabaseQueryType.READONLY)
+      .objectStore(Database.EVENTS_TABLE)
+      .get(eventID);
+
+    req.onsuccess = (e) =>
+      res(
+        URL.createObjectURL(
+          new Blob([e.target.result.RawEvent], {
+            type: e.target.result.RawEventType,
+          })
+        )
+      );
     req.onerror = (e) => rej(e);
   });
 
@@ -113,9 +120,7 @@ const addTracer = async (tracersDB, tracer, key) => {
       .objectStore(Database.TRACERS_TABLE)
       .put(tracer);
 
-    req.onsuccess = (e) => {
-      res(e.target.result);
-    };
+    req.onsuccess = (e) => res(e.target.result);
     req.onerror = (e) => rej(e);
   });
 };
@@ -157,6 +162,7 @@ const addEvents = async (tracersDB, eventsDB, events) =>
   });
 
 const updateTracerBasedOnEvent = async (tracersDB, eventsDB, tracerPayload) => {
+  let tracer = await getTracerByPayload(tracersDB, tracerPayload);
   return new Promise((res, rej) => {
     const eventsReq = eventsDB
       .transaction(Database.EVENTS_TABLE, DatabaseQueryType.READONLY)
@@ -182,34 +188,16 @@ const updateTracerBasedOnEvent = async (tracersDB, eventsDB, tracerPayload) => {
       }
       const highestSev = events.sort((a, b) => a.Severity - b.Severity).pop()
         .Severity;
-      const tracersReq = tracersDB
-        .transaction(Database.TRACERS_TABLE, DatabaseQueryType.READWRITE)
-        .objectStore(Database.TRACERS_TABLE)
-        .openCursor(IDBKeyRange.only(tracerPayload));
 
-      tracersReq.onsuccess = (e) => {
-        const cursor = e.target.result;
-        if (!cursor) {
-          res();
-          return;
-        }
+      // No need to update if there is nothing to update.
+      if (tracer.HasTracerEvents && tracer.Severity === highestSev) {
+        res();
+        return;
+      }
 
-        const tracer = cursor.value;
-        // No need to update if there is nothing to update.
-        if (tracer.HasTracerEvents && tracer.Severity === highestSev) {
-          res();
-          return;
-        }
-
-        tracer.Severity = highestSev;
-        tracer.HasTracerEvents = true;
-        const upReq = cursor.update(tracer);
-        upReq.onsuccess = (e) => {
-          res(e);
-        };
-        upReq.onerror = (e) => rej(e);
-      };
-      tracersReq.onerror = (e) => rej(e);
+      tracer.Severity = highestSev;
+      tracer.HasTracerEvents = true;
+      addTracer(tracersDB, tracer, tracer[Database.UUID]);
     };
     eventsReq.onerror = (e) => rej(e);
   });
@@ -229,86 +217,86 @@ const addEvent = async (tracersDB, eventsDB, event) =>
     req.onerror = (e) => rej(e);
   });
 
-// addRequestsToTracer adds a request to a tracer object already in the database.
-const addRequestsToTracer = async (tracersDB, requests, tracerPayload) => {
-  return new Promise((res, rej) => {
-    const req = tracersDB
-      .transaction(Database.TRACERS_TABLE, DatabaseQueryType.READWRITE)
-      .objectStore(Database.TRACERS_TABLE)
-      .openCursor(IDBKeyRange.only(tracerPayload));
-
-    req.onsuccess = (e) => {
-      const cursor = e.target.result;
-      let up;
-      if (!cursor) return;
-      const tracer = cursor.value;
-      if (Object.keys(tracer).includes("Requests")) {
-        // Make sure these requests are unique. If any of the raw requests
-        // are the same, we don't need to make any changes.
-        const dupes = requests
-          .map((re) =>
-            tracer.Requests.filter(
-              (r) => r.RawRequest.trim() === re.RawRequest.trim()
-            )
-          )
-          .flat()
-          .filter((r) => r.length > 0);
-        if (dupes.length > 0) {
-          res(true);
-          return;
-        }
-
-        up = Object.assign({}, tracer, {
-          Requests: tracer.Requests.concat(requests),
-        });
-      } else {
-        up = Object.assign({}, tracer, {
-          Requests: requests,
-        });
-      }
-
-      const upreq = cursor.update(up);
-      upreq.onsuccess = (e) => res(e.target.result);
-      upreq.onerror = (e) => rej(e);
-    };
-
-    req.onerror = (e) => rej(e);
+const dedupeRequests = (tracer, requests) => {
+  const requestsWithIDs = requests.map((r, i) => {
+    r.ID = i + 1;
+    return r;
   });
+  if (Object.keys(tracer).includes("Requests")) {
+    const largestID = tracer.Requests.reduce(
+      (accum, cur) => (cur.ID > accum ? cur.ID : accum),
+      0
+    );
+    const requestsWithIDsInc = requestsWithIDs.map((r) => {
+      r.ID = r.ID + largestID;
+      return r;
+    });
+    console.log("REQUESTS", requestsWithIDsInc);
+    return Object.assign({}, tracer, {
+      Requests: [...new Set([...tracer.Requests, ...requestsWithIDsInc])],
+    });
+  }
+
+  return Object.assign({}, tracer, {
+    Requests: requestsWithIDs,
+  });
+};
+// addRequestsToTracer adds a request to a tracer object already in the database.
+const addRequestsToTracer = async (tracersDB, requests, tracerPayload, key) => {
+  const tracer = await getTracerByPayload(tracersDB, tracerPayload);
+
+  const update = dedupeRequests(tracer, requests);
+  return await addTracer(tracersDB, update, update[Database.UUID]);
 };
 
 const initDBClient = () => {
   let tracersDB;
   let eventsDB;
 
-  const version = 2;
+  const version = 3;
 
   return async () => {
     if (tracersDB && eventsDB) {
       return { tracersDB, eventsDB };
     }
-    tracersDB = await openDB(Database.TRACERS_TABLE, version, async (db) => {
-      return await createStore(
-        db,
-        Database.TRACERS_TABLE,
-        { keyPath: Database.JOIN },
-        (store) => {
-          store.createIndex(Database.UUID, Database.UUID, { unique: false });
-        }
-      );
-    });
-    eventsDB = await openDB(Database.EVENTS_TABLE, version, async (db) => {
-      return await createStore(
-        db,
-        Database.EVENTS_TABLE,
-        // We want to use the key path to dedupe the events. The RawEvent and
-        // TracerPayload should be unique across all the data.
-        { keyPath: ["RawEvent", "RawEventIndex", Database.JOIN] },
-        (store) => {
-          // Index on events' tracer payload so we can group these store together.
-          store.createIndex(Database.JOIN, Database.JOIN, { unique: false });
-        }
-      );
-    });
+    tracersDB = await openDB(
+      Database.TRACERS_TABLE,
+      version,
+      async (db) =>
+        await createStore(
+          db,
+          Database.TRACERS_TABLE,
+          { keyPath: "ID", autoIncrement: true },
+          (store) => {
+            store.createIndex(Database.TRACER_PAYLOAD_INDEX, Database.JOIN, {
+              unique: true,
+            });
+            store.createIndex(Database.UUID, Database.UUID, { unique: false });
+          }
+        )
+    );
+    eventsDB = await openDB(
+      Database.EVENTS_TABLE,
+      version,
+      async (db) =>
+        await createStore(
+          db,
+          Database.EVENTS_TABLE,
+          { keyPath: "ID", autoIncrement: true },
+          (store) => {
+            // Index on events' tracer payload so we can group these store together.
+            store.createIndex(Database.JOIN, Database.JOIN, { unique: false });
+
+            // We want to use the key path to dedupe the events. The RawEvent and
+            // TracerPayload should be unique across all the data.
+            store.createIndex(
+              Database.RAW_EVENT_INDEX,
+              ["RawEvent", "RawEventIndex", Database.JOIN],
+              { unique: true }
+            );
+          }
+        )
+    );
 
     return { tracersDB, eventsDB };
   };
@@ -319,6 +307,9 @@ const dbRouter = async (e, tracersDB, eventsDB) => {
   switch (query) {
     case MessageTypes.GetTracers.query:
       return await getTracers(tracersDB, e.data.key);
+    case MessageTypes.GetRawEvent.query:
+      const { eventID } = e.data;
+      return await getRawEvent(eventsDB, eventID);
     case MessageTypes.GetTracerEventsByPayload.query:
       return await getTracerEventsByPayload(eventsDB, e.data.tracerPayload);
     case MessageTypes.GetTracersByPayload.query:
@@ -346,13 +337,33 @@ const dbRouter = async (e, tracersDB, eventsDB) => {
 const client = initDBClient();
 onmessage = async (e) => {
   const { chan } = e.data;
+  let t1;
+  if (DEV) {
+    t1 = performance.now();
+  }
   let msg;
   try {
     const { tracersDB, eventsDB } = await client();
+    if (DEV) {
+      console.log("[QUERY]:", e.data.query);
+    }
     msg = await dbRouter(e, tracersDB, eventsDB);
+
+    postMessage({ data: msg, chan });
   } catch (e) {
-    console.error("[WORKER]", e);
-    msg = e;
+    if (e.target) {
+      msg = e.target.error;
+    } else {
+      msg = e;
+    }
+    if (DEV) {
+      console.error("[WORKER]", msg);
+    }
+    postMessage({ data: msg, chan, error: true });
+  } finally {
+    if (DEV) {
+      const t2 = performance.now();
+      console.log("[QUERY-DONE]", e.data.query, t2 - t1);
+    }
   }
-  postMessage({ data: msg, chan });
 };

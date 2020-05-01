@@ -7,6 +7,29 @@ import { Severity } from "../../shared/constants";
 // If the page index goes from top to bottom or vice versa,
 // we knoew we are flipping the page.
 const calcPageFlipped = (prev, curr, size) => Math.abs(prev - curr) >= size - 1;
+const findAdjacentIDsByID = (data, id) => {
+  if (data.length === 0) {
+    return [1, 1];
+  }
+  let left = data.length - 1;
+  let right = 1 % data.length;
+  let i = 0;
+  for (
+    i;
+    i < data.length;
+    i++, right = (right + 1) % data.length, left = (left + 1) % data.length
+  ) {
+    if (data[i].ID == id) {
+      break;
+    }
+  }
+
+  if (!data[left] || !data[right]) {
+    console.error("!!");
+    debug;
+  }
+  return [data[left].ID, data[right].ID];
+};
 
 // the number of rows with data in them
 const numRows = 10;
@@ -15,7 +38,8 @@ const rowSelected = "row-selected";
 const ArrowNavigationTable = (props) => {
   // keep track of the left and right IDs of the currently sorted table
   // so that selecting them with the arrow keys is simpler
-  const [adjIDs, setAdjacentIDs] = useState([]);
+  const [numData] = useState(props.data.length);
+  const [adjIDs, setAdjacentIDs] = useState([1, 1]);
   const tableRef = useRef(null);
   // the total number of rows available
   const numPages = Math.ceil(props.data.length / props.defaultPageSize);
@@ -23,26 +47,17 @@ const ArrowNavigationTable = (props) => {
   // the current page number
   const [curPage, setCurPage] = useState(0);
 
-  // the index of the row selected and the page it was selected on
+  // the index of the row selected, the page it was selected on,
+  // and the ID field of the selected entry
   const [
     [selectedPageRow, selectedPage],
     setSelectedPageRowAndPage,
   ] = useState([0, 0]);
 
-  const findAdjacentIDsByID = (data, id) => {
-    let left = data.length - 1;
-    let right = 1;
-    for (
-      let i = 0;
-      i < data.length;
-      i++, right = (right + 1) % data.length, left = (left + 1) % data.length
-    ) {
-      if (data[i].ID == id) {
-        break;
-      }
-    }
-
-    return [data[left].ID, data[right].ID];
+  const resetTable = () => {
+    setAdjacentIDs([1, 1]);
+    setCurPage(0);
+    setSelectedPageRowAndPage([0, 0]);
   };
 
   const keyDownHandler = (direction) => {
@@ -96,6 +111,23 @@ const ArrowNavigationTable = (props) => {
       ),
     [props.lastSelectedTable, curPage, selectedPageRow, adjIDs]
   );
+
+  // if rows are added, we move to move our selected row to match
+  // this is similar to hitting the right arrow key for how many
+  // number of data pointers were added
+  useEffect(() => {
+    if (numData === 0) {
+      return;
+    }
+    const diff = props.data.length - numData;
+    for (let i = 0; i < diff; i++) {
+      keyDownHandler(1);
+    }
+  }, [props.data.length]);
+
+  useEffect(() => {
+    if (props.setReset) props.setReset(resetTable);
+  }, []);
 
   return (
     <ReactTable

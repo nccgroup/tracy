@@ -136,7 +136,7 @@ export const domMutationsInit = (replace, rpc) => {
 
     return (message) => {
       if (jobs.length === 0) {
-        setTimeout(sendAllJobs, 2000);
+        setTimeout(sendAllJobs, 500);
       }
       jobs.push(message);
     };

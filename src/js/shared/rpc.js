@@ -13,6 +13,12 @@ export const rpc = (channel) => {
       ...MessageTypes.AddTracer,
     });
 
+  const getRawEvent = async (eventID) =>
+    await channel.send({
+      ...MessageTypes.GetRawEvent,
+      eventID,
+    });
+
   const captureScreenshot = async () =>
     await channel.send(MessageTypes.Screenshot);
 
@@ -49,5 +55,6 @@ export const rpc = (channel) => {
     innerHTMLJob,
     getTracers,
     getTracerEventsByPayload,
+    getRawEvent,
   };
 };

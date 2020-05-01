@@ -358,9 +358,9 @@ html body {
   color: #e6e6e8;
 }
 
-pre code {
+/* pre code {
   padding: 9.5px;
-}
+} */
 
 .spinner {
   -animation: spin 0.7s infinite linear;
@@ -511,7 +511,7 @@ pre code {
   flex: 99999 1 auto;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
 }
 .ReactTable .rt-tbody .rt-tr-group {
   border-bottom: solid 1px rgba(0, 0, 0, 0.05);

@@ -1,8 +1,22 @@
-/* global chrome */
 import React from "react";
 import { generateUUID } from "../../shared/ui-helpers";
 import { channel } from "../../shared/channel-cs";
 import { rpc } from "../../shared/rpc";
+import { updateProjects, changeSetting } from "../actions/";
+import { connect } from "react-redux";
+
+const mapStateToProps = (state) => ({
+  tracyEnabled: state.tracyEnabled,
+  apiKey: state.apiKey,
+  projName: state.projName,
+  projs: state.projs,
+  tracerPayloads: state.tracerPayloads,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  updateProjects: (proj) => dispatch(updateProjects(proj)),
+  changeSetting: (setting) => dispatch(changeSetting(setting)),
+});
 
 const createNewProject = (props) => {
   const p = prompt("Enter a new project name");
@@ -250,4 +264,4 @@ const Settings = (props) => {
     </div>
   );
 };
-export default Settings;
+export default connect(mapStateToProps, mapDispatchToProps)(Settings);

@@ -1,8 +1,19 @@
 import React, { Component } from "react";
-import FilterButton from "../containers/FilterButton";
-import * as actions from "../actions";
+import FilterButton from "./FilterButton";
+import {
+  TOGGLE_TEXT_FILTER,
+  TOGGLE_INACTIVE_FILTER,
+  TOGGLE_REFERER_FILTER,
+} from "../actions";
+import { connect } from "react-redux";
 
-export default class FilterColumn extends Component {
+const mapStateToProps = (state) => ({
+  textFilter: state.textFilter,
+  inactiveTracersFilter: state.inactiveTracersFilter,
+  refererFilter: state.refererFilter,
+});
+
+class FilterColumn extends Component {
   render() {
     return (
       <ul className="filter-column">
@@ -11,7 +22,7 @@ export default class FilterColumn extends Component {
           imgType="glyph"
           enabled={this.props.textFilter}
           img="font"
-          filter={actions.TOGGLE_TEXT_FILTER}
+          filter={TOGGLE_TEXT_FILTER}
           description="filter innerText DOM writes"
         />
         <FilterButton
@@ -19,7 +30,7 @@ export default class FilterColumn extends Component {
           imgType="glyph"
           enabled={this.props.inactiveTracersFilter}
           img="filter"
-          filter={actions.TOGGLE_INACTIVE_FILTER}
+          filter={TOGGLE_INACTIVE_FILTER}
           description="filter tracers without events"
         />
         <FilterButton
@@ -27,10 +38,12 @@ export default class FilterColumn extends Component {
           imgType="glyph"
           enabled={this.props.refererFilter}
           img="chevron-left"
-          filter={actions.TOGGLE_REFERER_FILTER}
+          filter={TOGGLE_REFERER_FILTER}
           description="filter requests that contain tracers in the referer header"
         />
       </ul>
     );
   }
 }
+
+export default connect(mapStateToProps)(FilterColumn);

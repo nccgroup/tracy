@@ -1,4 +1,4 @@
-export const locationModInit = async (replace, rpc) => {
+export const locationModInit = (replace, rpc) => {
   const url = new URL(window.location.toString());
 
   const { tracers: utracers, str: pathname } = replace.str(url.pathname);
@@ -16,8 +16,7 @@ export const locationModInit = async (replace, rpc) => {
   url.hash = hash;
   url.pathname = pathname;
 
-  console.log("location mod!ssssss");
-  await Promise.all(tracers.map(async (t) => await rpc.addTracer(t)));
-  console.log("here");
-  window.location = url.toString();
+  Promise.all(tracers.map(async (t) => await rpc.addTracer(t))).then((a) => {
+    window.location = url.toString();
+  });
 };

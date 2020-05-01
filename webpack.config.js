@@ -2,6 +2,8 @@ const path = require("path");
 const webpack = require("webpack");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
+  .BundleAnalyzerPlugin;
 const packageJSON = require("./package.json");
 const fileExtensions = [
   "jpg",
@@ -64,9 +66,10 @@ const config = (mode) => {
     resolve: {
       extensions: fileExtensions
         .map((extension) => "." + extension)
-        .concat([".jsx", ".js", ".css"]),
+        .concat([".jsx", ".js"]),
     },
     plugins: [
+      //new BundleAnalyzerPlugin(),
       new webpack.DefinePlugin({
         DEV: isDevelopment,
       }),

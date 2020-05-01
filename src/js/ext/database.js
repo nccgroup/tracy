@@ -1,7 +1,6 @@
 import { MessageTypes, EventTypes } from "../shared/constants";
 import { newPromiseMap } from "../shared/promise-map";
 import { settings } from "./settings";
-import { wrap } from "lodash";
 
 export const databaseQuery = async (message) => {
   const { query } = message;
@@ -14,6 +13,9 @@ export const databaseQuery = async (message) => {
     case MessageTypes.AddTracer.query:
       const { tracer } = message;
       return await addTracer(tracer);
+    case MessageTypes.GetRawEvent.query:
+      const { eventID } = message;
+      return await getRawEvent(eventID);
     default:
       console.log("[BAD MESSAGE QUERY]", query);
       return await Promise.resolve("BAD");
@@ -21,8 +23,8 @@ export const databaseQuery = async (message) => {
 };
 
 const sendQuery = (message, worker) => {
-  return new Promise((res) => {
-    const chan = promiseMap.add(res);
+  return new Promise((res, rej) => {
+    const chan = promiseMap.add(res, rej);
     worker.postMessage({ ...message, chan });
   });
 };
@@ -31,7 +33,13 @@ const dbWriter = new Worker(dbURL);
 const dbReader = new Worker(dbURL);
 
 const promiseMap = newPromiseMap();
-const dbHandler = async (e) => promiseMap.resolve(e.data.data, e.data.chan);
+const dbHandler = async (e) => {
+  const { data, chan, error } = e.data;
+  if (error) {
+    return promiseMap.reject(data, chan);
+  }
+  return promiseMap.resolve(data, chan);
+};
 
 dbReader.addEventListener(EventTypes.Message, dbHandler, { passive: true });
 dbWriter.addEventListener(EventTypes.Message, dbHandler, { passive: true });
@@ -65,6 +73,7 @@ const ttl = (time) => {
   return async (og) => {
     const timeDiff = Math.round((new Date() - last) / 1000);
     if (cache && timeDiff < time) {
+      console.log("cached copy returned");
       return cache;
     } else {
       cache = await og();
@@ -79,18 +88,17 @@ export const getTracerEventsByPayload = async (tracerPayload) =>
     { ...MessageTypes.GetTracerEventsByPayload, tracerPayload },
     dbReader
   );
+export const getRawEvent = async (eventID) =>
+  await sendQuery({ ...MessageTypes.GetRawEvent, eventID }, dbReader);
 
-export const getTracers = wrap(
-  async () =>
-    await sendQuery(
-      {
-        ...MessageTypes.GetTracers,
-        key: await settings.getAPIKey(),
-      },
-      dbReader
-    ),
-  ttl(5)
-);
+export const getTracers = async () =>
+  await sendQuery(
+    {
+      ...MessageTypes.GetTracers,
+      key: await settings.getAPIKey(),
+    },
+    dbReader
+  );
 
 export const getTracerByPayload = async (tracerPayload) =>
   await sendQuery(

@@ -26,72 +26,78 @@ export const UPDATE_SETTINGS = "UPDATE_SETTINGS";
 export const TRACERS_LOADING = "TRACERS_LOADING";
 export const EVENTS_LOADING = "EVENTS_LOADING";
 export const REFRESH = "REFRESH";
-export const refresh = () => ({ type: REFRESH });
+export const SET_RAW_EVENT = "SET_RAW_EVENT";
+export const RAW_EVENT_LOADING = "RAW_EVENT_LOADING";
+export const rawEventLoading = () => ({ type: RAW_EVENT_LOADING });
+export const setRawEvent = (rawEvent) => ({ type: SET_RAW_EVENT, rawEvent });
+export const refresh = (background) => ({ type: REFRESH, background });
 export const eventsLoading = () => ({ type: EVENTS_LOADING });
 export const tracersLoading = () => ({ type: TRACERS_LOADING });
-export const updateSettings = settings => ({
+export const updateSettings = (settings) => ({
   type: UPDATE_SETTINGS,
-  settings: settings
+  settings: settings,
 });
 
-export const appInitialized = init => ({
+export const appInitialized = (init) => ({
   type: APP_INITIALIZED,
-  init: init
+  init: init,
 });
 export const navigateToUIPage = () => ({
-  type: NAVIGATE_TO_UI_PAGE
+  type: NAVIGATE_TO_UI_PAGE,
 });
 
 export const navigateToSettingsPage = () => ({
-  type: NAVIGATE_TO_SETTINGS_PAGE
+  type: NAVIGATE_TO_SETTINGS_PAGE,
 });
 
-export const changeSetting = setting => ({
+export const changeSetting = (setting) => ({
   type: CHANGE_SETTING,
-  setting: setting
+  setting: setting,
 });
 export const selectRequest = (index, id, clicked) => ({
   type: SELECT_REQUEST,
   id: id,
   index: index,
-  clicked: clicked
+  clicked: clicked,
 });
-export const addAPIKey = apiKey => ({ type: ADD_API_KEY, apiKey: apiKey });
-export const changeTab = tabID => ({ type: CHANGE_TAB, tabID: tabID });
+export const addAPIKey = (apiKey) => ({ type: ADD_API_KEY, apiKey: apiKey });
+export const changeTab = (tabID) => ({ type: CHANGE_TAB, tabID: tabID });
 export const addTracer = (tracer, skipReload) => ({
   type: ADD_TRACER,
   tracer: tracer,
-  skipReload: skipReload
+  skipReload: skipReload,
 });
 export const updateTracers = (tracers, payload, reload) => ({
   type: UPDATE_TRACERS,
   tracers: tracers,
   payload: payload,
-  skipReload: reload
+  skipReload: reload,
 });
-export const addRequest = req => ({ type: ADD_REQUEST, req: req });
-export const addEvents = events => ({ type: ADD_EVENTS, events: events });
-export const delProject = i => ({ type: DEL_PROJECT, i: i });
-export const selectTracer = (index, payload, clicked) => ({
+export const addRequest = (req) => ({ type: ADD_REQUEST, req: req });
+export const addEvents = (events) => ({ type: ADD_EVENTS, events: events });
+export const delProject = (i) => ({ type: DEL_PROJECT, i: i });
+export const selectTracer = (index, id, payload, clicked) => ({
   type: SELECT_TRACER,
+  tracerID: id,
   tracerPayload: payload,
   index: index,
-  clicked: clicked
+  clicked: clicked,
 });
 export const selectEvent = (index, id, clicked) => ({
   type: SELECT_EVENT,
   id: id,
   index: index,
-  clicked: clicked
+  clicked: clicked,
 });
-export const updateEvents = (events, eventID, tableID) => ({
+export const updateEvents = (events, eventID, tableID, rawEvent) => ({
   type: UPDATE_EVENTS,
   events: events,
   eventID: eventID,
-  tableID: tableID
+  tableID: tableID,
+  rawEvent: rawEvent,
 });
 export const startReproduction = () => ({ type: START_REPRODUCTION });
-export const toggleFilter = type => {
+export const toggleFilter = (type) => {
   switch (type) {
     case TOGGLE_INACTIVE_FILTER:
       return toggleInactiveFilter();
@@ -108,11 +114,11 @@ export const toggleFilter = type => {
 export const toggleRefererFilter = () => ({ type: TOGGLE_REFERER_FILTER });
 export const toggleInactiveFilter = () => ({ type: TOGGLE_INACTIVE_FILTER });
 export const toggleHTTPResponseFilter = () => ({
-  type: TOGGLE_HTTP_RESPONSE_FILTER
+  type: TOGGLE_HTTP_RESPONSE_FILTER,
 });
 export const toggleTextFilter = () => ({ type: TOGGLE_TEXT_FILTER });
-export const updateProjects = projs => ({
+export const updateProjects = (projs) => ({
   type: UPDATE_PROJECTS,
-  projs: projs
+  projs: projs,
 });
-export const selectProject = proj => ({ type: SELECT_PROJ, proj: proj });
+export const selectProject = (proj) => ({ type: SELECT_PROJ, proj: proj });

@@ -1,8 +1,14 @@
 import React, { PureComponent } from "react";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
+import { connect } from "react-redux";
+import { toggleFilter } from "../actions";
 
-export default class FilterButton extends PureComponent {
-  handleClick = evt => {
+const mapDispatchToProps = (dispatch) => ({
+  toggleFilter: (filter) => dispatch(toggleFilter(filter)),
+});
+
+class FilterButton extends PureComponent {
+  handleClick = (evt) => {
     this.props.toggleFilter(this.props.filter);
   };
 
@@ -23,3 +29,5 @@ export default class FilterButton extends PureComponent {
     );
   };
 }
+
+export default connect(null, mapDispatchToProps)(FilterButton);

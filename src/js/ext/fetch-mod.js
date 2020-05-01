@@ -8,13 +8,13 @@ export const fetchModInit = (replace, rpc) => {
     },
   });
   const replaceFetchURL = (al) => {
-    const { tracers, str } = r.str(al[0]);
+    const { tracers, str } = replace.str(al[0]);
     al[0] = str;
     return tracers;
   };
   const replaceFetchHeaders = (al) => {
     if (al[1].headers) {
-      const { headers, tracers } = r.headers(al[1].headers);
+      const { headers, tracers } = replace.headers(al[1].headers);
       al[1].headers = headers;
       return tracers;
     }
@@ -23,7 +23,7 @@ export const fetchModInit = (replace, rpc) => {
   };
   const replaceFetchBody = (al) => {
     if (al[1].body) {
-      const { body, tracers } = r.body(al[1].body);
+      const { body, tracers } = replace.body(al[1].body);
       al[1].body = body;
       return tracers;
     }

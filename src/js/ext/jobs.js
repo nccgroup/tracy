@@ -1,6 +1,10 @@
 import { EventTypes, Strings, NodeTypeMappings } from "../shared/constants";
 import { settings } from "./settings";
 import { addEvents, getTracers } from "./database";
+import prettier from "prettier/standalone";
+import parserHTML from "prettier/parser-html";
+import parserJSON from "prettier/parser-babel";
+import { memoize } from "lodash";
 export const jobs = (() => {
   // Bundles up all the requirements for making a job worker in case
   // in the future we need more than one worker.
@@ -58,7 +62,7 @@ export const jobs = (() => {
         // If it is the first job added, set a timer to process the jobs.
         if (j.length === 0) {
           chrome.alarms.create(Strings.PROCESS_DOM_EVENTS, {
-            when: Date.now() + 1500,
+            when: Date.now() + 1,
           });
         }
         j.push(message);
@@ -72,7 +76,7 @@ export const jobs = (() => {
         // If it is the first job added, set a timer to process the jobs.
         if (j.length === 0) {
           chrome.alarms.create(Strings.PROCESS_DOM_EVENTS, {
-            when: Date.now() + 0.5,
+            when: Date.now() + 1,
           });
         }
 
@@ -238,61 +242,154 @@ export const jobs = (() => {
   // payload in the DOM, it assigns severities to all areas where a tracer
   // payload is written to the DOM. Returns an arrays of events.
   const findDOMContexts = (event, nodes) => {
+    // First only do the non-text and non-comment nodes since those are special cases.
+    const svgNodeNameAttrContexts = nodes
+      .filter(
+        (cur) =>
+          NodeTypeMappings[cur.nodeType] !== "TEXT_NODE" &&
+          NodeTypeMappings[cur.nodeType] !== "COMMENT_NODE"
+      )
+      .map((cur) => [
+        ...svgNodeCheck(cur, event),
+        ...nodeNameCheck(cur, event),
+        ...attributesCheck(cur, event),
+      ]);
+
+    // Then, do the text and comment nodes. These don't have innerText attributes
+    const textCommentNodeContexts = nodes
+      .filter(
+        (cur) =>
+          NodeTypeMappings[cur.nodeType] === "TEXT_NODE" ||
+          NodeTypeMappings[cur.nodeType] === "COMMENT_NODE"
+      )
+      .map((cur) => [...textCommentNodeCheck(cur, event)]);
+
     const contexts = [
-      // First only do the non-text and non-comment nodes since those are special cases.
-      ...nodes
-        .filter(
-          (cur) =>
-            NodeTypeMappings[cur.nodeType] !== "TEXT_NODE" &&
-            NodeTypeMappings[cur.nodeType] !== "COMMENT_NODE"
-        )
-        .map((cur) => [
-          ...svgNodeCheck(cur, event),
-          ...nodeNameCheck(cur, event),
-          ...attributesCheck(cur, event),
-        ]),
-      // Then, do the text and comment nodes. These don't have innerText attributes
-      ...nodes
-        .filter(
-          (cur) =>
-            NodeTypeMappings[cur.nodeType] === "TEXT_NODE" ||
-            NodeTypeMappings[cur.nodeType] === "COMMENT_NODE"
-        )
-        .map((cur) => [...textCommentNodeCheck(cur, event)]),
-    ]
-      .filter((e) => e.length !== 0)
-      .map((c, i) => ({
+      ...svgNodeNameAttrContexts,
+      ...textCommentNodeContexts,
+    ].filter((e) => e.length !== 0);
+
+    // before submitting the event, prettify it and truncate it
+    const [prettyEvent, type] = prettify(event.RawEvent);
+    return contexts.map((c, i) => {
+      const [snippet, lineNum] = substringAround(
+        prettyEvent,
+        event.TracerPayload,
+        1000,
+        i
+      );
+      return {
         ...event,
         ...c.pop(),
         TracerPayload: event.TracerPayload,
-        RawEvent: truncateStringAround(
-          event.RawEvent,
-          event.TracerPayload,
-          1000,
-          i
-        ),
-        RawEventIndex: i,
-      }));
-    return contexts;
+        RawEvent: snippet,
+        RawEventType: type,
+        RawEventIndex: lineNum,
+      };
+    });
   };
+  const isJSON = (rawEvent) => {
+    try {
+      JSON.parse(rawEvent);
+      return true;
+    } catch (e) {}
 
-  // truncateStringAround truncates a provided string based on another string
-  // found within it and does so with the provided number of padding. It provides
-  // an optional parameter for including which instance of the string occurance
-  // to center around, but will default to the first instance.
-  const truncateStringAround = (str, around, padding, instance = 0) => {
-    let instanceIndex = 0;
-    for (let i = -1; i < instance; i++) {
-      instanceIndex = str
-        .toLowerCase()
-        .indexOf(around.toLowerCase(), instanceIndex);
+    return false;
+  };
+  const isHTML = (rawEvent) =>
+    rawEvent.indexOf("<") !== -1 && rawEvent.indexOf(">") !== -1;
+
+  const isJavaScript = (rawEvent) => {
+    try {
+      return [
+        true,
+        prettier.format(rawEvent, {
+          parser: "babel",
+          plugins: [parserJSON],
+        }),
+      ];
+    } catch (e) {}
+
+    return [false, null];
+  };
+  const prettify = memoize((rawEvent) => {
+    if (isJSON(rawEvent)) {
+      return [
+        prettier.format(rawEvent, {
+          parser: "json",
+          plugins: [parserJSON],
+        }),
+        "application/json",
+      ];
     }
-    if (instanceIndex === -1) {
-      console.log(`error finding ${around} in ${str} of instance ${instance}`);
+
+    const [parsed, parsedJS] = isJavaScript(rawEvent);
+    if (parsed) {
+      return [parsedJS, "application/javascript"];
+    }
+    if (isHTML(rawEvent)) {
+      try {
+        const html = prettier.format(rawEvent, {
+          parser: "html",
+          plugins: [parserHTML],
+        });
+        return [html, "text/html"];
+      } catch (e) {
+        return [rawEvent, "text/html"];
+      }
+    }
+
+    if (DEV) {
+      console.error("AHH WHAT IS IT", rawEvent);
+    }
+
+    return [rawEvent, "text/html"];
+  });
+
+  const uniqueStr = "zzFINDMEzz";
+  const substringAround = (str, substr, padding, instance) => {
+    const instances = str.split(substr);
+    if (instances.length === 1) {
       return "";
     }
 
-    return str.substring(instanceIndex - padding, instanceIndex + padding + 1);
+    if (instance + 1 > instances.length - 1) {
+      console.error(
+        `Requesting too many instances ${instance} of ${substr} in ${str}`
+      );
+      return "";
+    }
+
+    // go back until we have no more instances or the length of the left side
+    // is greater than or equal to the padding
+    let leftPad = "";
+    for (let i = instance; leftPad.length < padding && i >= 0; i--) {
+      leftPad = instances[i] + substr + leftPad;
+    }
+    // then truncate the padding
+    leftPad = leftPad.substring(leftPad.length - padding, leftPad.length);
+
+    let rightPad = "";
+    for (
+      let i = instance + 1;
+      rightPad.length < padding && i < instances.length;
+      i++
+    ) {
+      rightPad += instances[i] + substr;
+    }
+    // remove the last substr
+    rightPad = rightPad.substring(0, rightPad.length - substr.length);
+    rightPad = rightPad.substring(0, padding);
+
+    const snippet = leftPad + uniqueStr + rightPad;
+
+    const lineNum = snippet
+      .split("\n")
+      .map((l, i) => (l.indexOf(uniqueStr) !== -1 ? i + 1 : null))
+      .filter(Boolean)
+      .pop();
+
+    return [snippet.replace(uniqueStr, ""), lineNum];
   };
 
   chrome.alarms.onAlarm.addListener((alarm) => {

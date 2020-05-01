@@ -1,13 +1,13 @@
 import React from "react";
 import { connect } from "react-redux";
 import FontAwesomeIcon from "@fortawesome/react-fontawesome";
-import * as actions from "../actions/index";
+import { refresh } from "../actions/index";
 
-const mapDispatchToProps = dispatch => ({
-  refresh: () => dispatch(actions.refresh())
+const mapDispatchToProps = (dispatch) => ({
+  refresh: () => dispatch(refresh()),
 });
 
-const RefreshButton = props => {
+const RefreshButton = (props) => {
   return (
     <ul className="refresh-button">
       <li

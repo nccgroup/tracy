@@ -1,7 +1,7 @@
 import React from "react";
 import { render } from "react-dom";
 import { Provider } from "react-redux";
-import App from "./ui/containers/App";
+import App from "./ui/elements/App";
 import { createStore } from "redux";
 import rootReducer from "./ui/reducers";
 import "@fortawesome/fontawesome-free-solid";
@@ -11,7 +11,7 @@ export const store = createStore(rootReducer);
 
 render(
   <Provider store={store}>
-    <App />
+    <App></App>
   </Provider>,
   document.getElementById("root")
 );
