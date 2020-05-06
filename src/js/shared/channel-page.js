@@ -1,8 +1,8 @@
 import { EventTypes } from "./constants";
-import { random } from "lodash";
+let chanCount = 0;
 export const channel = (() => {
   const send = (msg) => {
-    const chan = random(0, 100000);
+    const chan = chanCount++;
     return new Promise((res) => {
       window.addEventListener(
         `${EventTypes.TracyResponse}-${chan}`,
