@@ -1,4 +1,5 @@
 import { getTracers, addRequestsToTracer } from "./database";
+import { sleep } from "../shared/ui-helpers";
 export const requestCaptureInit = () => {
   // requests holds an object of objects. Each entry corresponds
   // to a request identified by its requestId. This is done to
@@ -14,13 +15,10 @@ export const requestCaptureInit = () => {
   chrome.webRequest.onBeforeSendHeaders.addListener(
     async (r) => {
       if (new URL(r.url).protocol.startsWith("data")) return;
-      let t = [];
-      try {
-        t = await getTracers();
-      } catch (e) {
-        console.error(e);
-        return;
-      }
+
+      // need to wait some for any tracers added by *-mod scripts
+      // they take some time to enter the database.
+      const t = await getTracers(2000);
 
       const payloads = t.map((t) => t.TracerPayload);
       // Grab the object created by the onBeforeRequest event handler for this request.
@@ -68,48 +66,21 @@ ${body}`;
 
       // Add a request for each of the tracers found in it.
       allTracers.map((t) =>
-        add(t, {
-          RawRequest: rr.trim(),
-          RequestURL: url.toString(),
-          RequestMethod: r.method,
-        })
+        addRequestsToTracer(
+          [
+            {
+              RawRequest: rr.trim(),
+              RequestURL: url.toString(),
+              RequestMethod: r.method,
+            },
+          ],
+          t
+        )
       );
     },
     { urls: ["<all_urls>"] },
     ["requestHeaders"]
   );
-
-  const createJobQueue = () => {
-    let jobs = {};
-    const saveAllRequests = async () => {
-      // Clone the jobs right away.
-      const work = { ...jobs };
-      // Reset our jobs.
-      jobs = {};
-
-      for (let tracer in work) {
-        addRequestsToTracer(work[tracer], tracer);
-      }
-    };
-    chrome.alarms.onAlarm.addListener((alarm) => {
-      if (alarm.name !== "saveAllRequests") return;
-      saveAllRequests();
-    });
-    return async (tracer, job) => {
-      if (Object.keys(jobs).length === 0) {
-        chrome.alarms.create("saveAllRequests", {
-          when: Date.now() + 1500,
-        });
-      }
-      // Add a job.
-      if (jobs[tracer]) {
-        jobs[tracer] = [...jobs[tracer], job];
-      } else {
-        jobs[tracer] = [job];
-      }
-    };
-  };
-  const add = createJobQueue();
 
   // Event handler used to capture all request bodies so that we can search
   // them for tracers we have seen before. Since headers are parsed in a
@@ -127,7 +98,9 @@ ${body}`;
         return;
       }
 
-      const tracers = await getTracers();
+      // need to wait some for any tracers added by *-mod scripts
+      // they take some time to enter the database.
+      const tracers = await getTracers(2000);
       const payloads = tracers.map((t) => t.TracerPayload);
 
       const tracersn = payloads
@@ -230,7 +203,7 @@ ${body}`;
   };
 
   const removeAfter = async (id, time = 10000) => {
-    await new Promise((resolve) => setTimeout(resolve, time));
+    await sleep(time);
     delete requests[id];
   };
 

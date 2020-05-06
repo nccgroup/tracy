@@ -4,7 +4,6 @@ import "react-table/react-table.css";
 import { channel } from "../../shared/channel-cs";
 import { rpc } from "../../shared/rpc";
 import { filterTextNodes } from "../../shared/ui-helpers";
-import { wrap, omit } from "lodash";
 import { connect } from "react-redux";
 import {
   setRawEvent,
@@ -19,9 +18,8 @@ const mapStateToProps = (state) => ({
   refresh: state.eventsRefresh,
   loading: state.eventsLoading,
   events: state.events,
-  selectedEventID: state.selectedEventID,
+  selectedID: state.selectedEventID,
   selectedEventRawEvent: state.selectedEventRawEvent,
-  selectedEventTableIndex: state.selectedEventTableIndex,
   lastSelectedTable: state.lastSelectedTable,
   selectedTracerPayload: state.selectedTracerPayload,
   filterResponses: state.httpResponsesFilter,
@@ -31,10 +29,8 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   setRawEvent: (rawEvent) => dispatch(setRawEvent(rawEvent)),
   addEvents: (events) => dispatch(addEvents(events)),
-  updateEvents: (events, eventID, tableID, rawEvent) =>
-    dispatch(updateEvents(events, eventID, tableID, rawEvent)),
-  selectRow: (index, id, clicked, _) =>
-    dispatch(selectEvent(index, id, clicked)),
+  updateEvents: (events) => dispatch(updateEvents(events)),
+  selectRow: (id, clicked) => dispatch(selectEvent(id, clicked)),
   eventsLoading: () => dispatch(eventsLoading()),
   rawEventLoading: () => dispatch(rawEventLoading()),
 });
@@ -66,87 +62,48 @@ const columns = [
     ],
   },
 ];
+
 let reset;
 const setReset = (r) => (reset = r);
-
 const TracerEventsTable = (props) => {
-  const loadRawEvent = async (eventID) => {
-    const rawEventBlobURL = await r.getRawEvent(eventID);
-    const resp = await fetch(rawEventBlobURL);
-    const blob = await resp.blob();
-    URL.revokeObjectURL(rawEventBlobURL);
-    return await blob.text();
-  };
-
-  const refresh = async () => {
+  const pollForEvents = async () => {
     const events = await r.getTracerEventsByPayload(
       props.selectedTracerPayload
     );
 
-    let eventID = -1;
-    let rawEvent = "";
-    if (events.length > 0) {
-      eventID =
-        props.selectedEventID === -1
-          ? events[events.length - 1].ID
-          : props.selectedEventID;
-
-      rawEvent = await loadRawEvent(eventID);
-    }
-    props.updateEvents(
-      events,
-      eventID,
-      props.selectedEventTableIndex,
-      rawEvent
-    );
+    props.updateEvents(events);
   };
 
   // when the component mounts, get a list of updated events
   useEffect(() => {
-    refresh();
+    if (!props.selectedTracerPayload) {
+      return;
+    }
+    props.eventsLoading();
   }, []);
-
-  // when the tracer payload changes, reset the table state
   useEffect(() => {
-    if (reset) reset();
-  }, [props.selectedTracerPayload]);
+    if (props.loading && reset) {
+      reset();
+      pollForEvents();
+    }
+    if (props.refresh) {
+      pollForEvents();
+    }
+  }, [props.loading, props.refresh]);
 
-  // if the top level component calls for us to refresh
-  if (props.refresh) {
-    refresh();
-  }
-  // if we are loading events normally
-  if (props.loading) {
-    refresh();
-  }
   let data = props.events;
   if (props.filterTextNodes) {
     data = data.filter(filterTextNodes);
   }
-
-  const selectRow = wrap(
-    props.selectRow,
-    async (selectRow, index, id, clicked) => {
-      if (id === props.selectedEventID) {
-        return;
-      }
-      props.rawEventLoading();
-      const re = await loadRawEvent(id);
-      props.setRawEvent(re);
-      selectRow(index, id, clicked);
-    }
-  );
-
-  const filteredProps = omit(props, ["selectRow"]);
   return (
     <div id="event" className="table-container table-container-events">
       <span className="filler" />
       <ArrowNavigationTable
-        {...filteredProps}
-        selectRow={selectRow}
+        {...props}
+        selectRow={props.selectRow}
         tableType="event"
+        reset={setReset}
         data={data}
-        setReset={setReset}
         defaultSorted={defaultSort}
         defaultPageSize={10}
         columns={columns}

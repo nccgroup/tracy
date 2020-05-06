@@ -30,15 +30,14 @@ const init = {
     ["GEN-PLAIN", `${tracerSwap}`],
     ["zzPLAINzz", `${tracerSwap}`],
   ],
-  tracersLoading: true,
+  tracersLoading: false,
   eventsLoading: false,
-  rawEventLoading: true,
+  rawEventLoading: false,
   tracersRefresh: false,
   eventsRefresh: false,
   selectedEventID: -1,
-  selectedEventTableIndex: -1,
+  selectedTracerID: -1,
   selectedTracerPayload: "",
-  selectedTracerTableIndex: -1,
   selectedRequestID: -1,
   httpResponsesFilter: false,
   inactiveTracersFilter: false,
@@ -46,10 +45,10 @@ const init = {
   refererFilter: false,
   apiKey: "12af65d4-4a3c-4cce-abe4-115d089e75f3",
   projName: "first project",
-  tracyEnabled: true,
   onSettingsPage: false,
   lastSelectedTable: "tracer",
   selectedEventRawEvent: "",
+  selectedEventRawEventType: "",
 };
 
 loadState(Object.keys(init));
@@ -86,6 +85,7 @@ const rootReducer = (state = init, action) => {
     case actions.SET_RAW_EVENT:
       change = {
         selectedEventRawEvent: action.rawEvent,
+        selectedEventRawEventType: action.rawEventType,
         rawEventLoading: false,
       };
       break;
@@ -119,7 +119,6 @@ const rootReducer = (state = init, action) => {
             apiKey: action.setting.proj.apiKey,
             tracers: [],
             events: [],
-            tracersLoading: true,
           };
           break;
         case "tracyEnabled":
@@ -152,9 +151,7 @@ const rootReducer = (state = init, action) => {
       break;
     case actions.ADD_TRACER:
       change = {
-        tracers: addOrEditTracer(state, action).sort(
-          (a, b) => a.Created - b.Created
-        ),
+        tracers: addOrEditTracer(state, action),
       };
       break;
     case actions.ADD_REQUEST:
@@ -180,29 +177,20 @@ const rootReducer = (state = init, action) => {
       change = {
         tracersLoading: false,
         tracersRefresh: false,
-        tracers: action.tracers.sort((a, b) => a.Created - b.Created),
-        selectedTracerPayload: action.payload,
+        tracers: action.tracers,
       };
       break;
     case actions.SELECT_TRACER:
-      const tracerPayload =
-        action.tracerPayload === ""
-          ? state.tracers.filter((t) => t.ID === action.tracerID).pop()
-              .TracerPayload
-          : action.tracerPayload;
-
-      if (tracerPayload === state.selectedTracerPayload) {
-        break;
-      }
       change = {
         eventsLoading: true,
-        selectedTracerPayload: tracerPayload,
+        selectedTracerID: action.tracerID,
+        selectedTracerPayload: state.tracers
+          .filter((t) => t.ID === action.tracerID)
+          .pop().TracerPayload,
         events: [],
         selectedEventID: -1,
-        selectedTracerTableIndex: action.index,
         selectedEventRawEvent: "",
         selectedRequestID: -1,
-        rawEventLoading: true,
       };
       if (action.clicked) {
         change.lastSelectedTable = "tracer";
@@ -210,8 +198,8 @@ const rootReducer = (state = init, action) => {
       break;
     case actions.SELECT_EVENT:
       change = {
-        selectedEventID: action.id,
-        selectedEventTableIndex: action.index,
+        selectedEventID: action.eventID,
+        rawEventLoading: true,
       };
 
       if (action.clicked) {
@@ -223,10 +211,6 @@ const rootReducer = (state = init, action) => {
         eventsLoading: false,
         eventsRefresh: false,
         events: action.events,
-        selectedEventID: action.eventID,
-        selectedEventTableIndex: action.tableID,
-        selectedEventRawEvent: action.rawEvent,
-        rawEventLoading: false,
       };
       break;
     case actions.ADD_EVENTS:
@@ -254,7 +238,7 @@ const rootReducer = (state = init, action) => {
       break;
     case actions.SELECT_REQUEST:
       change = {
-        selectedRequestID: action.id,
+        selectedRequestID: action.requestID,
       };
       if (action.clicked) {
         change.lastSelectedTable = "request";

@@ -23,11 +23,6 @@ const findAdjacentIDsByID = (data, id) => {
       break;
     }
   }
-
-  if (!data[left] || !data[right]) {
-    console.error("!!");
-    debug;
-  }
   return [data[left].ID, data[right].ID];
 };
 
@@ -39,7 +34,7 @@ const ArrowNavigationTable = (props) => {
   // keep track of the left and right IDs of the currently sorted table
   // so that selecting them with the arrow keys is simpler
   const [numData] = useState(props.data.length);
-  const [adjIDs, setAdjacentIDs] = useState([1, 1]);
+  const [adjIDs, setAdjacentIDs] = useState([]);
   const tableRef = useRef(null);
   // the total number of rows available
   const numPages = Math.ceil(props.data.length / props.defaultPageSize);
@@ -49,16 +44,7 @@ const ArrowNavigationTable = (props) => {
 
   // the index of the row selected, the page it was selected on,
   // and the ID field of the selected entry
-  const [
-    [selectedPageRow, selectedPage],
-    setSelectedPageRowAndPage,
-  ] = useState([0, 0]);
-
-  const resetTable = () => {
-    setAdjacentIDs([1, 1]);
-    setCurPage(0);
-    setSelectedPageRowAndPage([0, 0]);
-  };
+  const [selectedPageRow, setSelectedPageRow] = useState(0);
 
   const keyDownHandler = (direction) => {
     // get the next index on the page. if we flipped a page, we
@@ -71,7 +57,7 @@ const ArrowNavigationTable = (props) => {
 
     // if we are flipping to the front page to the back page, we need to know what
     // row we can select
-    if (curPage === 0 && direction === -1 && selectedPageRow === 0) {
+    else if (curPage === 0 && direction === -1 && selectedPageRow === 0) {
       numDataRows = props.data.length % numRows;
     }
 
@@ -87,7 +73,7 @@ const ArrowNavigationTable = (props) => {
       ? mod(curPage + direction, numPages)
       : curPage;
 
-    setSelectedPageRowAndPage([nextSelectedRow, nextPage]);
+    setSelectedPageRow(nextSelectedRow);
 
     if (wasPageFlipped) {
       setCurPage(nextPage);
@@ -98,35 +84,34 @@ const ArrowNavigationTable = (props) => {
     setAdjacentIDs(
       findAdjacentIDsByID(tableRef.current.state.sortedData, directionID)
     );
-    props.selectRow(nextSelectedRow, directionID, false);
+    props.selectRow(directionID, false);
   };
 
-  useEffect(
-    () =>
-      createKeyDownHandler(
-        props.tableType,
-        () => props.lastSelectedTable,
-        () => keyDownHandler(-1),
-        () => keyDownHandler(1)
-      ),
-    [props.lastSelectedTable, curPage, selectedPageRow, adjIDs]
-  );
-
-  // if rows are added, we move to move our selected row to match
-  // this is similar to hitting the right arrow key for how many
-  // number of data pointers were added
   useEffect(() => {
-    if (numData === 0) {
-      return;
-    }
-    const diff = props.data.length - numData;
-    for (let i = 0; i < diff; i++) {
-      keyDownHandler(1);
-    }
-  }, [props.data.length]);
+    return createKeyDownHandler(
+      props.tableType,
+      () => props.lastSelectedTable,
+      () => keyDownHandler(-1),
+      () => keyDownHandler(1)
+    );
+  }, [props.lastSelectedTable, curPage, selectedPageRow, adjIDs]);
 
+  const reset = () => {
+    setCurPage(0);
+    setAdjacentIDs([]);
+    setSelectedPageRow(0);
+  };
   useEffect(() => {
-    if (props.setReset) props.setReset(resetTable);
+    if (props.reset) {
+      props.reset(reset);
+    }
+    // if the table was initalized with data, select a default row
+    if (props.data.length > 0) {
+      const data = tableRef.current.state.sortedData;
+      const ID = props.selectedID === -1 ? data[0].ID : props.selectedID;
+      setAdjacentIDs(findAdjacentIDsByID(data, ID));
+      props.selectRow(ID, false);
+    }
   }, []);
 
   return (
@@ -148,22 +133,17 @@ const ArrowNavigationTable = (props) => {
 
         // if we are on the page of our currently selected row and we are the row of the currently
         // selected row.
-        if (curPage === selectedPage && selectedPageRow === rowInfo.viewIndex) {
+        if (rowInfo.row.ID === props.selectedID) {
           classname += ` ${rowSelected}`;
         }
 
         return {
           onClick: (_, handleOriginal) => {
-            setSelectedPageRowAndPage([rowInfo.viewIndex, curPage]);
+            setSelectedPageRow(rowInfo.viewIndex);
             setAdjacentIDs(
               findAdjacentIDsByID(state.sortedData, rowInfo.row.ID)
             );
-            props.selectRow(
-              rowInfo.viewIndex,
-              rowInfo.row.ID,
-              true,
-              rowInfo.row
-            );
+            props.selectRow(rowInfo.row.ID, true);
 
             if (handleOriginal) {
               handleOriginal();

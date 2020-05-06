@@ -1,11 +1,5 @@
 {
-  "permissions": [
-    "<all_urls>",
-    "storage",
-    "contextMenus",
-    "alarms",
-    "webRequest"
-  ],
+  "permissions": ["<all_urls>", "storage", "webRequest"],
   "background": {
     "scripts": ["background.bundle.js"]
   },

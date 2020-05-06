@@ -1,5 +1,6 @@
 import { Strings, EventTypes } from "../shared/constants";
 import { channel } from "../shared/channel-cs";
+import { printSize } from "../shared/ui-helpers";
 export const methodHookingInjectorInit = () => {
   // injectScript injects the script into the page and then removes it.
   const injectScript = (file) => {
@@ -17,6 +18,9 @@ export const methodHookingInjectorInit = () => {
   window.addEventListener(EventTypes.TracyMessage, async ({ detail }) => {
     try {
       const { chan = null } = detail;
+
+      printSize(detail, "[PAGE --> CS SIZE]");
+
       let resp = await channel.send(detail);
       if (chan) {
         // cloneInto is for FF only. They don't allow passing custom objects
@@ -24,6 +28,9 @@ export const methodHookingInjectorInit = () => {
         if (typeof cloneInto !== Strings.UNDEFINED) {
           resp = cloneInto(resp, window);
         }
+
+        printSize(detail, "[PAGE <-- CS SIZE]");
+
         channel.sendResponse(resp, chan);
       }
     } catch (e) {

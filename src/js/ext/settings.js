@@ -2,8 +2,6 @@ import { store } from "../shared/store";
 import { MessageTypes, DefaultTracerTypes } from "../shared/constants";
 import { generateUUID } from "../shared/ui-helpers";
 export const settings = (() => {
-  let disabled = false;
-
   // add the default tracers to the local storage
   store.set({ tracerPayloads: DefaultTracerTypes });
 
@@ -14,8 +12,6 @@ export const settings = (() => {
       case MessageTypes.GetTracerStrings.config:
         const tps = await getTracerStrings();
         return tps.tracerPayloads;
-      case MessageTypes.IsDisabled.config:
-        return disabled;
       default:
         return {};
     }
@@ -34,8 +30,6 @@ export const settings = (() => {
   return {
     getTracerStrings: getTracerStrings,
     getAPIKey: getAPIKey,
-    isDisabled: () => disabled,
-    setDisabled: (b) => (disabled = b),
     query: query,
   };
 })();

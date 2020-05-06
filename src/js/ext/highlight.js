@@ -1,5 +1,6 @@
 import { Strings, SimulatedInputEvents } from "../shared/constants";
-import { screenshotClient } from "../shared/screenshot-client";
+import { takeAndAddTracer } from "../shared/screenshot-client";
+
 export const highlight = (replace, rpc) => {
   // Gets the element offset without jQuery.
   // http://stackoverflow.com/questions/18953144/how-do-i-get-the-offset-top-value-of-an-element-without-using-jquery
@@ -119,8 +120,7 @@ export const highlight = (replace, rpc) => {
     const { tracers, str } = replace.str(tracerString);
     const tracer = tracers.pop();
     simulateInputType(elem, elem.value + str);
-    tracer.Screenshot = await screenshotClient(rpc).take(elem);
-    rpc.addTracer(tracer);
+    await takeAndAddTracer(rpc, elem, tracer);
   };
 
   // fillNonGenPayload handles the logic for when filling an HTML element

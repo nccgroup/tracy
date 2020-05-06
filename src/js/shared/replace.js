@@ -7,12 +7,6 @@ export const replace = (rpc) => {
 
   const firstCacheProm = (async () => {
     cachedTracers = await rpc.getTracerStrings();
-
-    setInterval(
-      async () => (cachedTracers = await rpc.getTracerStrings()),
-      5000
-    );
-
     return true;
   })();
 

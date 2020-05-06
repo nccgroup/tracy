@@ -29,7 +29,11 @@ export const REFRESH = "REFRESH";
 export const SET_RAW_EVENT = "SET_RAW_EVENT";
 export const RAW_EVENT_LOADING = "RAW_EVENT_LOADING";
 export const rawEventLoading = () => ({ type: RAW_EVENT_LOADING });
-export const setRawEvent = (rawEvent) => ({ type: SET_RAW_EVENT, rawEvent });
+export const setRawEvent = (rawEvent, type) => ({
+  type: SET_RAW_EVENT,
+  rawEvent,
+  rawEventType: type,
+});
 export const refresh = (background) => ({ type: REFRESH, background });
 export const eventsLoading = () => ({ type: EVENTS_LOADING });
 export const tracersLoading = () => ({ type: TRACERS_LOADING });
@@ -54,47 +58,37 @@ export const changeSetting = (setting) => ({
   type: CHANGE_SETTING,
   setting: setting,
 });
-export const selectRequest = (index, id, clicked) => ({
+export const selectRequest = (id, clicked) => ({
   type: SELECT_REQUEST,
-  id: id,
-  index: index,
+  requestID: id,
   clicked: clicked,
 });
 export const addAPIKey = (apiKey) => ({ type: ADD_API_KEY, apiKey: apiKey });
 export const changeTab = (tabID) => ({ type: CHANGE_TAB, tabID: tabID });
-export const addTracer = (tracer, skipReload) => ({
+export const addTracer = (tracer) => ({
   type: ADD_TRACER,
   tracer: tracer,
-  skipReload: skipReload,
 });
-export const updateTracers = (tracers, payload, reload) => ({
+export const updateTracers = (tracers) => ({
   type: UPDATE_TRACERS,
   tracers: tracers,
-  payload: payload,
-  skipReload: reload,
 });
 export const addRequest = (req) => ({ type: ADD_REQUEST, req: req });
 export const addEvents = (events) => ({ type: ADD_EVENTS, events: events });
 export const delProject = (i) => ({ type: DEL_PROJECT, i: i });
-export const selectTracer = (index, id, payload, clicked) => ({
+export const selectTracer = (id, clicked) => ({
   type: SELECT_TRACER,
   tracerID: id,
-  tracerPayload: payload,
-  index: index,
   clicked: clicked,
 });
-export const selectEvent = (index, id, clicked) => ({
+export const selectEvent = (id, clicked) => ({
   type: SELECT_EVENT,
-  id: id,
-  index: index,
+  eventID: id,
   clicked: clicked,
 });
-export const updateEvents = (events, eventID, tableID, rawEvent) => ({
+export const updateEvents = (events) => ({
   type: UPDATE_EVENTS,
   events: events,
-  eventID: eventID,
-  tableID: tableID,
-  rawEvent: rawEvent,
 });
 export const startReproduction = () => ({ type: START_REPRODUCTION });
 export const toggleFilter = (type) => {
@@ -108,7 +102,7 @@ export const toggleFilter = (type) => {
     case TOGGLE_REFERER_FILTER:
       return toggleRefererFilter();
     default:
-      console.error("PANIC");
+      return () => {};
   }
 };
 export const toggleRefererFilter = () => ({ type: TOGGLE_REFERER_FILTER });

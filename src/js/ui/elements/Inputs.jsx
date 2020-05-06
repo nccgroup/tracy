@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import Screenshot from "./Screenshot";
+import { Screenshot } from "./Screenshot";
 import HighLightedElement from "./HighlightedElement";
 import { connect } from "react-redux";
 const mapStateToProps = (state) => {

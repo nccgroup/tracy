@@ -247,20 +247,6 @@ const Settings = (props) => {
         </button>
         <button onClick={() => deleteProject(props)}>Delete project</button>
       </div>
-      <div className="settings-row">
-        <h2>Tracy Enabled</h2>
-        <span className="settings-describe-text">
-          Tracy can be temporarily disabled by unchecking the box below. It will
-          still remain loaded in the browser, but will not work on pages,
-          monitor tracer outputs, or replace tracer strings.
-        </span>
-        <input
-          type="checkbox"
-          id="tracyEnabled"
-          checked={props.tracyEnabled}
-          onChange={(e) => handleOnChange(e, props)}
-        />
-      </div>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { MessageTypes, EventTypes } from "../shared/constants";
 import { newPromiseMap } from "../shared/promise-map";
 import { settings } from "./settings";
+import { sleep } from "../shared/ui-helpers";
 
 export const databaseQuery = async (message) => {
   const { query } = message;
@@ -17,7 +18,6 @@ export const databaseQuery = async (message) => {
       const { eventID } = message;
       return await getRawEvent(eventID);
     default:
-      console.log("[BAD MESSAGE QUERY]", query);
       return await Promise.resolve("BAD");
   }
 };
@@ -29,23 +29,47 @@ const sendQuery = (message, worker) => {
   });
 };
 const dbURL = chrome.runtime.getURL("databaseWorker.bundle.js");
-const dbWriter = new Worker(dbURL);
-const dbReader = new Worker(dbURL);
+const dbWriters = [new Worker(dbURL), new Worker(dbURL), new Worker(dbURL)];
+const dbReaders = [new Worker(dbURL), new Worker(dbURL), new Worker(dbURL)];
 
-const promiseMap = newPromiseMap();
-const dbHandler = async (e) => {
+const pickDBReader = ((dbReaders) => {
+  let i = 0;
+
+  return () => {
+    const id = i++ % dbReaders.length;
+    return dbReaders[id];
+  };
+})(dbReaders);
+
+const pickDBWriter = ((dbWriters) => {
+  let i = 0;
+
+  return () => {
+    const id = i++ % dbWriters.length;
+    return dbWriters[id];
+  };
+})(dbWriters);
+
+const promiseMap = newPromiseMap("database");
+const dbHandler = (e) => {
   const { data, chan, error } = e.data;
   if (error) {
-    return promiseMap.reject(data, chan);
+    promiseMap.reject(data, chan);
+  } else {
+    promiseMap.resolve(data, chan);
   }
-  return promiseMap.resolve(data, chan);
 };
 
-dbReader.addEventListener(EventTypes.Message, dbHandler, { passive: true });
-dbWriter.addEventListener(EventTypes.Message, dbHandler, { passive: true });
+dbWriters.map((dbw) =>
+  dbw.addEventListener(EventTypes.Message, dbHandler, { passive: true })
+);
+dbReaders.map((dbr) =>
+  dbr.addEventListener(EventTypes.Message, dbHandler, { passive: true })
+);
 
-export const addTracer = async (tracer) =>
-  await sendQuery(
+export const addTracer = async (tracer) => {
+  const dbWriter = pickDBWriter();
+  return await sendQuery(
     {
       ...MessageTypes.AddTracer,
       tracer,
@@ -53,12 +77,18 @@ export const addTracer = async (tracer) =>
     },
     dbWriter
   );
-export const addEvents = async (events) =>
-  await sendQuery({ ...MessageTypes.AddEvents, events }, dbWriter);
-export const addEvent = async (event) =>
-  await sendQuery({ ...MessageTypes.AddEvent, event }, dbWriter);
-export const addRequestsToTracer = async (requests, tracerPayload) =>
-  await sendQuery(
+};
+export const addEvents = async (events) => {
+  const dbWriter = pickDBWriter();
+  return await sendQuery({ ...MessageTypes.AddEvents, events }, dbWriter);
+};
+export const addEvent = async (event) => {
+  const dbWriter = pickDBWriter();
+  return await sendQuery({ ...MessageTypes.AddEvent, event }, dbWriter);
+};
+export const addRequestsToTracer = async (requests, tracerPayload) => {
+  const dbWriter = pickDBWriter();
+  return await sendQuery(
     {
       ...MessageTypes.AddRequestsToTracer,
       requests,
@@ -66,42 +96,41 @@ export const addRequestsToTracer = async (requests, tracerPayload) =>
     },
     dbWriter
   );
-
-const ttl = (time) => {
-  let cache = null;
-  let last = new Date();
-  return async (og) => {
-    const timeDiff = Math.round((new Date() - last) / 1000);
-    if (cache && timeDiff < time) {
-      console.log("cached copy returned");
-      return cache;
-    } else {
-      cache = await og();
-      last = new Date();
-      return cache;
-    }
-  };
 };
 
-export const getTracerEventsByPayload = async (tracerPayload) =>
-  await sendQuery(
+export const getTracerEventsByPayload = async (tracerPayload) => {
+  const dbReader = pickDBReader();
+  return await sendQuery(
     { ...MessageTypes.GetTracerEventsByPayload, tracerPayload },
     dbReader
   );
-export const getRawEvent = async (eventID) =>
-  await sendQuery({ ...MessageTypes.GetRawEvent, eventID }, dbReader);
+};
+export const getRawEvent = async (eventID) => {
+  const dbReader = pickDBReader();
+  return await sendQuery({ ...MessageTypes.GetRawEvent, eventID }, dbReader);
+};
 
-export const getTracers = async () =>
-  await sendQuery(
-    {
-      ...MessageTypes.GetTracers,
-      key: await settings.getAPIKey(),
-    },
-    dbReader
-  );
+export const getTracers = (() => {
+  let tracers = [];
+  setInterval(async () => {
+    const dbReader = pickDBReader();
+    tracers = sendQuery(
+      { ...MessageTypes.GetTracers, key: await settings.getAPIKey() },
+      dbReader
+    );
+  }, 2000);
+  return async (delay = 0) => {
+    if (delay > 0) {
+      await sleep(delay);
+    }
+    return tracers;
+  };
+})();
 
-export const getTracerByPayload = async (tracerPayload) =>
-  await sendQuery(
+export const getTracerByPayload = async (tracerPayload) => {
+  const dbReader = pickDBReader();
+  return await sendQuery(
     { ...MessageTypes.GetTracerByPayload, tracerPayload },
     dbReader
   );
+};

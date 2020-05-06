@@ -1,6 +1,13 @@
-import { Strings } from "../shared/constants";
+import { EventTypes, Strings } from "../shared/constants";
 import { highlight } from "./highlight";
+
 export const domMutationsInit = (replace, rpc) => {
+  const addDOMJob = (type, domWrite) => {
+    if (domWrite && domWrite.length > 10) {
+      const location = document.location.href;
+      rpc.addDOMJob(domWrite, type, location);
+    }
+  };
   const h = highlight(replace, rpc);
   const addedNodeHandler = (donePromise, parentNode, addedNodes, i) => {
     const node = addedNodes[i];
@@ -28,10 +35,7 @@ export const domMutationsInit = (replace, rpc) => {
       // In the case of a DOM type, check all the node's children for
       // input fields. Use this as a chance to restyle new inputs that
       // were not caught earlier.
-      bulkAdd({
-        type: Strings.DOM,
-        msg: node.outerHTML,
-      });
+      addDOMJob(Strings.DOM, node.outerHTML);
       if (
         node.outerHTML.includes(Strings.INPUT) ||
         node.outerHTML.includes(Strings.TEXT_AREA)
@@ -39,14 +43,11 @@ export const domMutationsInit = (replace, rpc) => {
         h.addClickToFill(node);
       }
       if (node.outerHTML.includes(Strings.FORM)) {
-        const event = new CustomEvent(Strings.FormAddedToDOM);
+        const event = new CustomEvent(EventTypes.FormAddedToDOM);
         window.dispatchEvent(event);
       }
     } else if (node.nodeType == Node.TEXT_NODE) {
-      bulkAdd({
-        type: Strings.TEXT,
-        msg: node.textContent,
-      });
+      addDOMJob(Strings.TEXT, node.textContent);
     }
 
     return nextStep(donePromise, node, addedNodes, i + 1);
@@ -75,18 +76,11 @@ export const domMutationsInit = (replace, rpc) => {
     ) {
       return;
     }
-    bulkAdd({
-      type: Strings.DOM,
-      msg: target.outerHTML,
-    });
+    addDOMJob(Strings.DOM, target.outerHTML);
   };
 
-  const addedCharacterDataHandler = (target) => {
-    bulkAdd({
-      type: Strings.TEXT,
-      msg: target.nodeValue,
-    });
-  };
+  const addedCharacterDataHandler = (target) =>
+    addDOMJob(Strings.TEXT, target.nodeValue);
 
   const mutationsHandler = (mutations) => {
     const handle = (i = 0, parentNode = null) => {
@@ -111,37 +105,6 @@ export const domMutationsInit = (replace, rpc) => {
     };
     handle();
   };
-  const createBulkAdd = () => {
-    let jobs = [];
-    const sendAllJobs = () => {
-      const copy = [...jobs];
-      jobs = [];
-      const send = (chunk) => {
-        window.requestAnimationFrame(() => {
-          try {
-            //all these dom events are going to share the location
-            rpc.bulkJobs(document.location.href, copy.splice(0, chunk));
-          } catch (e) {
-            console.error("[ERROR]: failed to send batch DOM mutation job", e);
-          }
-
-          if (copy.length !== 0) {
-            send(chunk);
-          }
-        });
-      };
-
-      send(10000);
-    };
-
-    return (message) => {
-      if (jobs.length === 0) {
-        setTimeout(sendAllJobs, 500);
-      }
-      jobs.push(message);
-    };
-  };
-  const bulkAdd = createBulkAdd();
 
   // This observer will be used to observe changes in the DOM. It will batches
   // DOM changes and send them to the API/ server if it finds a tracer string.

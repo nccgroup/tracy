@@ -1,12 +1,11 @@
 import { MessageTypes } from "./constants";
+export const newTracer = (tracer) =>
+  Object.assign(
+    {},
+    { Requests: [], Severity: 0, HasTracerEvents: false, Screenshot: null },
+    tracer
+  );
 export const rpc = (channel) => {
-  const newTracer = (tracer) =>
-    Object.assign(
-      {},
-      { Requests: [], Severity: 0, HasTracerEvents: false, Screenshot: null },
-      tracer
-    );
-
   const addTracer = async (tracer) =>
     await channel.send({
       tracer: newTracer(tracer),
@@ -19,22 +18,22 @@ export const rpc = (channel) => {
       eventID,
     });
 
-  const captureScreenshot = async () =>
-    await channel.send(MessageTypes.Screenshot);
+  const captureScreenshot = async (dim, tracer) =>
+    await channel.send({ ...MessageTypes.Screenshot, dim, tracer });
 
-  const bulkJobs = async (location, msg) =>
-    await channel.send({
-      ...MessageTypes.BulkJobs,
-      location,
-      msg,
-    });
-
-  const innerHTMLJob = async (msg, extras, location) =>
+  const addInnerHTMLJob = async (msg, location) =>
     await channel.send({
       ...MessageTypes.InnerHTML,
       msg,
-      extras,
       location,
+    });
+
+  const addDOMJob = async (msg, type, location) =>
+    await channel.send({
+      ...MessageTypes.DOMJob,
+      msg,
+      location,
+      type,
     });
 
   const getTracerStrings = async () =>
@@ -51,8 +50,8 @@ export const rpc = (channel) => {
     addTracer,
     getTracerStrings,
     captureScreenshot,
-    bulkJobs,
-    innerHTMLJob,
+    addDOMJob,
+    addInnerHTMLJob,
     getTracers,
     getTracerEventsByPayload,
     getRawEvent,

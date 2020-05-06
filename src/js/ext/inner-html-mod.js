@@ -14,12 +14,9 @@ export const innerHTMLModInit = (rpc) => {
     set: function (value) {
       // Send a message to the extension to check the arguments of any
       // call to innerHTML have user-controlled input.
-      rpc.innerHTMLJob(
-        value,
-        { stack: new Error().stack },
-        document.location.href
-      );
-
+      if (value && value.length > 10) {
+        rpc.addInnerHTMLJob(value, document.location.href);
+      }
       //Call the original setter
       return originalSet.call(this, value);
     },

@@ -25,20 +25,19 @@ export const MessageTypes = {
   Screenshot: {
     id: "screenshot",
   },
-  ScreenshotFinished: {
-    id: "screenshot-finished",
-  },
   GetTracerStrings: {
     id: "config",
     config: "tracer-string-types",
   },
-  IsDisabled: {
-    id: "config",
-    config: "disabled",
-  },
   GetRawEvent: {
     id: "database",
     query: "getRawEvent",
+  },
+  SearchString: {
+    id: "search",
+  },
+  ParseDOM: {
+    id: "parseDOM",
   },
   GetTracers: {
     id: "database",
@@ -71,6 +70,9 @@ export const MessageTypes = {
   AddRequestsToTracer: {
     id: "database",
     query: "addRequestsToTracer",
+  },
+  DOMJob: {
+    id: "dom-job",
   },
   BulkJobs: {
     id: "bulk-jobs",

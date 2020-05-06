@@ -1,5 +1,11 @@
-import { MessageTypes, DatabaseQueryType, Database } from "./shared/constants";
-
+import {
+  MessageTypes,
+  DatabaseQueryType,
+  Database,
+  Strings,
+} from "./shared/constants";
+import { substringAround } from "./shared/ui-helpers";
+import { prettify } from "./ext/prettyify";
 // openDB is a helper function for asyncing the opening of a database.
 const openDB = (name, version, onUpgrade) => {
   return new Promise((res, rej) => {
@@ -39,11 +45,16 @@ const getTracers = async (tracersDB, key) => {
     req.onsuccess = (e) => {
       const cursor = e.target.result;
       if (cursor) {
-        tracers.push(cursor.value);
+        const tracer = cursor.value;
+        // convert the screenshots to blob URLs
+        if (tracer.Screenshot) {
+          tracer.Screenshot = URL.createObjectURL(tracer.Screenshot);
+        }
+        tracers.push(tracer);
         cursor.continue();
       } else {
         // Sort tracers by their creation date
-        res(tracers.sort((a, b) => a.Created - b.Created));
+        res(tracers);
       }
     };
     req.onerror = (e) => rej(e);
@@ -78,8 +89,9 @@ const getTracerEventsByPayload = async (eventsDB, tracerPayload) =>
     req.onsuccess = (e) => {
       const cursor = e.target.result;
       if (cursor) {
-        // by default, don't get the RawEvents just yet
+        // by default, don't get the RawEvents or the RawEventHashes just yet
         delete cursor.value["RawEvent"];
+        delete cursor.value["RawEventHash"];
         events.push(cursor.value);
         cursor.continue();
       } else {
@@ -113,7 +125,6 @@ const getRawEvent = async (eventsDB, eventID) =>
 const addTracer = async (tracersDB, tracer, key) => {
   // Add the API key to the tracer object so we know what project is belongs to.
   tracer[Database.UUID] = key;
-  tracer.Created = Date.now();
   return await new Promise((res, rej) => {
     const req = tracersDB
       .transaction(Database.TRACERS_TABLE, DatabaseQueryType.READWRITE)
@@ -126,40 +137,43 @@ const addTracer = async (tracersDB, tracer, key) => {
 };
 
 // addEvents adds multiple events to the database in one transaction.
-const addEvents = async (tracersDB, eventsDB, events) =>
-  await new Promise((res, rej) => {
-    // Get a database transaction
-    const tx = eventsDB.transaction(
-      Database.EVENTS_TABLE,
-      DatabaseQueryType.READWRITE
-    );
-    // For each of the events, use the transaction to open the
-    // store and add an event.
-    const eventsWritten = [];
-    events.map((event) => {
-      const req = tx.objectStore(Database.EVENTS_TABLE).add(event);
-      req.onerror = (e) => {
-        e.preventDefault();
-      };
-      req.onsuccess = (e) => {
-        eventsWritten.push(event);
-      };
-    });
-
-    tx.oncomplete = (e) => {
-      eventsWritten.map((e) =>
-        updateTracerBasedOnEvent(tracersDB, eventsDB, e.TracerPayload)
+const addEvents = async (tracersDB, eventsDB, events) => {
+  return await Promise.all(
+    events.map(async (event, i) => {
+      const [snippet, lineNum] = substringAround(
+        event.RawEvent,
+        event.TracerPayload,
+        500,
+        i
       );
-      res(e.target.result);
-    };
-    tx.onerror = (e) => {
-      e.preventDefault();
-    };
 
-    tx.onabort = (e) => {
-      rej(e);
-    };
-  });
+      const [prettyEvent, type] = prettify(snippet);
+      const te = new TextEncoder();
+      const td = new TextDecoder();
+      const croppedEvent = te.encode(prettyEvent).buffer;
+      const hashBuffer = await crypto.subtle.digest("SHA-1", croppedEvent);
+      const hash = td.decode(hashBuffer);
+      event.RawEvent = new Blob([croppedEvent], {
+        type,
+      });
+      event.RawEventHash = hash;
+      event.RawEventIndex = lineNum;
+      try {
+        return await addEvent(tracersDB, eventsDB, event);
+      } catch (e) {
+        if (e.target.error.message.indexOf("unique") !== -1) {
+          if (DEV) {
+            console.log("Prevented duplicate");
+          }
+          return {};
+        } else {
+          console.error(e);
+          return {};
+        }
+      }
+    })
+  );
+};
 
 const updateTracerBasedOnEvent = async (tracersDB, eventsDB, tracerPayload) => {
   let tracer = await getTracerByPayload(tracersDB, tracerPayload);
@@ -231,7 +245,7 @@ const dedupeRequests = (tracer, requests) => {
       r.ID = r.ID + largestID;
       return r;
     });
-    console.log("REQUESTS", requestsWithIDsInc);
+
     return Object.assign({}, tracer, {
       Requests: [...new Set([...tracer.Requests, ...requestsWithIDsInc])],
     });
@@ -286,12 +300,11 @@ const initDBClient = () => {
           (store) => {
             // Index on events' tracer payload so we can group these store together.
             store.createIndex(Database.JOIN, Database.JOIN, { unique: false });
-
             // We want to use the key path to dedupe the events. The RawEvent and
             // TracerPayload should be unique across all the data.
             store.createIndex(
               Database.RAW_EVENT_INDEX,
-              ["RawEvent", "RawEventIndex", Database.JOIN],
+              ["RawEventHash", "RawEventIndex", Database.JOIN],
               { unique: true }
             );
           }
@@ -318,8 +331,6 @@ const dbRouter = async (e, tracersDB, eventsDB) => {
       return await addTracer(tracersDB, e.data.tracer, e.data.key);
     case MessageTypes.AddEvents.query:
       return await addEvents(tracersDB, eventsDB, e.data.events);
-    case MessageTypes.AddEvent.query:
-      return await addEvent(tracersDB, eventsDB, e.data.event);
     case MessageTypes.AddRequestsToTracer.query:
       return await addRequestsToTracer(
         tracersDB,
@@ -345,7 +356,7 @@ onmessage = async (e) => {
   try {
     const { tracersDB, eventsDB } = await client();
     if (DEV) {
-      console.log("[QUERY]:", e.data.query);
+      console.log("[QUERY] [WORKER]", e.data.query);
     }
     msg = await dbRouter(e, tracersDB, eventsDB);
 
@@ -363,7 +374,7 @@ onmessage = async (e) => {
   } finally {
     if (DEV) {
       const t2 = performance.now();
-      console.log("[QUERY-DONE]", e.data.query, t2 - t1);
+      console.log("[QUERY-DONE] [WORKER]", e.data.query, t2 - t1);
     }
   }
 };

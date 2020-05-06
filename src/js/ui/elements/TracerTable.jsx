@@ -4,18 +4,12 @@ import { rpc } from "../../shared/rpc";
 import { channel } from "../../shared/channel-cs";
 import { filterInactive } from "../../shared/ui-helpers";
 import { connect } from "react-redux";
-import {
-  addTracer,
-  updateTracers,
-  selectTracer,
-  tracersLoading,
-} from "../actions";
+import { updateTracers, selectTracer, tracersLoading } from "../actions";
 const r = rpc(channel);
 
 const mapStateToProps = (state) => ({
   tracers: state.tracers,
-  selectedTracerPayload: state.selectedTracerPayload,
-  selectedTracerTableIndex: state.selectedTracerTableIndex,
+  selectedID: state.selectedTracerID,
   filterInactive: state.inactiveTracersFilter,
   refresh: state.tracersRefresh,
   loading: state.tracersLoading,
@@ -23,12 +17,8 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = (dispatch) => ({
-  addOrUpdateTracer: (tracer, skipReload) =>
-    dispatch(addTracer(tracer, skipReload)),
-  updateTracers: (tracers, payload) =>
-    dispatch(updateTracers(tracers, payload)),
-  selectRow: (index, id, clicked, row) =>
-    dispatch(selectTracer(index, id, !row ? "" : row.TracerPayload, clicked)),
+  updateTracers: (tracers) => dispatch(updateTracers(tracers)),
+  selectRow: (id, clicked) => dispatch(selectTracer(id, clicked)),
   tracersLoading: () => dispatch(tracersLoading()),
 });
 const defaultSort = [
@@ -55,28 +45,22 @@ const columns = [
 
 class TracerTable extends Component {
   componentDidMount() {
-    this.refresh();
-    //setInterval(this.refresh, 5000);
     this.props.tracersLoading();
   }
 
-  refresh = async () => {
+  pollForTracers = async () => {
     const tracers = await r.getTracers();
-    if (tracers.length > 0 && !this.props.selectedTracerPayload) {
-      this.props.updateTracers(
-        tracers,
-        tracers[tracers.length - 1].TracerPayload
-      );
-    }
-    this.props.updateTracers(tracers, this.props.selectedTracerPayload);
+    this.props.tracers.map((t) => URL.revokeObjectURL(t.Screenshot));
+    this.props.updateTracers(tracers);
   };
 
   render() {
+    // app triggers the table to get the latest set of tracers
     if (this.props.refresh) {
-      this.refresh();
+      this.pollForTracers();
     }
     if (this.props.loading) {
-      this.refresh();
+      this.pollForTracers();
     }
 
     let data = this.props.tracers;

@@ -1,5 +1,6 @@
 import { Strings, EventTypes } from "../shared/constants";
-import { screenshotClient } from "../shared/screenshot-client";
+import { takeFormAndAddTracers } from "../shared/screenshot-client";
+import { getElementByNameAndValue } from "../shared/ui-helpers";
 export const formModInit = (replace, rpc) => {
   const replaceFormInputs = (form) =>
     [...new FormData(form)].reduce((allTracers, [nameAttr, value]) => {
@@ -20,23 +21,12 @@ export const formModInit = (replace, rpc) => {
       return [...tracers, ...allTracers];
     }, []);
 
-  const getElementByNameAndValue = (name, value) => {
-    const elems = [...document.getElementsByName(name)]
-      .filter(
-        (n) =>
-          n.nodeName.toLowerCase() === Strings.INPUT ||
-          n.nodeName.toLowerCase() === Strings.TEXT_AREA
-      )
-      .filter((n) => value === n.value);
-    if (elems.length !== 1) {
-      return null;
-    }
-    return elems.pop();
-  };
-
-  const formSubmitListener = (evt) => {
+  const formSubmitListener = (evt, shouldPreventDefault = false) => {
     const tracers = replaceFormInputs(evt.target);
     if (tracers.length === 0) {
+      if (shouldPreventDefault) {
+        evt.preventDefault();
+      }
       return;
     }
     evt.preventDefault();
@@ -69,14 +59,10 @@ export const formModInit = (replace, rpc) => {
         i.setAttribute(Strings.TYPE, Strings.HIDDEN);
         evt.target.appendChild(i);
       }
-      const sss = await screenshotClient(rpc).takeForm(evt.target, tracers);
-      await Promise.all(
-        sss.map(async ({ ss, tracer }) => {
-          tracer.Screenshot = ss;
-          await rpc.addTracer(tracer);
-        })
-      );
-      evt.target.submit();
+      await takeFormAndAddTracers(rpc, evt.target, tracers);
+      if (!shouldPreventDefault) {
+        evt.target.submit();
+      }
     })();
   };
 
@@ -111,13 +97,7 @@ export const formModInit = (replace, rpc) => {
               return;
             }
             (async () => {
-              const mappings = await screenshotClient(rpc).takeForm(f, tracers);
-              await Promise.all(
-                mappings.map(async ({ tracer, ss = null }) => {
-                  tracer.Screenshot = ss;
-                  return await rpc.addTracer(tracer);
-                })
-              );
+              await takeFormAndAddTracers(rpc, f, tracers);
               Reflect.apply(t, thisa, al);
             })();
             return tracers;
@@ -132,11 +112,11 @@ export const formModInit = (replace, rpc) => {
         return f;
       })
       .map((f) => {
+        // If the page adds a submit listener, we need to move our
+        // listeners back to the bottom of the bubbling so that
+        // we can ensure we are the last submit handler to be called
         f.addEventListener = new Proxy(f.addEventListener, {
           apply: (t, thisa, al) => {
-            // If the page adds a submit listener, we need to move our
-            // listeners back to the bottom of the bubbling so that
-            // we can ensure we are the last submit handler to be called
             if (al[0] === EventTypes.Submit) {
               f.removeEventListener(EventTypes.Submit, formSubmitListener);
               Reflect.apply(t, thisa, al);
@@ -146,8 +126,26 @@ export const formModInit = (replace, rpc) => {
         });
       });
   };
-  formAddedToDOM();
-  window.addEventListener(EventTypes.FormAddedToDOM, (_) => {
-    formAddedToDOM();
+
+  // Forms can have inline onsubmit handlers. These handlers are not called
+  // if we addEventListeners with the "onsubmit" type. The strategy here
+  // is to convert all inline onsubmit handlers to regular addEventListeners
+  // being careful to respect the prevent default behavior when returning false
+  // form an inline handler
+  Object.defineProperty(HTMLFormElement.prototype, "onsubmit", {
+    set: function (value) {
+      this.removeEventListener(EventTypes.Submit, formSubmitListener);
+      const wrapper = (e) => {
+        // returning false from this function means we need to preventDefault
+        const shouldPreventDefault = !value(e);
+        formSubmitListener(e, shouldPreventDefault);
+      };
+      this.addEventListener(EventTypes.Submit, wrapper);
+      // indicate to the handler above we don't need this form to addEventListeners
+      // because it is an inline handler
+      this.classList.add(Strings.TRACY_FORM_MOD);
+    },
   });
+  formAddedToDOM();
+  window.addEventListener(EventTypes.FormAddedToDOM, () => formAddedToDOM());
 };

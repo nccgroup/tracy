@@ -1,4 +1,4 @@
-import { Severity } from "./constants";
+import { Severity, Strings } from "./constants";
 
 // Stolen from : https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
 export const generateUUID = () =>
@@ -17,6 +17,56 @@ export const firstIDByID = (s, m) => {
     }
   }
   return -1;
+};
+
+export const sleep = (time) => {
+  return new Promise((res) => setTimeout(res, time));
+};
+
+const uniqueStr = "zzFINDMEzz";
+export const substringAround = (str, substr, padding, instance) => {
+  const instances = str.split(substr);
+  if (instances.length === 1) {
+    return "";
+  }
+
+  if (instance + 1 > instances.length - 1) {
+    console.error(
+      `Requesting too many instances ${instance} of ${substr} in ${str}`
+    );
+    return "";
+  }
+
+  // go back until we have no more instances or the length of the left side
+  // is greater than or equal to the padding
+  let leftPad = "";
+  for (let i = instance; leftPad.length < padding && i >= 0; i--) {
+    leftPad = instances[i] + substr + leftPad;
+  }
+  // then truncate the padding
+  leftPad = leftPad.substring(leftPad.length - padding, leftPad.length);
+
+  let rightPad = "";
+  for (
+    let i = instance + 1;
+    rightPad.length < padding && i < instances.length;
+    i++
+  ) {
+    rightPad += instances[i] + substr;
+  }
+  // remove the last substr
+  rightPad = rightPad.substring(0, rightPad.length - substr.length);
+  rightPad = rightPad.substring(0, padding);
+
+  const snippet = leftPad + uniqueStr + rightPad;
+
+  const lineNum = snippet
+    .split("\n")
+    .map((l, i) => (l.indexOf(uniqueStr) !== -1 ? i + 1 : null))
+    .filter(Boolean)
+    .pop();
+
+  return [snippet.replace(uniqueStr, ""), lineNum];
 };
 
 // filterResponses filters out events that have the event type of response.
@@ -44,6 +94,36 @@ export const filterReferers = (tracer) => (request) => {
 
 export const formatRowSeverity = (row) => {
   return Severity[row.Severity];
+};
+
+export const printSize = (buffer, location, filter = 100) => {
+  if (false) {
+    let len;
+    if (!buffer) {
+      len = 0;
+    } else {
+      len = JSON.stringify(buffer).length;
+    }
+
+    console.log(location, len);
+    if (len > filter) {
+      console.log(`[${location}-DETAIL]`, buffer);
+    }
+  }
+};
+
+export const getElementByNameAndValue = (name, value) => {
+  const elems = [...document.getElementsByName(name)]
+    .filter(
+      (n) =>
+        n.nodeName.toLowerCase() === Strings.INPUT ||
+        n.nodeName.toLowerCase() === Strings.TEXT_AREA
+    )
+    .filter((n) => value === n.value);
+  if (elems.length !== 1) {
+    return null;
+  }
+  return elems.pop();
 };
 
 // mod is a helper mod function if you are dealing with negative

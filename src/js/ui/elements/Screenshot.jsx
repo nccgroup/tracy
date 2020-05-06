@@ -1,17 +1,16 @@
-import React, { Component } from "react";
+import React from "react";
 
-export default class Screenshot extends Component {
-  render() {
-    if (this.props.screenshot) {
-      return (
-        <img
-          className="tracy-screenshot"
-          src={this.props.screenshot}
-          title="tracy-screenshot"
-          alt="tracy-screenshot"
-        />
-      );
-    }
+export const Screenshot = (props) => {
+  if (!props.screenshot) {
     return <span>no screenshot available...</span>;
   }
-}
+
+  return (
+    <img
+      className="tracy-screenshot"
+      src={props.screenshot}
+      title="tracy-screenshot"
+      alt="tracy-screenshot"
+    />
+  );
+};

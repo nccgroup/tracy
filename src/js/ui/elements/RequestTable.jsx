@@ -20,12 +20,9 @@ const defaultSort = [
     desc: true,
   },
 ];
-let reset;
-const setReset = (r) => (reset = r);
 
 const mapDispatchToProps = (dispatch) => ({
-  selectRow: (index, id, clicked, _) =>
-    dispatch(selectRequest(index, id, clicked)),
+  selectRow: (id, clicked) => dispatch(selectRequest(id, clicked)),
 });
 
 const mapStateToProps = (state) => {
@@ -44,23 +41,27 @@ const mapStateToProps = (state) => {
       }
     })(),
     selectedTracerPayload: state.selectedTracerPayload,
-    loading: state.selectedTracerPayload === "",
-    selectedRequestID: state.selectedRequestID,
+    loading: state.tracersLoading,
+    selectedID: state.selectedRequestID,
     lastSelectedTable: state.lastSelectedTable,
     refererFilter: state.refererFilter,
   };
 };
 
+let reset;
+const setReset = (r) => (reset = r);
 const RequestTable = (props) => {
   useEffect(() => {
     if (props.requests.length > 0 && props.selectedRequestID === -1) {
-      props.selectRow(0, props.requests[props.requests.length - 1].ID, false);
+      props.selectRow(props.requests[props.requests.length - 1].ID, false);
     }
-  }, [props.requests.length]);
-
+  }, [props.selectedTracerPayload, props.requests]);
   useEffect(() => {
-    if (reset) reset();
+    if (reset) {
+      reset();
+    }
   }, [props.selectedTracerPayload]);
+
   let requests = props.requests;
   if (props.refererFilter) {
     requests = requests.filter(filterReferers(props.selectedTracerPayload));
@@ -73,8 +74,8 @@ const RequestTable = (props) => {
         {...props}
         tableType="request"
         data={requests}
+        reset={setReset}
         columns={columns}
-        setReset={setReset}
         defaultPageSize={10}
         defaultSorted={defaultSort}
       />
