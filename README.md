@@ -9,7 +9,7 @@ during the mapping-the-application phase of the pentest to identify sources of i
 and their corresponding outputs. `tracy` can use this data to intelligently find
 vulnerable instances of XSS, especially with web applications that use lots of JavaScript.
 
-`tracy` is a browser extension and light-weight HTTP proxy that records all user input 
+`tracy` is a browser extension that records all user input 
 to a web application and monitors any time those inputs are output, for example in a
 DOM write, server response, or call to `eval`.
 
