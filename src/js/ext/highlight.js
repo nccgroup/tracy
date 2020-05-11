@@ -47,17 +47,13 @@ export const highlight = (replace, rpc) => {
     elem.focus();
     elem.value = newValue;
 
-    try {
-      await rpc.simulateReactValueTracker(
-        newValue,
-        oldValue,
-        elem.nodeName,
-        elem.id,
-        elem.name
-      );
-    } catch (e) {
-      console.error(e);
-    }
+    await rpc.simulateReactValueTracker(
+      newValue,
+      oldValue,
+      elem.nodeName,
+      elem.id,
+      elem.name
+    );
 
     return SimulatedInputEvents.map(({ event, type }) =>
       elem.dispatchEvent(convertType(type, event))
