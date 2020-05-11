@@ -9,7 +9,7 @@ export const highlight = (replace, rpc) => {
     const box = elem.getBoundingClientRect();
     const top = box.top + window.pageYOffset - de.clientTop;
     const left = box.left + window.pageXOffset - de.clientLeft;
-    return { top: top, left: left };
+    return { top, left };
   };
 
   // isNearRightEdge identifies if an event happened near the left edge of an element.
@@ -42,16 +42,25 @@ export const highlight = (replace, rpc) => {
   };
 
   // Simulate input on a input field in hopes to trigger any input validation checks.
-  const simulateInputType = async (elem, value) => {
+  const simulateInputType = async (elem, newValue) => {
+    const oldValue = elem.value;
     elem.focus();
-    elem.value = value;
+    elem.value = newValue;
 
-    // TODO: for some websits, this doesn't seem to work. Might need to add
-    // new event types. Add them here.
-    return await Promise.all(
-      SimulatedInputEvents.map(async ({ event, type }) =>
-        elem.dispatchEvent(convertType(type, event))
-      )
+    try {
+      await rpc.simulateReactValueTracker(
+        newValue,
+        oldValue,
+        elem.nodeName,
+        elem.id,
+        elem.name
+      );
+    } catch (e) {
+      console.error(e);
+    }
+
+    return SimulatedInputEvents.map(({ event, type }) =>
+      elem.dispatchEvent(convertType(type, event))
     );
   };
 
@@ -62,6 +71,10 @@ export const highlight = (replace, rpc) => {
       return;
     }
     e.stopPropagation();
+    let elem = e.target;
+    if (e.target.id) {
+      elem = document.getElementById(e.target.id);
+    }
     const tagMenu = document.createElement(Strings.DIV);
     tagMenu.addEventListener(
       Strings.MOUSEDOWN,
@@ -79,7 +92,7 @@ export const highlight = (replace, rpc) => {
     replace.getTracerPayloads().map((t) => {
       const listElement = document.createElement(Strings.LI);
       listElement.addEventListener(Strings.MOUSEDOWN, (_) => {
-        fillElement(e.target, t);
+        fillElement(elem, t);
       });
       listElement.classList.add(Strings.HIGHLIGHT_ON_HOVER);
       listElement.innerText = t[0];
@@ -144,5 +157,5 @@ export const highlight = (replace, rpc) => {
       // Register event listeners for all types of elements we'd like to allow for a
       // tracer.
       .map((t) => t.addEventListener(Strings.MOUSEDOWN, rightSideInputHandler));
-  return { addClickToFill: addClickToFill };
+  return { addClickToFill };
 };

@@ -23,12 +23,6 @@ export const methodHookingInjectorInit = () => {
 
       let resp = await channel.send(detail);
       if (chan) {
-        // cloneInto is for FF only. They don't allow passing custom objects
-        // from a privileged script to an unprivileged script without this.
-        if (typeof cloneInto !== Strings.UNDEFINED) {
-          resp = cloneInto(resp, window);
-        }
-
         printSize(detail, "[PAGE <-- CS SIZE]");
 
         channel.sendResponse(resp, chan);

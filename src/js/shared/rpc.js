@@ -39,6 +39,19 @@ export const rpc = (channel) => {
   const getTracerStrings = async () =>
     await channel.send(MessageTypes.GetTracerStrings);
 
+  const simulateReactValueTracker = async (
+    newValue,
+    oldValue,
+    nodeName,
+    id,
+    name
+  ) => {
+    return await channel.sendResponse(
+      { newValue, oldValue },
+      `${nodeName}:${id}:${name}`
+    );
+  };
+
   const getTracers = async () => await channel.send(MessageTypes.GetTracers);
   const getTracerEventsByPayload = async (tracerPayload) =>
     await channel.send({
@@ -54,6 +67,7 @@ export const rpc = (channel) => {
     addInnerHTMLJob,
     getTracers,
     getTracerEventsByPayload,
+    simulateReactValueTracker,
     getRawEvent,
   };
 };
