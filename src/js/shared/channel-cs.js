@@ -1,4 +1,4 @@
-import { EventTypes } from "./constants";
+import { EventTypes, Strings } from "./constants";
 
 export const channel = (() => {
   const send = (data) => {
@@ -15,6 +15,11 @@ export const channel = (() => {
     });
   };
   const sendResponse = (resp, channel) => {
+    // cloneInto is for FF only. They don't allow passing custom objects
+    // from a privileged script to an unprivileged script without this.
+    if (typeof cloneInto !== Strings.UNDEFINED) {
+      resp = cloneInto(resp, window);
+    }
     const event = new CustomEvent(`${EventTypes.TracyResponse}-${channel}`, {
       detail: resp,
     });
