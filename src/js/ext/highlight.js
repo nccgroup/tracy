@@ -67,10 +67,7 @@ export const highlight = (replace, rpc) => {
       return;
     }
     e.stopPropagation();
-    let elem = e.target;
-    if (e.target.id) {
-      elem = document.getElementById(e.target.id);
-    }
+
     const tagMenu = document.createElement(Strings.DIV);
     tagMenu.addEventListener(
       Strings.MOUSEDOWN,
@@ -88,7 +85,7 @@ export const highlight = (replace, rpc) => {
     replace.getTracerPayloads().map((t) => {
       const listElement = document.createElement(Strings.LI);
       listElement.addEventListener(Strings.MOUSEDOWN, (_) => {
-        fillElement(elem, t);
+        fillElement(e.target, t);
       });
       listElement.classList.add(Strings.HIGHLIGHT_ON_HOVER);
       listElement.innerText = t[0];
