@@ -1,5 +1,6 @@
 <p align="center">
   <img src="https://user-images.githubusercontent.com/16947503/38943629-c354d81a-42e6-11e8-9644-cc956d92fbcc.png" width=250/>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/tracyplugin/"><img src="https://extensionworkshop.com/assets/7a17e6-5cc43798bf2472557d8b437e779316758d0e41483542e921f6781694623ee71c.png"></img></a>
 </p>
 
 ## Tracy
