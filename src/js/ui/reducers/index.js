@@ -20,6 +20,7 @@ const loadState = (settings) => {
 // init is the default settings when the application is loaded.
 const tracerSwap = "[[ID]]";
 const init = {
+    seenNotifications: false,
   appInitialized: false,
   projs: [],
   tracers: [],
@@ -250,6 +251,10 @@ const rootReducer = (state = init, action) => {
     case actions.NAVIGATE_TO_UI_PAGE:
       change = { onSettingsPage: false };
       break;
+  case actions.SEEN_NOTIFICATIONS:
+      change = {seenNotifications: true}
+      
+      break
     default:
       break;
   }

@@ -29,6 +29,36 @@ const createNewProject = (props) => {
   props.changeSetting(proj);
 };
 
+const exportProject = async (props) => {
+    const r = rpc(channel)
+    let tracers = await r.getTracers()
+    tracers = await Promise.all(tracers.map(async (tracer) => {
+	tracer.Events = await r.getTracerEventsByPayload(tracer.TracerPayload)
+	return tracer
+    }))
+    tracers = await Promise.all(tracers.map(async (tracer) => {
+	const reader = new FileReader();
+	const blob = await fetch(tracer.Screenshot).then(r => r.blob());
+	return await new Promise((res, rej)=>{
+	    reader.readAsDataURL(blob); 
+	    reader.onloadend = () => {
+		tracer.Screenshot = reader.result;
+		res(tracer)
+	    }
+	});
+    }))
+
+    const blob = new Blob([JSON.stringify(tracers)], {type:"application/json"})
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `exported_project_${props.projName}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+}
+
 const createFirstProject = (props) => {
   // When we create the first project, make sure an API key wasn't already
   // created for that project (can happen if you start to insert tracers before
@@ -223,6 +253,13 @@ const Settings = (props) => {
         </button>
       </div>
       <div className="settings-row">
+	  <h2>Export Data</h2>
+	  <span className="settings-describe-text">
+	      Export all the data from the current project in a CSV file.
+	  </span>
+	  <button onClick={()=> exportProject(props)}>Export data now</button>
+      </div>
+      <div className="settings-row">
         <h2>Projects</h2>
         <span className="settings-describe-text">
           These are your current Tracy projects. Each project comes with its own
@@ -246,6 +283,14 @@ const Settings = (props) => {
           Create new project
         </button>
         <button onClick={() => deleteProject(props)}>Delete project</button>
+      </div>
+      <div className="settings-row">
+	  <h2>Survey</h2>
+	  <span className="settings-describe-text">
+	      If you are looking to help make Tracy a bit better, please take 5 minutes to fill out the Google Form
+	      below to help me better understand how you use Tracy. I'd love to hear from you!
+	  </span>
+	  <a href="https://forms.gle/gyjYU6VwSki6cMXD9">Take survey here</a>
       </div>
     </div>
   );

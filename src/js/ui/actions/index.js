@@ -28,6 +28,9 @@ export const EVENTS_LOADING = "EVENTS_LOADING";
 export const REFRESH = "REFRESH";
 export const SET_RAW_EVENT = "SET_RAW_EVENT";
 export const RAW_EVENT_LOADING = "RAW_EVENT_LOADING";
+export const SEEN_NOTIFICATIONS = "SEEN_NOTIFICATIONS";
+
+export const seenNotifications = () => ({type: SEEN_NOTIFICATIONS})
 export const rawEventLoading = () => ({ type: RAW_EVENT_LOADING });
 export const setRawEvent = (rawEvent, type) => ({
   type: SET_RAW_EVENT,
