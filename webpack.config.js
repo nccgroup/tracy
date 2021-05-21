@@ -2,8 +2,7 @@ const path = require("path");
 const webpack = require("webpack");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
-  .BundleAnalyzerPlugin;
+const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 const packageJSON = require("./package.json");
 const fileExtensions = [
   "jpg",
@@ -44,7 +43,10 @@ const config = (mode) => {
       rules: [
         {
           test: /\.css$/,
-          loader: "style-loader!css-loader",
+          use: [
+            MiniCssExtractPlugin.loader,
+            "css-loader"
+          ],
         },
         {
           test: new RegExp(".(" + fileExtensions.join("|") + ")$"),
@@ -69,7 +71,6 @@ const config = (mode) => {
         .concat([".jsx", ".js"]),
     },
     plugins: [
-      //new BundleAnalyzerPlugin(),
       new webpack.DefinePlugin({
         DEV: isDevelopment,
       }),
@@ -112,6 +113,7 @@ const config = (mode) => {
         filename: "test.html",
         chunks: ["test"],
       }),
+      new MiniCssExtractPlugin()
     ],
   };
 };

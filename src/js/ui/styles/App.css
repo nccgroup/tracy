@@ -197,9 +197,6 @@ table.properties-table > tbody > tr > th {
   overflow-y: scroll;
 }
 
-.no-screenshot {
-}
-
 .filter-inactive {
   color: #555759;
 }
@@ -301,9 +298,6 @@ pre.raw-data {
 .exploitable,
 .row-selected.exploitable {
   color: #ff9994;
-}
-
-.unexploitable {
 }
 
 .suspicious,
