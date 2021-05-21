@@ -197,9 +197,8 @@ const createTracer = async () => {
 const log = (text, error) => {
   const span = document.createElement("div");
 
-  span.innerText = `[${new Date().toUTCString()}]${
-    error ? `[ERROR]: ${text}` : `[LOG]: ${text}`
-  }`;
+  span.innerText = `[${new Date().toUTCString()}]${error ? `[ERROR]: ${text}` : `[LOG]: ${text}`
+    }`;
   if (error) {
     span.style = "color:red";
   }

@@ -1,8 +1,7 @@
 import {
   MessageTypes,
   DatabaseQueryType,
-  Database,
-  Strings,
+  Database
 } from "./shared/constants";
 import { substringAround } from "./shared/ui-helpers";
 import { prettify } from "./ext/prettyify";

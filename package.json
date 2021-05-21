@@ -3,7 +3,7 @@
   "license": "MIT License",
   "repository": "github:heathj/tracy",
   "description": "A tool designed to assist with finding all sinks and sources of a web application and display these results in a digestible manner.",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "scripts": {
     "start": "npx webpack --config webpack.config.js --mode development",
     "build": "npx webpack --config webpack.config.js --mode production",
